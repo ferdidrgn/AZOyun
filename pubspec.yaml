@@ -1,0 +1,61 @@
+name: a_z_oyun
+description: Çok oyunculu oyun platformu
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.8
+
+  # Firebase
+  firebase_core: ^3.0.0
+  firebase_database: ^11.0.0
+  firebase_auth: ^5.0.0
+
+  # Google Play Games & Sign In
+  games_services: ^5.0.0
+  google_sign_in: ^6.2.1
+
+  # Reklamlar
+  google_mobile_ads: ^5.1.0
+
+  # Ses
+  audioplayers: ^5.2.1
+
+  flame: ^1.34.0
+  flame_forge2d: ^0.19.2+2
+  vector_math: ^2.2.0 # Vector2 çakışmasını çözen köprü
+
+  # Animasyon ve UI (Yeni eklenen)
+  animate_do: ^3.3.4
+
+  # Sensörler (Vuruş hissiyatı/Titreşim için)
+  vibration: ^2.0.1 # Veya tamamen kaldırıp 'vibration_platform_interface' kullanabilirsin
+
+  collection: ^1.19.1
+
+  uuid: ^4.4.0
+
+  # Ekstra (isteğe bağlı)
+  perfect_freehand: ^1.0.1
+  confetti: ^0.7.0
+  flutter_animate: ^4.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Ses dosyaları
+  assets:
+    - assets/sounds/
+    - assets/images/

@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "517819561284",
+    "firebase_url": "https://azoyun-569b2-default-rtdb.firebaseio.com",
+    "project_id": "azoyun-569b2",
+    "storage_bucket": "azoyun-569b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:517819561284:android:d8f5631f7e8d72e1c01311",
+        "android_client_info": {
+          "package_name": "com.ferdidrgn.azgame"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "517819561284-hdjim1jceq18lhm3c5jjnrk74rusbph3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ferdidrgn.azgame",
+            "certificate_hash": "a6c4bd55e3a7df8e5be2eaff6a98b958b3108e17"
+          }
+        },
+        {
+          "client_id": "517819561284-al1a7tmntn8294hhm8ks97f8q3o64qs5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4g57Y9pdan7U8I9sO2Jhgtz7yyCcGKp8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "517819561284-al1a7tmntn8294hhm8ks97f8q3o64qs5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "517819561284-js5m7jt4qbajj3q0aopciqqj3ei86miu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ferdidrgn.azgame"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
