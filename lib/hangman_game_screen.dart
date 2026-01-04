@@ -28,16 +28,41 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   int _wrongGuesses = 0;
   bool _isMyTurn = false;
   String _gameStatus = 'waiting';
-  bool _needsWordSelection = false;
   bool _isShowingRoundDialog = false;
   int _lastCompletedRound = 0;
+  bool _hasShownWordSelectionDialog = false;
 
   final List<String> _wordList = [
-    'FLUTTER', 'FIREBASE', 'KOTLIN', 'ANDROID', 'PYTHON', 'JAVASCRIPT',
-    'DATABASE', 'COMPUTER', 'KEYBOARD', 'INTERNET', 'TELEFON', 'OYUN',
-    'BILGISAYAR', 'PROGRAMLAMA', 'YAZILIM', 'MOBIL', 'UYGULAMA', 'GITAR',
-    'PIYANO', 'FUTBOL', 'BASKETBOL', 'YÜZME', 'KOŞU', 'BİSİKLET',
-    'ARABA', 'UÇAK', 'TREN', 'GEMI', 'OTOBÜS', 'METRO'
+    'FLUTTER',
+    'FIREBASE',
+    'KOTLIN',
+    'ANDROID',
+    'PYTHON',
+    'JAVASCRIPT',
+    'DATABASE',
+    'COMPUTER',
+    'KEYBOARD',
+    'INTERNET',
+    'TELEFON',
+    'OYUN',
+    'BILGISAYAR',
+    'PROGRAMLAMA',
+    'YAZILIM',
+    'MOBIL',
+    'UYGULAMA',
+    'GITAR',
+    'PIYANO',
+    'FUTBOL',
+    'BASKETBOL',
+    'YÜZME',
+    'KOŞU',
+    'BİSİKLET',
+    'ARABA',
+    'UÇAK',
+    'TREN',
+    'GEMI',
+    'OTOBÜS',
+    'METRO',
   ];
 
   @override
@@ -50,11 +75,6 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
     _database.child('hangman_rooms/${widget.roomId}').onValue.listen((event) {
       if (event.snapshot.value != null && mounted) {
         final data = Map<String, dynamic>.from(event.snapshot.value as Map);
-
-        final oldCurrentGame = _roomData?['currentGame'];
-        final newCurrentGame = data['currentGame'];
-        final oldRound = _roomData?['currentRound'] ?? 0;
-        final newRound = data['currentRound'] ?? 1;
 
         setState(() {
           _roomData = data;
@@ -69,22 +89,13 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
             // Sıra mantığı: Kelimeyi seçen bekler, diğeri tahmin eder
             String wordChooser = game['wordChooser'] ?? 'player1';
             String myRole = widget.isPlayer1 ? 'player1' : 'player2';
-            _isMyTurn = wordChooser != myRole; // Kelimeyi seçmeyen tahmin eder
-
-            _needsWordSelection = false;
-          } else if (_gameStatus == 'playing') {
-            // Oyun başladı ama kelime seçilmemiş
-            bool shouldShow = _shouldIChooseWord();
-
-            // Round değişti mi ve kelime seçilmesi gerekiyor mu?
-            if (newRound > oldRound && shouldShow) {
-              _needsWordSelection = true;
-            } else if (oldCurrentGame == null && newCurrentGame == null && shouldShow) {
-              // İlk kelime seçimi
-              _needsWordSelection = true;
-            } else {
-              _needsWordSelection = false;
-            }
+            _isMyTurn = wordChooser != myRole;
+          } else {
+            // currentGame null - kelime seçilmemiş
+            _currentWord = null;
+            _guessedLetters = [];
+            _wrongGuesses = 0;
+            _isMyTurn = false;
           }
         });
 
@@ -109,45 +120,72 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   void _showWordSelectionDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Kelime Seç'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Rakibinin tahmin edeceği kelimeyi seç:',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _showPredefinedWords();
-              },
-              icon: const Icon(Icons.list),
-              label: const Text('LİSTEDEN SEÇ'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
+      barrierDismissible: false, // ASLA KAPANMAZ!
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // Back button da çalışmaz
+        child: AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.stars, color: Colors.amber),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'SİZİN SIRANIZ!\nKelime Seçin',
+                  style: const TextStyle(fontSize: 18),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _showCustomWordDialog();
-              },
-              icon: const Icon(Icons.create),
-              label: const Text('KENDİ KELİMENİ YAZ'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange, width: 2),
+                ),
+                child: const Text(
+                  '⚠️ Rakibiniz bekliyor!\nKelime seçmek zorundasınız.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showPredefinedWords();
+                },
+                icon: const Icon(Icons.list),
+                label: const Text('LİSTEDEN SEÇ'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showCustomWordDialog();
+                },
+                icon: const Icon(Icons.create),
+                label: const Text('KENDİ KELİMENİ YAZ'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -156,39 +194,37 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   void _showPredefinedWords() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Kelime Seç'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView.builder(
-            itemCount: _wordList.length,
-            itemBuilder: (context, index) {
-              return Card(
-                child: ListTile(
-                  title: Text(
-                    _wordList[index],
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+      barrierDismissible: false, // ASLA KAPANMAZ!
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // Back button da çalışmaz
+        child: AlertDialog(
+          title: const Text('Kelime Seç (Zorunlu)'),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: ListView.builder(
+              itemCount: _wordList.length,
+              itemBuilder: (context, index) {
+                return Card(
+                  child: ListTile(
+                    title: Text(
+                      _wordList[index],
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _startGameWithWord(_wordList[index]);
+                    },
                   ),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _startGameWithWord(_wordList[index]);
-                  },
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İPTAL'),
-          ),
-        ],
       ),
     );
   }
@@ -196,67 +232,68 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   void _showCustomWordDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Kendi Kelimeni Yaz'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _customWordController,
-              decoration: const InputDecoration(
-                hintText: 'Kelimeyi gir',
-                border: OutlineInputBorder(),
-                helperText: 'Sadece harfler (min 3, max 15)',
+      barrierDismissible: false, // ASLA KAPANMAZ!
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // Back button da çalışmaz
+        child: AlertDialog(
+          title: const Text('Kendi Kelimeni Yaz (Zorunlu)'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _customWordController,
+                decoration: const InputDecoration(
+                  hintText: 'Kelimeyi gir',
+                  border: OutlineInputBorder(),
+                  helperText: 'Sadece harfler (min 3, max 15)',
+                ),
+                textCapitalization: TextCapitalization.characters,
+                maxLength: 15,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              textCapitalization: TextCapitalization.characters,
-              maxLength: 15,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 10),
+              const Text(
+                '⚠️ Rakibin bu kelimeyi göremez!',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.orange,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              '⚠️ Rakibin bu kelimeyi göremez!',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.orange,
-                fontWeight: FontWeight.bold,
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                String word = _customWordController.text
+                    .toUpperCase()
+                    .trim()
+                    .replaceAll(RegExp(r'[^A-ZÇĞİÖŞÜ]'), '');
+
+                if (word.length >= 3) {
+                  Navigator.pop(context);
+                  _startGameWithWord(word);
+                  _customWordController.clear();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Kelime en az 3 harf olmalı!'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
               ),
+              child: const Text('BAŞLAT'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İPTAL'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              String word = _customWordController.text
-                  .toUpperCase()
-                  .trim()
-                  .replaceAll(RegExp(r'[^A-ZÇĞİÖŞÜ]'), '');
-
-              if (word.length >= 3) {
-                Navigator.pop(context);
-                _startGameWithWord(word);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Kelime en az 3 harf olmalı!'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('BAŞLAT'),
-          ),
-        ],
       ),
     );
   }
@@ -277,9 +314,9 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
     if (_currentWord == null || _isShowingRoundDialog) return;
 
     // Kelime tamamlandı mı?
-    bool wordCompleted = _currentWord!.split('').every((letter) =>
-    _guessedLetters.contains(letter) || letter == ' '
-    );
+    bool wordCompleted = _currentWord!
+        .split('')
+        .every((letter) => _guessedLetters.contains(letter) || letter == ' ');
 
     final currentRound = _roomData?['currentRound'] ?? 1;
 
@@ -300,6 +337,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
 
     setState(() {
       _isShowingRoundDialog = true;
+      _hasShownWordSelectionDialog = false; // Reset for next round
     });
 
     // Tahmin eden kazandı mı yoksa kelimeyi seçen mi?
@@ -310,10 +348,14 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
     String winner = guesserWon ? guesser : wordChooser;
 
     final currentScore = _roomData?[winner]['score'] ?? 0;
-    await _database.child('hangman_rooms/${widget.roomId}/$winner/score')
-        .set(currentScore + 1);
-
     final currentRound = _roomData?['currentRound'] ?? 1;
+
+    // Sadece bir kez puan güncelle
+    if (widget.isPlayer1) {
+      await _database
+          .child('hangman_rooms/${widget.roomId}/$winner/score')
+          .set(currentScore + 1);
+    }
 
     // Round bitince göster
     if (mounted) {
@@ -326,10 +368,12 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
 
     // 3 round bitti mi kontrol et
     if (currentRound >= 3) {
+      await Future.delayed(const Duration(milliseconds: 500));
       _endGame();
     } else {
       // Yeni round başlat - sadece Player1 günceller
       if (widget.isPlayer1) {
+        await Future.delayed(const Duration(milliseconds: 500));
         await _database.child('hangman_rooms/${widget.roomId}').update({
           'currentRound': currentRound + 1,
           'currentGame': null, // Yeni round için sıfırla
@@ -338,7 +382,11 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
     }
   }
 
-  Future<void> _showRoundEndDialog(String winner, int round, bool guesserWon) async {
+  Future<void> _showRoundEndDialog(
+    String winner,
+    int round,
+    bool guesserWon,
+  ) async {
     String winnerName = winner == 'player1'
         ? _roomData!['player1']['name']
         : _roomData!['player2']['name'];
@@ -363,14 +411,23 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            Text('Kelime: $_currentWord',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue),
+            Text(
+              'Kelime: $_currentWord',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
             ),
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 10),
-            Text('${_roomData!['player1']['name']}: ${_roomData!['player1']['score']}'),
-            Text('${_roomData!['player2']['name']}: ${_roomData!['player2']['score']}'),
+            Text(
+              '${_roomData!['player1']['name']}: ${_roomData!['player1']['score']}',
+            ),
+            Text(
+              '${_roomData!['player2']['name']}: ${_roomData!['player2']['score']}',
+            ),
           ],
         ),
         actions: [
@@ -388,6 +445,8 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   }
 
   void _endGame() {
+    if (_gameStatus == 'finished') return; // Zaten bitmişse tekrar çalıştırma
+
     _database.child('hangman_rooms/${widget.roomId}/status').set('finished');
 
     final p1Score = _roomData?['player1']['score'] ?? 0;
@@ -401,33 +460,60 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
       winner = 'BERABERE!';
     }
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('🎮 Oyun Bitti!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              winner == 'BERABERE!' ? '🤝 $winner' : '🏆 Kazanan: $winner',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+    // Dialog göstermeden önce kısa bekle
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('🎮 Oyun Bitti!'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                winner == 'BERABERE!' ? '🤝 $winner' : '🏆 Kazanan: $winner',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 10),
+              Text(
+                'Final Skoru:',
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${_roomData!['player1']['name']}: $p1Score',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                '${_roomData!['player2']['name']}: $p2Score',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+              child: const Text('ANA MENÜYE DÖN'),
             ),
-            const SizedBox(height: 20),
-            Text('${_roomData!['player1']['name']}: $p1Score'),
-            Text('${_roomData!['player2']['name']}: $p2Score'),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: const Text('ANA MENÜYE DÖN'),
-          ),
-        ],
-      ),
-    );
+      );
+    });
   }
 
   Future<void> _guessLetter(String letter) async {
@@ -535,6 +621,30 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Oyun bittiyse final ekranı göster
+    if (_gameStatus == 'finished') {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Adam Asmaca'),
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.emoji_events, size: 100, color: Colors.amber),
+              SizedBox(height: 20),
+              Text(
+                'Oyun Bitti!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (_roomData == null || _gameStatus == 'waiting') {
       return Scaffold(
         appBar: AppBar(
@@ -555,20 +665,23 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
       );
     }
 
-    // Kelime seçim bekleme ekranı veya kelime seçme dialogu
+    // Kelime henüz seçilmemiş - currentGame null
     if (_currentWord == null) {
       bool shouldIChoose = _shouldIChooseWord();
 
-      // Ben kelime seçmeliyim - dialog göster
-      if (shouldIChoose && _needsWordSelection) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _needsWordSelection) {
-            setState(() {
-              _needsWordSelection = false;
-            });
-            _showWordSelectionDialog();
-          }
-        });
+      // BEN KELIME SEÇMELİYİM - ZORUNLU POPUP!
+      if (shouldIChoose) {
+        // Popup'ı sadece bir kez göster
+        if (!_hasShownWordSelectionDialog) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_hasShownWordSelectionDialog) {
+              setState(() {
+                _hasShownWordSelectionDialog = true;
+              });
+              _showWordSelectionDialog();
+            }
+          });
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -576,15 +689,38 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
             backgroundColor: Colors.red,
             foregroundColor: Colors.white,
           ),
-          body: const Center(
+          body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.edit_note, size: 80, color: Colors.red),
-                SizedBox(height: 20),
-                Text(
-                  'Kelime seçin...',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                const Icon(Icons.stars, size: 80, color: Colors.amber),
+                const SizedBox(height: 20),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 40),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange, width: 2),
+                  ),
+                  child: const Column(
+                    children: [
+                      Text(
+                        '⚠️ SİZİN SIRANIZ!',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Kelime seçmelisiniz!\nRakibiniz bekliyor...',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -592,7 +728,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
         );
       }
 
-      // Diğer oyuncu kelime seçiyor - bekleme ekranı
+      // DİĞER OYUNCU KELİME SEÇİYOR - BEN BEKLİYORUM
       String otherPlayerName = widget.isPlayer1
           ? _roomData!['player2']['name']
           : _roomData!['player1']['name'];
@@ -611,12 +747,15 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
               const SizedBox(height: 20),
               Text(
                 '$otherPlayerName kelime seçiyor...',
-                style: const TextStyle(fontSize: 18),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 10),
               const Text(
                 '⏳ Lütfen bekleyin',
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
             ],
           ),
@@ -624,6 +763,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
       );
     }
 
+    // OYUN DEVAM EDİYOR - NORMAL OYUN EKRANI
     final p1Score = _roomData?['player1']['score'] ?? 0;
     final p2Score = _roomData?['player2']['score'] ?? 0;
     final currentRound = _roomData?['currentRound'] ?? 1;
@@ -639,7 +779,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
               padding: const EdgeInsets.only(right: 16),
               child: Text(
                 'Round $currentRound/3',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -658,7 +801,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
                   p1Score,
                   widget.isPlayer1 && _isMyTurn,
                 ),
-                const Text('VS', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const Text(
+                  'VS',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
                 _buildPlayerCard(
                   _roomData!['player2']['name'],
                   p2Score,
@@ -729,10 +875,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
         children: [
           Text(
             name,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
