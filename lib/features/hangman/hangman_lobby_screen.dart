@@ -1,8 +1,8 @@
+import 'package:a_z_oyun/features/hangman/hangman_game_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:math';
-import '../../hangman_game_screen.dart';
 
 class HangmanLobbyScreen extends StatefulWidget {
   const HangmanLobbyScreen({super.key});
@@ -12,7 +12,9 @@ class HangmanLobbyScreen extends StatefulWidget {
 }
 
 class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
-  final DatabaseReference _roomsRef = FirebaseDatabase.instance.ref('hangman_rooms');
+  final DatabaseReference _roomsRef = FirebaseDatabase.instance.ref(
+    'hangman_rooms',
+  );
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _roomCodeController = TextEditingController();
   String? _playerName;
@@ -59,7 +61,10 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final random = Random();
     return String.fromCharCodes(
-        Iterable.generate(6, (_) => chars.codeUnitAt(random.nextInt(chars.length)))
+      Iterable.generate(
+        6,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
     );
   }
 
@@ -75,10 +80,7 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
     await _roomsRef.child(roomId).set({
       'status': 'waiting',
       'roomCode': roomCode,
-      'player1': {
-        'name': _playerName,
-        'score': 0,
-      },
+      'player1': {'name': _playerName, 'score': 0},
       'player2': null,
       'currentRound': 1,
       'totalRounds': 3,
@@ -285,10 +287,7 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
 
       // Player 2 olarak katıl
       await _roomsRef.child(roomId).update({
-        'player2': {
-          'name': _playerName,
-          'score': 0,
-        },
+        'player2': {'name': _playerName, 'score': 0},
         'status': 'playing',
       });
     }
@@ -428,7 +427,10 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
                           SizedBox(width: 8),
                           Text(
                             'YENİ ODA OLUŞTUR',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -455,7 +457,10 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
                           SizedBox(width: 8),
                           Text(
                             'ODA KODUNA KATIL',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -490,91 +495,91 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
             Expanded(
               child: _availableRooms.isEmpty
                   ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.inbox, size: 64, color: Colors.grey),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Yakında oda yok',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 40),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        '💡 İpucu: Arkadaşınla oynamak için "Oda Oluştur" ile oda aç ve kodu paylaş!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.blue),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-                  : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _availableRooms.length,
-                itemBuilder: (context, index) {
-                  final room = _availableRooms[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade100,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.gamepad,
-                          color: Colors.red,
-                          size: 30,
-                        ),
-                      ),
-                      title: Text(
-                        room['player1']['name'],
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('Rakip bekliyor...'),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Kod: ${room['roomCode']}',
-                            style: TextStyle(
-                              color: Colors.blue.shade700,
-                              fontWeight: FontWeight.bold,
+                          const Icon(Icons.inbox, size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Yakında oda yok',
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 40),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              '💡 İpucu: Arkadaşınla oynamak için "Oda Oluştur" ile oda aç ve kodu paylaş!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.blue),
                             ),
                           ),
                         ],
                       ),
-                      trailing: ElevatedButton(
-                        onPressed: () => _joinRoom(room['id']),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('KATIL'),
-                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _availableRooms.length,
+                      itemBuilder: (context, index) {
+                        final room = _availableRooms[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(16),
+                            leading: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade100,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.gamepad,
+                                color: Colors.red,
+                                size: 30,
+                              ),
+                            ),
+                            title: Text(
+                              room['player1']['name'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Rakip bekliyor...'),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Kod: ${room['roomCode']}',
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: ElevatedButton(
+                              onPressed: () => _joinRoom(room['id']),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('KATIL'),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),
