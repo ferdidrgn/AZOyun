@@ -1,3 +1,4 @@
+import 'package:a_z_oyun/core/services/secure_local_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 
@@ -214,6 +215,31 @@ class AdManager {
     }
 
     return true;
+  }
+
+  Future<void> showPremiumAdIfNeeded({
+    required int gameEnterCount,
+    required String roomId,
+  }) async {
+    final storage = SecureLocalStorage();
+
+    if (gameEnterCount % 5 != 0) return;
+
+    final alreadyShown = await storage.isRewardedShownForRoom(roomId);
+
+    if (alreadyShown) return;
+
+    debugPrint('💰 PREMIUM AD TRIGGERED');
+
+    // Önce ödüllü dene
+    final rewardedSuccess = await showRewardedAd();
+
+    if (!rewardedSuccess) {
+      // Ödüllü yoksa interstitial
+      await showInterstitialAd();
+    }
+
+    await storage.markRewardedShownForRoom(roomId);
   }
 
   /// Reklamları kapat (premium kullanıcılar için)
