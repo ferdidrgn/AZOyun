@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'room_service.dart';
-import 'lobby_page.dart';
+import 'features/hangman/hangman_lobby_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -22,7 +22,7 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => LobbyPage(
+                    builder: (_) => HangmanLobbyPage(
                       roomCode: code,
                       isHost: true,
                     ),
@@ -46,7 +46,7 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => LobbyPage(
+                    builder: (_) => HangmanLobbyPage(
                       roomCode: controller.text,
                       isHost: false,
                     ),
