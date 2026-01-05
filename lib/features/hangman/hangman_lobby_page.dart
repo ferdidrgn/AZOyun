@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'room_service.dart';
+import '../../room_service.dart';
 
-class LobbyPage extends StatelessWidget {
+class HangmanLobbyPage extends StatelessWidget {
   final String roomCode;
   final bool isHost;
 
-  const LobbyPage({
+  const HangmanLobbyPage({
     super.key,
     required this.roomCode,
     required this.isHost,

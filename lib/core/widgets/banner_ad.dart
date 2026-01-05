@@ -1,9 +1,17 @@
-import 'package:a_z_oyun/core/services/ad_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../services/ad_manager.dart';
 
+/// 📢 Banner reklam widget'ı
 class BannerAdWidget extends StatefulWidget {
-  const BannerAdWidget({super.key});
+  final AdSize adSize;
+  final EdgeInsets padding;
+
+  const BannerAdWidget({
+    super.key,
+    this.adSize = AdSize.banner,
+    this.padding = const EdgeInsets.all(8),
+  });
 
   @override
   State<BannerAdWidget> createState() => _BannerAdWidgetState();
@@ -12,6 +20,7 @@ class BannerAdWidget extends StatefulWidget {
 class _BannerAdWidgetState extends State<BannerAdWidget> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -20,19 +29,51 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   void _loadAd() {
+    // AdManager başlatılmış mı kontrol et
+    if (!AdManager().isInitialized) {
+      debugPrint('⚠️ AdManager not initialized, skipping banner ad');
+      return;
+    }
+
+    // Reklamlar kapalı mı kontrol et
+    if (!AdManager().areAdsEnabled) {
+      debugPrint('⚠️ Ads are disabled, skipping banner ad');
+      return;
+    }
+
     _bannerAd = BannerAd(
       adUnitId: AdManager.bannerAdUnitId,
-      size: AdSize.banner,
+      size: widget.adSize,
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          setState(() => _isLoaded = true);
-          print('✅ Banner reklam yüklendi');
+          if (_isDisposed) {
+            ad.dispose();
+            return;
+          }
+
+          if (mounted) setState(() => _isLoaded = true);
+
+          debugPrint('✅ Banner reklam yüklendi');
         },
         onAdFailedToLoad: (ad, error) {
-          print('❌ Banner reklam hatası: $error');
+          debugPrint('❌ Banner reklam hatası: $error');
           ad.dispose();
-          setState(() => _isLoaded = false);
+
+          if (mounted) setState(() => _isLoaded = false);
+
+          // 60 saniye sonra tekrar dene
+          Future.delayed(const Duration(seconds: 60), () {
+            if (mounted && !_isDisposed) {
+              _loadAd();
+            }
+          });
+        },
+        onAdOpened: (ad) {
+          debugPrint('📱 Banner reklam açıldı');
+        },
+        onAdClosed: (ad) {
+          debugPrint('📱 Banner reklam kapandı');
         },
       ),
     );
@@ -42,46 +83,133 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _bannerAd?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_isLoaded || _bannerAd == null) {
+    // Reklam yüklenmemiş veya gösterilmeyecekse boş widget döndür
+    if (!_isLoaded || _bannerAd == null || !AdManager().areAdsEnabled)
       return const SizedBox.shrink();
-    }
 
     return Container(
+      padding: widget.padding,
       alignment: Alignment.center,
-      width: _bannerAd!.size.width.toDouble(),
-      height: _bannerAd!.size.height.toDouble(),
-      child: AdWidget(ad: _bannerAd!),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: SizedBox(
+        width: _bannerAd!.size.width.toDouble(),
+        height: _bannerAd!.size.height.toDouble(),
+        child: AdWidget(ad: _bannerAd!),
+      ),
     );
   }
 }
 
-// ============================================
-// OYUNLARA BANNER EKLEMEK İÇİN ÖRNEK
-// ============================================
+/// 📢 Adaptive banner widget (Ekran genişliğine göre)
+class AdaptiveBannerAdWidget extends StatefulWidget {
+  final EdgeInsets padding;
 
-// quick_math_game.dart içinde kullanım:
-/*
-import '../../../core/widgets/banner_ad_widget.dart';
+  const AdaptiveBannerAdWidget({
+    super.key,
+    this.padding = const EdgeInsets.all(8),
+  });
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(...),
-    body: Column(
-      children: [
-        // OYUN İÇERİĞİ
-        Expanded(child: ...),
-
-        // BANNER REKLAM (EN ALTTA)
-        const BannerAdWidget(),
-      ],
-    ),
-  );
+  @override
+  State<AdaptiveBannerAdWidget> createState() => _AdaptiveBannerAdWidgetState();
 }
-*/
+
+class _AdaptiveBannerAdWidgetState extends State<AdaptiveBannerAdWidget> {
+  BannerAd? _bannerAd;
+  bool _isLoaded = false;
+  bool _isDisposed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  Future<void> _loadAd() async {
+    if (!AdManager().isInitialized || !AdManager().areAdsEnabled) {
+      return;
+    }
+
+    // Ekran genişliğini al
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    if (!mounted || _isDisposed) return;
+
+    final size = MediaQuery.of(context).size;
+    final adWidth = size.width.toInt();
+
+    final adaptiveSize =
+        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(adWidth);
+
+    if (adaptiveSize == null) {
+      debugPrint('❌ Adaptive banner size alınamadı');
+      return;
+    }
+
+    _bannerAd = BannerAd(
+      adUnitId: AdManager.bannerAdUnitId,
+      size: adaptiveSize,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (_isDisposed) {
+            ad.dispose();
+            return;
+          }
+
+          if (mounted) {
+            setState(() => _isLoaded = true);
+          }
+          debugPrint('✅ Adaptive banner yüklendi');
+        },
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('❌ Adaptive banner hatası: $error');
+          ad.dispose();
+
+          if (mounted) {
+            setState(() => _isLoaded = false);
+          }
+        },
+      ),
+    );
+
+    _bannerAd!.load();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isLoaded || _bannerAd == null || !AdManager().areAdsEnabled) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: widget.padding,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: SizedBox(
+        width: _bannerAd!.size.width.toDouble(),
+        height: _bannerAd!.size.height.toDouble(),
+        child: AdWidget(ad: _bannerAd!),
+      ),
+    );
+  }
+}

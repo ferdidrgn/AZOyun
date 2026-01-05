@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:math';
-import 'hangman_game_screen.dart';
+import '../../hangman_game_screen.dart';
 
 class HangmanLobbyScreen extends StatefulWidget {
   const HangmanLobbyScreen({super.key});
