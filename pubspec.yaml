@@ -18,6 +18,8 @@ dependencies:
   firebase_database: ^11.0.0
   firebase_auth: ^5.0.0
 
+  flutter_secure_storage: ^9.2.2
+
   # Google Play Games & Sign In
   games_services: ^5.0.0
   google_sign_in: ^6.2.1

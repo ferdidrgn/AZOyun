@@ -1,3 +1,5 @@
+import 'package:a_z_oyun/core/widgets/ad_trigger_widget.dart';
+import 'package:a_z_oyun/core/widgets/banner_ad.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:math';
@@ -19,7 +21,8 @@ class GolfGameScreen extends StatefulWidget {
   State<GolfGameScreen> createState() => _GolfGameScreenState();
 }
 
-class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProviderStateMixin {
+class _GolfGameScreenState extends State<GolfGameScreen>
+    with SingleTickerProviderStateMixin {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
   Map<String, dynamic>? _roomData;
@@ -39,6 +42,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
+
     _listenToRoom();
     _animationController = AnimationController(
       vsync: this,
@@ -73,8 +77,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
           if (data['status'] == 'finished') {
             // Eğer dialog açık değilse final skorları göster
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-              }
+              if (mounted) {}
             });
           }
         });
@@ -98,7 +101,8 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
       _ballPosition += _ballVelocity;
 
       // Bounce off walls
-      if (_ballPosition.dx < 20 || _ballPosition.dx > MediaQuery.of(context).size.width - 20) {
+      if (_ballPosition.dx < 20 ||
+          _ballPosition.dx > MediaQuery.of(context).size.width - 20) {
         _ballVelocity = Offset(-_ballVelocity.dx * 0.7, _ballVelocity.dy);
         _ballPosition = Offset(
           _ballPosition.dx.clamp(20, MediaQuery.of(context).size.width - 20),
@@ -159,7 +163,8 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
     if (_myPlayerKey == null) return;
 
     final currentShots = _roomData?['players'][_myPlayerKey]['shots'] ?? 0;
-    await _database.child('golf_rooms/${widget.roomId}/players/$_myPlayerKey/shots')
+    await _database
+        .child('golf_rooms/${widget.roomId}/players/$_myPlayerKey/shots')
         .set(currentShots + 1);
 
     // Next player
@@ -172,7 +177,8 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
     final currentIndex = playerKeys.indexOf(_roomData!['currentPlayer']);
     final nextIndex = (currentIndex + 1) % playerKeys.length;
 
-    await _database.child('golf_rooms/${widget.roomId}/currentPlayer')
+    await _database
+        .child('golf_rooms/${widget.roomId}/currentPlayer')
         .set(playerKeys[nextIndex]);
   }
 
@@ -218,7 +224,8 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
     if (currentHole >= totalHoles) {
       _endGame();
     } else {
-      await _database.child('golf_rooms/${widget.roomId}/currentHole')
+      await _database
+          .child('golf_rooms/${widget.roomId}/currentHole')
           .set(currentHole + 1);
 
       // Reset ball position
@@ -242,12 +249,15 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
     if (_myPlayerKey == null) return;
 
     final isReady = _roomData?['players'][_myPlayerKey]['isReady'] ?? false;
-    await _database.child('golf_rooms/${widget.roomId}/players/$_myPlayerKey/isReady')
+    await _database
+        .child('golf_rooms/${widget.roomId}/players/$_myPlayerKey/isReady')
         .set(!isReady);
 
     // Check if all players are ready
     final players = Map<String, dynamic>.from(_roomData!['players'] as Map);
-    final allReady = players.values.every((player) => player['isReady'] == true);
+    final allReady = players.values.every(
+      (player) => player['isReady'] == true,
+    );
 
     if (allReady && players.length >= 2) {
       await _database.child('golf_rooms/${widget.roomId}').update({
@@ -283,6 +293,9 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
           Text('Oyuncular (${players.length}/4)', style: AppTextStyles.h4),
           const SizedBox(height: 20),
 
+          /// ✅ REKLAM TETİKLEYİCİ (LOGIC BURADA)
+          AdTriggerWidget(roomId: widget.roomId),
+
           Expanded(
             child: ListView.builder(
               itemCount: players.length,
@@ -290,10 +303,12 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
                 final playerKey = players.keys.elementAt(index);
                 final player = players[playerKey];
                 final isReady = player['isReady'] ?? false;
-                final isMe = playerKey == _myPlayerKey;
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: AppColors.golfPrimary,
@@ -304,13 +319,19 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
                       style: AppTextStyles.playerName,
                     ),
                     trailing: isReady
-                        ? const Icon(Icons.check_circle, color: AppColors.success)
+                        ? const Icon(
+                            Icons.check_circle,
+                            color: AppColors.success,
+                          )
                         : const Icon(Icons.pending, color: Colors.grey),
                   ),
                 );
               },
             ),
           ),
+
+          /// ✅ BANNER
+          const AdaptiveBannerAdWidget(),
 
           Padding(
             padding: const EdgeInsets.all(16),
@@ -332,7 +353,9 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
   Widget _buildGameScreen() {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Delik ${_roomData?['currentHole']}/${_roomData?['totalHoles']}'),
+        title: Text(
+          'Delik ${_roomData?['currentHole']}/${_roomData?['totalHoles']}',
+        ),
         backgroundColor: AppColors.golfPrimary,
         foregroundColor: Colors.white,
       ),
@@ -397,10 +420,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
             // Aim line
             if (_isDragging)
               CustomPaint(
-                painter: AimLinePainter(
-                  start: _ballPosition,
-                  end: _dragStart,
-                ),
+                painter: AimLinePainter(start: _ballPosition, end: _dragStart),
               ),
 
             // Turn indicator
@@ -427,7 +447,10 @@ class _GolfGameScreenState extends State<GolfGameScreen> with SingleTickerProvid
               bottom: 16,
               left: 16,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
