@@ -1,8 +1,8 @@
-import 'package:a_z_oyun/core/theme/app_colors.dart';
-import 'package:a_z_oyun/core/theme/app_text_styles.dart';
-import 'package:a_z_oyun/core/widgets/game_button.dart';
-import 'package:a_z_oyun/features/golf/golf_lobby_screen.dart';
-import 'package:a_z_oyun/features/hangman/hangman_lobby_screen.dart';
+import 'package:AZOyun/core/theme/app_colors.dart';
+import 'package:AZOyun/core/theme/app_text_styles.dart';
+import 'package:AZOyun/core/widgets/game_button.dart';
+import 'package:AZOyun/features/golf/golf_lobby_screen.dart';
+import 'package:AZOyun/features/hangman/hangman_lobby_screen.dart';
 import 'package:flutter/material.dart';
 
 class GameMenuScreen extends StatelessWidget {

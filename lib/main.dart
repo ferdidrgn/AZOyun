@@ -1,5 +1,5 @@
-import 'package:a_z_oyun/core/config/firebase_options.dart';
-import 'package:a_z_oyun/game_menu_screen.dart';
+import 'package:AZOyun/core/config/firebase_options.dart';
+import 'package:AZOyun/game_menu_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
