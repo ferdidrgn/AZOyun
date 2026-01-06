@@ -1,5 +1,5 @@
-import 'package:a_z_oyun/core/widgets/ad_trigger_widget.dart';
-import 'package:a_z_oyun/core/widgets/banner_ad.dart';
+import 'package:AZOyun/core/widgets/ad_trigger_widget.dart';
+import 'package:AZOyun/core/widgets/banner_ad.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:math';

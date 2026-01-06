@@ -1,4 +1,4 @@
-import 'package:a_z_oyun/features/hangman/hangman_game_screen.dart';
+import 'package:AZOyun/features/hangman/hangman_game_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
