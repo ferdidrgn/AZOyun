@@ -1,11 +1,4 @@
-import 'package:AZOyun/core/services/secure_local_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:async';
-
-/// 📢 Reklam yönetici servisi
-///
-/// Google AdMob entegrasyonu için hazır yapı
-/// Şimdilik mock implementasyon, gerçek AdMob eklenebilir
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -26,7 +19,8 @@ class AdManager {
   int _adsShownCount = 0;
 
   // Reklam ayarları
-  static const int _gamesBeforeAd = 3; // Her 3 oyunda bir reklam
+  static const int _gamesBeforeInterstitial =
+      3; // Her 3 oyunda bir interstitial
   static const int _maxAdsPerSession = 10; // Oturum başına max reklam
 
   // Interstitial ad instance
@@ -52,15 +46,13 @@ class AdManager {
   /// Banner ad unit ID
   static String get bannerAdUnitId {
     if (kDebugMode) {
-      // Test ID'leri
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/6300978111' // Android test
           : 'ca-app-pub-3940256099942544/2934735716'; // iOS test
     } else {
-      // TODO: Gerçek AdMob ID'lerini buraya ekle
       return Platform.isAndroid
-          ? 'YOUR_ANDROID_BANNER_ID'
-          : 'YOUR_IOS_BANNER_ID';
+          ? 'ca-app-pub-5779807348211992/4555290310' // Android prod
+          : 'YOUR_IOS_BANNER_ID'; // iOS prod
     }
   }
 
@@ -72,8 +64,8 @@ class AdManager {
           : 'ca-app-pub-3940256099942544/4411468910'; // iOS test
     } else {
       return Platform.isAndroid
-          ? 'YOUR_ANDROID_INTERSTITIAL_ID'
-          : 'YOUR_IOS_INTERSTITIAL_ID';
+          ? 'ca-app-pub-5779807348211992/6241661981' // Android prod
+          : 'YOUR_IOS_INTERSTITIAL_ID'; // iOS prod
     }
   }
 
@@ -85,8 +77,8 @@ class AdManager {
           : 'ca-app-pub-3940256099942544/1712485313'; // iOS test
     } else {
       return Platform.isAndroid
-          ? 'YOUR_ANDROID_REWARDED_ID'
-          : 'YOUR_IOS_REWARDED_ID';
+          ? 'ca-app-pub-5779807348211992/8336524049' // Android prod
+          : 'YOUR_IOS_REWARDED_ID'; // iOS prod
     }
   }
 
@@ -134,11 +126,11 @@ class AdManager {
     _gamesPlayedCount++;
 
     // Her X oyunda bir reklam göster
-    if (_gamesPlayedCount % _gamesBeforeAd == 0 &&
+    if (_gamesPlayedCount % _gamesBeforeInterstitial == 0 &&
         _adsShownCount < _maxAdsPerSession &&
         _isInterstitialAdReady &&
         _interstitialAd != null) {
-      debugPrint('📢 Showing interstitial ad');
+      debugPrint('📢 Showing interstitial ad (Game: $_gamesPlayedCount)');
       _adsShownCount++;
 
       await _interstitialAd!.show();
@@ -151,8 +143,9 @@ class AdManager {
     if (!_canShowAd()) return false;
 
     bool rewarded = false;
+    final completer = Completer<bool>();
 
-    await RewardedAd.load(
+    RewardedAd.load(
       adUnitId: rewardedAdUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
@@ -162,10 +155,12 @@ class AdManager {
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
+              if (!completer.isCompleted) completer.complete(rewarded);
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
               debugPrint('❌ Rewarded ad failed to show: $error');
               ad.dispose();
+              if (!completer.isCompleted) completer.complete(false);
             },
           );
 
@@ -180,11 +175,33 @@ class AdManager {
         },
         onAdFailedToLoad: (error) {
           debugPrint('❌ Rewarded ad failed to load: $error');
+          if (!completer.isCompleted) completer.complete(false);
         },
       ),
     );
 
-    return rewarded;
+    return completer.future;
+  }
+
+  /// Premium reklam mantığı (her 5 oyunda bir)
+  Future<void> showPremiumAdIfNeeded({
+    required int gameEnterCount,
+    required String roomId,
+  }) async {
+    // Her 5 oyunda bir göster
+    if (gameEnterCount % 5 != 0) return;
+
+    debugPrint(
+      '💰 PREMIUM AD TRIGGERED (Game: $gameEnterCount, Room: $roomId)',
+    );
+
+    // Önce rewarded dene
+    final rewardedSuccess = await showRewardedAd();
+
+    if (!rewardedSuccess) {
+      // Rewarded yoksa interstitial
+      await showInterstitialAd();
+    }
   }
 
   /// Oyun bittiğinde çağır
@@ -215,31 +232,6 @@ class AdManager {
     }
 
     return true;
-  }
-
-  Future<void> showPremiumAdIfNeeded({
-    required int gameEnterCount,
-    required String roomId,
-  }) async {
-    final storage = SecureLocalStorage();
-
-    if (gameEnterCount % 5 != 0) return;
-
-    final alreadyShown = await storage.isRewardedShownForRoom(roomId);
-
-    if (alreadyShown) return;
-
-    debugPrint('💰 PREMIUM AD TRIGGERED');
-
-    // Önce ödüllü dene
-    final rewardedSuccess = await showRewardedAd();
-
-    if (!rewardedSuccess) {
-      // Ödüllü yoksa interstitial
-      await showInterstitialAd();
-    }
-
-    await storage.markRewardedShownForRoom(roomId);
   }
 
   /// Reklamları kapat (premium kullanıcılar için)
@@ -275,30 +267,4 @@ class AdManager {
   int get gamesPlayed => _gamesPlayedCount;
 
   int get adsShown => _adsShownCount;
-}
-
-/// 📢 AdMob entegrasyonu için ID'ler
-class AdIds {
-  // Test ID'leri
-  static const String testBanner = 'ca-app-pub-3940256099942544/6300978111';
-  static const String testInterstitial =
-      'ca-app-pub-3940256099942544/1033173712';
-  static const String testRewarded = 'ca-app-pub-3940256099942544/5224354917';
-
-  // TODO: Gerçek AdMob ID'lerini buraya ekle
-  // Prodüksiyon ID'leri
-  static const String prodBanner = 'ca-app-pub-5779807348211992/4555290310';
-  static const String prodInterstitial =
-      'ca-app-pub-5779807348211992/6241661981';
-  static const String prodRewarded = 'ca-app-pub-5779807348211992/8336524049';
-
-  // Ortama göre ID seç
-  static String get bannerId => kDebugMode ? testBanner : prodBanner;
-
-  static String get interstitialId =>
-      kDebugMode ? testInterstitial : prodInterstitial;
-
-  static String get rewardedId => kDebugMode ? testRewarded : prodRewarded;
-
-  AdIds._();
 }

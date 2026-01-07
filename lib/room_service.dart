@@ -1,88 +1,144 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'dart:math';
 
+/// 🎮 Generic Room Service - Tüm oyunlar için
 class RoomService {
-  final DatabaseReference _db = FirebaseDatabase.instance.ref();
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
-  String _createRoomCode() {
-    return DateTime.now().millisecondsSinceEpoch.toString().substring(7, 13);
+  /// Oda kodu oluştur
+  String generateRoomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final random = Random();
+    return String.fromCharCodes(
+      Iterable.generate(
+        6,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
   }
 
-  Future<String> createRoom({String word = 'FLUTTER'}) async {
-    final code = _createRoomCode();
-
-    await _db.child('rooms/$code').set({
-      'status': 'waiting',
-      'hostJoined': true,
-      'guestJoined': false,
-
-      // ✅ HANGMAN STATE
-      'word': word.toUpperCase(),
-      'maskedWord': List.filled(word.length, '_').join(' '),
-      'livesLeft': 6,
-      'guessedLetters': {}, // push ile ekleyeceğiz
-    });
-
-    return code;
+  /// Oda ID oluştur
+  String generateRoomId() {
+    return 'room_${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  Future<bool> joinRoom(String code) async {
-    final ref = _db.child('rooms/$code');
-    final snapshot = await ref.get();
-    if (!snapshot.exists) return false;
-
-    await ref.update({'guestJoined': true});
-    return true;
-  }
-
-  Future<void> startGame(String code) async {
-    await _db.child('rooms/$code').update({'status': 'playing'});
-  }
-
-  Stream<DatabaseEvent> roomStream(String code) {
-    return _db.child('rooms/$code').onValue;
-  }
-
-  // ✅ EKLENDİ: HANGMAN HARF TAHMİNİ
-  Future<void> guessLetter({
-    required String roomCode,
-    required String letter,
+  /// Oda oluştur (generic)
+  Future<String> createRoom({
+    required String gamePath,
+    required Map<String, dynamic> roomData,
   }) async {
-    final ref = _db.child('rooms/$roomCode');
-    final snapshot = await ref.get();
-    if (!snapshot.exists) return;
+    final roomId = generateRoomId();
+    await _database.child('$gamePath/$roomId').set(roomData);
+    return roomId;
+  }
 
-    final data = Map<String, dynamic>.from(snapshot.value as Map);
+  /// Oda koduna göre oda bul
+  Future<Map<String, dynamic>?> findRoomByCode({
+    required String gamePath,
+    required String roomCode,
+  }) async {
+    final snapshot = await _database
+        .child(gamePath)
+        .orderByChild('roomCode')
+        .equalTo(roomCode)
+        .once();
 
-    final word = (data['word'] ?? '').toString();
-    final masked = (data['maskedWord'] ?? '').toString().split(' ');
-    int lives = (data['livesLeft'] ?? 6) as int;
-
-    // Daha önce tahmin edildiyse tekrar işleme
-    final guessedMapRaw = data['guessedLetters'];
-    final guessed = <String>{};
-    if (guessedMapRaw != null) {
-      final gm = Map<String, dynamic>.from(guessedMapRaw as Map);
-      guessed.addAll(gm.values.map((e) => e.toString()));
+    if (snapshot.snapshot.value != null) {
+      final rooms = snapshot.snapshot.value as Map<dynamic, dynamic>;
+      final roomId = rooms.keys.first;
+      final room = Map<String, dynamic>.from(rooms[roomId] as Map);
+      room['id'] = roomId;
+      return room;
     }
-    if (guessed.contains(letter)) return;
+    return null;
+  }
 
-    bool correct = false;
+  /// Bekleyen odaları dinle
+  Stream<List<Map<String, dynamic>>> listenToWaitingRooms(String gamePath) {
+    return _database.child(gamePath).onValue.map((event) {
+      if (event.snapshot.value == null) return <Map<String, dynamic>>[];
 
-    for (int i = 0; i < word.length; i++) {
-      if (word[i] == letter) {
-        masked[i] = letter;
-        correct = true;
-      }
-    }
+      final rooms = event.snapshot.value as Map<dynamic, dynamic>;
+      final List<Map<String, dynamic>> roomList = [];
 
-    if (!correct) lives = lives - 1;
+      rooms.forEach((key, value) {
+        final room = Map<String, dynamic>.from(value as Map);
+        room['id'] = key;
+        if (room['status'] == 'waiting') {
+          roomList.add(room);
+        }
+      });
 
-    // guessedLetters'a ekle (push => map)
-    await ref.child('guessedLetters').push().set(letter);
-
-    await ref.update({
-      'maskedWord': masked.join(' '),
-      'livesLeft': lives,
+      return roomList;
     });
   }
+
+  /// Oda dinle
+  Stream<Map<String, dynamic>?> listenToRoom({
+    required String gamePath,
+    required String roomId,
+  }) {
+    return _database.child('$gamePath/$roomId').onValue.map((event) {
+      if (event.snapshot.value == null) return null;
+      return Map<String, dynamic>.from(event.snapshot.value as Map);
+    });
+  }
+
+  /// Oda güncelle
+  Future<void> updateRoom({
+    required String gamePath,
+    required String roomId,
+    required Map<String, dynamic> updates,
+  }) async {
+    await _database.child('$gamePath/$roomId').update(updates);
+  }
+
+  /// Oyuncu ekle
+  Future<void> addPlayer({
+    required String gamePath,
+    required String roomId,
+    required String playerKey,
+    required Map<String, dynamic> playerData,
+  }) async {
+    await _database
+        .child('$gamePath/$roomId/players/$playerKey')
+        .set(playerData);
+  }
+
+  /// Oyuncu güncelle
+  Future<void> updatePlayer({
+    required String gamePath,
+    required String roomId,
+    required String playerKey,
+    required Map<String, dynamic> updates,
+  }) async {
+    await _database
+        .child('$gamePath/$roomId/players/$playerKey')
+        .update(updates);
+  }
+
+  /// Oyun durumunu değiştir
+  Future<void> setGameStatus({
+    required String gamePath,
+    required String roomId,
+    required String status,
+  }) async {
+    await _database.child('$gamePath/$roomId/status').set(status);
+  }
+
+  /// Oda sil
+  Future<void> deleteRoom({
+    required String gamePath,
+    required String roomId,
+  }) async {
+    await _database.child('$gamePath/$roomId').remove();
+  }
+}
+
+/// 🎯 Oyun yolları
+class GamePaths {
+  static const String hangman = 'hangman_rooms';
+  static const String golf = 'golf_rooms';
+  static const String freeKick = 'freekick_rooms';
+  static const String racing = 'racing_rooms';
 }
