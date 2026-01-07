@@ -1,5 +1,3 @@
-import 'package:AZOyun/core/widgets/ad_trigger_widget.dart';
-import 'package:AZOyun/core/widgets/banner_ad.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:math';
@@ -38,11 +36,11 @@ class _GolfGameScreenState extends State<GolfGameScreen>
   Offset _dragStart = Offset.zero;
 
   AnimationController? _animationController;
+  bool _hasShownFinalScores = false;
 
   @override
   void initState() {
     super.initState();
-
     _listenToRoom();
     _animationController = AnimationController(
       vsync: this,
@@ -74,10 +72,12 @@ class _GolfGameScreenState extends State<GolfGameScreen>
           }
 
           // Oyun bitti mi kontrol et
-          if (data['status'] == 'finished') {
-            // Eğer dialog açık değilse final skorları göster
+          if (data['status'] == 'finished' && !_hasShownFinalScores) {
+            _hasShownFinalScores = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {}
+              if (mounted) {
+                _showFinalScores();
+              }
             });
           }
         });
@@ -94,13 +94,9 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     }
 
     setState(() {
-      // Friction
       _ballVelocity *= 0.98;
-
-      // Update position
       _ballPosition += _ballVelocity;
 
-      // Bounce off walls
       if (_ballPosition.dx < 20 ||
           _ballPosition.dx > MediaQuery.of(context).size.width - 20) {
         _ballVelocity = Offset(-_ballVelocity.dx * 0.7, _ballVelocity.dy);
@@ -123,8 +119,278 @@ class _GolfGameScreenState extends State<GolfGameScreen>
   void _checkIfInHole() {
     final distance = (_ballPosition - _holePosition).distance;
     if (distance < 25) {
+      _onHoleCompleted();
+    }
+  }
+
+  Future<void> _onHoleCompleted() async {
+    if (_myPlayerKey == null) return;
+
+    final currentShots = _roomData?['players'][_myPlayerKey]['shots'] ?? 0;
+    final currentHole = _roomData?['currentHole'] ?? 1;
+
+    // Delik skorunu kaydet
+    await _database
+        .child(
+          'golf_rooms/${widget.roomId}/players/$_myPlayerKey/holeScores/$currentHole',
+        )
+        .set(currentShots);
+
+    if (mounted) {
       _showHoleCompletedDialog();
     }
+  }
+
+  void _showHoleCompletedDialog() {
+    final currentHole = _roomData?['currentHole'] ?? 1;
+    final totalHoles = _roomData?['totalHoles'] ?? 9;
+    final currentShots = _roomData?['players'][_myPlayerKey]['shots'] ?? 0;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('🎉 Deliğe Girdi!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events, size: 64, color: Colors.amber),
+            const SizedBox(height: 16),
+            Text('Tebrikler ${widget.playerName}!', style: AppTextStyles.h5),
+            const SizedBox(height: 8),
+            Text(
+              'Delik $currentHole: $currentShots atış',
+              style: AppTextStyles.bodyLarge,
+            ),
+            const SizedBox(height: 16),
+            if (currentHole < totalHoles)
+              Text(
+                'Sıradaki delik: ${currentHole + 1}',
+                style: AppTextStyles.bodySmall,
+              ),
+          ],
+        ),
+        actions: [
+          GameButton(
+            text: currentHole >= totalHoles ? 'BİTİR' : 'DEVAM',
+            onPressed: () {
+              Navigator.pop(context);
+              _handleNextHoleOrFinish();
+            },
+            color: AppColors.golfPrimary,
+            width: double.infinity,
+            height: 48,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleNextHoleOrFinish() async {
+    final currentHole = _roomData?['currentHole'] ?? 1;
+    final totalHoles = _roomData?['totalHoles'] ?? 9;
+
+    if (currentHole >= totalHoles) {
+      // Oyun bitti
+      await _markPlayerAsFinished();
+      await _checkIfAllPlayersFinished();
+    } else {
+      // Sıradaki delik
+      await _resetForNextHole();
+      await _advanceHole();
+    }
+  }
+
+  Future<void> _resetForNextHole() async {
+    if (_myPlayerKey == null) return;
+
+    // Atış sayısını sıfırla
+    await _database
+        .child('golf_rooms/${widget.roomId}/players/$_myPlayerKey/shots')
+        .set(0);
+
+    // Ball pozisyonunu sıfırla
+    setState(() {
+      _ballPosition = const Offset(100, 400);
+      _ballVelocity = Offset.zero;
+    });
+  }
+
+  Future<void> _advanceHole() async {
+    final currentHole = _roomData?['currentHole'] ?? 1;
+
+    // Hole'u ilerlet (sadece bir kez)
+    if (widget.playerName == _roomData!['players']['player1']['name']) {
+      await _database
+          .child('golf_rooms/${widget.roomId}/currentHole')
+          .set(currentHole + 1);
+    }
+
+    // Yeni hole pozisyonu
+    setState(() {
+      _holePosition = Offset(
+        Random().nextDouble() * 250 + 75,
+        Random().nextDouble() * 200 + 100,
+      );
+    });
+  }
+
+  Future<void> _markPlayerAsFinished() async {
+    if (_myPlayerKey == null) return;
+
+    await _database
+        .child('golf_rooms/${widget.roomId}/players/$_myPlayerKey/isFinished')
+        .set(true);
+
+    await _database
+        .child('golf_rooms/${widget.roomId}/players/$_myPlayerKey/finishedAt')
+        .set(ServerValue.timestamp);
+  }
+
+  Future<void> _checkIfAllPlayersFinished() async {
+    final players = Map<String, dynamic>.from(_roomData!['players'] as Map);
+
+    final allFinished = players.values.every(
+      (player) => player['isFinished'] == true,
+    );
+
+    if (allFinished) {
+      await _database
+          .child('golf_rooms/${widget.roomId}/status')
+          .set('finished');
+      if (mounted && !_hasShownFinalScores) {
+        _hasShownFinalScores = true;
+        _showFinalScores();
+      }
+    } else {
+      if (mounted) {
+        _showWaitingForOthersDialog();
+      }
+    }
+  }
+
+  void _showWaitingForOthersDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: AlertDialog(
+          title: const Text('⏳ Oyun Devam Ediyor'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: AppColors.golfPrimary),
+              const SizedBox(height: 20),
+              Text(
+                'Tebrikler! Tüm delikleri tamamladınız!',
+                style: AppTextStyles.bodyLarge.bold,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Diğer oyuncular henüz bitirmedi.\nLütfen bekleyin...',
+                style: AppTextStyles.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFinalScores() {
+    if (_roomData == null) return;
+
+    final players = Map<String, dynamic>.from(_roomData!['players'] as Map);
+    final scores = <Map<String, dynamic>>[];
+
+    players.forEach((key, value) {
+      int totalScore = 0;
+      final holeScores = value['holeScores'];
+
+      if (holeScores != null) {
+        final holeScoresMap = Map<String, dynamic>.from(holeScores as Map);
+        holeScoresMap.forEach((hole, score) {
+          totalScore += score as int;
+        });
+      }
+
+      scores.add({'name': value['name'], 'score': totalScore});
+    });
+
+    scores.sort((a, b) => (a['score'] as int).compareTo(b['score'] as int));
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.emoji_events, color: Colors.amber, size: 32),
+            SizedBox(width: 12),
+            Text('🏆 Oyun Bitti!'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Kazanan: ${scores[0]['name']}',
+              style: AppTextStyles.h4.withColor(AppColors.golfPrimary),
+            ),
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 10),
+            Text('Final Skorları:', style: AppTextStyles.label),
+            const SizedBox(height: 12),
+            ...scores.asMap().entries.map((entry) {
+              final index = entry.key;
+              final player = entry.value;
+              final medal = index == 0
+                  ? '🥇'
+                  : index == 1
+                  ? '🥈'
+                  : index == 2
+                  ? '🥉'
+                  : '${index + 1}.';
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Text(medal, style: const TextStyle(fontSize: 20)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        player['name'],
+                        style: AppTextStyles.bodyLarge,
+                      ),
+                    ),
+                    Text(
+                      '${player['score']} atış',
+                      style: AppTextStyles.bodyLarge.bold,
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+        actions: [
+          GameButton(
+            text: 'ANA MENÜYE DÖN',
+            onPressed: () {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            color: AppColors.golfPrimary,
+            width: double.infinity,
+            height: 48,
+          ),
+        ],
+      ),
+    );
   }
 
   void _onDragStart(Offset position) {
@@ -167,7 +433,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
         .child('golf_rooms/${widget.roomId}/players/$_myPlayerKey/shots')
         .set(currentShots + 1);
 
-    // Next player
     _nextPlayer();
   }
 
@@ -182,69 +447,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
         .set(playerKeys[nextIndex]);
   }
 
-  void _showHoleCompletedDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('🎉 Deliğe Girdi!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.emoji_events, size: 64, color: Colors.amber),
-            const SizedBox(height: 16),
-            Text('Tebrikler ${widget.playerName}!', style: AppTextStyles.h5),
-            const SizedBox(height: 8),
-            Text(
-              'Atış sayısı: ${_roomData?['players'][_myPlayerKey]['shots'] ?? 0}',
-              style: AppTextStyles.bodyLarge,
-            ),
-          ],
-        ),
-        actions: [
-          GameButton(
-            text: 'DEVAM',
-            onPressed: () {
-              Navigator.pop(context);
-              _nextHole();
-            },
-            color: AppColors.golfPrimary,
-            width: double.infinity,
-            height: 48,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _nextHole() async {
-    final currentHole = _roomData?['currentHole'] ?? 1;
-    final totalHoles = _roomData?['totalHoles'] ?? 9;
-
-    if (currentHole >= totalHoles) {
-      _endGame();
-    } else {
-      await _database
-          .child('golf_rooms/${widget.roomId}/currentHole')
-          .set(currentHole + 1);
-
-      // Reset ball position
-      setState(() {
-        _ballPosition = const Offset(100, 400);
-        _ballVelocity = Offset.zero;
-        _holePosition = Offset(
-          Random().nextDouble() * 300 + 50,
-          Random().nextDouble() * 200 + 100,
-        );
-      });
-    }
-  }
-
-  void _endGame() {
-    // TODO: Show final scores
-    Navigator.of(context).popUntil((route) => route.isFirst);
-  }
-
   Future<void> _toggleReady() async {
     if (_myPlayerKey == null) return;
 
@@ -253,7 +455,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
         .child('golf_rooms/${widget.roomId}/players/$_myPlayerKey/isReady')
         .set(!isReady);
 
-    // Check if all players are ready
     final players = Map<String, dynamic>.from(_roomData!['players'] as Map);
     final allReady = players.values.every(
       (player) => player['isReady'] == true,
@@ -292,10 +493,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
           const SizedBox(height: 20),
           Text('Oyuncular (${players.length}/4)', style: AppTextStyles.h4),
           const SizedBox(height: 20),
-
-          /// ✅ REKLAM TETİKLEYİCİ (LOGIC BURADA)
-          AdTriggerWidget(roomId: widget.roomId),
-
           Expanded(
             child: ListView.builder(
               itemCount: players.length,
@@ -329,10 +526,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
               },
             ),
           ),
-
-          /// ✅ BANNER
-          const AdaptiveBannerAdWidget(),
-
           Padding(
             padding: const EdgeInsets.all(16),
             child: GameButton(
@@ -365,7 +558,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
         onPanEnd: (details) => _onDragEnd(details.localPosition),
         child: Stack(
           children: [
-            // Golf course background
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -378,8 +570,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
                 ),
               ),
             ),
-
-            // Hole
             Positioned(
               left: _holePosition.dx - 20,
               top: _holePosition.dy - 20,
@@ -395,8 +585,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
                 ),
               ),
             ),
-
-            // Golf ball
             Positioned(
               left: _ballPosition.dx - 15,
               top: _ballPosition.dy - 15,
@@ -416,14 +604,10 @@ class _GolfGameScreenState extends State<GolfGameScreen>
                 ),
               ),
             ),
-
-            // Aim line
             if (_isDragging)
               CustomPaint(
                 painter: AimLinePainter(start: _ballPosition, end: _dragStart),
               ),
-
-            // Turn indicator
             Positioned(
               top: 16,
               left: 16,
@@ -441,8 +625,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
                 ),
               ),
             ),
-
-            // Shots counter
             Positioned(
               bottom: 16,
               left: 16,
@@ -496,12 +678,10 @@ class AimLinePainter extends CustomPainter {
 
     canvas.drawLine(start, end, paint);
 
-    // Power indicator
     final distance = (start - end).distance;
     final maxDistance = 200.0;
     final power = (distance / maxDistance).clamp(0.0, 1.0);
 
-    // Draw power circles
     for (int i = 1; i <= 5; i++) {
       final alpha = power >= i / 5 ? 255 : 50;
       final circlePaint = Paint()
