@@ -27,6 +27,9 @@ dependencies:
   # Reklamlar
   google_mobile_ads: ^5.1.0
 
+  # UI
+  flutter_svg: ^2.0.10+1
+
   # Ses
   audioplayers: ^5.2.1
 
