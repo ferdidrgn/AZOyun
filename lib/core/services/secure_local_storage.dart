@@ -31,17 +31,14 @@ class SecureLocalStorage {
   }
 
   /// Ödüllü reklam gösterildi mi (aynı odada spam olmasın)
-  Future<bool> isRewardedShownForRoom(String roomId) async {
+  Future<bool> isRewardedShownForRoom(final String roomId) async {
     final value = await _storage.read(key: 'rewarded_$roomId');
     return value == 'true';
   }
 
-  Future<void> markRewardedShownForRoom(String roomId) async {
-    await _storage.write(key: 'rewarded_$roomId', value: 'true');
-  }
+  Future<void> markRewardedShownForRoom(final String roomId) =>
+      _storage.write(key: 'rewarded_$roomId', value: 'true');
 
   /// Reset (debug veya yeni session)
-  Future<void> resetCounters() async {
-    await _storage.delete(key: _gameEnterCountKey);
-  }
+  Future<void> resetCounters() => _storage.delete(key: _gameEnterCountKey);
 }
