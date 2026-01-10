@@ -1,0 +1,606 @@
+import 'package:AZOyun/core/services/ad_manager.dart';
+import 'package:AZOyun/core/theme/app_colors.dart';
+import 'package:AZOyun/core/theme/app_text_styles.dart';
+import 'package:AZOyun/core/widgets/banner_ad.dart';
+import 'package:AZOyun/core/widgets/game_button.dart';
+import 'package:AZOyun/features/golf/golf_game.dart';
+import 'package:AZOyun/room_service.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+/// ⛳ Golf Oda Ekranı - Host Kontrolü ve Oda Silme
+class GolfRoomScreen extends StatefulWidget {
+  final String roomId;
+  final String playerName;
+  final bool isHost;
+
+  const GolfRoomScreen({
+    super.key,
+    required this.roomId,
+    required this.playerName,
+    required this.isHost,
+  });
+
+  @override
+  State<GolfRoomScreen> createState() => _GolfRoomScreenState();
+}
+
+class _GolfRoomScreenState extends State<GolfRoomScreen>
+    with WidgetsBindingObserver {
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final RoomService _roomService = RoomService();
+  late DatabaseReference roomRef;
+
+  String roomCode = '';
+  String gameStatus = 'waiting';
+  Map<String, dynamic> players = {};
+  int currentHole = 1;
+  String? myPlayerKey;
+  bool isDisconnected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    roomRef = _database.child('golf_rooms/${widget.roomId}');
+    _listenToRoom();
+    _findMyPlayerKey();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _handleDisconnect();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _handleDisconnect();
+    }
+  }
+
+  Future<void> _findMyPlayerKey() async {
+    final snapshot = await roomRef.child('players').get();
+    if (!snapshot.exists) return;
+
+    final playerData = Map<String, dynamic>.from(snapshot.value as Map);
+
+    playerData.forEach((key, value) {
+      if (value['name'] == widget.playerName) {
+        myPlayerKey = key;
+      }
+    });
+  }
+
+  Future<void> _handleDisconnect() async {
+    if (isDisconnected) return;
+    isDisconnected = true;
+
+    try {
+      if (widget.isHost || gameStatus == 'finished') {
+        // Host ayrılırsa veya oyun bittiyse odayı sil
+        await _roomService.deleteRoom(
+          gamePath: GamePaths.golf,
+          roomId: widget.roomId,
+        );
+      } else if (myPlayerKey != null) {
+        // Normal oyuncu - sadece kendini çıkar
+        await roomRef.child('players/$myPlayerKey').remove();
+
+        // Kalan oyuncu varsa birini host yap
+        final snapshot = await roomRef.child('players').get();
+        if (snapshot.exists) {
+          final remainingPlayers = Map<String, dynamic>.from(
+            snapshot.value as Map,
+          );
+          if (remainingPlayers.isNotEmpty) {
+            final firstPlayerKey = remainingPlayers.keys.first;
+            await roomRef.child('players/$firstPlayerKey/isHost').set(true);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Disconnect error: $e');
+    }
+  }
+
+  void _listenToRoom() {
+    roomRef.onValue.listen((event) {
+      if (!mounted) return;
+
+      if (event.snapshot.value == null) {
+        // Oda silindi
+        _showRoomDeletedDialog();
+        return;
+      }
+
+      final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+
+      setState(() {
+        roomCode = data['roomCode'] ?? '';
+        gameStatus = data['status'] ?? 'waiting';
+        players = Map<String, dynamic>.from(data['players'] ?? {});
+        currentHole = data['currentHole'] ?? 1;
+      });
+
+      // Oyun başladı
+      if (gameStatus == 'playing' && mounted) {
+        _startGame();
+      }
+
+      // Oyun bitti
+      if (gameStatus == 'finished' && mounted) {
+        _showGameResults();
+      }
+    });
+  }
+
+  void _showRoomDeletedDialog() {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('⚠️ Oda Kapandı'),
+        content: const Text('Oda sahibi odayı kapattı veya oda silindi.'),
+        actions: [
+          GameButton(
+            text: 'TAMAM',
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _startGame() async {
+    if (gameStatus != 'playing') return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Üst bilgi
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: AppColors.primary,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Delik $currentHole/9',
+                          style: AppTextStyles.h5.white.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Oyun alanı
+                Expanded(
+                  child: GolfGame(
+                    roomId: widget.roomId,
+                    playerName: widget.playerName,
+                    onGameEvent: (msg) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(msg)));
+                    },
+                    onGameEnd: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+
+                // Skorlar
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.black87,
+                  child: _buildScoreboard(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScoreboard() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: players.entries.map((entry) {
+        final player = entry.value;
+        final totalScore = _calculateTotalScore(player['holeScores'] ?? {});
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  player['name'] ?? 'Oyuncu',
+                  style: AppTextStyles.bodyMedium.white,
+                ),
+              ),
+              Text(
+                'Atış: $totalScore',
+                style: AppTextStyles.bodyMedium.white.bold,
+              ),
+              if (player['isFinished'] == true)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: Colors.green,
+                    size: 20,
+                  ),
+                ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  int _calculateTotalScore(Map<dynamic, dynamic> holeScores) {
+    int total = 0;
+    holeScores.forEach((key, value) {
+      total += (value as int?) ?? 0;
+    });
+    return total;
+  }
+
+  Future<void> _startGameAsHost() async {
+    if (players.length < 2) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('En az 2 oyuncu gerekli!')));
+      return;
+    }
+
+    await _roomService.setGameStatus(
+      gamePath: GamePaths.golf,
+      roomId: widget.roomId,
+      status: 'playing',
+    );
+
+    // İlk oyuncuyu seç
+    await roomRef.update({'currentPlayer': 'player1'});
+  }
+
+  void _showGameResults() {
+    // Skorları hesapla
+    final scores = <String, int>{};
+
+    players.forEach((key, player) {
+      final holeScores = Map<dynamic, dynamic>.from(player['holeScores'] ?? {});
+      scores[player['name']] = _calculateTotalScore(holeScores);
+    });
+
+    // Sırala
+    final sortedScores = scores.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('🏆 Oyun Bitti!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...sortedScores.asMap().entries.map((entry) {
+              final index = entry.key;
+              final score = entry.value;
+              final medal = index == 0
+                  ? '🥇'
+                  : index == 1
+                  ? '🥈'
+                  : index == 2
+                  ? '🥉'
+                  : '  ';
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Text(medal, style: const TextStyle(fontSize: 24)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        score.key,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: index == 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${score.value} atış',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+        actions: [
+          GameButton(
+            text: 'KAPAT',
+            onPressed: () async {
+              // Odayı sil
+              await _roomService.deleteRoom(
+                gamePath: GamePaths.golf,
+                roomId: widget.roomId,
+              );
+
+              // Reklam göster
+              await AdManager().onGameEnd();
+
+              if (mounted) {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        await _handleDisconnect();
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.primary,
+        body: Container(
+          decoration: const BoxDecoration(gradient: AppColors.golfGradient),
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () async {
+                          await _handleDisconnect();
+                          if (mounted) Navigator.pop(context);
+                        },
+                      ),
+                      const Expanded(
+                        child: Text(
+                          '⛳ GOLF ODASI',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 48),
+                    ],
+                  ),
+                ),
+
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Oda kodu
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                const Text(
+                                  'ODA KODU',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      roomCode,
+                                      style: const TextStyle(
+                                        fontSize: 48,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 8,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.copy),
+                                      onPressed: () {
+                                        Clipboard.setData(
+                                          ClipboardData(text: roomCode),
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Kod kopyalandı!'),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 40),
+
+                          // Oyuncular
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.people,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Oyuncular (${players.length}/4)',
+                                      style: AppTextStyles.h5.white.bold,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                ...players.entries.map((entry) {
+                                  final player = entry.value;
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          player['isHost'] == true
+                                              ? Icons.star
+                                              : Icons.person,
+                                          color: Colors.yellow,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          player['name'] ?? 'Oyuncu',
+                                          style: AppTextStyles.bodyLarge.white,
+                                        ),
+                                        if (player['isHost'] == true)
+                                          Container(
+                                            margin: const EdgeInsets.only(
+                                              left: 8,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.yellow,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'HOST',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 40),
+
+                          // Başlat butonu (sadece host)
+                          if (widget.isHost && gameStatus == 'waiting')
+                            GameButton(
+                              text: 'OYUNU BAŞLAT',
+                              icon: Icons.play_arrow,
+                              onPressed: _startGameAsHost,
+                              color: Colors.green,
+                              width: 300,
+                              height: 60,
+                            ),
+
+                          if (!widget.isHost && gameStatus == 'waiting')
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    'Host oyunu başlatacak...',
+                                    style: AppTextStyles.bodyMedium.white,
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Banner Reklam
+                const AdaptiveBannerAdWidget(padding: EdgeInsets.zero),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
