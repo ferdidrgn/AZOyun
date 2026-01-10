@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-/// 📢 Reklam yönetici servisi - Google AdMob
+/// 📢 Reklam yönetici servisi - SAYAÇ KONTROLLÜ
 class AdManager {
   static final AdManager _instance = AdManager._internal();
 
@@ -18,10 +18,9 @@ class AdManager {
   int _gamesPlayedCount = 0;
   int _adsShownCount = 0;
 
-  // Reklam ayarları
-  static const int _gamesBeforeInterstitial =
-      3; // Her 3 oyunda bir interstitial
-  static const int _maxAdsPerSession = 10; // Oturum başına max reklam
+  // Reklam ayarları - DAHA AZ REKLAM
+  static const int _gamesBeforeInterstitial = 5; // Her 5 oyunda bir
+  static const int _maxAdsPerSession = 6; // Oturum başına max 6 reklam
 
   // Interstitial ad instance
   InterstitialAd? _interstitialAd;
@@ -34,9 +33,7 @@ class AdManager {
     try {
       await MobileAds.instance.initialize();
       _isInitialized = true;
-      debugPrint('📢 AdManager initialized with Google AdMob');
-
-      // İlk interstitial ad'ı yükle
+      debugPrint('📢 AdManager initialized');
       _loadInterstitialAd();
     } catch (e) {
       debugPrint('❌ AdManager initialization failed: $e');
@@ -47,12 +44,12 @@ class AdManager {
   static String get bannerAdUnitId {
     if (kDebugMode) {
       return Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/6300978111' // Android test
-          : 'ca-app-pub-3940256099942544/2934735716'; // iOS test
+          ? 'ca-app-pub-3940256099942544/6300978111'
+          : 'ca-app-pub-3940256099942544/2934735716';
     } else {
       return Platform.isAndroid
-          ? 'ca-app-pub-5779807348211992/4555290310' // Android prod
-          : 'YOUR_IOS_BANNER_ID'; // iOS prod
+          ? 'ca-app-pub-5779807348211992/4555290310'
+          : 'YOUR_IOS_BANNER_ID';
     }
   }
 
@@ -60,25 +57,12 @@ class AdManager {
   static String get interstitialAdUnitId {
     if (kDebugMode) {
       return Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/1033173712' // Android test
-          : 'ca-app-pub-3940256099942544/4411468910'; // iOS test
+          ? 'ca-app-pub-3940256099942544/1033173712'
+          : 'ca-app-pub-3940256099942544/4411468910';
     } else {
       return Platform.isAndroid
-          ? 'ca-app-pub-5779807348211992/6241661981' // Android prod
-          : 'YOUR_IOS_INTERSTITIAL_ID'; // iOS prod
-    }
-  }
-
-  /// Rewarded ad unit ID
-  static String get rewardedAdUnitId {
-    if (kDebugMode) {
-      return Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/5224354917' // Android test
-          : 'ca-app-pub-3940256099942544/1712485313'; // iOS test
-    } else {
-      return Platform.isAndroid
-          ? 'ca-app-pub-5779807348211992/8336524049' // Android prod
-          : 'YOUR_IOS_REWARDED_ID'; // iOS prod
+          ? 'ca-app-pub-5779807348211992/6241661981'
+          : 'YOUR_IOS_INTERSTITIAL_ID';
     }
   }
 
@@ -88,130 +72,67 @@ class AdManager {
       adUnitId: interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
+        onAdLoaded: (final ad) {
           _interstitialAd = ad;
           _isInterstitialAdReady = true;
           debugPrint('📢 Interstitial ad loaded');
 
           _interstitialAd!.fullScreenContentCallback =
               FullScreenContentCallback(
-                onAdDismissedFullScreenContent: (ad) {
+                onAdDismissedFullScreenContent: (final ad) {
                   debugPrint('📢 Interstitial ad dismissed');
                   ad.dispose();
                   _isInterstitialAdReady = false;
-                  _loadInterstitialAd(); // Yeni ad yükle
+                  _loadInterstitialAd();
                 },
-                onAdFailedToShowFullScreenContent: (ad, error) {
-                  debugPrint('❌ Interstitial ad failed to show: $error');
+                onAdFailedToShowFullScreenContent: (final ad, final error) {
+                  debugPrint('❌ Interstitial ad failed: $error');
                   ad.dispose();
                   _isInterstitialAdReady = false;
                   _loadInterstitialAd();
                 },
               );
         },
-        onAdFailedToLoad: (error) {
+        onAdFailedToLoad: (final error) {
           debugPrint('❌ Interstitial ad failed to load: $error');
           _isInterstitialAdReady = false;
-          // 30 saniye sonra tekrar dene
           Future.delayed(const Duration(seconds: 30), _loadInterstitialAd);
         },
       ),
     );
   }
 
-  /// Interstitial (tam ekran) reklam göster
+  /// Interstitial reklam göster - SAYAÇ KONTROLLÜ
   Future<void> showInterstitialAd() async {
     if (!_canShowAd()) return;
 
     _gamesPlayedCount++;
 
-    // Her X oyunda bir reklam göster
+    // SADECE HER 5 OYUNDA BİR GÖSTER
     if (_gamesPlayedCount % _gamesBeforeInterstitial == 0 &&
         _adsShownCount < _maxAdsPerSession &&
         _isInterstitialAdReady &&
         _interstitialAd != null) {
-      debugPrint('📢 Showing interstitial ad (Game: $_gamesPlayedCount)');
+      debugPrint('📢 Showing interstitial (Game: $_gamesPlayedCount)');
       _adsShownCount++;
 
       await _interstitialAd!.show();
       _isInterstitialAdReady = false;
+    } else {
+      debugPrint(
+        '⏭️ Skipping ad (Game: $_gamesPlayedCount / Next at: ${(_gamesPlayedCount ~/ _gamesBeforeInterstitial + 1) * _gamesBeforeInterstitial})',
+      );
     }
-  }
-
-  /// Rewarded (ödüllü) reklam göster
-  Future<bool> showRewardedAd() async {
-    if (!_canShowAd()) return false;
-
-    bool rewarded = false;
-    final completer = Completer<bool>();
-
-    RewardedAd.load(
-      adUnitId: rewardedAdUnitId,
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) async {
-          debugPrint('📢 Rewarded ad loaded');
-
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              if (!completer.isCompleted) completer.complete(rewarded);
-            },
-            onAdFailedToShowFullScreenContent: (ad, error) {
-              debugPrint('❌ Rewarded ad failed to show: $error');
-              ad.dispose();
-              if (!completer.isCompleted) completer.complete(false);
-            },
-          );
-
-          await ad.show(
-            onUserEarnedReward: (ad, reward) {
-              debugPrint(
-                '🎁 User earned reward: ${reward.amount} ${reward.type}',
-              );
-              rewarded = true;
-            },
-          );
-        },
-        onAdFailedToLoad: (error) {
-          debugPrint('❌ Rewarded ad failed to load: $error');
-          if (!completer.isCompleted) completer.complete(false);
-        },
-      ),
-    );
-
-    return completer.future;
-  }
-
-  /// Premium reklam mantığı (her 5 oyunda bir)
-  Future<void> showPremiumAdIfNeeded({
-    required int gameEnterCount,
-    required String roomId,
-  }) async {
-    // Her 5 oyunda bir göster
-    if (gameEnterCount % 5 != 0) return;
-
-    debugPrint(
-      '💰 PREMIUM AD TRIGGERED (Game: $gameEnterCount, Room: $roomId)',
-    );
-
-    // Önce rewarded dene
-    final rewardedSuccess = await showRewardedAd();
-
-    if (!rewardedSuccess) {
-      // Rewarded yoksa interstitial
-      await showInterstitialAd();
-    }
-  }
-
-  /// Oyun bittiğinde çağır
-  Future<void> onGameEnd() async {
-    await showInterstitialAd();
   }
 
   /// Oyun başladığında çağır
   void onGameStart() {
-    debugPrint('🎮 Game started - total games: $_gamesPlayedCount');
+    debugPrint('🎮 Game started - total: $_gamesPlayedCount');
+  }
+
+  /// Oyun bittiğinde çağır - SAYAÇ KONTROLLÜ
+  Future<void> onGameEnd() async {
+    await showInterstitialAd();
   }
 
   /// Reklam gösterilip gösterilemeyeceğini kontrol et
@@ -222,7 +143,7 @@ class AdManager {
     }
 
     if (!_showAds) {
-      debugPrint('⚠️ Ads are disabled');
+      debugPrint('⚠️ Ads disabled');
       return false;
     }
 
@@ -234,7 +155,7 @@ class AdManager {
     return true;
   }
 
-  /// Reklamları kapat (premium kullanıcılar için)
+  /// Reklamları kapat
   void disableAds() {
     _showAds = false;
     debugPrint('📢 Ads disabled');

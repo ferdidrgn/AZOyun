@@ -1,4 +1,3 @@
-import 'package:AZOyun/features/golf/golf_game_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -6,6 +5,7 @@ import 'dart:math';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/game_button.dart';
+import 'golf_game_screen.dart';
 
 class GolfLobbyScreen extends StatefulWidget {
   const GolfLobbyScreen({super.key});
@@ -38,8 +38,11 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen> {
         rooms.forEach((key, value) {
           final room = Map<String, dynamic>.from(value as Map);
           room['id'] = key;
-          if (room['status'] == 'waiting' && room['players'].length < 4) {
-            roomList.add(room);
+          if (room['status'] == 'waiting' && room['players'] != null) {
+            final players = Map<String, dynamic>.from(room['players'] as Map);
+            if (players.length < 4) {
+              roomList.add(room);
+            }
           }
         });
 
@@ -78,19 +81,29 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen> {
     final roomCode = _generateRoomCode();
     final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}';
 
-    await _roomsRef.child(roomId).set({
-      'status': 'waiting',
-      'roomCode': roomCode,
-      'players': {
-        'player1': {'name': _playerName, 'score': 0, 'isReady': false},
-      },
-      'currentHole': 1,
-      'totalHoles': 9,
-      'createdAt': ServerValue.timestamp,
-    });
+    try {
+      await _roomsRef.child(roomId).set({
+        'status': 'waiting',
+        'roomCode': roomCode,
+        'players': {
+          'player1': {
+            'name': _playerName,
+            'shots': 0,
+            'isReady': false,
+            'holeScores': {},
+            'isFinished': false,
+          },
+        },
+        'currentHole': 1,
+        'totalHoles': 9,
+        'createdAt': ServerValue.timestamp,
+      });
 
-    if (mounted) {
-      _showRoomCodeDialog(roomCode, roomId);
+      if (mounted) {
+        _showRoomCodeDialog(roomCode, roomId);
+      }
+    } catch (e) {
+      _showError('Oda oluşturma hatası: $e');
     }
   }
 
@@ -109,7 +122,7 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Arkadaşlarına bu kodu ver:', style: AppTextStyles.bodyLarge),
+            Text('Arkadaşına bu kodu ver:', style: AppTextStyles.bodyLarge),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(20),
@@ -139,12 +152,6 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen> {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'En fazla 4 oyuncu katılabilir',
-              style: AppTextStyles.bodySmall,
-              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -213,55 +220,81 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen> {
   }
 
   Future<void> _findAndJoinRoom(String roomCode) async {
-    final snapshot = await _roomsRef
-        .orderByChild('roomCode')
-        .equalTo(roomCode)
-        .once();
+    try {
+      final snapshot = await _roomsRef
+          .orderByChild('roomCode')
+          .equalTo(roomCode)
+          .once();
 
-    if (snapshot.snapshot.value != null) {
-      final rooms = snapshot.snapshot.value as Map<dynamic, dynamic>;
-      final roomId = rooms.keys.first;
-      final room = Map<String, dynamic>.from(rooms[roomId] as Map);
+      if (snapshot.snapshot.value != null) {
+        final rooms = snapshot.snapshot.value as Map<dynamic, dynamic>;
+        final roomId = rooms.keys.first;
+        final room = Map<String, dynamic>.from(rooms[roomId] as Map);
 
-      if (room['status'] == 'waiting') {
-        final players = Map<String, dynamic>.from(room['players'] as Map);
-        if (players.length < 4) {
-          await _joinRoom(roomId, isCreator: false);
+        if (room['status'] == 'waiting') {
+          final players = Map<String, dynamic>.from(room['players'] as Map);
+          if (players.length < 4) {
+            await _joinRoom(roomId, isCreator: false);
+          } else {
+            _showError('Oda dolu!');
+          }
         } else {
-          _showError('Oda dolu!');
+          _showError('Oyun başlamış!');
         }
       } else {
-        _showError('Oyun başlamış!');
+        _showError('Oda bulunamadı!');
       }
-    } else {
-      _showError('Oda bulunamadı!');
+    } catch (e) {
+      _showError('Oda arama hatası: $e');
     }
   }
 
   Future<void> _joinRoom(String roomId, {bool isCreator = false}) async {
-    if (!isCreator) {
-      // Mevcut oyuncu sayısını al
-      final snapshot = await _roomsRef.child(roomId).once();
-      final room = Map<String, dynamic>.from(snapshot.snapshot.value as Map);
-      final players = Map<String, dynamic>.from(room['players'] as Map);
-
-      final playerKey = 'player${players.length + 1}';
-
-      await _roomsRef.child('$roomId/players/$playerKey').set({
-        'name': _playerName,
-        'score': 0,
-        'isReady': false,
-      });
+    // İSİM KONTROLÜ - MUTLAKA OLMALI
+    if (_playerName == null || _playerName!.isEmpty) {
+      _showNameDialog();
+      return;
     }
 
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              GolfGameScreen(roomId: roomId, playerName: _playerName!),
-        ),
-      );
+    try {
+      if (!isCreator) {
+        final snapshot = await _roomsRef.child(roomId).get();
+        if (!snapshot.exists) {
+          _showError('Oda bulunamadı!');
+          return;
+        }
+
+        final room = Map<String, dynamic>.from(snapshot.value as Map);
+        final players = Map<String, dynamic>.from(room['players'] as Map);
+
+        final playerKey = 'player${players.length + 1}';
+
+        await _roomsRef.child('$roomId/players/$playerKey').set({
+          'name': _playerName,
+          'shots': 0,
+          'isReady': false,
+          'holeScores': {},
+          'isFinished': false,
+        });
+
+        // 2 oyuncu olunca otomatik başlat
+        await _roomsRef.child(roomId).update({'status': 'playing'});
+      }
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => GolfGameScreen(
+              roomId: roomId,
+              playerName: _playerName!,
+              isPlayer1: isCreator,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      _showError('Odaya katılma hatası: $e');
     }
   }
 
@@ -300,9 +333,11 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.error),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+    }
   }
 
   @override
@@ -438,9 +473,14 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen> {
                             title: Text(
                               players['player1']['name'],
                               style: AppTextStyles.playerName,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                             subtitle: Text(
-                              '$playerCount/4 oyuncu • Kod: ${room['roomCode']}',
+                              '$playerCount/4 • ${room['roomCode']}',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: const TextStyle(fontSize: 12),
                             ),
                             trailing: GameButton(
                               text: 'KATIL',

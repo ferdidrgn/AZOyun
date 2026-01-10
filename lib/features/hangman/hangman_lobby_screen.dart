@@ -1,8 +1,11 @@
-import 'package:AZOyun/features/hangman/hangman_game_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'dart:math';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/game_button.dart';
+import 'hangman_game_screen.dart';
 
 class HangmanLobbyScreen extends StatefulWidget {
   const HangmanLobbyScreen({super.key});
@@ -19,7 +22,6 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
   final TextEditingController _roomCodeController = TextEditingController();
   String? _playerName;
   List<Map<String, dynamic>> _availableRooms = [];
-  String? _myRoomCode;
 
   @override
   void initState() {
@@ -36,7 +38,6 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
         rooms.forEach((key, value) {
           final room = Map<String, dynamic>.from(value as Map);
           room['id'] = key;
-          // Sadece bekleyen odaları göster
           if (room['status'] == 'waiting') {
             roomList.add(room);
           }
@@ -77,22 +78,22 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
     final roomCode = _generateRoomCode();
     final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}';
 
-    await _roomsRef.child(roomId).set({
-      'status': 'waiting',
-      'roomCode': roomCode,
-      'player1': {'name': _playerName, 'score': 0},
-      'player2': null,
-      'currentRound': 1,
-      'totalRounds': 3,
-      'createdAt': ServerValue.timestamp,
-    });
+    try {
+      await _roomsRef.child(roomId).set({
+        'status': 'waiting',
+        'roomCode': roomCode,
+        'player1': {'name': _playerName, 'score': 0},
+        'player2': null,
+        'currentRound': 1,
+        'totalRounds': 6, // 6 EL
+        'createdAt': ServerValue.timestamp,
+      });
 
-    setState(() {
-      _myRoomCode = roomCode;
-    });
-
-    if (mounted) {
-      _showRoomCodeDialog(roomCode, roomId);
+      if (mounted) {
+        _showRoomCodeDialog(roomCode, roomId);
+      }
+    } catch (e) {
+      _showError('Oda oluşturma hatası: $e');
     }
   }
 
@@ -101,84 +102,70 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.share, color: Colors.blue),
-            SizedBox(width: 10),
-            Text('Oda Oluşturuldu!'),
+            const Icon(Icons.share, color: AppColors.hangmanPrimary),
+            const SizedBox(width: 10),
+            const Text('Oda Oluşturuldu!'),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Arkadaşına bu kodu ver:',
-              style: TextStyle(fontSize: 16),
-            ),
+            Text('Arkadaşına bu kodu ver:', style: AppTextStyles.bodyLarge),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: AppColors.hangmanPrimary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue, width: 2),
+                border: Border.all(color: AppColors.hangmanPrimary, width: 2),
               ),
               child: Column(
                 children: [
                   Text(
                     roomCode,
-                    style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 8,
-                      color: Colors.blue,
+                    style: AppTextStyles.code.withColor(
+                      AppColors.hangmanPrimary,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  ElevatedButton.icon(
+                  GameButton(
+                    text: 'KOPYALA',
+                    icon: Icons.copy,
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: roomCode));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Oda kodu kopyalandı!'),
-                          duration: Duration(seconds: 2),
-                        ),
+                        const SnackBar(content: Text('Oda kodu kopyalandı!')),
                       );
                     },
-                    icon: const Icon(Icons.copy),
-                    label: const Text('KOPYALA'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
+                    color: AppColors.hangmanPrimary,
+                    height: 45,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Arkadaşın "ODA KODUNA KATIL" butonuna tıklayıp bu kodu girecek',
+            Text(
+              '6 el oynayacaksınız!',
+              style: AppTextStyles.bodySmall,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],
         ),
         actions: [
-          TextButton(
+          GameButton(
+            text: 'LOBİYE GİT',
             onPressed: () {
               Navigator.pop(context);
-              _waitInRoom(roomId);
+              _joinRoom(roomId, isCreator: true);
             },
-            child: const Text('TAMAM, BEKLİYORUM'),
+            color: AppColors.hangmanPrimary,
+            height: 48,
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _waitInRoom(String roomId) async {
-    // Oda ekranına git ve bekle
-    _joinRoom(roomId, isCreator: true);
   }
 
   Future<void> _joinRoomByCode() async {
@@ -199,21 +186,10 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
               decoration: const InputDecoration(
                 hintText: 'Örn: ABC123',
                 border: OutlineInputBorder(),
-                counterText: '',
               ),
               textCapitalization: TextCapitalization.characters,
               maxLength: 6,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Arkadaşından aldığın 6 haneli kodu gir',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: AppTextStyles.code,
               textAlign: TextAlign.center,
             ),
           ],
@@ -223,7 +199,8 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('İPTAL'),
           ),
-          ElevatedButton(
+          GameButton(
+            text: 'KATIL',
             onPressed: () async {
               final code = _roomCodeController.text.toUpperCase().trim();
               if (code.length == 6) {
@@ -231,11 +208,9 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
                 await _findAndJoinRoom(code);
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('KATIL'),
+            color: AppColors.hangmanPrimary,
+            width: 100,
+            height: 40,
           ),
         ],
       ),
@@ -243,66 +218,59 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
   }
 
   Future<void> _findAndJoinRoom(String roomCode) async {
-    // Tüm odaları tara ve room code'u eşleşeni bul
-    final snapshot = await _roomsRef
-        .orderByChild('roomCode')
-        .equalTo(roomCode)
-        .once();
+    try {
+      final snapshot = await _roomsRef
+          .orderByChild('roomCode')
+          .equalTo(roomCode)
+          .once();
 
-    if (snapshot.snapshot.value != null) {
-      final rooms = snapshot.snapshot.value as Map<dynamic, dynamic>;
-      final roomId = rooms.keys.first;
-      final room = Map<String, dynamic>.from(rooms[roomId] as Map);
+      if (snapshot.snapshot.value != null) {
+        final rooms = snapshot.snapshot.value as Map<dynamic, dynamic>;
+        final roomId = rooms.keys.first;
+        final room = Map<String, dynamic>.from(rooms[roomId] as Map);
 
-      if (room['status'] == 'waiting') {
-        await _joinRoom(roomId, isCreator: false);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Bu oda dolu veya oyun başlamış!'),
-              backgroundColor: Colors.red,
-            ),
-          );
+        if (room['status'] == 'waiting') {
+          await _joinRoom(roomId, isCreator: false);
+        } else {
+          _showError('Oyun başlamış!');
         }
+      } else {
+        _showError('Oda bulunamadı!');
       }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Oda bulunamadı! Kodu kontrol et.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    } catch (e) {
+      _showError('Oda arama hatası: $e');
     }
   }
 
   Future<void> _joinRoom(String roomId, {bool isCreator = false}) async {
-    if (!isCreator) {
-      if (_playerName == null || _playerName!.isEmpty) {
-        _showNameDialog();
-        return;
-      }
-
-      // Player 2 olarak katıl
-      await _roomsRef.child(roomId).update({
-        'player2': {'name': _playerName, 'score': 0},
-        'status': 'playing',
-      });
+    // İSİM KONTROLÜ - MUTLAKA OLMALI
+    if (_playerName == null || _playerName!.isEmpty) {
+      _showNameDialog();
+      return;
     }
 
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HangmanGameScreen(
-            roomId: roomId,
-            playerName: _playerName!,
-            isPlayer1: isCreator,
+    try {
+      if (!isCreator) {
+        await _roomsRef.child(roomId).update({
+          'player2': {'name': _playerName, 'score': 0},
+          'status': 'playing',
+        });
+      }
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HangmanGameScreen(
+              roomId: roomId,
+              playerName: _playerName!,
+              isPlayer1: isCreator,
+            ),
           ),
-        ),
-      );
+        );
+      }
+    } catch (e) {
+      _showError('Odaya katılma hatası: $e');
     }
   }
 
@@ -319,17 +287,10 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
             border: OutlineInputBorder(),
           ),
           autofocus: true,
-          onSubmitted: (value) {
-            if (value.isNotEmpty) {
-              setState(() {
-                _playerName = value;
-              });
-              Navigator.pop(context);
-            }
-          },
         ),
         actions: [
-          TextButton(
+          GameButton(
+            text: 'TAMAM',
             onPressed: () {
               if (_nameController.text.isNotEmpty) {
                 setState(() {
@@ -338,19 +299,29 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
                 Navigator.pop(context);
               }
             },
-            child: const Text('TAMAM'),
+            color: AppColors.hangmanPrimary,
+            width: double.infinity,
+            height: 48,
           ),
         ],
       ),
     );
   }
 
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Adam Asmaca - Lobi'),
-        backgroundColor: Colors.red,
+        title: const Text('🎯 Adam Asmaca'),
+        backgroundColor: AppColors.hangmanPrimary,
         foregroundColor: Colors.white,
       ),
       body: Container(
@@ -358,7 +329,7 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.red.shade100, Colors.red.shade50],
+            colors: [AppColors.hangmanPrimary.withOpacity(0.1), Colors.white],
           ),
         ),
         child: Column(
@@ -380,21 +351,17 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.person, color: Colors.red, size: 30),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Hoşgeldin, $_playerName!',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    const Icon(
+                      Icons.person,
+                      color: AppColors.hangmanPrimary,
+                      size: 30,
                     ),
+                    const SizedBox(width: 12),
+                    Text('Hoşgeldin, $_playerName!', style: AppTextStyles.h5),
                     const Spacer(),
                     TextButton(
                       onPressed: () {
-                        setState(() {
-                          _playerName = null;
-                        });
+                        setState(() => _playerName = null);
                         _showNameDialog();
                       },
                       child: const Text('Değiştir'),
@@ -407,64 +374,19 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Oda Oluştur Butonu
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _createRoom,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_circle_outline, size: 24),
-                          SizedBox(width: 8),
-                          Text(
-                            'YENİ ODA OLUŞTUR',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  GameButton(
+                    text: 'YENİ ODA OLUŞTUR',
+                    icon: Icons.add_circle_outline,
+                    onPressed: _createRoom,
+                    color: AppColors.hangmanPrimary,
                   ),
                   const SizedBox(height: 12),
-                  // Oda Koduna Katıl Butonu
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _joinRoomByCode,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.green,
-                        side: const BorderSide(color: Colors.green, width: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.vpn_key, size: 24),
-                          SizedBox(width: 8),
-                          Text(
-                            'ODA KODUNA KATIL',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  GameButton(
+                    text: 'ODA KODUNA KATIL',
+                    icon: Icons.vpn_key,
+                    onPressed: _joinRoomByCode,
+                    color: AppColors.hangmanPrimary,
+                    isOutlined: true,
                   ),
                 ],
               ),
@@ -472,22 +394,13 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
 
             const Divider(thickness: 2),
 
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.list, color: Colors.grey),
-                  SizedBox(width: 8),
-                  Text(
-                    'Yakındaki Odalar',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  Spacer(),
-                  Icon(Icons.info_outline, color: Colors.grey, size: 20),
+                  const Icon(Icons.list, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text('Mevcut Odalar', style: AppTextStyles.h5),
                 ],
               ),
             ),
@@ -500,81 +413,56 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
                         children: [
                           const Icon(Icons.inbox, size: 64, color: Colors.grey),
                           const SizedBox(height: 16),
-                          const Text(
-                            'Yakında oda yok',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 40),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              '💡 İpucu: Arkadaşınla oynamak için "Oda Oluştur" ile oda aç ve kodu paylaş!',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.blue),
-                            ),
+                          Text(
+                            'Henüz oda yok',
+                            style: AppTextStyles.h5.withColor(Colors.grey),
                           ),
                         ],
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.all(16),
                       itemCount: _availableRooms.length,
                       itemBuilder: (context, index) {
                         final room = _availableRooms[index];
+                        final hostName = room['player1']['name'];
+
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
                           child: ListTile(
-                            contentPadding: const EdgeInsets.all(16),
                             leading: Container(
                               width: 50,
                               height: 50,
                               decoration: BoxDecoration(
-                                color: Colors.red.shade100,
+                                color: AppColors.hangmanPrimary.withOpacity(
+                                  0.2,
+                                ),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Icon(
                                 Icons.gamepad,
-                                color: Colors.red,
+                                color: AppColors.hangmanPrimary,
                                 size: 30,
                               ),
                             ),
                             title: Text(
-                              room['player1']['name'],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
+                              hostName,
+                              style: AppTextStyles.playerName,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Rakip bekliyor...'),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Kod: ${room['roomCode']}',
-                                  style: TextStyle(
-                                    color: Colors.blue.shade700,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            subtitle: Text(
+                              'Rakip bekliyor • ${room['roomCode']} • 6 El',
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: const TextStyle(fontSize: 12),
                             ),
-                            trailing: ElevatedButton(
+                            trailing: GameButton(
+                              text: 'KATIL',
                               onPressed: () => _joinRoom(room['id']),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('KATIL'),
+                              color: AppColors.hangmanPrimary,
+                              width: 80,
+                              height: 36,
                             ),
                           ),
                         );
