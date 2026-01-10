@@ -1,8 +1,9 @@
 import 'dart:math';
+
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
-/// 🎮 BASIT GOLF OYUNU - Flutter Canvas ile
+/// 🎮 GOLF OYUNU - Sıra Hatası Düzeltildi
 class GolfGame extends StatefulWidget {
   final String roomId;
   final String playerName;
@@ -26,7 +27,6 @@ class _GolfGameState extends State<GolfGame>
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
   late DatabaseReference roomRef;
 
-  // Oyun değişkenleri
   Offset ballPosition = const Offset(0.5, 0.9);
   Offset holePosition = const Offset(0.5, 0.1);
   Offset? dragStart;
@@ -62,17 +62,14 @@ class _GolfGameState extends State<GolfGame>
   }
 
   void _setupHole() {
-    // Top pozisyonu - her zaman aşağıda başlar
     ballPosition = Offset(0.5, 0.9);
     ballVelocity = Offset.zero;
 
-    // Delik pozisyonu - yukarıda
     holePosition = Offset(
       0.3 + _random.nextDouble() * 0.4,
       0.1 + _random.nextDouble() * 0.05,
     );
 
-    // Engeller
     obstacles.clear();
     windmills.clear();
     windmillAngles.clear();
@@ -87,7 +84,6 @@ class _GolfGameState extends State<GolfGame>
       );
     }
 
-    // Yel değirmeni (delik 2'den itibaren)
     if (currentHole >= 2) {
       final windmillCount = min((currentHole - 1) ~/ 2, 2);
       for (int i = 0; i < windmillCount; i++) {
@@ -106,7 +102,7 @@ class _GolfGameState extends State<GolfGame>
   }
 
   void _listenToRoom() {
-    roomRef.onValue.listen((event) {
+    roomRef.onValue.listen((final event) {
       if (event.snapshot.value == null || !mounted) return;
 
       final data = Map<String, dynamic>.from(event.snapshot.value as Map);
@@ -114,7 +110,7 @@ class _GolfGameState extends State<GolfGame>
       // Player key bul
       if (myPlayerKey == null) {
         final players = Map<String, dynamic>.from(data['players'] as Map);
-        players.forEach((key, value) {
+        players.forEach((final key, final value) {
           if (value['name'] == widget.playerName) {
             myPlayerKey = key;
           }
@@ -141,16 +137,16 @@ class _GolfGameState extends State<GolfGame>
     if (!ballMoving) return;
 
     setState(() {
-      // Hareket
       ballPosition = Offset(
-        ballPosition.dx + ballVelocity.dx * 0.016,
-        ballPosition.dy + ballVelocity.dy * 0.016,
+        ballPosition.dx + ballVelocity.dx * 0.025,
+        ballPosition.dy + ballVelocity.dy * 0.025,
       );
 
-      // Sürtünme
-      ballVelocity = Offset(ballVelocity.dx * 0.97, ballVelocity.dy * 0.97);
+      ballVelocity = Offset(
+        ballVelocity.dx * 0.98,
+        ballVelocity.dy * 0.98,
+      );
 
-      // Sınır kontrolleri
       if (ballPosition.dx < 0.03 || ballPosition.dx > 0.97) {
         ballVelocity = Offset(-ballVelocity.dx * 0.7, ballVelocity.dy);
         ballPosition = Offset(
@@ -184,7 +180,6 @@ class _GolfGameState extends State<GolfGame>
             sin(angle) * ballVelocity.distance * 0.7,
           );
 
-          // Topun engelenin içinden çıkmasını sağla
           ballPosition = Offset(
             obstacle.dx + cos(angle) * 0.06,
             obstacle.dy + sin(angle) * 0.06,
@@ -194,7 +189,7 @@ class _GolfGameState extends State<GolfGame>
 
       // Yel değirmeni çarpışması
       for (int i = 0; i < windmills.length; i++) {
-        windmillAngles[i] += 0.05; // Döndür
+        windmillAngles[i] += 0.05;
 
         final windmill = windmills[i];
         final distance = sqrt(
@@ -203,7 +198,6 @@ class _GolfGameState extends State<GolfGame>
         );
 
         if (distance < 0.08) {
-          // Yel değirmenine çarptı - sert çarpış
           final dx = ballPosition.dx - windmill.dx;
           final dy = ballPosition.dy - windmill.dy;
           final angle = atan2(dy, dx);
@@ -212,13 +206,10 @@ class _GolfGameState extends State<GolfGame>
         }
       }
 
-      // Durdu mu?
       if (ballVelocity.distance < 0.001) {
         ballMoving = false;
         _animationController.stop();
         ballVelocity = Offset.zero;
-
-        // Deliğe girdi mi?
         _checkHole();
       }
     });
@@ -266,21 +257,26 @@ class _GolfGameState extends State<GolfGame>
       final players = Map<String, dynamic>.from(data['players'] as Map);
 
       final allFinished = players.values.every(
-        (player) => player['isFinished'] == true,
+            (final player) => player['isFinished'] == true,
       );
 
       if (allFinished) {
         if (currentHole >= 9) {
+          // Oyun bitti
           await roomRef.update({'status': 'finished'});
         } else {
-          // Sadece player1 günceller
-          final isPlayer1 = myPlayerKey == 'player1';
-          if (isPlayer1) {
-            await roomRef.update({'currentHole': currentHole + 1});
+          // Sonraki delik - SADECE PLAYER1
+          if (myPlayerKey == 'player1') {
+            // Tüm oyuncuları resetle
+            final updates = <String, dynamic>{
+              'currentHole': currentHole + 1,
+            };
 
             for (var key in players.keys) {
-              await roomRef.update({'players/$key/isFinished': false});
+              updates['players/$key/isFinished'] = false;
             }
+
+            await roomRef.update(updates);
           }
         }
       }
@@ -289,7 +285,7 @@ class _GolfGameState extends State<GolfGame>
     }
   }
 
-  void _onPanStart(DragStartDetails details, Size size) {
+  void _onPanStart(final DragStartDetails details, final Size size) {
     if (ballMoving || isMyFinished) return;
 
     dragStart = Offset(
@@ -299,7 +295,7 @@ class _GolfGameState extends State<GolfGame>
     dragCurrent = dragStart;
   }
 
-  void _onPanUpdate(DragUpdateDetails details, Size size) {
+  void _onPanUpdate(final DragUpdateDetails details, final Size size) {
     if (dragStart == null) return;
 
     setState(() {
@@ -310,7 +306,7 @@ class _GolfGameState extends State<GolfGame>
     });
   }
 
-  void _onPanEnd(DragEndDetails details, Size size) {
+  void _onPanEnd(final DragEndDetails details, final Size size) {
     if (dragStart == null || dragCurrent == null) return;
 
     final delta = Offset(
@@ -318,7 +314,7 @@ class _GolfGameState extends State<GolfGame>
       dragStart!.dy - dragCurrent!.dy,
     );
 
-    final power = (delta.distance * 3).clamp(0.3, 2.0);
+    final power = (delta.distance * 5).clamp(0.5, 3.5);
 
     setState(() {
       myShots++;
@@ -331,20 +327,21 @@ class _GolfGameState extends State<GolfGame>
 
     _animationController.repeat();
 
-    // Firebase'e kaydet
     if (myPlayerKey != null) {
       roomRef.update({'players/$myPlayerKey/shots': myShots});
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return LayoutBuilder(
-      builder: (context, constraints) {
+      builder: (final context, final constraints) {
         return GestureDetector(
-          onPanStart: (details) => _onPanStart(details, constraints.biggest),
-          onPanUpdate: (details) => _onPanUpdate(details, constraints.biggest),
-          onPanEnd: (details) => _onPanEnd(details, constraints.biggest),
+          onPanStart: (final details) =>
+              _onPanStart(details, constraints.biggest),
+          onPanUpdate: (final details) =>
+              _onPanUpdate(details, constraints.biggest),
+          onPanEnd: (final details) => _onPanEnd(details, constraints.biggest),
           child: CustomPaint(
             size: constraints.biggest,
             painter: GolfPainter(
@@ -396,8 +393,7 @@ class GolfPainter extends CustomPainter {
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    // Arkaplan - çim
+  void paint(final Canvas canvas, final Size size) {
     final grassGradient = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
@@ -412,7 +408,6 @@ class GolfPainter extends CustomPainter {
         ),
     );
 
-    // Çizgiler (saha deseni)
     final linePaint = Paint()
       ..color = Colors.white.withOpacity(0.1)
       ..strokeWidth = 1;
@@ -422,24 +417,15 @@ class GolfPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
     }
 
-    // Delik
     _drawHole(canvas, size);
-
-    // Engeller
     _drawObstacles(canvas, size);
-
-    // Yel değirmenleri
     _drawWindmills(canvas, size);
-
-    // Top
     _drawBall(canvas, size);
 
-    // Güç göstergesi
     if (dragStart != null && dragCurrent != null && !ballMoving) {
       _drawPowerIndicator(canvas, size);
     }
 
-    // Finished overlay
     if (isFinished) {
       canvas.drawRect(
         Rect.fromLTWH(0, 0, size.width, size.height),
@@ -448,11 +434,10 @@ class GolfPainter extends CustomPainter {
     }
   }
 
-  void _drawHole(Canvas canvas, Size size) {
+  void _drawHole(final Canvas canvas, final Size size) {
     final holeX = holePosition.dx * size.width;
     final holeY = holePosition.dy * size.height;
 
-    // Gölge
     canvas.drawCircle(
       Offset(holeX + 2, holeY + 2),
       size.width * 0.025,
@@ -461,14 +446,12 @@ class GolfPainter extends CustomPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4),
     );
 
-    // Delik
     canvas.drawCircle(
       Offset(holeX, holeY),
       size.width * 0.025,
       Paint()..color = Colors.black,
     );
 
-    // Bayrak
     final flagPaint = Paint()
       ..color = Colors.red
       ..style = PaintingStyle.fill;
@@ -481,7 +464,6 @@ class GolfPainter extends CustomPainter {
 
     canvas.drawPath(flagPath, flagPaint);
 
-    // Bayrak direği
     canvas.drawLine(
       Offset(holeX + size.width * 0.015, holeY),
       Offset(holeX + size.width * 0.015, holeY - size.width * 0.04),
@@ -491,13 +473,12 @@ class GolfPainter extends CustomPainter {
     );
   }
 
-  void _drawObstacles(Canvas canvas, Size size) {
+  void _drawObstacles(final Canvas canvas, final Size size) {
     for (var obstacle in obstacles) {
       final x = obstacle.dx * size.width;
       final y = obstacle.dy * size.height;
       final radius = size.width * 0.04;
 
-      // Gölge
       canvas.drawCircle(
         Offset(x + 3, y + 3),
         radius,
@@ -506,7 +487,6 @@ class GolfPainter extends CustomPainter {
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6),
       );
 
-      // Kaya
       final rockGradient = RadialGradient(
         colors: [Color(0xFF8B4513), Color(0xFF654321)],
       );
@@ -520,7 +500,6 @@ class GolfPainter extends CustomPainter {
           ),
       );
 
-      // Işık yansıması
       canvas.drawCircle(
         Offset(x - radius * 0.3, y - radius * 0.3),
         radius * 0.3,
@@ -529,21 +508,19 @@ class GolfPainter extends CustomPainter {
     }
   }
 
-  void _drawWindmills(Canvas canvas, Size size) {
+  void _drawWindmills(final Canvas canvas, final Size size) {
     for (int i = 0; i < windmills.length; i++) {
       final windmill = windmills[i];
       final x = windmill.dx * size.width;
       final y = windmill.dy * size.height;
       final angle = windmillAngles[i];
 
-      // Yel değirmeni tabanı
       canvas.drawCircle(
         Offset(x, y),
         size.width * 0.02,
         Paint()..color = Color(0xFF8B4513),
       );
 
-      // Kanatlar
       final wingLength = size.width * 0.06;
 
       for (int j = 0; j < 4; j++) {
@@ -579,12 +556,11 @@ class GolfPainter extends CustomPainter {
     }
   }
 
-  void _drawBall(Canvas canvas, Size size) {
+  void _drawBall(final Canvas canvas, final Size size) {
     final x = ballPosition.dx * size.width;
     final y = ballPosition.dy * size.height;
     final radius = size.width * 0.02;
 
-    // Gölge
     canvas.drawCircle(
       Offset(x + 2, y + 3),
       radius * 0.8,
@@ -593,10 +569,8 @@ class GolfPainter extends CustomPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4),
     );
 
-    // Top
     canvas.drawCircle(Offset(x, y), radius, Paint()..color = Colors.white);
 
-    // Işık yansıması
     canvas.drawCircle(
       Offset(x - radius * 0.4, y - radius * 0.4),
       radius * 0.4,
@@ -604,7 +578,7 @@ class GolfPainter extends CustomPainter {
     );
   }
 
-  void _drawPowerIndicator(Canvas canvas, Size size) {
+  void _drawPowerIndicator(final Canvas canvas, final Size size) {
     if (dragStart == null || dragCurrent == null) return;
 
     final startX = ballPosition.dx * size.width;
@@ -617,7 +591,6 @@ class GolfPainter extends CustomPainter {
     final distance = sqrt(dx * dx + dy * dy);
     final power = (distance / size.width * 3).clamp(0.0, 1.0);
 
-    // Çizgi
     final linePaint = Paint()
       ..color = Color.lerp(Colors.white, Colors.red, power)!
       ..strokeWidth = 4
@@ -629,7 +602,6 @@ class GolfPainter extends CustomPainter {
       linePaint,
     );
 
-    // Güç çemberleri
     for (int i = 1; i <= 5; i++) {
       final alpha = power >= i / 5 ? 255 : 60;
       final t = i / 6;
@@ -643,5 +615,5 @@ class GolfPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant final CustomPainter oldDelegate) => true;
 }

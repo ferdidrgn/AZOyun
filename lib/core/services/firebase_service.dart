@@ -27,8 +27,8 @@ class FirebaseService {
 
   /// Oda oluştur
   Future<String> createRoom(
-    String gamePath,
-    Map<String, dynamic> roomData,
+    final String gamePath,
+    final Map<String, dynamic> roomData,
   ) async {
     final roomRef = _database.child(gamePath).push();
     await roomRef.set(roomData);
@@ -37,32 +37,32 @@ class FirebaseService {
 
   /// Oda güncelle
   Future<void> updateRoom(
-    String gamePath,
-    String roomId,
-    Map<String, dynamic> updates,
+    final String gamePath,
+    final String roomId,
+    final Map<String, dynamic> updates,
   ) async {
     await _database.child('$gamePath/$roomId').update(updates);
   }
 
   /// Oda sil
-  Future<void> deleteRoom(String gamePath, String roomId) async {
+  Future<void> deleteRoom(final String gamePath, final String roomId) async {
     await _database.child('$gamePath/$roomId').remove();
   }
 
   /// Oda dinle
-  Stream<DatabaseEvent> listenToRoom(String gamePath, String roomId) {
+  Stream<DatabaseEvent> listenToRoom(final String gamePath, final String roomId) {
     return _database.child('$gamePath/$roomId').onValue;
   }
 
   /// Tüm odaları dinle
-  Stream<DatabaseEvent> listenToRooms(String gamePath) {
+  Stream<DatabaseEvent> listenToRooms(final String gamePath) {
     return _database.child(gamePath).onValue;
   }
 
   /// Oda koduna göre oda bul
   Future<Map<String, dynamic>?> findRoomByCode(
-    String gamePath,
-    String roomCode,
+    final String gamePath,
+    final String roomCode,
   ) async {
     final snapshot = await _database
         .child(gamePath)
@@ -81,7 +81,7 @@ class FirebaseService {
   }
 
   /// Bekleyen odaları getir
-  Future<List<Map<String, dynamic>>> getWaitingRooms(String gamePath) async {
+  Future<List<Map<String, dynamic>>> getWaitingRooms(final String gamePath) async {
     final snapshot = await _database
         .child(gamePath)
         .orderByChild('status')
@@ -91,7 +91,7 @@ class FirebaseService {
     final List<Map<String, dynamic>> rooms = [];
     if (snapshot.snapshot.value != null) {
       final data = snapshot.snapshot.value as Map<dynamic, dynamic>;
-      data.forEach((key, value) {
+      data.forEach((final key, final value) {
         final room = Map<String, dynamic>.from(value as Map);
         room['id'] = key;
         rooms.add(room);
@@ -102,14 +102,14 @@ class FirebaseService {
 
   /// Kullanıcı istatistiklerini güncelle
   Future<void> updateUserStats(
-    String userId,
-    Map<String, dynamic> stats,
+    final String userId,
+    final Map<String, dynamic> stats,
   ) async {
     await userStats.child(userId).update(stats);
   }
 
   /// Kullanıcı istatistiklerini getir
-  Future<Map<String, dynamic>?> getUserStats(String userId) async {
+  Future<Map<String, dynamic>?> getUserStats(final String userId) async {
     final snapshot = await userStats.child(userId).once();
     if (snapshot.snapshot.value != null) {
       return Map<String, dynamic>.from(snapshot.snapshot.value as Map);
@@ -119,7 +119,7 @@ class FirebaseService {
 
   /// Bağlantı durumunu kontrol et
   Stream<bool> get connectionState {
-    return _database.child('.info/connected').onValue.map((event) {
+    return _database.child('.info/connected').onValue.map((final event) {
       return event.snapshot.value as bool? ?? false;
     });
   }

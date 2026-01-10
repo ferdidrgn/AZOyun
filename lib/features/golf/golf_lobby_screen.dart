@@ -1,12 +1,16 @@
+import 'package:AZOyun/core/services/ad_manager.dart';
+import 'package:AZOyun/core/services/secure_local_storage.dart';
+import 'package:AZOyun/core/theme/app_colors.dart';
+import 'package:AZOyun/core/theme/app_text_styles.dart';
+import 'package:AZOyun/core/widgets/game_button.dart';
+import 'package:AZOyun/features/golf/golf_room_screen.dart';
+import 'package:AZOyun/room_service.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'dart:math';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
-import '../../core/widgets/game_button.dart';
-import 'golf_game_screen.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// ⛳ Golf Lobi Ekranı - İsim Kontrolü Eklendi
 class GolfLobbyScreen extends StatefulWidget {
   const GolfLobbyScreen({super.key});
 
@@ -15,486 +19,413 @@ class GolfLobbyScreen extends StatefulWidget {
 }
 
 class _GolfLobbyScreenState extends State<GolfLobbyScreen> {
-  final DatabaseReference _roomsRef = FirebaseDatabase.instance.ref(
-    'golf_rooms',
-  );
+  final RoomService _roomService = RoomService();
+  final TextEditingController _codeController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _roomCodeController = TextEditingController();
-  String? _playerName;
-  List<Map<String, dynamic>> _availableRooms = [];
+
+  String? playerName;
+  bool isLoading = false;
+
+  static const _secureStore = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
 
   @override
   void initState() {
     super.initState();
-    _listenToRooms();
+    _loadPlayerName();
   }
 
-  void _listenToRooms() {
-    _roomsRef.onValue.listen((event) {
-      if (event.snapshot.value != null) {
-        final rooms = event.snapshot.value as Map<dynamic, dynamic>;
-        final List<Map<String, dynamic>> roomList = [];
-
-        rooms.forEach((key, value) {
-          final room = Map<String, dynamic>.from(value as Map);
-          room['id'] = key;
-          if (room['status'] == 'waiting' && room['players'] != null) {
-            final players = Map<String, dynamic>.from(room['players'] as Map);
-            if (players.length < 4) {
-              roomList.add(room);
-            }
-          }
-        });
-
-        if (mounted) {
-          setState(() {
-            _availableRooms = roomList;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _availableRooms = [];
-          });
-        }
-      }
-    });
+  // OKUMA: Artık çok daha kolay
+  Future<void> _loadPlayerName() async {
+    final savedName = await _secureStore.read(key: 'player_name');
+    if (savedName != null) {
+      setState(() {
+        playerName = savedName;
+        _nameController.text = savedName;
+      });
+    } else {
+      _showNameDialog();
+    }
   }
 
-  String _generateRoomCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final random = Random();
-    return String.fromCharCodes(
-      Iterable.generate(
-        6,
-        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+  // YAZMA: Tek satır
+  Future<void> _savePlayerName(final String name) async {
+    await _secureStore.write(key: 'player_name', value: name);
+    setState(() => playerName = name);
+  }
+
+  Future<void> _showNameDialog() async {
+    final nameCtrl = TextEditingController(text: playerName ?? '');
+
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (final context) => AlertDialog(
+        title: const Text('👤 İsminiz'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Lütfen oyunda görünecek isminizi girin:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'İsim',
+                border: OutlineInputBorder(),
+                hintText: 'Örn: Ali',
+              ),
+              maxLength: 15,
+              textCapitalization: TextCapitalization.words,
+            ),
+          ],
+        ),
+        actions: [
+          GameButton(
+            text: 'KAYDET',
+            onPressed: () {
+              final name = nameCtrl.text.trim();
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('İsim boş olamaz!')),
+                );
+                return;
+              }
+              _savePlayerName(name);
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ),
     );
   }
 
   Future<void> _createRoom() async {
-    if (_playerName == null || _playerName!.isEmpty) {
-      _showNameDialog();
-      return;
+    if (playerName == null || playerName!.isEmpty) {
+      await _showNameDialog();
+      if (playerName == null || playerName!.isEmpty) return;
     }
 
-    final roomCode = _generateRoomCode();
-    final roomId = 'room_${DateTime.now().millisecondsSinceEpoch}';
-
+    setState(() => isLoading = true);
+    await SecureLocalStorage().incrementGameEnterCount();
     try {
-      await _roomsRef.child(roomId).set({
-        'status': 'waiting',
-        'roomCode': roomCode,
-        'players': {
-          'player1': {
-            'name': _playerName,
-            'shots': 0,
-            'isReady': false,
-            'holeScores': {},
-            'isFinished': false,
+      final roomCode = _roomService.generateRoomCode();
+      final roomId = await _roomService.createRoom(
+        gamePath: GamePaths.golf,
+        roomData: {
+          'roomCode': roomCode,
+          'status': 'waiting',
+          'currentHole': 1,
+          'maxPlayers': 4,
+          'createdAt': ServerValue.timestamp,
+          'players': {
+            'player1': {
+              'name': playerName,
+              'isHost': true,
+              'isFinished': false,
+              'shots': 0,
+              'holeScores': {},
+            },
           },
         },
-        'currentHole': 1,
-        'totalHoles': 9,
-        'createdAt': ServerValue.timestamp,
-      });
+      );
 
       if (mounted) {
-        _showRoomCodeDialog(roomCode, roomId);
-      }
-    } catch (e) {
-      _showError('Oda oluşturma hatası: $e');
-    }
-  }
-
-  void _showRoomCodeDialog(String roomCode, String roomId) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.share, color: AppColors.golfPrimary),
-            const SizedBox(width: 10),
-            const Text('Oda Oluşturuldu!'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Arkadaşına bu kodu ver:', style: AppTextStyles.bodyLarge),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.golfPrimary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.golfPrimary, width: 2),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    roomCode,
-                    style: AppTextStyles.code.withColor(AppColors.golfPrimary),
-                  ),
-                  const SizedBox(height: 10),
-                  GameButton(
-                    text: 'KOPYALA',
-                    icon: Icons.copy,
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: roomCode));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Oda kodu kopyalandı!')),
-                      );
-                    },
-                    color: AppColors.golfPrimary,
-                    height: 45,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          GameButton(
-            text: 'LOBİYE GİT',
-            onPressed: () {
-              Navigator.pop(context);
-              _joinRoom(roomId, isCreator: true);
-            },
-            color: AppColors.golfPrimary,
-            height: 48,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _joinRoomByCode() async {
-    if (_playerName == null || _playerName!.isEmpty) {
-      _showNameDialog();
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Oda Kodunu Gir'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _roomCodeController,
-              decoration: const InputDecoration(
-                hintText: 'Örn: ABC123',
-                border: OutlineInputBorder(),
-              ),
-              textCapitalization: TextCapitalization.characters,
-              maxLength: 6,
-              style: AppTextStyles.code,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İPTAL'),
-          ),
-          GameButton(
-            text: 'KATIL',
-            onPressed: () async {
-              final code = _roomCodeController.text.toUpperCase().trim();
-              if (code.length == 6) {
-                Navigator.pop(context);
-                await _findAndJoinRoom(code);
-              }
-            },
-            color: AppColors.golfPrimary,
-            width: 100,
-            height: 40,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _findAndJoinRoom(String roomCode) async {
-    try {
-      final snapshot = await _roomsRef
-          .orderByChild('roomCode')
-          .equalTo(roomCode)
-          .once();
-
-      if (snapshot.snapshot.value != null) {
-        final rooms = snapshot.snapshot.value as Map<dynamic, dynamic>;
-        final roomId = rooms.keys.first;
-        final room = Map<String, dynamic>.from(rooms[roomId] as Map);
-
-        if (room['status'] == 'waiting') {
-          final players = Map<String, dynamic>.from(room['players'] as Map);
-          if (players.length < 4) {
-            await _joinRoom(roomId, isCreator: false);
-          } else {
-            _showError('Oda dolu!');
-          }
-        } else {
-          _showError('Oyun başlamış!');
-        }
-      } else {
-        _showError('Oda bulunamadı!');
-      }
-    } catch (e) {
-      _showError('Oda arama hatası: $e');
-    }
-  }
-
-  Future<void> _joinRoom(String roomId, {bool isCreator = false}) async {
-    // İSİM KONTROLÜ - MUTLAKA OLMALI
-    if (_playerName == null || _playerName!.isEmpty) {
-      _showNameDialog();
-      return;
-    }
-
-    try {
-      if (!isCreator) {
-        final snapshot = await _roomsRef.child(roomId).get();
-        if (!snapshot.exists) {
-          _showError('Oda bulunamadı!');
-          return;
-        }
-
-        final room = Map<String, dynamic>.from(snapshot.value as Map);
-        final players = Map<String, dynamic>.from(room['players'] as Map);
-
-        final playerKey = 'player${players.length + 1}';
-
-        await _roomsRef.child('$roomId/players/$playerKey').set({
-          'name': _playerName,
-          'shots': 0,
-          'isReady': false,
-          'holeScores': {},
-          'isFinished': false,
-        });
-
-        // 2 oyuncu olunca otomatik başlat
-        await _roomsRef.child(roomId).update({'status': 'playing'});
-      }
-
-      if (mounted) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => GolfGameScreen(
+            builder: (final context) => GolfRoomScreen(
               roomId: roomId,
-              playerName: _playerName!,
-              isPlayer1: isCreator,
+              playerName: playerName!,
+              isHost: true,
             ),
           ),
         );
       }
     } catch (e) {
-      _showError('Odaya katılma hatası: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
-  void _showNameDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('İsim Girin'),
-        content: TextField(
-          controller: _nameController,
-          decoration: const InputDecoration(
-            hintText: 'Adınızı girin',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          GameButton(
-            text: 'TAMAM',
-            onPressed: () {
-              if (_nameController.text.isNotEmpty) {
-                setState(() {
-                  _playerName = _nameController.text;
-                });
-                Navigator.pop(context);
-              }
-            },
-            color: AppColors.golfPrimary,
-            width: double.infinity,
-            height: 48,
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _joinRoom() async {
+    if (playerName == null || playerName!.isEmpty) {
+      await _showNameDialog();
+      if (playerName == null || playerName!.isEmpty) return;
+    }
 
-  void _showError(String message) {
-    if (mounted) {
+    final code = _codeController.text.trim().toUpperCase();
+
+    if (code.isEmpty || code.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: AppColors.error),
+        const SnackBar(content: Text('Geçerli bir kod girin (6 karakter)')),
       );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final room = await _roomService.findRoomByCode(
+        gamePath: GamePaths.golf,
+        roomCode: code,
+      );
+
+      if (room == null) {
+        throw 'Oda bulunamadı';
+      }
+
+      if (room['status'] != 'waiting') {
+        throw 'Oyun başlamış';
+      }
+
+      final players = Map<String, dynamic>.from(room['players'] ?? {});
+      final maxPlayers = room['maxPlayers'] ?? 4;
+
+      if (players.length >= maxPlayers) {
+        throw 'Oda dolu';
+      }
+
+      // Boş oyuncu slotu bul
+      String? playerKey;
+      for (int i = 1; i <= maxPlayers; i++) {
+        if (!players.containsKey('player$i')) {
+          playerKey = 'player$i';
+          break;
+        }
+      }
+
+      if (playerKey == null) throw 'Oda dolu';
+
+      await _roomService.addPlayer(
+        gamePath: GamePaths.golf,
+        roomId: room['id'],
+        playerKey: playerKey,
+        playerData: {
+          'name': playerName,
+          'isHost': false,
+          'isFinished': false,
+          'shots': 0,
+          'holeScores': {},
+        },
+      );
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (final context) => GolfRoomScreen(
+              roomId: room['id'],
+              playerName: playerName!,
+              isHost: false,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('⛳ Mini Golf'),
-        backgroundColor: AppColors.golfPrimary,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: AppColors.primary,
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.golfPrimary.withOpacity(0.1), Colors.white],
-          ),
-        ),
-        child: Column(
-          children: [
-            if (_playerName != null)
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
+        decoration: const BoxDecoration(gradient: AppColors.golfGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.person,
-                      color: AppColors.golfPrimary,
-                      size: 30,
-                    ),
-                    const SizedBox(width: 12),
-                    Text('Hoşgeldin, $_playerName!', style: AppTextStyles.h5),
-                    const Spacer(),
-                    TextButton(
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () {
-                        setState(() => _playerName = null);
-                        _showNameDialog();
+                        AdManager().onGameEnd(); // Reklam göster
+                        Navigator.pop(context);
                       },
-                      child: const Text('Değiştir'),
                     ),
+                    const Expanded(
+                      child: Text(
+                        '⛳ MİNİ GOLF',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
 
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  GameButton(
-                    text: 'YENİ ODA OLUŞTUR',
-                    icon: Icons.add_circle_outline,
-                    onPressed: _createRoom,
-                    color: AppColors.golfPrimary,
-                  ),
-                  const SizedBox(height: 12),
-                  GameButton(
-                    text: 'ODA KODUNA KATIL',
-                    icon: Icons.vpn_key,
-                    onPressed: _joinRoomByCode,
-                    color: AppColors.golfPrimary,
-                    isOutlined: true,
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(thickness: 2),
-
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.list, color: Colors.grey),
-                  const SizedBox(width: 8),
-                  Text('Mevcut Odalar', style: AppTextStyles.h5),
-                ],
-              ),
-            ),
-
-            Expanded(
-              child: _availableRooms.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.inbox, size: 64, color: Colors.grey),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Henüz oda yok',
-                            style: AppTextStyles.h5.withColor(Colors.grey),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _availableRooms.length,
-                      itemBuilder: (context, index) {
-                        final room = _availableRooms[index];
-                        final players = Map<String, dynamic>.from(
-                          room['players'] as Map,
-                        );
-                        final playerCount = players.length;
-
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: AppColors.golfPrimary.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.golf_course,
-                                color: AppColors.golfPrimary,
-                                size: 30,
-                              ),
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // İsim kartı
+                        if (playerName != null)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            title: Text(
-                              players['player1']['name'],
-                              style: AppTextStyles.playerName,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                            subtitle: Text(
-                              '$playerCount/4 • ${room['roomCode']}',
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            trailing: GameButton(
-                              text: 'KATIL',
-                              onPressed: () => _joinRoom(room['id']),
-                              color: AppColors.golfPrimary,
-                              width: 80,
-                              height: 36,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.person, color: Colors.white),
+                                const SizedBox(width: 8),
+                                Text(
+                                  playerName!,
+                                  style: AppTextStyles.h5.white.bold,
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  onPressed: _showNameDialog,
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
+
+                        const SizedBox(height: 40),
+
+                        // Oda oluştur
+                        GameButton(
+                          text: 'YENİ ODA OLUŞTUR',
+                          icon: Icons.add_circle,
+                          onPressed: isLoading ? null : _createRoom,
+                          isLoading: isLoading,
+                          color: Colors.green,
+                          width: 300,
+                          height: 60,
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        const Text(
+                          'VEYA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Koda katıl
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              TextField(
+                                controller: _codeController,
+                                decoration: const InputDecoration(
+                                  labelText: 'ODA KODU',
+                                  labelStyle: TextStyle(color: Colors.white),
+                                  hintText: '6 haneli kod',
+                                  hintStyle: TextStyle(color: Colors.white54),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: Colors.white),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white24,
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  letterSpacing: 4,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLength: 6,
+                                textCapitalization:
+                                    TextCapitalization.characters,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp('[A-Z0-9]'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              GameButton(
+                                text: 'ODAYA KATIL',
+                                icon: Icons.login,
+                                onPressed: isLoading ? null : _joinRoom,
+                                color: Colors.orange,
+                                width: double.infinity,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        // Bilgi
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.info_outline,
+                                color: Colors.white,
+                                size: 40,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '9 delik golf parkuru\n2-4 oyuncu\nEn az vuruşla bitiren kazanır!',
+                                style: AppTextStyles.bodyMedium.white,
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-            ),
-          ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -502,8 +433,8 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen> {
 
   @override
   void dispose() {
+    _codeController.dispose();
     _nameController.dispose();
-    _roomCodeController.dispose();
     super.dispose();
   }
 }
