@@ -4,6 +4,7 @@ import 'package:AZOyun/core/theme/app_text_styles.dart';
 import 'package:AZOyun/core/widgets/banner_ad.dart';
 import 'package:AZOyun/core/widgets/game_button.dart';
 import 'package:AZOyun/features/hangman/hangman_game.dart';
+import 'package:AZOyun/features/hangman/hangman_game_screen.dart';
 import 'package:AZOyun/room_service.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -191,17 +192,10 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
 
                   // Oyun
                   Expanded(
-                    child: HangmanGame(
+                    child: HangmanGameScreen(
                       roomId: widget.roomId,
                       playerName: widget.playerName,
-                      onGameEvent: (final msg) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text(msg)));
-                      },
-                      onGameEnd: () {
-                        Navigator.pop(context);
-                      },
+                      isPlayer1: myPlayerKey == players.keys.first,
                     ),
                   ),
 
