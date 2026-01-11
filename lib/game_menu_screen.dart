@@ -1,11 +1,10 @@
 import 'package:AZOyun/core/theme/app_colors.dart';
 import 'package:AZOyun/core/theme/app_text_styles.dart';
-import 'package:AZOyun/core/widgets/game_button.dart';
-
-// Banner widget importu (Dosya yolunu projene göre kontrol et)
 import 'package:AZOyun/core/widgets/banner_ad.dart';
+import 'package:AZOyun/core/widgets/game_button.dart';
 import 'package:AZOyun/features/golf/golf_lobby_screen.dart';
 import 'package:AZOyun/features/hangman/hangman_lobby_screen.dart';
+import 'package:AZOyun/features/math/math_lobby_screen.dart';
 import 'package:flutter/material.dart';
 
 class GameMenuScreen extends StatelessWidget {
@@ -14,32 +13,29 @@ class GameMenuScreen extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     return Scaffold(
-      // Scaffold background color ayarlanırsa banner arkası sırıtmamış olur
       backgroundColor: AppColors.primary,
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
         child: SafeArea(
-          // 'bottom: false' yaparak banner'ın safe area'nın en altına yapışmasını sağladık
           bottom: false,
           child: Column(
             children: [
               const SizedBox(height: 40),
 
-              // Başlık ve logo
+              // Logo
               _buildHeader(),
 
               const SizedBox(height: 20),
 
-              // Alt başlık
               Text(
                 'Arkadaşlarınla Gerçek Zamanlı Oyna',
                 style: AppTextStyles.bodyLarge.white,
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 30),
 
-              // Oyun kartları (Expanded ile alanı kaplar)
+              // Oyunlar
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.symmetric(
@@ -47,73 +43,110 @@ class GameMenuScreen extends StatelessWidget {
                     vertical: 10,
                   ),
                   children: [
-                    GameCardButton(
-                      title: 'ADAM ASMACA',
-                      subtitle: 'Kelime Tahmin Oyunu • 2 Oyuncu',
-                      emoji: '🎯',
-                      gradient: AppColors.hangmanGradient,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (final context) => const HangmanLobbyScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 20),
+                    // SPOR OYUNLARI
+                    _buildSectionTitle('⚽ SPOR OYUNLARI'),
 
                     GameCardButton(
                       title: 'MİNİ GOLF',
-                      subtitle: 'Top Vur, Deliğe Sok • 4 Oyuncu',
+                      subtitle: 'Top Vur, Deliğe Sok • 2-4 Oyuncu',
                       emoji: '⛳',
                       gradient: AppColors.golfGradient,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (final context) => const GolfLobbyScreen(),
-                          ),
-                        );
-                      },
+                      onTap: () => _navigate(context, const GolfLobbyScreen()),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     GameCardButton(
                       title: 'SERBEST VURUŞ',
                       subtitle: 'Gol At, Kazan • 2 Oyuncu',
                       emoji: '⚽',
                       gradient: AppColors.freeKickGradient,
-                      isComingSoon: true,
-                      onTap: () => _showComingSoon(context, 'Serbest Vuruş'),
+                      onTap: () =>
+                          _navigate(context, const SoccerLobbyScreen()),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 30),
+
+                    // ZİHİNSEL OYUNLAR
+                    _buildSectionTitle('🧠 ZİHİNSEL OYUNLAR'),
 
                     GameCardButton(
-                      title: 'YARIŞ',
-                      subtitle: 'Birinci Ol • 4 Oyuncu',
-                      emoji: '🏎️',
-                      gradient: AppColors.racingGradient,
-                      isComingSoon: true,
-                      onTap: () => _showComingSoon(context, 'Yarış'),
+                      title: 'ADAM ASMACA',
+                      subtitle: 'Kelime Tahmin • 2 Oyuncu',
+                      emoji: '🎯',
+                      gradient: AppColors.hangmanGradient,
+                      onTap: () =>
+                          _navigate(context, const HangmanLobbyScreen()),
+                    ),
+                    const SizedBox(height: 16),
+
+                    GameCardButton(
+                      title: 'HIZLI MATEMATİK',
+                      subtitle: 'Hızlı Hesapla • 2-4 Oyuncu',
+                      emoji: '🧮',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                      ),
+                      onTap: () => _navigate(context, const MathLobbyScreen()),
+                    ),
+                    const SizedBox(height: 16),
+
+                    GameCardButton(
+                      title: 'ŞEHİR BULMACA',
+                      subtitle: 'İpucu ile Şehir Bul • 2-4 Oyuncu',
+                      emoji: '🏙️',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFf093fb), Color(0xFFf5576c)],
+                      ),
+                      onTap: () => _navigate(context, const CityLobbyScreen()),
+                    ),
+                    const SizedBox(height: 16),
+
+                    GameCardButton(
+                      title: 'KELİME BULMACA',
+                      subtitle: 'Kelime Oluştur • 2-4 Oyuncu',
+                      emoji: '🔤',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF4facfe), Color(0xFF00f2fe)],
+                      ),
+                      onTap: () => _navigate(context, const WordLobbyScreen()),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // SOSYAL OYUNLAR
+                    _buildSectionTitle('🎭 SOSYAL OYUNLAR'),
+
+                    GameCardButton(
+                      title: 'VAMPİR KÖYLÜ',
+                      subtitle: 'Mafia Tarzı Oyun • 4-8 Oyuncu',
+                      emoji: '🧛',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF434343), Color(0xFF000000)],
+                      ),
+                      onTap: () =>
+                          _navigate(context, const VampireLobbyScreen()),
+                    ),
+                    const SizedBox(height: 16),
+
+                    GameCardButton(
+                      title: 'YALANCILAR KAHVESİ',
+                      subtitle: 'Yalan Söyle, Yakala • 3-6 Oyuncu',
+                      emoji: '☕',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFd66d75), Color(0xFFe29587)],
+                      ),
+                      onTap: () => _navigate(context, const LiarLobbyScreen()),
                     ),
 
                     const SizedBox(height: 40),
 
-                    // Bilgi kartı
+                    // Bilgi
                     _buildInfoCard(),
-
-                    // Listenin en altında biraz boşluk bırakalım ki banner üstüne binmesin
                     const SizedBox(height: 20),
                   ],
                 ),
               ),
 
-              // 📢 REKLAM ALANI
-              // Adaptive Banner kullanarak ekran genişliğine tam oturmasını sağlıyoruz
-              const AdaptiveBannerAdWidget(
-                padding: EdgeInsets.zero, // Alt kısımdaki boşlukları sıfırladık
-              ),
+              // Banner Reklam
+              const AdaptiveBannerAdWidget(padding: EdgeInsets.zero),
             ],
           ),
         ),
@@ -138,11 +171,35 @@ class GameMenuScreen extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          'MULTIPLAYER GAMES',
+          'AZ OYUN',
           style: AppTextStyles.gameTitle,
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text('MULTIPLAYER', style: AppTextStyles.bodySmall.white.bold),
+        ),
       ],
+    );
+  }
+
+  Widget _buildSectionTitle(final String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          letterSpacing: 1.5,
+        ),
+      ),
     );
   }
 
@@ -163,7 +220,10 @@ class GameMenuScreen extends StatelessWidget {
           Text(
             '1. Oyun seç ve oda oluştur\n'
             '2. Oda kodunu arkadaşına gönder\n'
-            '3. Arkadaşın katılsın ve oyun başlasın!',
+            '3. Arkadaşın katılsın ve oyun başlasın!\n\n'
+            '🎮 8 farklı oyun modu\n'
+            '👥 2-8 oyuncu desteği\n'
+            '⚡ Gerçek zamanlı oynanış',
             style: AppTextStyles.bodyMedium.white,
             textAlign: TextAlign.center,
           ),
@@ -172,45 +232,10 @@ class GameMenuScreen extends StatelessWidget {
     );
   }
 
-  void _showComingSoon(final BuildContext context, final String gameName) {
-    showDialog(
-      context: context,
-      builder: (final context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.rocket_launch, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(child: Text(gameName)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.construction, size: 64, color: AppColors.warning),
-            const SizedBox(height: 16),
-            Text(
-              'Bu oyun yakında eklenecek!',
-              style: AppTextStyles.bodyLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Şu an Adam Asmaca ve Mini Golf oynanabilir.',
-              style: AppTextStyles.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          GameButton(
-            text: 'TAMAM',
-            onPressed: () => Navigator.pop(context),
-            color: AppColors.primary,
-            width: double.infinity,
-            height: 48,
-          ),
-        ],
-      ),
+  void _navigate(final BuildContext context, final Widget screen) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (final context) => screen),
     );
   }
 }
