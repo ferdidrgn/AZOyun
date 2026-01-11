@@ -112,7 +112,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen> {
 
     final players = Map<String, dynamic>.from(snapshot.value as Map);
     final playerKeys = players.keys.toList();
-    final currentIndex = playerKeys.indexOf(myPlayerKey);
+    final currentIndex = playerKeys.indexOf(myPlayerKey!);
     final nextIndex = (currentIndex + 1) % playerKeys.length;
 
     if (nextIndex == 0) {

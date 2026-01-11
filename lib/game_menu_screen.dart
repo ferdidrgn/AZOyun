@@ -6,7 +6,6 @@ import 'package:AZOyun/features/city/city_lobby_screen.dart';
 import 'package:AZOyun/features/golf/golf_lobby_screen.dart';
 import 'package:AZOyun/features/hangman/hangman_lobby_screen.dart';
 import 'package:AZOyun/features/liar/liar_lobby_screen.dart';
-import 'package:AZOyun/features/math/math_lobby_screen.dart';
 import 'package:AZOyun/features/soccer/soccer_lobby_screen.dart';
 import 'package:AZOyun/features/vampire_wolf/vampire_lobby_screen.dart';
 import 'package:AZOyun/features/word/word_lobby_screen.dart';
@@ -80,17 +79,6 @@ class GameMenuScreen extends StatelessWidget {
                       gradient: AppColors.hangmanGradient,
                       onTap: () =>
                           _navigate(context, const HangmanLobbyScreen()),
-                    ),
-                    const SizedBox(height: 16),
-
-                    GameCardButton(
-                      title: 'HIZLI MATEMATİK',
-                      subtitle: 'Hızlı Hesapla • 2-4 Oyuncu',
-                      emoji: '🧮',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                      ),
-                      onTap: () => _navigate(context, const MathLobbyScreen()),
                     ),
                     const SizedBox(height: 16),
 

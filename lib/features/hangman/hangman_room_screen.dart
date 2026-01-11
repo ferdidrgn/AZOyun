@@ -55,7 +55,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       _handleDisconnect();
@@ -68,7 +68,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
 
     final playerData = Map<String, dynamic>.from(snapshot.value as Map);
 
-    playerData.forEach((key, value) {
+    playerData.forEach((final key, final value) {
       if (value['name'] == widget.playerName) {
         myPlayerKey = key;
       }
@@ -105,7 +105,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
   }
 
   void _listenToRoom() {
-    roomRef.onValue.listen((event) {
+    roomRef.onValue.listen((final event) {
       if (!mounted) return;
 
       if (event.snapshot.value == null) {
@@ -137,7 +137,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('⚠️ Oda Kapandı'),
         content: const Text('Oda sahibi odayı kapattı veya oda silindi.'),
         actions: [
@@ -159,7 +159,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => Scaffold(
+        builder: (final context) => Scaffold(
           backgroundColor: AppColors.primary,
           body: Container(
             decoration: const BoxDecoration(
@@ -194,7 +194,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
                     child: HangmanGame(
                       roomId: widget.roomId,
                       playerName: widget.playerName,
-                      onGameEvent: (msg) {
+                      onGameEvent: (final msg) {
                         ScaffoldMessenger.of(
                           context,
                         ).showSnackBar(SnackBar(content: Text(msg)));
@@ -213,7 +213,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: players.entries.map((entry) {
+                      children: players.entries.map((final entry) {
                         final player = entry.value;
                         return Column(
                           mainAxisSize: MainAxisSize.min,
@@ -243,21 +243,21 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
   void _showGameResults() {
     final scores = <String, int>{};
 
-    players.forEach((key, player) {
+    players.forEach((final key, final player) {
       scores[player['name']] = player['score'] ?? 0;
     });
 
     final sortedScores = scores.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((final a, final b) => b.value.compareTo(a.value));
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('🏆 Oyun Bitti!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: sortedScores.asMap().entries.map((entry) {
+          children: sortedScores.asMap().entries.map((final entry) {
             final index = entry.key;
             final score = entry.value;
             final medal = index == 0 ? '🥇' : '🥈';
@@ -326,7 +326,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
         await _handleDisconnect();
@@ -455,7 +455,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen>
                                   ],
                                 ),
                                 const SizedBox(height: 16),
-                                ...players.entries.map((entry) {
+                                ...players.entries.map((final entry) {
                                   final player = entry.value;
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 12),
