@@ -76,9 +76,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   }
 
   void _listenToRoom() {
-    _database.child('hangman_rooms/${widget.roomId}').onValue.listen((
-      final event,
-    ) {
+    roomRef.onValue.listen((final event) {
       if (event.snapshot.value != null && mounted) {
         final data = Map<String, dynamic>.from(event.snapshot.value as Map);
 
