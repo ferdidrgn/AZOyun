@@ -21,9 +21,9 @@ class HangmanLobbyScreen extends StatelessWidget {
           playerName: playerName,
           isHost: isHost,
           gamePath: GamePaths.vampire,
-          title: '🧛 VAMPİR KÖYLÜ',
+          title: '🎯 ADAM ASMACA',
           gradient: const LinearGradient(
-            colors: [Color(0xFF434343), Color(0xFF000000)],
+            colors: [Color(0xFF4CAF93), Color(0xFF731818)],
           ),
           gameScreen: (final roomId, final playerName) => Scaffold(
             body: HangmanGameScreen(
