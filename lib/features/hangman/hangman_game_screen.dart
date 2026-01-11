@@ -36,6 +36,11 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   bool _isShowingRoundDialog = false;
   int _lastCompletedRound = 0;
 
+  String? myPlayerKey;
+  String myRole = '';
+  Map<String, dynamic> players = {};
+  String? selectedPlayer;
+
   final List<String> _wordList = [
     'FLUTTER',
     'FIREBASE',
@@ -73,6 +78,20 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   void initState() {
     super.initState();
     _listenToRoom();
+    roomRef = _database.child('hangman_rooms/${widget.roomId}');
+    _findMyPlayerKey();
+  }
+
+  Future<void> _findMyPlayerKey() async {
+    final snapshot = await roomRef.child('players').get();
+    if (!snapshot.exists) return;
+    final playerData = Map<String, dynamic>.from(snapshot.value as Map);
+    playerData.forEach((final key, final value) {
+      if (value['name'] == widget.playerName) {
+        myPlayerKey = key;
+        myRole = value['role'] ?? '';
+      }
+    });
   }
 
   void _listenToRoom() {
