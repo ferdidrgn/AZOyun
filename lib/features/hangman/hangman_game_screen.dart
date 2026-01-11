@@ -1,24 +1,20 @@
-import 'dart:math';
-
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-
-import '../../core/services/ad_manager.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
-import '../../core/widgets/banner_ad.dart';
-import '../../core/widgets/game_button.dart';
 
 class HangmanGameScreen extends StatefulWidget {
   final String roomId;
   final String playerName;
-  final bool isPlayer1;
+  final bool isHost;
+  final Function(String) onGameEvent;
+  final VoidCallback onGameEnd;
 
   const HangmanGameScreen({
     super.key,
     required this.roomId,
     required this.playerName,
-    required this.isPlayer1,
+    required this.isHost,
+    required this.onGameEvent,
+    required this.onGameEnd,
   });
 
   @override
@@ -27,6 +23,7 @@ class HangmanGameScreen extends StatefulWidget {
 
 class _HangmanGameScreenState extends State<HangmanGameScreen> {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  late DatabaseReference roomRef;
   final TextEditingController _customWordController = TextEditingController();
 
   Map<String, dynamic>? _roomData;
@@ -35,9 +32,9 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   int _wrongGuesses = 0;
   bool _isMyTurn = false;
   String _gameStatus = 'waiting';
-  bool _hasShownWordDialog = false;
-  bool _hasShownFinalDialog = false;
-  int _lastRound = 0;
+  bool _needsWordSelection = false;
+  bool _isShowingRoundDialog = false;
+  int _lastCompletedRound = 0;
 
   final List<String> _wordList = [
     'FLUTTER',
@@ -55,71 +52,76 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
     'BILGISAYAR',
     'PROGRAMLAMA',
     'YAZILIM',
+    'MOBIL',
+    'UYGULAMA',
+    'GITAR',
+    'PIYANO',
+    'FUTBOL',
+    'BASKETBOL',
+    'YÜZME',
+    'KOŞU',
+    'BİSİKLET',
+    'ARABA',
+    'UÇAK',
+    'TREN',
+    'GEMI',
+    'OTOBÜS',
+    'METRO',
   ];
 
   @override
   void initState() {
     super.initState();
     _listenToRoom();
-    AdManager().onGameEnter();
   }
 
   void _listenToRoom() {
     _database.child('hangman_rooms/${widget.roomId}').onValue.listen((
       final event,
     ) {
-      if (event.snapshot.value == null || !mounted) return;
+      if (event.snapshot.value != null && mounted) {
+        final data = Map<String, dynamic>.from(event.snapshot.value as Map);
 
-      final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+        final oldCurrentGame = _roomData?['currentGame'];
+        final newCurrentGame = data['currentGame'];
+        final oldRound = _roomData?['currentRound'] ?? 0;
+        final newRound = data['currentRound'] ?? 1;
 
-      setState(() {
-        _roomData = data;
-        _gameStatus = data['status'] ?? 'waiting';
+        setState(() {
+          _roomData = data;
+          _gameStatus = data['status'] ?? 'waiting';
 
-        if (data['currentGame'] != null) {
-          final game = Map<String, dynamic>.from(data['currentGame'] as Map);
-          _currentWord = game['word'];
-          _guessedLetters = List<String>.from(game['guessedLetters'] ?? []);
-          _wrongGuesses = game['wrongGuesses'] ?? 0;
+          if (data['currentGame'] != null) {
+            final game = Map<String, dynamic>.from(data['currentGame'] as Map);
+            _currentWord = game['word'];
+            _guessedLetters = List<String>.from(game['guessedLetters'] ?? []);
+            _wrongGuesses = game['wrongGuesses'] ?? 0;
 
-          String wordChooser = game['wordChooser'] ?? 'player1';
-          String myRole = widget.isPlayer1 ? 'player1' : 'player2';
-          _isMyTurn = wordChooser != myRole;
-        } else {
-          _currentWord = null;
-          _guessedLetters = [];
-          _wrongGuesses = 0;
-          _isMyTurn = false;
-        }
+            // Sıra mantığı: Kelimeyi seçen bekler, diğeri tahmin eder
+            final String wordChooser = game['wordChooser'] ?? 'player1';
+            final String myRole = widget.isHost ? 'player1' : 'player2';
+            _isMyTurn = wordChooser != myRole; // Kelimeyi seçmeyen tahmin eder
 
-        // Round değişti mi?
-        final currentRound = data['currentRound'] ?? 1;
-        if (currentRound != _lastRound) {
-          _lastRound = currentRound;
-          _hasShownWordDialog = false;
-        }
-      });
+            _needsWordSelection = false;
+          } else if (_gameStatus == 'playing') {
+            // Oyun başladı ama kelime seçilmemiş
+            final bool shouldShow = _shouldIChooseWord();
 
-      // SADECE OYUN BAŞLADIYSA VE KELİME SEÇİLMEDİYSE
-      if (_gameStatus == 'playing' &&
-          _currentWord == null &&
-          _shouldIChooseWord() &&
-          !_hasShownWordDialog) {
-        _hasShownWordDialog = true;
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) _showWordSelectionDialog();
+            // Round değişti mi ve kelime seçilmesi gerekiyor mu?
+            if (newRound > oldRound && shouldShow) {
+              _needsWordSelection = true;
+            } else if (oldCurrentGame == null &&
+                newCurrentGame == null &&
+                shouldShow) {
+              // İlk kelime seçimi
+              _needsWordSelection = true;
+            } else {
+              _needsWordSelection = false;
+            }
+          }
         });
-      }
 
-      // Oyun bitti mi?
-      if (_gameStatus == 'finished' && !_hasShownFinalDialog) {
-        _hasShownFinalDialog = true;
         _checkGameEnd();
-      }
-
-      // Round bitti mi?
-      if (_currentWord != null) {
-        _checkRoundEnd();
       }
     });
   }
@@ -127,133 +129,58 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   bool _shouldIChooseWord() {
     if (_roomData == null) return false;
 
-    // SIRALAMA SİSTEMİ:
-    // Round 1 → Player 1 seçer
-    // Round 2 → Player 2 seçer
-    // Round 3 → Player 1 seçer
-    // Round 4 → Player 2 seçer
-    // Round 5 → Player 1 seçer
-    // Round 6 → Player 2 seçer
-
     final currentRound = _roomData!['currentRound'] ?? 1;
 
-    // Tek roundlarda Player1, çift roundlarda Player2
+    // Tek roundlarda player1, çift roundlarda player2 seçer
     if (currentRound % 2 == 1) {
-      // Tek round - Player1 seçmeli
-      return widget.isPlayer1;
+      return widget.isHost;
     } else {
-      // Çift round - Player2 seçmeli
-      return !widget.isPlayer1;
+      return !widget.isHost;
     }
-  }
-
-  void _checkRoundEnd() {
-    if (_currentWord == null) return;
-
-    // Kelime tamamlandı mı?
-    bool wordCompleted = _currentWord!
-        .split('')
-        .every(
-          (final letter) => _guessedLetters.contains(letter) || letter == ' ',
-        );
-
-    if (wordCompleted || _wrongGuesses >= 6) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) _handleRoundEnd(wordCompleted);
-      });
-    }
-  }
-
-  Future<void> _handleRoundEnd(final bool guesserWon) async {
-    final game = Map<String, dynamic>.from(_roomData!['currentGame'] as Map);
-    String wordChooser = game['wordChooser'];
-    String guesser = wordChooser == 'player1' ? 'player2' : 'player1';
-    String winner = guesserWon ? guesser : wordChooser;
-
-    // Skoru güncelle
-    if (widget.isPlayer1) {
-      final currentScore = _roomData?[winner]['score'] ?? 0;
-      await _database
-          .child('hangman_rooms/${widget.roomId}/$winner/score')
-          .set(currentScore + 1);
-    }
-
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final currentRound = _roomData?['currentRound'] ?? 1;
-    if (currentRound >= 6) {
-      // 6 EL YAPILDI
-      // Oyun bitti
-      await _database
-          .child('hangman_rooms/${widget.roomId}/status')
-          .set('finished');
-    } else {
-      // Yeni round
-      if (widget.isPlayer1) {
-        await _database.child('hangman_rooms/${widget.roomId}').update({
-          'currentRound': currentRound + 1,
-          'currentGame': null,
-        });
-      }
-    }
-  }
-
-  void _checkGameEnd() {
-    Future.delayed(const Duration(milliseconds: 1000), _showFinalScores);
   }
 
   void _showWordSelectionDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (final context) => WillPopScope(
-        onWillPop: () async => false,
-        child: AlertDialog(
-          title: Row(
-            children: [
-              const Icon(Icons.stars, color: Colors.amber),
-              const SizedBox(width: 10),
-              const Expanded(child: Text('🎯 Kelime Seç!')),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.warning, width: 2),
-                ),
-                child: Text(
-                  'Rakibin bekliyor!\nKelime seçmelisin.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyLarge.bold,
-                ),
+      builder: (final context) => AlertDialog(
+        title: const Text('Kelime Seç'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Rakibinin tahmin edeceği kelimeyi seç:',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _showPredefinedWords();
+              },
+              icon: const Icon(Icons.list),
+              label: const Text('LİSTEDEN SEÇ'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
               ),
-              const SizedBox(height: 20),
-              GameButton(
-                text: 'LİSTEDEN SEÇ',
-                icon: Icons.list,
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showPredefinedWords();
-                },
-                color: AppColors.hangmanPrimary,
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _showCustomWordDialog();
+              },
+              icon: const Icon(Icons.create),
+              label: const Text('KENDİ KELİMENİ YAZ'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
               ),
-              const SizedBox(height: 12),
-              GameButton(
-                text: 'KENDİ KELİMEN',
-                icon: Icons.create,
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showCustomWordDialog();
-                },
-                color: Colors.green,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -262,12 +189,11 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   void _showPredefinedWords() {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (final context) => AlertDialog(
         title: const Text('Kelime Seç'),
         content: SizedBox(
           width: double.maxFinite,
-          height: MediaQuery.of(context).size.height * 0.5,
+          height: 400,
           child: ListView.builder(
             itemCount: _wordList.length,
             itemBuilder: (final context, final index) {
@@ -275,7 +201,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
                 child: ListTile(
                   title: Text(
                     _wordList[index],
-                    style: AppTextStyles.bodyLarge.bold,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios),
                   onTap: () {
@@ -287,6 +216,12 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
             },
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İPTAL'),
+          ),
+        ],
       ),
     );
   }
@@ -294,7 +229,6 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   void _showCustomWordDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (final context) => AlertDialog(
         title: const Text('Kendi Kelimeni Yaz'),
         content: Column(
@@ -303,21 +237,33 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
             TextField(
               controller: _customWordController,
               decoration: const InputDecoration(
-                hintText: 'KELİME',
+                hintText: 'Kelimeyi gir',
                 border: OutlineInputBorder(),
-                helperText: 'Min 3, Max 15 harf',
+                helperText: 'Sadece harfler (min 3, max 15)',
               ),
               textCapitalization: TextCapitalization.characters,
               maxLength: 15,
-              style: AppTextStyles.h4,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              '⚠️ Rakibin bu kelimeyi göremez!',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
         actions: [
-          GameButton(
-            text: 'BAŞLAT',
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İPTAL'),
+          ),
+          ElevatedButton(
             onPressed: () {
-              String word = _customWordController.text
+              final String word = _customWordController.text
                   .toUpperCase()
                   .trim()
                   .replaceAll(RegExp(r'[^A-ZÇĞİÖŞÜ]'), '');
@@ -325,12 +271,20 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
               if (word.length >= 3) {
                 Navigator.pop(context);
                 _startGameWithWord(word);
-                _customWordController.clear();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Kelime en az 3 harf olmalı!'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
-            color: AppColors.hangmanPrimary,
-            width: double.infinity,
-            height: 48,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('BAŞLAT'),
           ),
         ],
       ),
@@ -338,7 +292,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   }
 
   Future<void> _startGameWithWord(final String word) async {
-    String wordChooser = widget.isPlayer1 ? 'player1' : 'player2';
+    final String wordChooser = widget.isHost ? 'player1' : 'player2';
 
     await _database.child('hangman_rooms/${widget.roomId}/currentGame').set({
       'word': word,
@@ -349,12 +303,181 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
     });
   }
 
-  Future<void> _guessLetter(final String letter) async {
-    if (!_isMyTurn ||
-        _guessedLetters.contains(letter) ||
-        _currentWord == null) {
-      return;
+  void _checkGameEnd() {
+    if (_currentWord == null || _isShowingRoundDialog) return;
+
+    // Kelime tamamlandı mı?
+    final bool wordCompleted = _currentWord!
+        .split('')
+        .every(
+          (final letter) => _guessedLetters.contains(letter) || letter == ' ',
+        );
+
+    final currentRound = _roomData?['currentRound'] ?? 1;
+
+    // Bu round'u daha önce tamamladık mı kontrol et
+    if (currentRound > _lastCompletedRound) {
+      if (wordCompleted) {
+        _lastCompletedRound = currentRound;
+        _handleRoundWin(guesserWon: true);
+      } else if (_wrongGuesses >= 6) {
+        _lastCompletedRound = currentRound;
+        _handleRoundWin(guesserWon: false);
+      }
     }
+  }
+
+  Future<void> _handleRoundWin({required final bool guesserWon}) async {
+    if (_isShowingRoundDialog) return;
+
+    setState(() {
+      _isShowingRoundDialog = true;
+    });
+
+    // Tahmin eden kazandı mı yoksa kelimeyi seçen mi?
+    final game = Map<String, dynamic>.from(_roomData!['currentGame'] as Map);
+    final String wordChooser = game['wordChooser'];
+    final String guesser = wordChooser == 'player1' ? 'player2' : 'player1';
+
+    final String winner = guesserWon ? guesser : wordChooser;
+
+    final currentScore = _roomData?[winner]['score'] ?? 0;
+    await _database
+        .child('hangman_rooms/${widget.roomId}/$winner/score')
+        .set(currentScore + 1);
+
+    final currentRound = _roomData?['currentRound'] ?? 1;
+
+    // Round bitince göster
+    if (mounted) {
+      await _showRoundEndDialog(winner, currentRound, guesserWon);
+    }
+
+    setState(() {
+      _isShowingRoundDialog = false;
+    });
+
+    // 3 round bitti mi kontrol et
+    if (currentRound >= 3) {
+      _endGame();
+    } else {
+      // Yeni round başlat - sadece Player1 günceller
+      if (widget.isHost) {
+        await _database.child('hangman_rooms/${widget.roomId}').update({
+          'currentRound': currentRound + 1,
+          'currentGame': null, // Yeni round için sıfırla
+        });
+      }
+    }
+  }
+
+  Future<void> _showRoundEndDialog(
+    final String winner,
+    final int round,
+    final bool guesserWon,
+  ) async {
+    final String winnerName = winner == 'player1'
+        ? _roomData!['player1']['name']
+        : _roomData!['player2']['name'];
+
+    final String message = guesserWon
+        ? '$winnerName kelimeyi buldu! 🎉'
+        : 'Kelime bulunamadı! $winnerName kazandı! 🏆';
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (final context) => AlertDialog(
+        title: Text('Round $round Bitti!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events, size: 64, color: Colors.amber),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Kelime: $_currentWord',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 10),
+            Text(
+              '${_roomData!['player1']['name']}: ${_roomData!['player1']['score']}',
+            ),
+            Text(
+              '${_roomData!['player2']['name']}: ${_roomData!['player2']['score']}',
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(round >= 3 ? 'SONUÇLARI GÖR' : 'DEVAM ET'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _endGame() {
+    _database.child('hangman_rooms/${widget.roomId}/status').set('finished');
+
+    final p1Score = _roomData?['player1']['score'] ?? 0;
+    final p2Score = _roomData?['player2']['score'] ?? 0;
+
+    String winner = p1Score > p2Score
+        ? _roomData!['player1']['name']
+        : _roomData!['player2']['name'];
+
+    if (p1Score == p2Score) {
+      winner = 'BERABERE!';
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (final context) => AlertDialog(
+        title: const Text('🎮 Oyun Bitti!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              winner == 'BERABERE!' ? '🤝 $winner' : '🏆 Kazanan: $winner',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            Text('${_roomData!['player1']['name']}: $p1Score'),
+            Text('${_roomData!['player2']['name']}: $p2Score'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).popUntil((final route) => route.isFirst);
+            },
+            child: const Text('ANA MENÜYE DÖN'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _guessLetter(final String letter) async {
+    if (!_isMyTurn || _guessedLetters.contains(letter)) return;
 
     final newGuessedLetters = [..._guessedLetters, letter];
     final isCorrect = _currentWord!.contains(letter);
@@ -365,94 +488,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
     });
   }
 
-  Future<void> _showFinalScores() async {
-    if (_roomData == null) return;
-
-    await AdManager().onGameEnd();
-
-    final p1Score = _roomData!['player1']['score'] ?? 0;
-    final p2Score = _roomData!['player2']['score'] ?? 0;
-    final p1Name = _roomData!['player1']['name'];
-    final p2Name = _roomData!['player2']['name'];
-
-    String winner = p1Score > p2Score ? p1Name : p2Name;
-    if (p1Score == p2Score) winner = 'BERABERE!';
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (final context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.emoji_events, color: Colors.amber, size: 32),
-            SizedBox(width: 12),
-            Text('🏆 Oyun Bitti!'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              winner == 'BERABERE!' ? '🤝 $winner' : '👑 $winner Kazandı!',
-              style: AppTextStyles.h4.bold,
-            ),
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 10),
-            _buildScoreRow(p1Name, p1Score, p1Name == widget.playerName),
-            _buildScoreRow(p2Name, p2Score, p2Name == widget.playerName),
-          ],
-        ),
-        actions: [
-          GameButton(
-            text: 'ANA MENÜYE DÖN',
-            onPressed: () {
-              Navigator.of(context).popUntil((final route) => route.isFirst);
-            },
-            color: AppColors.hangmanPrimary,
-            width: double.infinity,
-            height: 48,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScoreRow(final String name, final int score, final bool isMe) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isMe ? AppColors.hangmanPrimary.withOpacity(0.1) : null,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              name + (isMe ? ' (SEN)' : ''),
-              style: AppTextStyles.bodyLarge.copyWith(
-                fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Text(score.toString(), style: AppTextStyles.h4.bold),
-        ],
-      ),
-    );
-  }
-
   Widget _buildHangman() {
-    return SizedBox(
-      height: 200,
-      child: CustomPaint(
-        size: const Size(200, 200),
-        painter: HangmanPainter(_wrongGuesses),
-      ),
+    return CustomPaint(
+      size: const Size(200, 250),
+      painter: HangmanPainter(_wrongGuesses),
     );
   }
 
@@ -468,26 +507,22 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
             return const SizedBox(width: 20);
           }
 
-          bool isGuessed = _guessedLetters.contains(letter);
+          final bool isGuessed = _guessedLetters.contains(letter);
           return Container(
-            width: 35,
-            height: 45,
-            margin: const EdgeInsets.symmetric(horizontal: 3),
+            width: 40,
+            height: 50,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
-              color: isGuessed ? Colors.green : Colors.grey.shade300,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isGuessed ? Colors.green : Colors.grey,
-                width: 2,
-              ),
+              border: Border.all(color: Colors.red, width: 2),
             ),
             child: Center(
               child: Text(
                 isGuessed ? letter : '_',
-                style: TextStyle(
-                  fontSize: 22,
+                style: const TextStyle(
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: isGuessed ? Colors.white : Colors.grey.shade600,
                 ),
               ),
             ),
@@ -505,36 +540,27 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
       ['Y', 'Z'],
     ];
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: keyboard.map((final row) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: row.map((final letter) {
-              bool isGuessed = _guessedLetters.contains(letter);
-              bool isDisabled = !_isMyTurn || isGuessed;
-              bool isCorrect =
-                  isGuessed && _currentWord?.contains(letter) == true;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Column(
+        children: keyboard.map((final row) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: row.map((final letter) {
+                final bool isGuessed = _guessedLetters.contains(letter);
+                final bool isDisabled = !_isMyTurn || isGuessed;
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: SizedBox(
-                  width: 36,
-                  height: 40,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: ElevatedButton(
                     onPressed: isDisabled ? null : () => _guessLetter(letter),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isGuessed
-                          ? (isCorrect ? Colors.green : Colors.red)
-                          : AppColors.hangmanPrimary,
+                      backgroundColor: isGuessed ? Colors.grey : Colors.red,
                       foregroundColor: Colors.white,
-                      padding: EdgeInsets.zero,
-                      elevation: isGuessed ? 0 : 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      minimumSize: const Size(32, 40),
+                      padding: const EdgeInsets.all(4),
                     ),
                     child: Text(
                       letter,
@@ -544,35 +570,99 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
                       ),
                     ),
                   ),
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      }).toList(),
+                );
+              }).toList(),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
   @override
   Widget build(final BuildContext context) {
-    if (_gameStatus == 'waiting' || _currentWord == null) {
+    if (_roomData == null || _gameStatus == 'waiting') {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('🎯 Adam Asmaca'),
-          backgroundColor: AppColors.hangmanPrimary,
+          title: const Text('Adam Asmaca'),
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.red),
+              SizedBox(height: 20),
+              Text('Rakip bekleniyor...', style: TextStyle(fontSize: 18)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Kelime seçim bekleme ekranı veya kelime seçme dialogu
+    if (_currentWord == null) {
+      final bool shouldIChoose = _shouldIChooseWord();
+
+      // Ben kelime seçmeliyim - dialog göster
+      if (shouldIChoose && _needsWordSelection) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _needsWordSelection) {
+            setState(() {
+              _needsWordSelection = false;
+            });
+            _showWordSelectionDialog();
+          }
+        });
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Adam Asmaca'),
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          body: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.edit_note, size: 80, color: Colors.red),
+                SizedBox(height: 20),
+                Text(
+                  'Kelime seçin...',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Diğer oyuncu kelime seçiyor - bekleme ekranı
+      final String otherPlayerName = widget.isHost
+          ? _roomData!['player2']['name']
+          : _roomData!['player1']['name'];
+
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Adam Asmaca'),
+          backgroundColor: Colors.red,
           foregroundColor: Colors.white,
         ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircularProgressIndicator(color: AppColors.hangmanPrimary),
+              const CircularProgressIndicator(color: Colors.red),
               const SizedBox(height: 20),
               Text(
-                _shouldIChooseWord()
-                    ? 'Kelime seçmelisin...'
-                    : 'Rakip kelime seçiyor...',
-                style: AppTextStyles.h5,
+                '$otherPlayerName kelime seçiyor...',
+                style: const TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                '⏳ Lütfen bekleyin',
+                style: TextStyle(color: Colors.grey),
               ),
             ],
           ),
@@ -586,59 +676,126 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Round $currentRound/6'), // 6 EL
-        backgroundColor: AppColors.hangmanPrimary,
+        title: const Text('Adam Asmaca'),
+        backgroundColor: Colors.red,
         foregroundColor: Colors.white,
         actions: [
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: Row(
-                children: [
-                  Text('$p1Score', style: AppTextStyles.h5.white),
-                  const SizedBox(width: 8),
-                  const Text('VS', style: TextStyle(color: Colors.white70)),
-                  const SizedBox(width: 8),
-                  Text('$p2Score', style: AppTextStyles.h5.white),
-                ],
+              child: Text(
+                'Round $currentRound/3',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Durum bildirimi
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            color: _isMyTurn
-                ? AppColors.success.withOpacity(0.2)
-                : AppColors.warning.withOpacity(0.2),
-            child: Text(
-              _isMyTurn ? '✨ SENİN SIRAN!' : '⏳ Rakip tahmin ediyor...',
-              style: AppTextStyles.bodyLarge.bold,
-              textAlign: TextAlign.center,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Skor Tablosu
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildPlayerCard(
+                  _roomData!['player1']['name'],
+                  p1Score,
+                  widget.isHost && _isMyTurn,
+                ),
+                const Text(
+                  'VS',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                _buildPlayerCard(
+                  _roomData!['player2']['name'],
+                  p2Score,
+                  !widget.isHost && _isMyTurn,
+                ),
+              ],
             ),
-          ),
 
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  _buildHangman(),
-                  const SizedBox(height: 20),
-                  _buildWord(),
-                  const SizedBox(height: 30),
-                  _buildKeyboard(),
-                  const SizedBox(height: 20),
-                ],
+            const SizedBox(height: 20),
+
+            if (_isMyTurn)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  '✨ SİZİN SIRANIZ - TAHMİN EDİN!',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  '⏳ Rakip tahmin ediyor...',
+                  style: TextStyle(fontSize: 16),
+                ),
               ),
+
+            const SizedBox(height: 20),
+
+            // Hangman Çizimi
+            _buildHangman(),
+
+            const SizedBox(height: 20),
+
+            // Kelime
+            _buildWord(),
+
+            const SizedBox(height: 30),
+
+            // Klavye
+            _buildKeyboard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerCard(
+    final String name,
+    final int score,
+    final bool isActive,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.green.shade100 : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isActive ? Colors.green : Colors.grey.shade300,
+          width: isActive ? 3 : 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            name,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            score.toString(),
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
             ),
           ),
-
-          const BannerAdWidget(),
         ],
       ),
     );
@@ -651,23 +808,6 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   }
 }
 
-// Extension'lar - En Alta Ekledik
-extension ColorExtension on Color {
-  Color darken(final double amount) {
-    final hsl = HSLColor.fromColor(this);
-    return hsl
-        .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
-        .toColor();
-  }
-
-  Color lighten(final double amount) {
-    final hsl = HSLColor.fromColor(this);
-    return hsl
-        .withLightness((hsl.lightness + amount).clamp(0.0, 1.0))
-        .toColor();
-  }
-}
-
 class HangmanPainter extends CustomPainter {
   final int wrongGuesses;
 
@@ -675,414 +815,94 @@ class HangmanPainter extends CustomPainter {
 
   @override
   void paint(final Canvas canvas, final Size size) {
-    // 3D AHŞAP DARAAĞACI
-    _drawGallows3D(canvas, size);
+    final paint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke;
 
-    // 3D ADAM
-    _drawPerson3D(canvas, size);
-  }
-
-  void _drawGallows3D(final Canvas canvas, final Size size) {
-    // Ahşap rengi
-    final woodColor = const Color(0xFF8B4513);
-    final woodDark = const Color(0xFF654321);
-    final woodLight = const Color(0xFFA0826D);
-
-    // GÖLGELİ TABAN
-    final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width * 0.05 + 3,
-        size.height * 0.88 + 3,
-        size.width * 0.5,
-        size.height * 0.08,
-      ),
-      shadowPaint,
+    // Darağacı tabanı
+    canvas.drawLine(
+      Offset(size.width * 0.1, size.height * 0.9),
+      Offset(size.width * 0.5, size.height * 0.9),
+      paint,
     );
 
-    // TABAN (3D gradient)
-    final basePaint = Paint()
-      ..shader =
-          LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [woodLight, woodColor, woodDark],
-          ).createShader(
-            Rect.fromLTWH(
-              size.width * 0.05,
-              size.height * 0.88,
-              size.width * 0.5,
-              size.height * 0.08,
-            ),
-          );
-
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width * 0.05,
-        size.height * 0.88,
-        size.width * 0.5,
-        size.height * 0.08,
-      ),
-      basePaint,
+    // Dikey direk
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.9),
+      Offset(size.width * 0.2, size.height * 0.1),
+      paint,
     );
 
-    // Taban kenar çizgisi
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width * 0.05,
-        size.height * 0.88,
-        size.width * 0.5,
-        size.height * 0.08,
-      ),
-      Paint()
-        ..color = woodDark
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
+    // Üst yatay çubuk
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.1),
+      Offset(size.width * 0.6, size.height * 0.1),
+      paint,
     );
 
-    // DİKEY DİREK (3D)
-    final verticalPath = Path()
-      ..moveTo(size.width * 0.15, size.height * 0.88)
-      ..lineTo(size.width * 0.15, size.height * 0.08)
-      ..lineTo(size.width * 0.19, size.height * 0.07)
-      ..lineTo(size.width * 0.19, size.height * 0.87)
-      ..close();
-
-    canvas.drawPath(
-      verticalPath,
-      Paint()
-        ..shader =
-            LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [woodDark, woodColor, woodLight],
-            ).createShader(
-              Rect.fromLTWH(
-                size.width * 0.15,
-                size.height * 0.07,
-                size.width * 0.04,
-                size.height * 0.81,
-              ),
-            ),
+    // İp
+    canvas.drawLine(
+      Offset(size.width * 0.6, size.height * 0.1),
+      Offset(size.width * 0.6, size.height * 0.2),
+      paint,
     );
 
-    canvas.drawPath(
-      verticalPath,
-      Paint()
-        ..color = woodDark
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-
-    // YATAY ÇUBUK (3D)
-    final horizontalPath = Path()
-      ..moveTo(size.width * 0.15, size.height * 0.08)
-      ..lineTo(size.width * 0.6, size.height * 0.08)
-      ..lineTo(size.width * 0.61, size.height * 0.11)
-      ..lineTo(size.width * 0.16, size.height * 0.11)
-      ..close();
-
-    canvas.drawPath(
-      horizontalPath,
-      Paint()
-        ..shader =
-            LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [woodLight, woodColor, woodDark],
-            ).createShader(
-              Rect.fromLTWH(
-                size.width * 0.15,
-                size.height * 0.08,
-                size.width * 0.46,
-                size.height * 0.03,
-              ),
-            ),
-    );
-
-    canvas.drawPath(
-      horizontalPath,
-      Paint()
-        ..color = woodDark
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-
-    // İP (bükümlü halat)
-    if (wrongGuesses >= 0) {
-      final ropePaint = Paint()
-        ..color = const Color(0xFFD2691E)
-        ..strokeWidth = 3
-        ..style = PaintingStyle.stroke;
-
-      for (double i = size.height * 0.11; i <= size.height * 0.2; i += 3) {
-        canvas.drawLine(
-          Offset(size.width * 0.6 + sin(i * 0.5) * 1.5, i),
-          Offset(size.width * 0.6 + sin((i + 3) * 0.5) * 1.5, i + 3),
-          ropePaint,
-        );
-      }
-    }
-  }
-
-  void _drawPerson3D(final Canvas canvas, final Size size) {
-    // Renkli 3D adam
-    final bodyColor = const Color(0xFF2196F3); // Mavi
-    final skinColor = const Color(0xFFFFDBB5); // Ten rengi
-
-    // KAFA (1. hata) - 3D sphere
+    // Kafa
     if (wrongGuesses >= 1) {
-      // Gölge
-      canvas.drawCircle(
-        Offset(size.width * 0.6 + 2, size.height * 0.25 + 2),
-        size.height * 0.05,
-        Paint()
-          ..color = Colors.black.withOpacity(0.3)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-      );
-
-      // Kafa gradient
       canvas.drawCircle(
         Offset(size.width * 0.6, size.height * 0.25),
         size.height * 0.05,
-        Paint()
-          ..shader =
-              RadialGradient(
-                colors: [
-                  skinColor,
-                  skinColor,
-                  skinColor,
-                ],
-                stops: [0.3, 0.7, 1.0],
-              ).createShader(
-                Rect.fromCircle(
-                  center: Offset(size.width * 0.6, size.height * 0.25),
-                  radius: size.height * 0.05,
-                ),
-              ),
+        paint,
       );
-
-      // Yüz detayları
-      if (wrongGuesses >= 6) {
-        // X gözler (ölü)
-        final eyePaint = Paint()
-          ..color = Colors.red
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke;
-        canvas.drawLine(
-          Offset(size.width * 0.57, size.height * 0.24),
-          Offset(size.width * 0.585, size.height * 0.25),
-          eyePaint,
-        );
-        canvas.drawLine(
-          Offset(size.width * 0.585, size.height * 0.24),
-          Offset(size.width * 0.57, size.height * 0.25),
-          eyePaint,
-        );
-        canvas.drawLine(
-          Offset(size.width * 0.615, size.height * 0.24),
-          Offset(size.width * 0.63, size.height * 0.25),
-          eyePaint,
-        );
-        canvas.drawLine(
-          Offset(size.width * 0.63, size.height * 0.24),
-          Offset(size.width * 0.615, size.height * 0.25),
-          eyePaint,
-        );
-
-        // Üzgün ağız
-        final mouthPath = Path()
-          ..moveTo(size.width * 0.57, size.height * 0.27)
-          ..quadraticBezierTo(
-            size.width * 0.6,
-            size.height * 0.265,
-            size.width * 0.63,
-            size.height * 0.27,
-          );
-        canvas.drawPath(mouthPath, eyePaint);
-      } else {
-        // Normal gözler
-        canvas.drawCircle(
-          Offset(size.width * 0.58, size.height * 0.245),
-          2,
-          Paint()..color = Colors.black,
-        );
-        canvas.drawCircle(
-          Offset(size.width * 0.62, size.height * 0.245),
-          2,
-          Paint()..color = Colors.black,
-        );
-
-        // Gülümseyen ağız
-        final mouthPath = Path()
-          ..moveTo(size.width * 0.57, size.height * 0.265)
-          ..quadraticBezierTo(
-            size.width * 0.6,
-            size.height * 0.275,
-            size.width * 0.63,
-            size.height * 0.265,
-          );
-        canvas.drawPath(
-          mouthPath,
-          Paint()
-            ..color = Colors.black
-            ..strokeWidth = 1.5
-            ..style = PaintingStyle.stroke,
-        );
-      }
     }
 
-    // GÖVDE (2. hata) - 3D silindir
+    // Gövde
     if (wrongGuesses >= 2) {
       canvas.drawLine(
-        Offset(size.width * 0.6 + 2, size.height * 0.3 + 2),
-        Offset(size.width * 0.6 + 2, size.height * 0.48 + 2),
-        Paint()
-          ..color = Colors.black.withOpacity(0.3)
-          ..strokeWidth = 6
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-      );
-
-      canvas.drawLine(
         Offset(size.width * 0.6, size.height * 0.3),
-        Offset(size.width * 0.6, size.height * 0.48),
-        Paint()
-          ..shader =
-              LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  bodyColor,
-                  bodyColor,
-                  bodyColor,
-                ],
-              ).createShader(
-                Rect.fromLTWH(
-                  size.width * 0.6 - 3,
-                  size.height * 0.3,
-                  6,
-                  size.height * 0.18,
-                ),
-              )
-          ..strokeWidth = 8
-          ..strokeCap = StrokeCap.round,
+        Offset(size.width * 0.6, size.height * 0.5),
+        paint,
       );
     }
 
-    // SOL KOL (3. hata)
+    // Sol kol
     if (wrongGuesses >= 3) {
       canvas.drawLine(
-        Offset(size.width * 0.6 + 2, size.height * 0.34 + 2),
-        Offset(size.width * 0.52 + 2, size.height * 0.4 + 2),
-        Paint()
-          ..color = Colors.black.withOpacity(0.3)
-          ..strokeWidth = 5
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
-      );
-
-      canvas.drawLine(
-        Offset(size.width * 0.6, size.height * 0.34),
-        Offset(size.width * 0.52, size.height * 0.4),
-        Paint()
-          ..color = bodyColor
-          ..strokeWidth = 6
-          ..strokeCap = StrokeCap.round,
+        Offset(size.width * 0.6, size.height * 0.35),
+        Offset(size.width * 0.5, size.height * 0.4),
+        paint,
       );
     }
 
-    // SAĞ KOL (4. hata)
+    // Sağ kol
     if (wrongGuesses >= 4) {
       canvas.drawLine(
-        Offset(size.width * 0.6 + 2, size.height * 0.34 + 2),
-        Offset(size.width * 0.68 + 2, size.height * 0.4 + 2),
-        Paint()
-          ..color = Colors.black.withOpacity(0.3)
-          ..strokeWidth = 5
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
-      );
-
-      canvas.drawLine(
-        Offset(size.width * 0.6, size.height * 0.34),
-        Offset(size.width * 0.68, size.height * 0.4),
-        Paint()
-          ..color = bodyColor
-          ..strokeWidth = 6
-          ..strokeCap = StrokeCap.round,
+        Offset(size.width * 0.6, size.height * 0.35),
+        Offset(size.width * 0.7, size.height * 0.4),
+        paint,
       );
     }
 
-    // SOL BACAK (5. hata)
+    // Sol bacak
     if (wrongGuesses >= 5) {
       canvas.drawLine(
-        Offset(size.width * 0.6 + 2, size.height * 0.48 + 2),
-        Offset(size.width * 0.55 + 2, size.height * 0.6 + 2),
-        Paint()
-          ..color = Colors.black.withOpacity(0.3)
-          ..strokeWidth = 5
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
-      );
-
-      canvas.drawLine(
-        Offset(size.width * 0.6, size.height * 0.48),
-        Offset(size.width * 0.55, size.height * 0.6),
-        Paint()
-          ..color = bodyColor
-          ..strokeWidth = 6
-          ..strokeCap = StrokeCap.round,
+        Offset(size.width * 0.6, size.height * 0.5),
+        Offset(size.width * 0.5, size.height * 0.65),
+        paint,
       );
     }
 
-    // SAĞ BACAK (6. hata - ölüm)
+    // Sağ bacak
     if (wrongGuesses >= 6) {
       canvas.drawLine(
-        Offset(size.width * 0.6 + 2, size.height * 0.48 + 2),
-        Offset(size.width * 0.65 + 2, size.height * 0.6 + 2),
-        Paint()
-          ..color = Colors.black.withOpacity(0.3)
-          ..strokeWidth = 5
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
-      );
-
-      canvas.drawLine(
-        Offset(size.width * 0.6, size.height * 0.48),
-        Offset(size.width * 0.65, size.height * 0.6),
-        Paint()
-          ..color = bodyColor
-          ..strokeWidth = 6
-          ..strokeCap = StrokeCap.round,
-      );
-
-      // Ölüm efekti - kırmızı parlama
-      canvas.drawCircle(
-        Offset(size.width * 0.6, size.height * 0.4),
-        size.height * 0.15,
-        Paint()
-          ..color = Colors.red.withOpacity(0.2)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20),
+        Offset(size.width * 0.6, size.height * 0.5),
+        Offset(size.width * 0.7, size.height * 0.65),
+        paint,
       );
     }
   }
 
   @override
   bool shouldRepaint(covariant final CustomPainter oldDelegate) => true;
-}
-
-// Extension'lar tekrar - Painter'dan sonra da ekleyelim
-extension ColorExtensionHangman on Color {
-  Color darken(final double amount) {
-    final hsl = HSLColor.fromColor(this);
-    return hsl
-        .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
-        .toColor();
-  }
-
-  Color lighten(final double amount) {
-    final hsl = HSLColor.fromColor(this);
-    return hsl
-        .withLightness((hsl.lightness + amount).clamp(0.0, 1.0))
-        .toColor();
-  }
 }
