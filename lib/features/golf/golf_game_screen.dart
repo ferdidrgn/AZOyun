@@ -1,11 +1,11 @@
 import 'package:AZOyun/features/golf/golf_game.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
+import '../../core/services/ad_manager.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/widgets/game_button.dart';
 import '../../core/widgets/banner_ad.dart';
-import '../../core/services/ad_manager.dart';
+import '../../core/widgets/game_button.dart';
 
 class GolfGameScreen extends StatefulWidget {
   final String roomId;
@@ -35,11 +35,13 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
   void initState() {
     super.initState();
     _listenToRoom();
-    AdManager().onGameStart();
+    AdManager().onGameEnter();
   }
 
   void _listenToRoom() {
-    _database.child('golf_rooms/${widget.roomId}').onValue.listen((event) {
+    _database.child('golf_rooms/${widget.roomId}').onValue.listen((
+      final event,
+    ) {
       if (event.snapshot.value != null && mounted) {
         final data = Map<String, dynamic>.from(event.snapshot.value as Map);
         setState(() {
@@ -55,7 +57,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
     });
   }
 
-  void _handleGameEvent(String message) {
+  void _handleGameEvent(final String message) {
     setState(() {
       _gameMessage = message;
     });
@@ -83,13 +85,13 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
     final players = Map<String, dynamic>.from(_roomData!['players'] as Map);
     final scores = <Map<String, dynamic>>[];
 
-    players.forEach((key, value) {
+    players.forEach((final key, final value) {
       int totalScore = 0;
       final holeScores = value['holeScores'];
 
       if (holeScores != null) {
         final holeScoresMap = Map<String, dynamic>.from(holeScores as Map);
-        holeScoresMap.forEach((hole, score) {
+        holeScoresMap.forEach((final hole, final score) {
           totalScore += (score as num).toInt();
         });
       }
@@ -101,7 +103,9 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
       });
     });
 
-    scores.sort((a, b) => (a['score'] as int).compareTo(b['score'] as int));
+    scores.sort(
+      (final a, final b) => (a['score'] as int).compareTo(b['score'] as int),
+    );
     final winner = scores.first;
 
     if (!mounted) return;
@@ -109,7 +113,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Row(
           children: [
             Icon(Icons.emoji_events, color: Colors.amber, size: 32),
@@ -153,7 +157,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
               const SizedBox(height: 10),
               Text('Final Skorları:', style: AppTextStyles.label),
               const SizedBox(height: 12),
-              ...scores.asMap().entries.map((entry) {
+              ...scores.asMap().entries.map((final entry) {
                 final index = entry.key;
                 final player = entry.value;
                 final medal = index == 0
@@ -205,7 +209,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
           GameButton(
             text: 'ANA MENÜYE DÖN',
             onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
+              Navigator.of(context).popUntil((final route) => route.isFirst);
             },
             color: AppColors.golfPrimary,
             width: double.infinity,
@@ -245,7 +249,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: players.entries.map((entry) {
+              children: players.entries.map((final entry) {
                 final player = entry.value;
                 final shots = player['shots'] ?? 0;
                 final isMe = player['name'] == widget.playerName;
@@ -317,7 +321,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (_gameStatus == 'waiting') {
       return Scaffold(
         appBar: AppBar(
@@ -363,7 +367,7 @@ class _GolfGameScreenState extends State<GolfGameScreen> {
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
-                  builder: (context) => AlertDialog(
+                  builder: (final context) => AlertDialog(
                     title: const Text('Oyundan Çık?'),
                     content: const Text('Emin misin? İlerlemen kaybolacak.'),
                     actions: [

@@ -61,7 +61,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen> {
   void initState() {
     super.initState();
     _listenToRoom();
-    AdManager().onGameStart();
+    AdManager().onGameEnter();
   }
 
   void _listenToRoom() {
