@@ -5,7 +5,7 @@ import 'dart:math';
 class RoomService {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
-  /// Oda kodu oluştur
+  /// Oda kodu oluştur (6 karakter)
   String generateRoomCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final random = Random();
@@ -22,10 +22,10 @@ class RoomService {
     return 'room_${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  /// Oda oluştur (generic)
+  /// Oda oluştur
   Future<String> createRoom({
-    required String gamePath,
-    required Map<String, dynamic> roomData,
+    required final String gamePath,
+    required final Map<String, dynamic> roomData,
   }) async {
     final roomId = generateRoomId();
     await _database.child('$gamePath/$roomId').set(roomData);
@@ -34,8 +34,8 @@ class RoomService {
 
   /// Oda koduna göre oda bul
   Future<Map<String, dynamic>?> findRoomByCode({
-    required String gamePath,
-    required String roomCode,
+    required final String gamePath,
+    required final String roomCode,
   }) async {
     final snapshot = await _database
         .child(gamePath)
@@ -54,14 +54,16 @@ class RoomService {
   }
 
   /// Bekleyen odaları dinle
-  Stream<List<Map<String, dynamic>>> listenToWaitingRooms(String gamePath) {
-    return _database.child(gamePath).onValue.map((event) {
+  Stream<List<Map<String, dynamic>>> listenToWaitingRooms(
+    final String gamePath,
+  ) {
+    return _database.child(gamePath).onValue.map((final event) {
       if (event.snapshot.value == null) return <Map<String, dynamic>>[];
 
       final rooms = event.snapshot.value as Map<dynamic, dynamic>;
       final List<Map<String, dynamic>> roomList = [];
 
-      rooms.forEach((key, value) {
+      rooms.forEach((final key, final value) {
         final room = Map<String, dynamic>.from(value as Map);
         room['id'] = key;
         if (room['status'] == 'waiting') {
@@ -75,10 +77,10 @@ class RoomService {
 
   /// Oda dinle
   Stream<Map<String, dynamic>?> listenToRoom({
-    required String gamePath,
-    required String roomId,
+    required final String gamePath,
+    required final String roomId,
   }) {
-    return _database.child('$gamePath/$roomId').onValue.map((event) {
+    return _database.child('$gamePath/$roomId').onValue.map((final event) {
       if (event.snapshot.value == null) return null;
       return Map<String, dynamic>.from(event.snapshot.value as Map);
     });
@@ -86,19 +88,19 @@ class RoomService {
 
   /// Oda güncelle
   Future<void> updateRoom({
-    required String gamePath,
-    required String roomId,
-    required Map<String, dynamic> updates,
+    required final String gamePath,
+    required final String roomId,
+    required final Map<String, dynamic> updates,
   }) async {
     await _database.child('$gamePath/$roomId').update(updates);
   }
 
   /// Oyuncu ekle
   Future<void> addPlayer({
-    required String gamePath,
-    required String roomId,
-    required String playerKey,
-    required Map<String, dynamic> playerData,
+    required final String gamePath,
+    required final String roomId,
+    required final String playerKey,
+    required final Map<String, dynamic> playerData,
   }) async {
     await _database
         .child('$gamePath/$roomId/players/$playerKey')
@@ -107,10 +109,10 @@ class RoomService {
 
   /// Oyuncu güncelle
   Future<void> updatePlayer({
-    required String gamePath,
-    required String roomId,
-    required String playerKey,
-    required Map<String, dynamic> updates,
+    required final String gamePath,
+    required final String roomId,
+    required final String playerKey,
+    required final Map<String, dynamic> updates,
   }) async {
     await _database
         .child('$gamePath/$roomId/players/$playerKey')
@@ -119,26 +121,50 @@ class RoomService {
 
   /// Oyun durumunu değiştir
   Future<void> setGameStatus({
-    required String gamePath,
-    required String roomId,
-    required String status,
+    required final String gamePath,
+    required final String roomId,
+    required final String status,
   }) async {
     await _database.child('$gamePath/$roomId/status').set(status);
   }
 
   /// Oda sil
   Future<void> deleteRoom({
-    required String gamePath,
-    required String roomId,
+    required final String gamePath,
+    required final String roomId,
   }) async {
     await _database.child('$gamePath/$roomId').remove();
   }
+
+  /// Eski odaları temizle (1 saatten eski)
+  Future<void> cleanOldRooms(final String gamePath) async {
+    final snapshot = await _database.child(gamePath).get();
+    if (!snapshot.exists) return;
+
+    final rooms = Map<String, dynamic>.from(snapshot.value as Map);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final oneHourAgo = now - (60 * 60 * 1000);
+
+    for (var entry in rooms.entries) {
+      final roomId = entry.key;
+      final room = Map<String, dynamic>.from(entry.value as Map);
+      final createdAt = room['createdAt'] ?? 0;
+
+      if (createdAt < oneHourAgo) {
+        await deleteRoom(gamePath: gamePath, roomId: roomId);
+      }
+    }
+  }
 }
 
-/// 🎯 Oyun yolları
+/// 🎯 Oyun Yolları
 class GamePaths {
   static const String hangman = 'hangman_rooms';
   static const String golf = 'golf_rooms';
-  static const String freeKick = 'freekick_rooms';
-  static const String racing = 'racing_rooms';
+  static const String soccer = 'soccer_rooms';
+  static const String math = 'math_rooms';
+  static const String cityPuzzle = 'city_puzzle_rooms';
+  static const String wordPuzzle = 'word_puzzle_rooms';
+  static const String vampire = 'vampire_rooms';
+  static const String liarCafe = 'liar_cafe_rooms';
 }
