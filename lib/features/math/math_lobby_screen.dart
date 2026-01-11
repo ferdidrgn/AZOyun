@@ -1,4 +1,5 @@
 import 'package:AZOyun/core/services/ad_manager.dart';
+import 'package:AZOyun/core/services/secure_local_storage.dart';
 import 'package:AZOyun/core/theme/app_colors.dart';
 import 'package:AZOyun/core/theme/app_text_styles.dart';
 import 'package:AZOyun/core/widgets/game_button.dart';
@@ -6,6 +7,7 @@ import 'package:AZOyun/room_service.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class MathLobbyScreen extends StatefulWidget {
   const MathLobbyScreen({super.key});
@@ -20,25 +22,32 @@ class _MathLobbyScreenState extends State<MathLobbyScreen> {
   String? playerName;
   bool isLoading = false;
 
+  static const _secureStore = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
+
   @override
   void initState() {
     super.initState();
     _loadPlayerName();
   }
 
+  // OKUMA: Artık çok daha kolay
   Future<void> _loadPlayerName() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedName = prefs.getString('player_name');
-    if (savedName != null && savedName.isNotEmpty) {
-      setState(() => playerName = savedName);
+    final savedName = await _secureStore.read(key: 'player_name');
+    if (savedName != null) {
+      setState(() {
+        playerName = savedName;
+      });
     } else {
       _showNameDialog();
     }
   }
 
+  // YAZMA: Tek satır
   Future<void> _savePlayerName(final String name) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('player_name', name);
+    await _secureStore.write(key: 'player_name', value: name);
     setState(() => playerName = name);
   }
 
@@ -79,6 +88,7 @@ class _MathLobbyScreenState extends State<MathLobbyScreen> {
     }
 
     setState(() => isLoading = true);
+    await SecureLocalStorage().incrementGameEnterCount();
 
     try {
       final roomCode = _roomService.generateRoomCode();
