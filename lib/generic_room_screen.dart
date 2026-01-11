@@ -58,7 +58,7 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       _handleDisconnect();
@@ -82,7 +82,7 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
   }
 
   void _listenToRoom() {
-    roomRef.onValue.listen((event) {
+    roomRef.onValue.listen((final event) {
       if (!mounted) return;
 
       if (event.snapshot.value == null) {
@@ -113,7 +113,7 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('⚠️ Oda Kapandı'),
         content: const Text('Oda sahibi odayı kapattı.'),
         actions: [
@@ -135,7 +135,7 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
+        builder: (final context) =>
             widget.gameScreen(widget.roomId, widget.playerName),
       ),
     );
@@ -143,21 +143,21 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
 
   void _showResults() {
     final scores = <String, int>{};
-    players.forEach((key, player) {
+    players.forEach((final key, final player) {
       scores[player['name']] = player['score'] ?? 0;
     });
 
     final sortedScores = scores.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((final a, final b) => b.value.compareTo(a.value));
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('🏆 Oyun Bitti!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: sortedScores.asMap().entries.map((entry) {
+          children: sortedScores.asMap().entries.map((final entry) {
             final index = entry.key;
             final score = entry.value;
             final medals = ['🥇', '🥈', '🥉'];
@@ -225,7 +225,7 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
         await _handleDisconnect();
@@ -340,7 +340,7 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                ...players.entries.map((entry) {
+                                ...players.entries.map((final entry) {
                                   final player = entry.value;
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 12),
@@ -352,7 +352,7 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
                                     child: Row(
                                       children: [
                                         Icon(
-                                          player['isHost'] == true
+                                          widget.isHost == true
                                               ? Icons.star
                                               : Icons.person,
                                           color: Colors.yellow,
