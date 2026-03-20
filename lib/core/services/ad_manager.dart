@@ -4,7 +4,7 @@ import 'package:AZOyun/core/services/secure_local_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-/// 📢 Reklam Yönetici - Secure Storage ile
+/// 📢 Reklam Yönetici
 class AdManager {
   static final AdManager _instance = AdManager._internal();
 
@@ -16,21 +16,16 @@ class AdManager {
 
   bool _isInitialized = false;
   bool _showAds = true;
-
-  // Reklam sayaçları (memory'de)
   int _sessionAdsShown = 0;
 
-  // Reklam ayarları
   static const int _gamesBeforeInterstitial = 5;
   static const int _maxAdsPerSession = 8;
 
-  // Ad instances
   InterstitialAd? _interstitialAd;
   RewardedAd? _rewardedAd;
   bool _isInterstitialAdReady = false;
   bool _isRewardedAdReady = false;
 
-  /// Reklam sistemini başlat
   Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -45,43 +40,39 @@ class AdManager {
     }
   }
 
-  /// Banner ad unit ID
   static String get bannerAdUnitId {
-    if (kDebugMode)
+    if (kDebugMode) {
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/6300978111'
           : 'ca-app-pub-3940256099942544/2934735716';
-    else
-      return Platform.isAndroid
-          ? 'ca-app-pub-5779807348211992/4555290310'
-          : 'YOUR_IOS_BANNER_ID';
+    }
+    return Platform.isAndroid
+        ? 'ca-app-pub-5779807348211992/4555290310'
+        : 'YOUR_IOS_BANNER_ID';
   }
 
-  /// Interstitial ad unit ID
   static String get interstitialAdUnitId {
-    if (kDebugMode)
+    if (kDebugMode) {
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/1033173712'
           : 'ca-app-pub-3940256099942544/4411468910';
-    else
-      return Platform.isAndroid
-          ? 'ca-app-pub-5779807348211992/8336524049'
-          : 'YOUR_IOS_INTERSTITIAL_ID';
+    }
+    return Platform.isAndroid
+        ? 'ca-app-pub-5779807348211992/8336524049'
+        : 'YOUR_IOS_INTERSTITIAL_ID';
   }
 
-  /// Rewarded ad unit ID
   static String get rewardedAdUnitId {
-    if (kDebugMode)
+    if (kDebugMode) {
       return Platform.isAndroid
           ? 'ca-app-pub-3940256099942544/5224354917'
           : 'ca-app-pub-3940256099942544/1712485313';
-    else
-      return Platform.isAndroid
-          ? 'ca-app-pub-5779807348211992/6241661981'
-          : 'YOUR_IOS_REWARDED_ID';
+    }
+    return Platform.isAndroid
+        ? 'ca-app-pub-5779807348211992/6241661981'
+        : 'YOUR_IOS_REWARDED_ID';
   }
 
-  /// Interstitial ad yükle
   void _loadInterstitialAd() {
     InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
@@ -95,7 +86,6 @@ class AdManager {
           _interstitialAd!.fullScreenContentCallback =
               FullScreenContentCallback(
                 onAdDismissedFullScreenContent: (final ad) {
-                  debugPrint('📢 Interstitial ad dismissed');
                   ad.dispose();
                   _isInterstitialAdReady = false;
                   _loadInterstitialAd();
@@ -117,7 +107,6 @@ class AdManager {
     );
   }
 
-  /// Rewarded ad yükle
   void _loadRewardedAd() {
     RewardedAd.load(
       adUnitId: rewardedAdUnitId,
@@ -130,7 +119,6 @@ class AdManager {
 
           _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (final ad) {
-              debugPrint('📢 Rewarded ad dismissed');
               ad.dispose();
               _isRewardedAdReady = false;
               _loadRewardedAd();
@@ -152,61 +140,44 @@ class AdManager {
     );
   }
 
-  /// Oyuna giriş - sayaç artır
   Future<void> onGameEnter() async {
     await _storage.incrementGameEnterCount();
     final count = await _storage.getGameEnterCount();
     debugPrint('🎮 Game entered - total: $count');
   }
 
-  /// Oyun bitişi - interstitial göster
   Future<void> onGameEnd() async {
     if (!_canShowAd()) return;
 
     final gameCount = await _storage.getGameEnterCount();
 
-    // Her 5 oyunda bir göster
     if (gameCount % _gamesBeforeInterstitial == 0 &&
         _sessionAdsShown < _maxAdsPerSession &&
         _isInterstitialAdReady &&
         _interstitialAd != null) {
       debugPrint('📢 Showing interstitial (Game: $gameCount)');
       _sessionAdsShown++;
-
-      await _interstitialAd!.show();
+      // FIX: show() void döndürüyor, await kaldırıldı
+      _interstitialAd!.show();
       _isInterstitialAdReady = false;
-    } else {
-      debugPrint(
-        '⏭️ Skipping ad (Game: $gameCount / Next at: ${((gameCount ~/ _gamesBeforeInterstitial) + 1) * _gamesBeforeInterstitial})',
-      );
     }
   }
 
-  /// Rewarded ad göster (bonus için)
   Future<bool> showRewardedAd({
     required final String roomId,
     required final Function(RewardItem) onRewarded,
   }) async {
-    if (!_isInitialized || !_showAds) {
-      debugPrint('⚠️ Ads not available');
-      return false;
-    }
+    if (!_isInitialized || !_showAds) return false;
 
-    // Aynı odada daha önce gösterildiyse gösterme
     final alreadyShown = await _storage.isRewardedShownForRoom(roomId);
-    if (alreadyShown) {
-      debugPrint('⚠️ Rewarded already shown for this room');
-      return false;
-    }
+    if (alreadyShown) return false;
 
-    if (!_isRewardedAdReady || _rewardedAd == null) {
-      debugPrint('⚠️ Rewarded ad not ready');
-      return false;
-    }
+    if (!_isRewardedAdReady || _rewardedAd == null) return false;
 
     bool rewardGranted = false;
 
-    await _rewardedAd!.show(
+    // FIX: show() void döndürüyor, await kaldırıldı
+    _rewardedAd!.show(
       onUserEarnedReward: (final ad, final reward) {
         debugPrint('🎁 User earned reward: ${reward.amount} ${reward.type}');
         onRewarded(reward);
@@ -219,61 +190,27 @@ class AdManager {
     }
 
     _isRewardedAdReady = false;
-
     return rewardGranted;
   }
 
-  /// Reklam gösterilebilir mi?
   bool _canShowAd() {
-    if (!_isInitialized) {
-      debugPrint('⚠️ AdManager not initialized');
-      return false;
-    }
-
-    if (!_showAds) {
-      debugPrint('⚠️ Ads disabled');
-      return false;
-    }
-
-    if (_sessionAdsShown >= _maxAdsPerSession) {
-      debugPrint('⚠️ Max ads per session reached');
-      return false;
-    }
-
+    if (!_isInitialized) return false;
+    if (!_showAds) return false;
+    if (_sessionAdsShown >= _maxAdsPerSession) return false;
     return true;
   }
 
-  /// Reklamları kapat
-  void disableAds() {
-    _showAds = false;
-    debugPrint('📢 Ads disabled');
-  }
+  void disableAds() => _showAds = false;
+  void enableAds() => _showAds = true;
+  void resetSessionStats() => _sessionAdsShown = 0;
 
-  /// Reklamları aç
-  void enableAds() {
-    _showAds = true;
-    debugPrint('📢 Ads enabled');
-  }
-
-  /// Session istatistiklerini sıfırla
-  void resetSessionStats() {
-    _sessionAdsShown = 0;
-    debugPrint('📊 Session ad stats reset');
-  }
-
-  /// Dispose
   void dispose() {
     _interstitialAd?.dispose();
     _rewardedAd?.dispose();
-    debugPrint('📢 AdManager disposed');
   }
 
-  // Getters
   bool get isInitialized => _isInitialized;
-
   bool get areAdsEnabled => _showAds;
-
   bool get isRewardedAdReady => _isRewardedAdReady;
-
   int get sessionAdsShown => _sessionAdsShown;
 }

@@ -35,6 +35,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
   String gameStatus = 'waiting';
   Map<String, dynamic> players = {};
   bool isDisconnected = false;
+  bool _gameStarted = false;
 
   @override
   void initState() {
@@ -92,7 +93,8 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
         players = Map<String, dynamic>.from(data['players'] ?? {});
       });
 
-      if (gameStatus == 'playing' && mounted) {
+      if (gameStatus == 'playing' && mounted && !_gameStarted) {
+        _gameStarted = true;
         _startGame();
       }
 
@@ -124,8 +126,6 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
   }
 
   Future<void> _startGame() async {
-    if (gameStatus != 'playing') return;
-
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -135,6 +135,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
         ),
       ),
     );
+    _gameStarted = false;
   }
 
   void _showResults() {
@@ -157,7 +158,6 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
             final index = entry.key;
             final score = entry.value;
             final medal = index == 0 ? '🥇' : '🥈';
-
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
@@ -165,15 +165,9 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                   Text(medal, style: const TextStyle(fontSize: 24)),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      score.key,
-                      style: const TextStyle(fontSize: 18),
-                    ),
+                    child: Text(score.key, style: const TextStyle(fontSize: 18)),
                   ),
-                  Text(
-                    '${score.value} gol',
-                    style: const TextStyle(fontSize: 16),
-                  ),
+                  Text('${score.value} gol', style: const TextStyle(fontSize: 16)),
                 ],
               ),
             );
@@ -201,9 +195,9 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
 
   Future<void> _startGameAsHost() async {
     if (players.length < 2) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('2 oyuncu gerekli!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('2 oyuncu gerekli!')),
+      );
       return;
     }
 
@@ -216,10 +210,12 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
 
   @override
   Widget build(final BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (final didPop) async {
+        if (didPop) return;
         await _handleDisconnect();
-        return true;
+        if (mounted) Navigator.pop(context);
       },
       child: Scaffold(
         backgroundColor: AppColors.primary,
@@ -255,7 +251,6 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                     ],
                   ),
                 ),
-
                 Expanded(
                   child: Center(
                     child: SingleChildScrollView(
@@ -295,9 +290,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                                         Clipboard.setData(
                                           ClipboardData(text: roomCode),
                                         );
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
+                                        ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
                                             content: Text('Kod kopyalandı!'),
                                           ),
@@ -309,9 +302,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 40),
-
                           Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
@@ -327,6 +318,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                                 const SizedBox(height: 16),
                                 ...players.entries.map((final entry) {
                                   final player = entry.value;
+                                  final isPlayerHost = player['isHost'] == true;
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 12),
                                     padding: const EdgeInsets.all(12),
@@ -337,7 +329,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                                     child: Row(
                                       children: [
                                         Icon(
-                                          player['isHost'] == true
+                                          isPlayerHost
                                               ? Icons.star
                                               : Icons.person,
                                           color: Colors.yellow,
@@ -350,13 +342,11 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                                       ],
                                     ),
                                   );
-                                }).toList(),
+                                }),
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 40),
-
                           if (widget.isHost && gameStatus == 'waiting')
                             GameButton(
                               text: 'OYUNU BAŞLAT',
@@ -366,7 +356,6 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                               width: 300,
                               height: 60,
                             ),
-
                           if (!widget.isHost && gameStatus == 'waiting')
                             Container(
                               padding: const EdgeInsets.all(16),
@@ -393,7 +382,6 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                     ),
                   ),
                 ),
-
                 const AdaptiveBannerAdWidget(padding: EdgeInsets.zero),
               ],
             ),

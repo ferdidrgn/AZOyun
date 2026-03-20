@@ -3,13 +3,13 @@ import 'package:AZOyun/core/theme/app_colors.dart';
 import 'package:AZOyun/core/theme/app_text_styles.dart';
 import 'package:AZOyun/core/widgets/banner_ad.dart';
 import 'package:AZOyun/core/widgets/game_button.dart';
-import 'package:AZOyun/features/golf/golf_game.dart';
+import 'package:AZOyun/features/golf/golf_game_screen.dart';
 import 'package:AZOyun/room_service.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// ⛳ Golf Oda Ekranı - Host Kontrolü ve Oda Silme
+/// ⛳ Golf Oda Ekranı
 class GolfRoomScreen extends StatefulWidget {
   final String roomId;
   final String playerName;
@@ -38,6 +38,7 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
   int currentHole = 1;
   String? myPlayerKey;
   bool isDisconnected = false;
+  bool _gameStarted = false; // FIX: çift navigasyon önlenir
 
   @override
   void initState() {
@@ -68,7 +69,6 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
     if (!snapshot.exists) return;
 
     final playerData = Map<String, dynamic>.from(snapshot.value as Map);
-
     playerData.forEach((final key, final value) {
       if (value['name'] == widget.playerName) {
         myPlayerKey = key;
@@ -82,16 +82,13 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
 
     try {
       if (widget.isHost || gameStatus == 'finished') {
-        // Host ayrılırsa veya oyun bittiyse odayı sil
         await _roomService.deleteRoom(
           gamePath: GamePaths.golf,
           roomId: widget.roomId,
         );
       } else if (myPlayerKey != null) {
-        // Normal oyuncu - sadece kendini çıkar
         await roomRef.child('players/$myPlayerKey').remove();
 
-        // Kalan oyuncu varsa birini host yap
         final snapshot = await roomRef.child('players').get();
         if (snapshot.exists) {
           final remainingPlayers = Map<String, dynamic>.from(
@@ -113,7 +110,6 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
       if (!mounted) return;
 
       if (event.snapshot.value == null) {
-        // Oda silindi
         _showRoomDeletedDialog();
         return;
       }
@@ -127,12 +123,11 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
         currentHole = data['currentHole'] ?? 1;
       });
 
-      // Oyun başladı
-      if (gameStatus == 'playing' && mounted) {
+      if (gameStatus == 'playing' && mounted && !_gameStarted) {
+        _gameStarted = true;
         _startGame();
       }
 
-      // Oyun bitti
       if (gameStatus == 'finished' && mounted) {
         _showGameResults();
       }
@@ -162,64 +157,18 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
   }
 
   Future<void> _startGame() async {
-    if (gameStatus != 'playing') return;
-
+    // FIX: GolfGameScreen kullanılıyor, daha temiz yapı
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (final context) => Scaffold(
-          backgroundColor: Colors.black,
-          body: SafeArea(
-            child: Column(
-              children: [
-                // Üst bilgi
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: AppColors.primary,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Delik $currentHole/9',
-                          style: AppTextStyles.h5.white.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Oyun alanı
-                Expanded(
-                  child: GolfGame(
-                    roomId: widget.roomId,
-                    playerName: widget.playerName,
-                    onGameEvent: (final msg) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(msg)));
-                    },
-                    onGameEnd: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-
-                // Skorlar
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.black87,
-                  child: _buildScoreboard(),
-                ),
-              ],
-            ),
-          ),
+        builder: (final context) => GolfGameScreen(
+          roomId: widget.roomId,
+          playerName: widget.playerName,
+          isPlayer1: widget.isHost,
         ),
       ),
     );
+    _gameStarted = false;
   }
 
   Widget _buildScoreboard() {
@@ -227,7 +176,14 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
       mainAxisSize: MainAxisSize.min,
       children: players.entries.map((final entry) {
         final player = entry.value;
-        final totalScore = _calculateTotalScore(player['holeScores'] ?? {});
+        int totalScore = 0;
+        final holeScores = player['holeScores'];
+        if (holeScores != null) {
+          final scoresMap = Map<String, dynamic>.from(holeScores as Map);
+          scoresMap.forEach((final _, final v) {
+            totalScore += (v as num).toInt();
+          });
+        }
 
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -261,7 +217,7 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
 
   int _calculateTotalScore(final Map<dynamic, dynamic> holeScores) {
     int total = 0;
-    holeScores.forEach((final key, final value) {
+    holeScores.forEach((final _, final value) {
       total += (value as int?) ?? 0;
     });
     return total;
@@ -269,9 +225,9 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
 
   Future<void> _startGameAsHost() async {
     if (players.length < 2) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('En az 2 oyuncu gerekli!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('En az 2 oyuncu gerekli!')),
+      );
       return;
     }
 
@@ -281,12 +237,10 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
       status: 'playing',
     );
 
-    // İlk oyuncuyu seç
     await roomRef.update({'currentPlayer': 'player1'});
   }
 
   void _showGameResults() {
-    // Skorları hesapla
     final scores = <String, int>{};
 
     players.forEach((final key, final player) {
@@ -294,7 +248,6 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
       scores[player['name']] = _calculateTotalScore(holeScores);
     });
 
-    // Sırala
     final sortedScores = scores.entries.toList()
       ..sort((final a, final b) => a.value.compareTo(b.value));
 
@@ -341,22 +294,18 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ),
         actions: [
           GameButton(
             text: 'KAPAT',
             onPressed: () async {
-              // Odayı sil
               await _roomService.deleteRoom(
                 gamePath: GamePaths.golf,
                 roomId: widget.roomId,
               );
-
-              // Reklam göster
               await AdManager().onGameEnd();
-
               if (mounted) {
                 Navigator.pop(context);
                 Navigator.pop(context);
@@ -370,10 +319,12 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
 
   @override
   Widget build(final BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (final didPop) async {
+        if (didPop) return;
         await _handleDisconnect();
-        return true;
+        if (mounted) Navigator.pop(context);
       },
       child: Scaffold(
         backgroundColor: AppColors.primary,
@@ -383,7 +334,6 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
             bottom: false,
             child: Column(
               children: [
-                // Header
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(
@@ -410,7 +360,6 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                     ],
                   ),
                 ),
-
                 Expanded(
                   child: Center(
                     child: SingleChildScrollView(
@@ -418,7 +367,6 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Oda kodu
                           Container(
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
@@ -475,10 +423,7 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 40),
-
-                          // Oyuncular
                           Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
@@ -489,10 +434,7 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(
-                                      Icons.people,
-                                      color: Colors.white,
-                                    ),
+                                    const Icon(Icons.people, color: Colors.white),
                                     const SizedBox(width: 8),
                                     Text(
                                       'Oyuncular (${players.length}/4)',
@@ -503,6 +445,7 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                                 const SizedBox(height: 16),
                                 ...players.entries.map((final entry) {
                                   final player = entry.value;
+                                  final isPlayerHost = player['isHost'] == true;
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 12),
                                     padding: const EdgeInsets.all(12),
@@ -513,21 +456,21 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                                     child: Row(
                                       children: [
                                         Icon(
-                                          player['isHost'] == true
+                                          isPlayerHost
                                               ? Icons.star
                                               : Icons.person,
                                           color: Colors.yellow,
                                         ),
                                         const SizedBox(width: 12),
-                                        Text(
-                                          player['name'] ?? 'Oyuncu',
-                                          style: AppTextStyles.bodyLarge.white,
+                                        Expanded(
+                                          child: Text(
+                                            player['name'] ?? 'Oyuncu',
+                                            style: AppTextStyles.bodyLarge.white,
+                                          ),
                                         ),
-                                        if (player['isHost'] == true)
+                                        if (isPlayerHost)
                                           Container(
-                                            margin: const EdgeInsets.only(
-                                              left: 8,
-                                            ),
+                                            margin: const EdgeInsets.only(left: 8),
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 8,
                                               vertical: 4,
@@ -549,14 +492,11 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                                       ],
                                     ),
                                   );
-                                }).toList(),
+                                }),
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 40),
-
-                          // Başlat butonu (sadece host)
                           if (widget.isHost && gameStatus == 'waiting')
                             GameButton(
                               text: 'OYUNU BAŞLAT',
@@ -566,7 +506,6 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                               width: 300,
                               height: 60,
                             ),
-
                           if (!widget.isHost && gameStatus == 'waiting')
                             Container(
                               padding: const EdgeInsets.all(16),
@@ -593,8 +532,6 @@ class _GolfRoomScreenState extends State<GolfRoomScreen>
                     ),
                   ),
                 ),
-
-                // Banner Reklam
                 const AdaptiveBannerAdWidget(padding: EdgeInsets.zero),
               ],
             ),

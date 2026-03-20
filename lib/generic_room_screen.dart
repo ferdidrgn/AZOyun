@@ -6,7 +6,6 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// 🎮 Ortak Room Ekranı - Tüm oyunlar için
 class GenericRoomScreen extends StatefulWidget {
   final String roomId;
   final String playerName;
@@ -41,6 +40,7 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
   String gameStatus = 'waiting';
   Map<String, dynamic> players = {};
   bool isDisconnected = false;
+  bool _gameStarted = false; // FIX: çift navigasyon önlenir
 
   @override
   void initState() {
@@ -98,7 +98,8 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
         players = Map<String, dynamic>.from(data['players'] ?? {});
       });
 
-      if (gameStatus == 'playing' && mounted) {
+      if (gameStatus == 'playing' && mounted && !_gameStarted) {
+        _gameStarted = true;
         _startGame();
       }
 
@@ -130,8 +131,6 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
   }
 
   Future<void> _startGame() async {
-    if (gameStatus != 'playing') return;
-
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -139,6 +138,8 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
             widget.gameScreen(widget.roomId, widget.playerName),
       ),
     );
+    // Geri dönünce tekrar başlatılabilsin
+    _gameStarted = false;
   }
 
   void _showResults() {
@@ -211,9 +212,9 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
 
   Future<void> _startGameAsHost() async {
     if (players.length < 2) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('En az 2 oyuncu gerekli!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('En az 2 oyuncu gerekli!')),
+      );
       return;
     }
 
@@ -226,10 +227,12 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
 
   @override
   Widget build(final BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (final didPop) async {
+        if (didPop) return;
         await _handleDisconnect();
-        return true;
+        if (mounted) Navigator.pop(context);
       },
       child: Scaffold(
         body: Container(
@@ -264,14 +267,12 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
                     ],
                   ),
                 ),
-
                 Expanded(
                   child: Center(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
-                          // Oda Kodu
                           Container(
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
@@ -319,10 +320,7 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 40),
-
-                          // Oyuncular
                           Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
@@ -342,6 +340,9 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
                                 const SizedBox(height: 16),
                                 ...players.entries.map((final entry) {
                                   final player = entry.value;
+                                  // FIX: player['isHost'] kontrol edilmeli, widget.isHost değil
+                                  final isPlayerHost =
+                                      player['isHost'] == true;
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 12),
                                     padding: const EdgeInsets.all(12),
@@ -352,29 +353,51 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
                                     child: Row(
                                       children: [
                                         Icon(
-                                          widget.isHost == true
+                                          isPlayerHost
                                               ? Icons.star
                                               : Icons.person,
-                                          color: Colors.yellow,
+                                          color: isPlayerHost
+                                              ? Colors.yellow
+                                              : Colors.white,
                                         ),
                                         const SizedBox(width: 12),
-                                        Text(
-                                          player['name'] ?? 'Oyuncu',
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            color: Colors.white,
+                                        Expanded(
+                                          child: Text(
+                                            player['name'] ?? 'Oyuncu',
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
+                                        if (isPlayerHost)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.yellow,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'HOST',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   );
-                                }).toList(),
+                                }),
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 40),
-
                           if (widget.isHost && gameStatus == 'waiting')
                             GameButton(
                               text: 'OYUNU BAŞLAT',
@@ -384,7 +407,6 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
                               width: 300,
                               height: 60,
                             ),
-
                           if (!widget.isHost && gameStatus == 'waiting')
                             Container(
                               padding: const EdgeInsets.all(16),
@@ -414,7 +436,6 @@ class _GenericRoomScreenState extends State<GenericRoomScreen>
                     ),
                   ),
                 ),
-
                 const AdaptiveBannerAdWidget(padding: EdgeInsets.zero),
               ],
             ),
