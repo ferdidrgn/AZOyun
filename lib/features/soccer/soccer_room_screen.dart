@@ -1,25 +1,19 @@
-import 'package:AZOyun/core/services/ad_manager.dart';
-import 'package:AZOyun/core/theme/app_colors.dart';
-import 'package:AZOyun/core/theme/app_text_styles.dart';
-import 'package:AZOyun/core/widgets/banner_ad.dart';
-import 'package:AZOyun/core/widgets/game_button.dart';
-import 'package:AZOyun/features/soccer/soccer_game_screen.dart';
-import 'package:AZOyun/room_service.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../../core/services/room_service.dart';
+import '../../core/theme/az_theme.dart';
+import '../../core/widgets/az_widgets.dart';
+import 'soccer_game_screen.dart';
 
 class SoccerRoomScreen extends StatefulWidget {
-  final String roomId;
-  final String playerName;
-  final bool isHost;
-
   const SoccerRoomScreen({
     super.key,
     required this.roomId,
-    required this.playerName,
-    required this.isHost,
+    required this.myKey,
+    required this.myName,
   });
+
+  final String roomId, myKey, myName;
 
   @override
   State<SoccerRoomScreen> createState() => _SoccerRoomScreenState();
@@ -27,365 +21,148 @@ class SoccerRoomScreen extends StatefulWidget {
 
 class _SoccerRoomScreenState extends State<SoccerRoomScreen>
     with WidgetsBindingObserver {
-  final DatabaseReference _database = FirebaseDatabase.instance.ref();
-  final RoomService _roomService = RoomService();
-  late DatabaseReference roomRef;
-
-  String roomCode = '';
-  String gameStatus = 'waiting';
-  Map<String, dynamic> players = {};
-  bool isDisconnected = false;
-  bool _gameStarted = false;
+  final _rooms = RoomService.instance;
+  StreamSubscription? _sub;
+  Map<String, dynamic> _room = {};
+  bool _navigating = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    roomRef = _database.child('soccer_rooms/${widget.roomId}');
-    _listenToRoom();
+    _sub = _rooms
+        .watchRoom(gamePath: GamePaths.soccer, roomId: widget.roomId)
+        .listen(_onRoomData);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _handleDisconnect();
+    _sub?.cancel();
     super.dispose();
   }
 
   @override
-  void didChangeAppLifecycleState(final AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      _handleDisconnect();
+      _leaveRoom();
     }
   }
 
-  Future<void> _handleDisconnect() async {
-    if (isDisconnected) return;
-    isDisconnected = true;
+  void _onRoomData(Map<String, dynamic>? data) {
+    if (!mounted || data == null) return;
+    setState(() => _room = data);
 
-    try {
-      if (widget.isHost || gameStatus == 'finished') {
-        await _roomService.deleteRoom(
-          gamePath: GamePaths.soccer,
-          roomId: widget.roomId,
-        );
-      }
-    } catch (e) {
-      debugPrint('Disconnect error: $e');
-    }
-  }
-
-  void _listenToRoom() {
-    roomRef.onValue.listen((final event) {
-      if (!mounted) return;
-
-      if (event.snapshot.value == null) {
-        _showRoomDeletedDialog();
-        return;
-      }
-
-      final data = Map<String, dynamic>.from(event.snapshot.value as Map);
-
-      setState(() {
-        roomCode = data['roomCode'] ?? '';
-        gameStatus = data['status'] ?? 'waiting';
-        players = Map<String, dynamic>.from(data['players'] ?? {});
-      });
-
-      if (gameStatus == 'playing' && mounted && !_gameStarted) {
-        _gameStarted = true;
-        _startGame();
-      }
-
-      if (gameStatus == 'finished' && mounted) {
-        _showResults();
-      }
-    });
-  }
-
-  void _showRoomDeletedDialog() {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (final context) => AlertDialog(
-        title: const Text('⚠️ Oda Kapandı'),
-        content: const Text('Oda sahibi odayı kapattı.'),
-        actions: [
-          GameButton(
-            text: 'TAMAM',
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
+    if (data['status'] == 'playing' && !_navigating) {
+      _navigating = true;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SoccerGameScreen(
+            roomId: widget.roomId,
+            myKey:  widget.myKey,
+            myName: widget.myName,
           ),
-        ],
-      ),
-    );
+        ),
+      );
+    }
   }
+
+  Map    get _players  => (_room['players'] as Map?) ?? {};
+  String get _code     => _room['code'] ?? '------';
+  bool   get _isHost   => widget.myKey == 'p1';
+  bool   get _canStart => _players.length >= 2;
 
   Future<void> _startGame() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (final context) => SoccerGameScreen(
-          roomId: widget.roomId,
-          playerName: widget.playerName,
-        ),
-      ),
-    );
-    _gameStarted = false;
+    if (!_canStart) { _snack('En az 2 oyuncu gerekli'); return; }
+    await _rooms.setStatus(
+        gamePath: GamePaths.soccer,
+        roomId:   widget.roomId,
+        status:   'playing');
   }
 
-  void _showResults() {
-    final scores = <String, int>{};
-    players.forEach((final key, final player) {
-      scores[player['name']] = player['score'] ?? 0;
-    });
-
-    final sortedScores = scores.entries.toList()
-      ..sort((final a, final b) => b.value.compareTo(a.value));
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (final context) => AlertDialog(
-        title: const Text('🏆 Oyun Bitti!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: sortedScores.asMap().entries.map((final entry) {
-            final index = entry.key;
-            final score = entry.value;
-            final medal = index == 0 ? '🥇' : '🥈';
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  Text(medal, style: const TextStyle(fontSize: 24)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(score.key, style: const TextStyle(fontSize: 18)),
-                  ),
-                  Text('${score.value} gol', style: const TextStyle(fontSize: 16)),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-        actions: [
-          GameButton(
-            text: 'KAPAT',
-            onPressed: () async {
-              await _roomService.deleteRoom(
-                gamePath: GamePaths.soccer,
-                roomId: widget.roomId,
-              );
-              await AdManager().onGameEnd();
-              if (mounted) {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _startGameAsHost() async {
-    if (players.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('2 oyuncu gerekli!')),
-      );
-      return;
+  Future<void> _leaveRoom() async {
+    if (_isHost) {
+      await _rooms.deleteRoom(gamePath: GamePaths.soccer, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(
+          gamePath: GamePaths.soccer, roomId: widget.roomId, playerKey: widget.myKey);
     }
-
-    await _roomService.setGameStatus(
-      gamePath: GamePaths.soccer,
-      roomId: widget.roomId,
-      status: 'playing',
-    );
+    if (mounted) Navigator.pop(context);
   }
+
+  void _snack(String msg) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(msg)));
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (final didPop) async {
-        if (didPop) return;
-        await _handleDisconnect();
-        if (mounted) Navigator.pop(context);
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.primary,
-        body: Container(
-          decoration: const BoxDecoration(gradient: AppColors.freeKickGradient),
-          child: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () async {
-                          await _handleDisconnect();
-                          if (mounted) Navigator.pop(context);
-                        },
-                      ),
-                      const Expanded(
-                        child: Text(
-                          '⚽ SERBEST VURUŞ',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(width: 48),
-                    ],
+      onPopInvoked: (_) => _leaveRoom(),
+      child: AZGradientScaffold(
+        gradient: AZColors.gradOrange,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(children: [
+            Row(children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: _leaveRoom,
+              ),
+              const Expanded(
+                child: Text('SERBEST VURUŞ',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white,
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 48),
+            ]),
+            const SizedBox(height: 20),
+
+            AZRoomCode(code: _code, accentColor: AZColors.orange),
+            const SizedBox(height: 20),
+
+            AZFrostCard(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Oyuncular (${_players.length}/2)',
+                    style: const TextStyle(color: Colors.white,
+                        fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 14),
+                for (final slot in ['p1', 'p2'])
+                  AZPlayerTile(
+                    name:    (_players[slot]?['name'] as String?) ?? slot,
+                    isMe:    slot == widget.myKey,
+                    isHost:  _players[slot]?['isHost'] == true,
+                    emoji:   '⚽',
+                    present: _players.containsKey(slot),
                   ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'ODA KODU',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      roomCode,
-                                      style: const TextStyle(
-                                        fontSize: 48,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 8,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.copy),
-                                      onPressed: () {
-                                        Clipboard.setData(
-                                          ClipboardData(text: roomCode),
-                                        );
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Kod kopyalandı!'),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 40),
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  'Oyuncular (${players.length}/2)',
-                                  style: AppTextStyles.h5.white.bold,
-                                ),
-                                const SizedBox(height: 16),
-                                ...players.entries.map((final entry) {
-                                  final player = entry.value;
-                                  final isPlayerHost = player['isHost'] == true;
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          isPlayerHost
-                                              ? Icons.star
-                                              : Icons.person,
-                                          color: Colors.yellow,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          player['name'] ?? 'Oyuncu',
-                                          style: AppTextStyles.bodyLarge.white,
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 40),
-                          if (widget.isHost && gameStatus == 'waiting')
-                            GameButton(
-                              text: 'OYUNU BAŞLAT',
-                              icon: Icons.play_arrow,
-                              onPressed: _startGameAsHost,
-                              color: Colors.green,
-                              width: 300,
-                              height: 60,
-                            ),
-                          if (!widget.isHost && gameStatus == 'waiting')
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Text(
-                                    'Host oyunu başlatacak...',
-                                    style: AppTextStyles.bodyMedium.white,
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                if (!_canStart)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(children: const [
+                      SizedBox(width: 14, height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white38)),
+                      SizedBox(width: 8),
+                      Text('Rakip bekleniyor...',
+                          style: TextStyle(color: Colors.white54, fontSize: 13)),
+                    ]),
                   ),
-                ),
-                const AdaptiveBannerAdWidget(padding: EdgeInsets.zero),
-              ],
+              ]),
             ),
-          ),
+
+            const Spacer(),
+
+            if (_isHost)
+              AZButton(
+                label: 'OYUNU BAŞLAT', icon: Icons.play_arrow_rounded,
+                onPressed: _canStart ? _startGame : null,
+                color: AZColors.orange, width: double.infinity,
+              )
+            else
+              const AZWaitingCard(message: 'Host oyunu başlatacak...'),
+          ]),
         ),
       ),
     );

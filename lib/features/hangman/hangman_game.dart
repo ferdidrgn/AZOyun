@@ -124,7 +124,7 @@ class _HangmanLobbyState extends State<HangmanLobbyScreen> {
     try {
       final code = _rooms.generateCode();
       final id   = await _rooms.createRoom(
-        path: GamePaths.hangman,
+        gamePath: GamePaths.hangman,
         data: {
           'code': code, 'status': 'waiting',
           'createdAt': ServerValue.timestamp,

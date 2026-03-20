@@ -1,925 +1,797 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/services/room_service.dart';
+import '../../core/theme/az_theme.dart';
+
+// ── Word bank ────────────────────────────────────────────────────────────────
+
+const _kWords = [
+  'FLUTTER','ANDROID','KOTLIN','PYTHON','JAVASCRIPT','YAZILIM',
+  'BILGISAYAR','PROGRAMLAMA','INTERNET','VERITABANI','ALGORITMA',
+  'FUTBOL','BASKETBOL','TENIS','YUZME','BISIKLET','OLIMPIYAT',
+  'SAMPIYONA','STADYUM','VOLEYBOL','ATLETIZM',
+  'ISTANBUL','ANKARA','IZMIR','ANTALYA','BURSA','TRABZON',
+  'ESKISEHIR','GAZIANTEP','SAMSUN',
+  'KAPLAN','ASLAN','KARTAL','PENGUEN','YUNUS','ZEBRA',
+  'GITAR','PIYANO','KEMAN','DAVUL','TROMPET',
+  'TATIL','SEYAHAT','UCAK','PASAPORT','OTEL','PLAJ',
+  'ELMA','ARMUT','MANGO','KIRAZ','PORTAKAL','AVOKADO',
+  'ASTRONOT','GALAKSI','METEOR','YILDIZ','GEZEGEN','ROKET',
+  'DOKTOR','MUHENDIS','OGRETMEN','AVUKAT','PILOT','MIMAR',
+  'KITAP','ROMAN','SENARYO','MAKALE','DERGI','GAZETE',
+];
+
+// ── Colours ──────────────────────────────────────────────────────────────────
+const _kRed    = Color(0xFFD32F2F);
+const _kGreen  = Color(0xFF2E7D32);
+const _kGrey   = Color(0xFF9E9E9E);
+const _kRedLt  = Color(0xFFFFEBEE);
+const _kBg     = Color(0xFFFAFAFA);
+
+// ════════════════════════════════════════════════════════════════════════════
+// GAME SCREEN
+// ════════════════════════════════════════════════════════════════════════════
 
 class HangmanGameScreen extends StatefulWidget {
-  final String roomId;
-  final String playerName;
-  final bool isHost;
-  final Function(String) onGameEvent;
-  final VoidCallback onGameEnd;
-
   const HangmanGameScreen({
     super.key,
     required this.roomId,
-    required this.playerName,
-    required this.isHost,
-    required this.onGameEvent,
-    required this.onGameEnd,
+    required this.myKey,
+    required this.myName,
   });
+
+  final String roomId, myKey, myName;
 
   @override
   State<HangmanGameScreen> createState() => _HangmanGameScreenState();
 }
 
-class _HangmanGameScreenState extends State<HangmanGameScreen> {
-  final DatabaseReference _database = FirebaseDatabase.instance.ref();
-  late DatabaseReference roomRef;
-  final TextEditingController _customWordController = TextEditingController();
+class _HangmanGameScreenState extends State<HangmanGameScreen>
+    with TickerProviderStateMixin {
+  final _db  = FirebaseDatabase.instance.ref();
+  late  DatabaseReference _ref;
+  StreamSubscription? _sub;
 
-  Map<String, dynamic>? _roomData;
-  String? _currentWord;
-  List<String> _guessedLetters = [];
-  int _wrongGuesses = 0;
-  bool _isMyTurn = false;
-  String _gameStatus = 'waiting';
-  bool _needsWordSelection = false;
-  bool _isShowingRoundDialog = false;
-  int _lastCompletedRound = 0;
+  Map<String, dynamic> _room = {};
 
-  String? myPlayerKey;
-  String myRole = '';
-  Map<String, dynamic> players = {};
-  String? selectedPlayer;
+  // Guard against duplicate dialogs
+  final _handledEvents = <String>{};
 
-  final List<String> _wordList = [
-    'FLUTTER',
-    'FIREBASE',
-    'KOTLIN',
-    'ANDROID',
-    'PYTHON',
-    'JAVASCRIPT',
-    'DATABASE',
-    'COMPUTER',
-    'KEYBOARD',
-    'INTERNET',
-    'TELEFON',
-    'OYUN',
-    'BILGISAYAR',
-    'PROGRAMLAMA',
-    'YAZILIM',
-    'MOBIL',
-    'UYGULAMA',
-    'GITAR',
-    'PIYANO',
-    'FUTBOL',
-    'BASKETBOL',
-    'YÜZME',
-    'KOŞU',
-    'BİSİKLET',
-    'ARABA',
-    'UÇAK',
-    'TREN',
-    'GEMI',
-    'OTOBÜS',
-    'METRO',
-  ];
+  // Shake animation on wrong guess
+  late final AnimationController _shakeCtrl;
+  late final Animation<double>   _shakeAnim;
+  int _prevWrong = 0;
 
   @override
   void initState() {
     super.initState();
-    _listenToRoom();
-    roomRef = _database.child('hangman_rooms/${widget.roomId}');
-    _findMyPlayerKey();
-  }
+    _ref = _db.child('${GamePaths.hangman}/${widget.roomId}');
 
-  Future<void> _findMyPlayerKey() async {
-    final snapshot = await roomRef.child('players').get();
-    if (!snapshot.exists) return;
-    final playerData = Map<String, dynamic>.from(snapshot.value as Map);
-    playerData.forEach((final key, final value) {
-      if (value['name'] == widget.playerName) {
-        myPlayerKey = key;
-        myRole = value['role'] ?? '';
-      }
-    });
-  }
+    _shakeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 450));
+    _shakeAnim = TweenSequence([
+      TweenSequenceItem(tween: Tween(begin: 0.0,  end: -12.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -12.0, end: 12.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 12.0,  end: -8.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -8.0,  end: 0.0),  weight: 1),
+    ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeOut));
 
-  void _listenToRoom() {
-    roomRef.onValue.listen((final event) {
-      if (event.snapshot.value != null && mounted) {
-        final data = Map<String, dynamic>.from(event.snapshot.value as Map);
-
-        final oldCurrentGame = _roomData?['currentGame'];
-        final newCurrentGame = data['currentGame'];
-        final oldRound = _roomData?['currentRound'] ?? 0;
-        final newRound = data['currentRound'] ?? 1;
-
-        setState(() {
-          _roomData = data;
-          _gameStatus = data['status'] ?? 'waiting';
-
-          if (data['currentGame'] != null) {
-            final game = Map<String, dynamic>.from(data['currentGame'] as Map);
-            _currentWord = game['word'];
-            _guessedLetters = List<String>.from(game['guessedLetters'] ?? []);
-            _wrongGuesses = game['wrongGuesses'] ?? 0;
-
-            // Sıra mantığı: Kelimeyi seçen bekler, diğeri tahmin eder
-            final String wordChooser = game['wordChooser'] ?? 'player1';
-            final String myRole = widget.isHost ? 'player1' : 'player2';
-            _isMyTurn = wordChooser != myRole; // Kelimeyi seçmeyen tahmin eder
-
-            _needsWordSelection = false;
-          } else if (_gameStatus == 'playing') {
-            // Oyun başladı ama kelime seçilmemiş
-            final bool shouldShow = _shouldIChooseWord();
-
-            // Round değişti mi ve kelime seçilmesi gerekiyor mu?
-            if (newRound > oldRound && shouldShow) {
-              _needsWordSelection = true;
-            } else if (oldCurrentGame == null &&
-                newCurrentGame == null &&
-                shouldShow) {
-              // İlk kelime seçimi
-              _needsWordSelection = true;
-            } else {
-              _needsWordSelection = false;
-            }
-          }
-        });
-
-        _checkGameEnd();
-      }
-    });
-  }
-
-  bool _shouldIChooseWord() {
-    if (_roomData == null) return false;
-
-    final currentRound = _roomData!['currentRound'] ?? 1;
-
-    // Tek roundlarda player1, çift roundlarda player2 seçer
-    if (currentRound % 2 == 1) {
-      return widget.isHost;
-    } else {
-      return !widget.isHost;
-    }
-  }
-
-  void _showWordSelectionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (final context) => AlertDialog(
-        title: const Text('Kelime Seç'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Rakibinin tahmin edeceği kelimeyi seç:',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _showPredefinedWords();
-              },
-              icon: const Icon(Icons.list),
-              label: const Text('LİSTEDEN SEÇ'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _showCustomWordDialog();
-              },
-              icon: const Icon(Icons.create),
-              label: const Text('KENDİ KELİMENİ YAZ'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPredefinedWords() {
-    showDialog(
-      context: context,
-      builder: (final context) => AlertDialog(
-        title: const Text('Kelime Seç'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView.builder(
-            itemCount: _wordList.length,
-            itemBuilder: (final context, final index) {
-              return Card(
-                child: ListTile(
-                  title: Text(
-                    _wordList[index],
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _startGameWithWord(_wordList[index]);
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İPTAL'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showCustomWordDialog() {
-    showDialog(
-      context: context,
-      builder: (final context) => AlertDialog(
-        title: const Text('Kendi Kelimeni Yaz'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _customWordController,
-              decoration: const InputDecoration(
-                hintText: 'Kelimeyi gir',
-                border: OutlineInputBorder(),
-                helperText: 'Sadece harfler (min 3, max 15)',
-              ),
-              textCapitalization: TextCapitalization.characters,
-              maxLength: 15,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              '⚠️ Rakibin bu kelimeyi göremez!',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.orange,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('İPTAL'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final String word = _customWordController.text
-                  .toUpperCase()
-                  .trim()
-                  .replaceAll(RegExp(r'[^A-ZÇĞİÖŞÜ]'), '');
-
-              if (word.length >= 3) {
-                Navigator.pop(context);
-                _startGameWithWord(word);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Kelime en az 3 harf olmalı!'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('BAŞLAT'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _startGameWithWord(final String word) async {
-    final String wordChooser = widget.isHost ? 'player1' : 'player2';
-
-    await _database.child('hangman_rooms/${widget.roomId}/currentGame').set({
-      'word': word,
-      'guessedLetters': [],
-      'wrongGuesses': 0,
-      'wordChooser': wordChooser,
-      'roundStartTime': ServerValue.timestamp,
-    });
-  }
-
-  void _checkGameEnd() {
-    if (_currentWord == null || _isShowingRoundDialog) return;
-
-    // Kelime tamamlandı mı?
-    final bool wordCompleted = _currentWord!
-        .split('')
-        .every(
-          (final letter) => _guessedLetters.contains(letter) || letter == ' ',
-        );
-
-    final currentRound = _roomData?['currentRound'] ?? 1;
-
-    // Bu round'u daha önce tamamladık mı kontrol et
-    if (currentRound > _lastCompletedRound) {
-      if (wordCompleted) {
-        _lastCompletedRound = currentRound;
-        _handleRoundWin(guesserWon: true);
-      } else if (_wrongGuesses >= 6) {
-        _lastCompletedRound = currentRound;
-        _handleRoundWin(guesserWon: false);
-      }
-    }
-  }
-
-  Future<void> _handleRoundWin({required final bool guesserWon}) async {
-    if (_isShowingRoundDialog) return;
-
-    setState(() {
-      _isShowingRoundDialog = true;
-    });
-
-    // Tahmin eden kazandı mı yoksa kelimeyi seçen mi?
-    final game = Map<String, dynamic>.from(_roomData!['currentGame'] as Map);
-    final String wordChooser = game['wordChooser'];
-    final String guesser = wordChooser == 'player1' ? 'player2' : 'player1';
-
-    final String winner = guesserWon ? guesser : wordChooser;
-
-    final currentScore = _roomData?[winner]['score'] ?? 0;
-    await _database
-        .child('hangman_rooms/${widget.roomId}/$winner/score')
-        .set(currentScore + 1);
-
-    final currentRound = _roomData?['currentRound'] ?? 1;
-
-    // Round bitince göster
-    if (mounted) {
-      await _showRoundEndDialog(winner, currentRound, guesserWon);
-    }
-
-    setState(() {
-      _isShowingRoundDialog = false;
-    });
-
-    // 3 round bitti mi kontrol et
-    if (currentRound >= 3) {
-      _endGame();
-    } else {
-      // Yeni round başlat - sadece Player1 günceller
-      if (widget.isHost) {
-        await _database.child('hangman_rooms/${widget.roomId}').update({
-          'currentRound': currentRound + 1,
-          'currentGame': null, // Yeni round için sıfırla
-        });
-      }
-    }
-  }
-
-  Future<void> _showRoundEndDialog(
-    final String winner,
-    final int round,
-    final bool guesserWon,
-  ) async {
-    final String winnerName = winner == 'player1'
-        ? _roomData!['player1']['name']
-        : _roomData!['player2']['name'];
-
-    final String message = guesserWon
-        ? '$winnerName kelimeyi buldu! 🎉'
-        : 'Kelime bulunamadı! $winnerName kazandı! 🏆';
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (final context) => AlertDialog(
-        title: Text('Round $round Bitti!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.emoji_events, size: 64, color: Colors.amber),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Kelime: $_currentWord',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 10),
-            Text(
-              '${_roomData!['player1']['name']}: ${_roomData!['player1']['score']}',
-            ),
-            Text(
-              '${_roomData!['player2']['name']}: ${_roomData!['player2']['score']}',
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(round >= 3 ? 'SONUÇLARI GÖR' : 'DEVAM ET'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _endGame() {
-    _database.child('hangman_rooms/${widget.roomId}/status').set('finished');
-
-    final p1Score = _roomData?['player1']['score'] ?? 0;
-    final p2Score = _roomData?['player2']['score'] ?? 0;
-
-    String winner = p1Score > p2Score
-        ? _roomData!['player1']['name']
-        : _roomData!['player2']['name'];
-
-    if (p1Score == p2Score) {
-      winner = 'BERABERE!';
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (final context) => AlertDialog(
-        title: const Text('🎮 Oyun Bitti!'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              winner == 'BERABERE!' ? '🤝 $winner' : '🏆 Kazanan: $winner',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Text('${_roomData!['player1']['name']}: $p1Score'),
-            Text('${_roomData!['player2']['name']}: $p2Score'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).popUntil((final route) => route.isFirst);
-            },
-            child: const Text('ANA MENÜYE DÖN'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _guessLetter(final String letter) async {
-    if (!_isMyTurn || _guessedLetters.contains(letter)) return;
-
-    final newGuessedLetters = [..._guessedLetters, letter];
-    final isCorrect = _currentWord!.contains(letter);
-
-    await _database.child('hangman_rooms/${widget.roomId}/currentGame').update({
-      'guessedLetters': newGuessedLetters,
-      'wrongGuesses': isCorrect ? _wrongGuesses : _wrongGuesses + 1,
-    });
-  }
-
-  Widget _buildHangman() {
-    return CustomPaint(
-      size: const Size(200, 250),
-      painter: HangmanPainter(_wrongGuesses),
-    );
-  }
-
-  Widget _buildWord() {
-    if (_currentWord == null) return const SizedBox();
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: _currentWord!.split('').map((final letter) {
-          if (letter == ' ') {
-            return const SizedBox(width: 20);
-          }
-
-          final bool isGuessed = _guessedLetters.contains(letter);
-          return Container(
-            width: 40,
-            height: 50,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red, width: 2),
-            ),
-            child: Center(
-              child: Text(
-                isGuessed ? letter : '_',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildKeyboard() {
-    const keyboard = [
-      ['A', 'B', 'C', 'Ç', 'D', 'E', 'F', 'G', 'Ğ'],
-      ['H', 'I', 'İ', 'J', 'K', 'L', 'M', 'N', 'O'],
-      ['Ö', 'P', 'R', 'S', 'Ş', 'T', 'U', 'Ü', 'V'],
-      ['Y', 'Z'],
-    ];
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Column(
-        children: keyboard.map((final row) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: row.map((final letter) {
-                final bool isGuessed = _guessedLetters.contains(letter);
-                final bool isDisabled = !_isMyTurn || isGuessed;
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: ElevatedButton(
-                    onPressed: isDisabled ? null : () => _guessLetter(letter),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isGuessed ? Colors.grey : Colors.red,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(32, 40),
-                      padding: const EdgeInsets.all(4),
-                    ),
-                    child: Text(
-                      letter,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          );
-        }).toList(),
-      ),
-    );
+    _sub = _ref.onValue.listen(_onFirebase);
   }
 
   @override
-  Widget build(final BuildContext context) {
-    if (_roomData == null || _gameStatus == 'waiting') {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Adam Asmaca'),
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
-        ),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: Colors.red),
-              SizedBox(height: 20),
-              Text('Rakip bekleniyor...', style: TextStyle(fontSize: 18)),
-            ],
-          ),
-        ),
-      );
+  void dispose() { _shakeCtrl.dispose(); _sub?.cancel(); super.dispose(); }
+
+  // ── Computed ─────────────────────────────────────────────────────────────
+
+  Map    get _players  => (_room['players'] as Map?) ?? {};
+  String get _phase    => (_room['phase']   as String?) ?? 'choose';
+  int    get _round    => (_room['round']   as int?) ?? 1;
+  int    get _maxRound => (_room['maxRounds'] as int?) ?? 6;
+  String get _chooser  => (_room['chooser'] as String?) ?? 'p1';
+  String get _guesser  => _chooser == 'p1' ? 'p2' : 'p1';
+  bool   get _isHost   => widget.myKey == 'p1';
+  bool   get _amChooser => widget.myKey == _chooser;
+  bool   get _amGuesser => widget.myKey == _guesser;
+
+  String? get _word    => _room['game']?['word'] as String?;
+  List<String> get _guessed =>
+      List<String>.from(_room['game']?['guessed'] ?? []);
+  int    get _wrong    => (_room['game']?['wrong'] as int?) ?? 0;
+
+  String _pName(String key) =>
+      (_players[key]?['name'] as String?) ?? key;
+  int    _pScore(String key) =>
+      (_players[key]?['score'] as int?) ?? 0;
+
+  // ── Firebase listener ─────────────────────────────────────────────────────
+
+  void _onFirebase(DatabaseEvent e) {
+    if (!mounted || e.snapshot.value == null) return;
+    final d = Map<String, dynamic>.from(e.snapshot.value as Map);
+
+    final nw = (d['game']?['wrong'] as int?) ?? 0;
+    if (nw > _prevWrong) { _prevWrong = nw; _shakeCtrl.forward(from: 0); }
+
+    setState(() => _room = d);
+
+    final status = d['status'] as String? ?? '';
+    final phase  = d['phase']  as String? ?? '';
+    final round  = d['round']  as int?    ?? 1;
+
+    if (status == 'finished') {
+      if (_handledEvents.add('final')) _showFinalDialog(d);
+      return;
     }
-
-    // Kelime seçim bekleme ekranı veya kelime seçme dialogu
-    if (_currentWord == null) {
-      final bool shouldIChoose = _shouldIChooseWord();
-
-      // Ben kelime seçmeliyim - dialog göster
-      if (shouldIChoose && _needsWordSelection) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _needsWordSelection) {
-            setState(() {
-              _needsWordSelection = false;
-            });
-            _showWordSelectionDialog();
-          }
-        });
-
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Adam Asmaca'),
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-          ),
-          body: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.edit_note, size: 80, color: Colors.red),
-                SizedBox(height: 20),
-                Text(
-                  'Kelime seçin...',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-
-      // Diğer oyuncu kelime seçiyor - bekleme ekranı
-      final String otherPlayerName = widget.isHost
-          ? _roomData!['player2']['name']
-          : _roomData!['player1']['name'];
-
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Adam Asmaca'),
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(color: Colors.red),
-              const SizedBox(height: 20),
-              Text(
-                '$otherPlayerName kelime seçiyor...',
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                '⏳ Lütfen bekleyin',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
-      );
+    if (phase == 'result') {
+      if (_handledEvents.add('result_$round')) _showResultDialog(d, round);
     }
+  }
 
-    final p1Score = _roomData?['player1']['score'] ?? 0;
-    final p2Score = _roomData?['player2']['score'] ?? 0;
-    final currentRound = _roomData?['currentRound'] ?? 1;
+  // ── Actions ───────────────────────────────────────────────────────────────
+
+  Future<void> _submitWord(String raw) async {
+    final word = raw.toUpperCase().replaceAll(RegExp(r'[^A-ZÇĞİÖŞÜ]'), '');
+    if (word.length < 3) { _snack('En az 3 harf olmalı'); return; }
+    await _ref.update({
+      'game':  {'word': word, 'guessed': [], 'wrong': 0},
+      'phase': 'play',
+    });
+    _prevWrong = 0;
+  }
+
+  Future<void> _guessLetter(String letter) async {
+    if (!_amGuesser || _word == null) return;
+    if (_guessed.contains(letter)) return;
+
+    final newGuessed = [..._guessed, letter];
+    final hit        = _word!.contains(letter);
+    final newWrong   = hit ? _wrong : _wrong + 1;
+
+    await _ref.child('game').update({
+      'guessed': newGuessed,
+      'wrong':   newWrong,
+    });
+
+    final allFound = _word!.split('').every(newGuessed.contains);
+    if (allFound) {
+      await _endRound(guesserWon: true,  wrong: newWrong);
+    } else if (newWrong >= 6) {
+      await _endRound(guesserWon: false, wrong: newWrong);
+    }
+  }
+
+  Future<void> _endRound({
+    required bool guesserWon,
+    required int  wrong,
+  }) async {
+    final winner  = guesserWon ? _guesser : _chooser;
+    final bonus   = guesserWon ? (10 - wrong).clamp(4, 10) : 5;
+    final prevSc  = _pScore(winner);
+    final isLast  = _round >= _maxRound;
+
+    await _ref.update({
+      'phase':                    'result',
+      'result': {
+        'winner': winner,
+        'word':   _word,
+        'reason': guesserWon ? 'found' : 'hanged',
+      },
+      'players/$winner/score': prevSc + bonus,
+      if (isLast) 'status': 'finished',
+    });
+  }
+
+  /// Only host advances to prevent race conditions
+  Future<void> _advanceRound() async {
+    if (!_isHost) return;
+    final nextChooser = _chooser == 'p1' ? 'p2' : 'p1';
+    await _ref.update({
+      'round':   _round + 1,
+      'chooser': nextChooser,
+      'phase':   'choose',
+      'game':    null,
+      'result':  null,
+    });
+  }
+
+  Future<void> _deleteRoom() =>
+      _db.child('${GamePaths.hangman}/${widget.roomId}').remove();
+
+  // ── Dialogs ───────────────────────────────────────────────────────────────
+
+  void _showResultDialog(Map<String, dynamic> d, int round) {
+    final result = Map<String, dynamic>.from(d['result'] as Map);
+    final winner = result['winner'] as String;
+    final word   = result['word']   as String;
+    final reason = result['reason'] as String;
+    final iWon   = winner == widget.myKey;
+    final isLast = round >= ((d['maxRounds'] as int?) ?? 6);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text(iWon ? '🎉 Tur Kazandın!' : '😔 Tur Kaybettin',
+            textAlign: TextAlign.center),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(
+            reason == 'found'
+                ? '${_pName(winner)} kelimeyi buldu!'
+                : 'Adam asıldı! ${_pName(winner)} puan aldı.',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(10)),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Text('Kelime: ', style: TextStyle(color: Colors.grey)),
+              Text(word,
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                      letterSpacing: 3)),
+            ]),
+          ),
+          const SizedBox(height: 14),
+          _ScoreRow(
+              p1Name:  _pName('p1'),  p1Score: _pScore('p1'),
+              p2Name:  _pName('p2'),  p2Score: _pScore('p2'),
+              myKey:   widget.myKey),
+        ]),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: _kRed),
+            onPressed: () {
+              Navigator.pop(context);
+              if (!isLast) _advanceRound();
+            },
+            child: Text(isLast ? 'Sonuçlara Git' : 'Sonraki Tur →'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFinalDialog(Map<String, dynamic> d) {
+    final p1s = _pScore('p1');
+    final p2s = _pScore('p2');
+    final headline = p1s > p2s
+        ? '🏆 ${_pName("p1")} kazandı!'
+        : p2s > p1s
+            ? '🏆 ${_pName("p2")} kazandı!'
+            : '🤝 Berabere!';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('Oyun Bitti!', textAlign: TextAlign.center),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(headline,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 20),
+          _ScoreRow(
+              p1Name:  _pName('p1'),  p1Score: p1s,
+              p2Name:  _pName('p2'),  p2Score: p2s,
+              myKey:   widget.myKey),
+        ]),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: _kRed),
+            onPressed: () async {
+              await _deleteRoom();
+              if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+            },
+            child: const Text('Ana Menü'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _snack(String msg) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(msg)));
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    if (_room.isEmpty) {
+      return const Scaffold(
+          backgroundColor: _kBg,
+          body: Center(child: CircularProgressIndicator(color: _kRed)));
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Adam Asmaca'),
-        backgroundColor: Colors.red,
-        foregroundColor: Colors.white,
-        actions: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Text(
-                'Round $currentRound/3',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Skor Tablosu
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildPlayerCard(
-                  _roomData!['player1']['name'],
-                  p1Score,
-                  widget.isHost && _isMyTurn,
-                ),
-                const Text(
-                  'VS',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                _buildPlayerCard(
-                  _roomData!['player2']['name'],
-                  p2Score,
-                  !widget.isHost && _isMyTurn,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            if (_isMyTurn)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  '✨ SİZİN SIRANIZ - TAHMİN EDİN!',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              )
-            else
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  '⏳ Rakip tahmin ediyor...',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-
-            const SizedBox(height: 20),
-
-            // Hangman Çizimi
-            _buildHangman(),
-
-            const SizedBox(height: 20),
-
-            // Kelime
-            _buildWord(),
-
-            const SizedBox(height: 30),
-
-            // Klavye
-            _buildKeyboard(),
-          ],
+      backgroundColor: _kBg,
+      body: SafeArea(child: Column(children: [
+        _TopBar(
+          round:     _round,
+          maxRounds: _maxRound,
+          p1Name:    _pName('p1'),
+          p1Score:   _pScore('p1'),
+          isP1Me:    widget.myKey == 'p1',
+          p2Name:    _pName('p2'),
+          p2Score:   _pScore('p2'),
         ),
-      ),
+        Expanded(
+          child: _phase == 'choose' ? _buildChoosePhase() : _buildPlayPhase(),
+        ),
+      ])),
     );
   }
 
-  Widget _buildPlayerCard(
-    final String name,
-    final int score,
-    final bool isActive,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isActive ? Colors.green.shade100 : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isActive ? Colors.green : Colors.grey.shade300,
-          width: isActive ? 3 : 1,
+  // ── Choose phase ──────────────────────────────────────────────────────────
+
+  Widget _buildChoosePhase() {
+    if (_amChooser) {
+      return _WordChooserPanel(
+        guesserName: _pName(_guesser),
+        onSubmit:    _submitWord,
+      );
+    }
+    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      const SizedBox(
+          width: 56, height: 56,
+          child: CircularProgressIndicator(strokeWidth: 3, color: _kRed)),
+      const SizedBox(height: 24),
+      Text('${_pName(_chooser)} kelime seçiyor...',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 6),
+      const Text('Hazır ol!', style: TextStyle(color: _kGrey)),
+    ]));
+  }
+
+  // ── Play phase ────────────────────────────────────────────────────────────
+
+  Widget _buildPlayPhase() {
+    if (_word == null) {
+      return const Center(child: CircularProgressIndicator(color: _kRed));
+    }
+    return Column(children: [
+      // Role badge
+      Container(
+        margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color:  (_amGuesser ? _kGreen : Colors.orange).withOpacity(0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _amGuesser ? _kGreen : Colors.orange),
         ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            name,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            score.toString(),
-            style: const TextStyle(
-              fontSize: 32,
+        child: Text(
+          _amGuesser
+              ? '🔍 Sıra sende — harf seç!'
+              : '👀 ${_pName(_guesser)} tahmin ediyor...',
+          style: TextStyle(
+              color: _amGuesser ? _kGreen : Colors.orange.shade800,
               fontWeight: FontWeight.bold,
-              color: Colors.red,
-            ),
-          ),
-        ],
+              fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
       ),
-    );
-  }
 
-  @override
-  void dispose() {
-    _customWordController.dispose();
-    super.dispose();
+      // Hangman drawing with shake
+      AnimatedBuilder(
+        animation: _shakeAnim,
+        builder: (_, child) =>
+            Transform.translate(offset: Offset(_shakeAnim.value, 0), child: child),
+        child: SizedBox(
+          height: 190,
+          child: CustomPaint(
+              size: const Size(220, 190),
+              painter: _HangmanPainter(_wrong)),
+        ),
+      ),
+
+      Text('${_wrong}/6 yanlış',
+          style: TextStyle(
+              color: _wrong >= 4 ? _kRed : _kGrey,
+              fontSize: 12,
+              fontWeight: _wrong >= 5 ? FontWeight.bold : FontWeight.normal)),
+      const SizedBox(height: 8),
+
+      // Word display
+      _WordDisplay(word: _word!, guessed: _guessed),
+      const Spacer(),
+
+      // Keyboard or wait label
+      if (_amGuesser)
+        _TurkishKeyboard(guessed: _guessed, word: _word!, onTap: _guessLetter)
+      else
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('${_pName(_guesser)} tahmin ediyor...',
+              style: const TextStyle(
+                  color: _kGrey, fontStyle: FontStyle.italic, fontSize: 14)),
+        ),
+      const SizedBox(height: 6),
+    ]);
   }
 }
 
-class HangmanPainter extends CustomPainter {
-  final int wrongGuesses;
+// ════════════════════════════════════════════════════════════════════════════
+// WORD CHOOSER PANEL
+// ════════════════════════════════════════════════════════════════════════════
 
-  HangmanPainter(this.wrongGuesses);
+class _WordChooserPanel extends StatefulWidget {
+  const _WordChooserPanel({
+    required this.guesserName,
+    required this.onSubmit,
+  });
+
+  final String guesserName;
+  final Future<void> Function(String) onSubmit;
 
   @override
-  void paint(final Canvas canvas, final Size size) {
-    final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 4
+  State<_WordChooserPanel> createState() => _WordChooserPanelState();
+}
+
+class _WordChooserPanelState extends State<_WordChooserPanel> {
+  final _ctrl = TextEditingController();
+  bool _busy  = false;
+
+  Future<void> _send(String w) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    await widget.onSubmit(w);
+    if (mounted) setState(() { _busy = false; _ctrl.clear(); });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+              color: _kRedLt, borderRadius: BorderRadius.circular(12)),
+          child: Row(children: [
+            const Icon(Icons.info_outline, color: _kRed, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${widget.guesserName} bu kelimeyi tahmin edecek!',
+                style: const TextStyle(color: _kRed, fontSize: 13),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 20),
+
+        // Custom word input
+        TextField(
+          controller: _ctrl,
+          textCapitalization: TextCapitalization.characters,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[A-ZÇĞİÖŞÜa-zçğışöü]'))
+          ],
+          style: const TextStyle(
+              fontSize: 22, letterSpacing: 4, fontWeight: FontWeight.bold),
+          decoration: InputDecoration(
+            labelText: 'Kendi kelimenizi yazın',
+            suffixIcon: IconButton(
+              icon: _busy
+                  ? const SizedBox(
+                      width: 18, height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: _kRed))
+                  : const Icon(Icons.send_rounded, color: _kRed),
+              onPressed: _busy ? null : () => _send(_ctrl.text),
+            ),
+          ),
+          onSubmitted: _send,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity, height: 48,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: _kRed,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12))),
+            onPressed: _busy ? null : () => _send(_ctrl.text),
+            child: _busy
+                ? const SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2))
+                : const Text('GÖNDER',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 8),
+        const Text('— veya listeden seç —',
+            style: TextStyle(color: _kGrey, fontSize: 13),
+            textAlign: TextAlign.center),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount:  3,
+            childAspectRatio: 2.5,
+            mainAxisSpacing:  8,
+            crossAxisSpacing: 8,
+          ),
+          itemCount: _kWords.length,
+          itemBuilder: (_, i) => GestureDetector(
+            onTap: _busy ? null : () => _send(_kWords[i]),
+            child: Container(
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                  color:  _kRedLt,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _kRed.withOpacity(0.3))),
+              child: Text(_kWords[i],
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11, color: _kRed)),
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// WORD DISPLAY
+// ════════════════════════════════════════════════════════════════════════════
+
+class _WordDisplay extends StatelessWidget {
+  const _WordDisplay({required this.word, required this.guessed});
+  final String word; final List<String> guessed;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 5, runSpacing: 6,
+      children: word.split('').map((l) {
+        final show = guessed.contains(l);
+        return SizedBox(
+          width: 32, height: 44,
+          child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+            Text(show ? l : '',
+                style: const TextStyle(
+                    fontSize: 22, fontWeight: FontWeight.bold, color: _kRed)),
+            const SizedBox(height: 2),
+            Container(
+              height: 2.5,
+              decoration: BoxDecoration(
+                  color: show ? _kRed : Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+          ]),
+        );
+      }).toList(),
+    ),
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TURKISH KEYBOARD
+// ════════════════════════════════════════════════════════════════════════════
+
+class _TurkishKeyboard extends StatelessWidget {
+  const _TurkishKeyboard({
+    required this.guessed,
+    required this.word,
+    required this.onTap,
+  });
+
+  final List<String> guessed;
+  final String       word;
+  final Future<void> Function(String) onTap;
+
+  static const _rows = [
+    ['Q','W','E','R','T','Y','U','I','O','P','Ğ','Ü'],
+    ['A','S','D','F','G','H','J','K','L','Ş','İ'],
+    ['Z','X','C','V','B','N','M','Ö','Ç'],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      child: Column(
+        children: _rows.map((row) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: row.map((letter) {
+              final used    = guessed.contains(letter);
+              final correct = used && word.contains(letter);
+              final wrong   = used && !word.contains(letter);
+              return GestureDetector(
+                onTap: used ? null : () => onTap(letter),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  width: 28, height: 36,
+                  margin: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: correct
+                        ? _kGreen
+                        : wrong
+                            ? Colors.grey.shade200
+                            : Colors.white,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                        color: correct ? _kGreen : Colors.grey.shade300),
+                    boxShadow: used
+                        ? []
+                        : const [
+                            BoxShadow(
+                                color: Color(0x14000000),
+                                blurRadius: 2,
+                                offset: Offset(0, 1))
+                          ],
+                  ),
+                  child: Center(
+                    child: Text(letter,
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: correct
+                                ? Colors.white
+                                : wrong
+                                    ? Colors.grey.shade400
+                                    : Colors.black87)),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        )).toList(),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HANGMAN PAINTER
+// ════════════════════════════════════════════════════════════════════════════
+
+class _HangmanPainter extends CustomPainter {
+  const _HangmanPainter(this.wrong);
+  final int wrong;
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final g = Paint()
+      ..color = const Color(0xFF4E342E)
+      ..strokeWidth = 5 ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    // Darağacı tabanı
-    canvas.drawLine(
-      Offset(size.width * 0.1, size.height * 0.9),
-      Offset(size.width * 0.5, size.height * 0.9),
-      paint,
-    );
+    canvas.drawLine(Offset(s.width*.10, s.height*.95), Offset(s.width*.55, s.height*.95), g);
+    canvas.drawLine(Offset(s.width*.22, s.height*.95), Offset(s.width*.22, s.height*.04), g);
+    canvas.drawLine(Offset(s.width*.22, s.height*.04), Offset(s.width*.68, s.height*.04), g);
+    canvas.drawLine(Offset(s.width*.68, s.height*.04), Offset(s.width*.68, s.height*.18), g);
 
-    // Dikey direk
-    canvas.drawLine(
-      Offset(size.width * 0.2, size.height * 0.9),
-      Offset(size.width * 0.2, size.height * 0.1),
-      paint,
-    );
+    final b = Paint()
+      ..color = const Color(0xFF37474F)
+      ..strokeWidth = 4 ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
 
-    // Üst yatay çubuk
-    canvas.drawLine(
-      Offset(size.width * 0.2, size.height * 0.1),
-      Offset(size.width * 0.6, size.height * 0.1),
-      paint,
-    );
-
-    // İp
-    canvas.drawLine(
-      Offset(size.width * 0.6, size.height * 0.1),
-      Offset(size.width * 0.6, size.height * 0.2),
-      paint,
-    );
-
-    // Kafa
-    if (wrongGuesses >= 1) {
-      canvas.drawCircle(
-        Offset(size.width * 0.6, size.height * 0.25),
-        size.height * 0.05,
-        paint,
-      );
-    }
-
-    // Gövde
-    if (wrongGuesses >= 2) {
-      canvas.drawLine(
-        Offset(size.width * 0.6, size.height * 0.3),
-        Offset(size.width * 0.6, size.height * 0.5),
-        paint,
-      );
-    }
-
-    // Sol kol
-    if (wrongGuesses >= 3) {
-      canvas.drawLine(
-        Offset(size.width * 0.6, size.height * 0.35),
-        Offset(size.width * 0.5, size.height * 0.4),
-        paint,
-      );
-    }
-
-    // Sağ kol
-    if (wrongGuesses >= 4) {
-      canvas.drawLine(
-        Offset(size.width * 0.6, size.height * 0.35),
-        Offset(size.width * 0.7, size.height * 0.4),
-        paint,
-      );
-    }
-
-    // Sol bacak
-    if (wrongGuesses >= 5) {
-      canvas.drawLine(
-        Offset(size.width * 0.6, size.height * 0.5),
-        Offset(size.width * 0.5, size.height * 0.65),
-        paint,
-      );
-    }
-
-    // Sağ bacak
-    if (wrongGuesses >= 6) {
-      canvas.drawLine(
-        Offset(size.width * 0.6, size.height * 0.5),
-        Offset(size.width * 0.7, size.height * 0.65),
-        paint,
-      );
+    if (wrong >= 1) canvas.drawCircle(Offset(s.width*.68, s.height*.26), s.height*.08, b);
+    if (wrong >= 2) canvas.drawLine(Offset(s.width*.68, s.height*.34), Offset(s.width*.68, s.height*.60), b);
+    if (wrong >= 3) canvas.drawLine(Offset(s.width*.68, s.height*.42), Offset(s.width*.52, s.height*.53), b);
+    if (wrong >= 4) canvas.drawLine(Offset(s.width*.68, s.height*.42), Offset(s.width*.84, s.height*.53), b);
+    if (wrong >= 5) canvas.drawLine(Offset(s.width*.68, s.height*.60), Offset(s.width*.52, s.height*.80), b);
+    if (wrong >= 6) {
+      canvas.drawLine(Offset(s.width*.68, s.height*.60), Offset(s.width*.84, s.height*.80), b);
+      final d = Paint()..color = _kRed..strokeWidth = 2.5..strokeCap = StrokeCap.round;
+      final cx = s.width*.68; final cy = s.height*.26;
+      canvas.drawLine(Offset(cx-6, cy-6), Offset(cx+6, cy+6), d);
+      canvas.drawLine(Offset(cx+6, cy-6), Offset(cx-6, cy+6), d);
     }
   }
 
   @override
-  bool shouldRepaint(covariant final CustomPainter oldDelegate) => true;
+  bool shouldRepaint(_HangmanPainter o) => o.wrong != wrong;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOP BAR
+// ════════════════════════════════════════════════════════════════════════════
+
+class _TopBar extends StatelessWidget {
+  const _TopBar({
+    required this.round, required this.maxRounds,
+    required this.p1Name, required this.p1Score, required this.isP1Me,
+    required this.p2Name, required this.p2Score,
+  });
+
+  final int round, maxRounds;
+  final String p1Name, p2Name; final int p1Score, p2Score; final bool isP1Me;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: _kRed,
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    child: Row(children: [
+      _Pill(name: p1Name, score: p1Score, isMe: isP1Me),
+      Expanded(child: Column(children: [
+        Text('Tur $round/$maxRounds',
+            style: const TextStyle(color: Colors.white60, fontSize: 12,
+                fontWeight: FontWeight.w600)),
+        const Text('ADAM ASMACA',
+            style: TextStyle(color: Colors.white, fontSize: 13,
+                fontWeight: FontWeight.bold)),
+      ])),
+      _Pill(name: p2Name, score: p2Score, isMe: !isP1Me),
+    ]),
+  );
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.name, required this.score, required this.isMe});
+  final String name; final int score; final bool isMe;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+        color: isMe ? Colors.white : Colors.white24,
+        borderRadius: BorderRadius.circular(20)),
+    child: Column(children: [
+      Text(name, style: TextStyle(fontSize: 11,
+          color: isMe ? _kRed : Colors.white70, fontWeight: FontWeight.w600)),
+      Text('$score', style: TextStyle(fontSize: 18,
+          fontWeight: FontWeight.bold, color: isMe ? _kRed : Colors.white)),
+    ]),
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SCORE ROW
+// ════════════════════════════════════════════════════════════════════════════
+
+class _ScoreRow extends StatelessWidget {
+  const _ScoreRow({
+    required this.p1Name, required this.p1Score,
+    required this.p2Name, required this.p2Score,
+    required this.myKey,
+  });
+  final String p1Name, p2Name, myKey; final int p1Score, p2Score;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+        color: Colors.grey.shade50, borderRadius: BorderRadius.circular(12)),
+    child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+      _Item(name: p1Name, score: p1Score, isMe: myKey == 'p1'),
+      const Text('vs', style: TextStyle(color: _kGrey)),
+      _Item(name: p2Name, score: p2Score, isMe: myKey == 'p2'),
+    ]),
+  );
+}
+
+class _Item extends StatelessWidget {
+  const _Item({required this.name, required this.score, required this.isMe});
+  final String name; final int score; final bool isMe;
+  @override
+  Widget build(BuildContext context) => Column(children: [
+    Text(name, style: TextStyle(fontWeight: FontWeight.bold,
+        color: isMe ? _kRed : Colors.black87)),
+    Text('$score', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold,
+        color: isMe ? _kRed : Colors.black54)),
+    Text('puan', style: TextStyle(fontSize: 11,
+        color: isMe ? _kRed : _kGrey)),
+  ]);
 }

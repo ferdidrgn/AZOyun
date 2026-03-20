@@ -1,69 +1,131 @@
 import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 
-/// Paths for every game type inside Firebase.
-class GamePaths {
+// ═══════════════════════════════════════════════════════════════════════════
+// GAME PATHS
+// ═══════════════════════════════════════════════════════════════════════════
+
+abstract class GamePaths {
   static const hangman = 'hangman_rooms';
-  static const golf    = 'golf_rooms';
+  static const golf = 'golf_rooms';
+  static const soccer = 'soccer_rooms';
+  static const cityPuzzle = 'city_puzzle_rooms';
+  static const wordPuzzle = 'word_puzzle_rooms';
+  static const vampire = 'vampire_rooms';
+  static const liarCafe = 'liar_cafe_rooms';
 }
 
-/// Generic CRUD layer for multiplayer rooms.
+// ═══════════════════════════════════════════════════════════════════════════
+// ROOM RESULT
+// ═══════════════════════════════════════════════════════════════════════════
+
+class RoomResult {
+  final String id;
+  final Map<String, dynamic> data;
+
+  const RoomResult({required this.id, required this.data});
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ROOM SERVICE — Singleton
+// ═══════════════════════════════════════════════════════════════════════════
+
 class RoomService {
   RoomService._();
+
   static final RoomService instance = RoomService._();
 
   final _db = FirebaseDatabase.instance.ref();
 
-  // ── helpers ──────────────────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
   String generateCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final rng = Random();
-    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
+    final rng = Random.secure();
+    return List.generate(6, (final _) => chars[rng.nextInt(chars.length)])
+        .join();
   }
 
-  DatabaseReference roomRef(String path, String id) => _db.child('$path/$id');
+  DatabaseReference _nodeRef(final String gamePath, final String roomId) =>
+      _db.child('$gamePath/$roomId');
 
-  // ── create ───────────────────────────────────────────────────────────────
+  // ── CRUD ─────────────────────────────────────────────────────────────────
 
   Future<String> createRoom({
-    required String path,
-    required Map<String, dynamic> data,
+    required final String gamePath,
+    required final Map<String, dynamic> data,
   }) async {
-    final ref = _db.child(path).push();
+    final ref = _db.child(gamePath).push();
     await ref.set(data);
     return ref.key!;
   }
 
-  // ── find by code ─────────────────────────────────────────────────────────
-
-  Future<({String id, Map<String, dynamic> data})?> findByCode({
-    required String path,
-    required String code,
+  /// Searches by 'code' first, then falls back to 'roomCode' for legacy rooms
+  Future<RoomResult?> findByCode({
+    required final String gamePath,
+    required final String code,
   }) async {
-    final snap = await _db
-        .child(path)
-        .orderByChild('code')
-        .equalTo(code)
-        .once();
-    if (snap.snapshot.value == null) return null;
-    final map = snap.snapshot.value as Map;
-    final id  = map.keys.first as String;
-    return (id: id, data: Map<String, dynamic>.from(map[id] as Map));
+    for (final field in ['code', 'roomCode']) {
+      final snap = await _db
+          .child(gamePath)
+          .orderByChild(field)
+          .equalTo(code)
+          .limitToFirst(1)
+          .once();
+      if (snap.snapshot.value != null) {
+        final map = snap.snapshot.value as Map;
+        final id = map.keys.first as String;
+        return RoomResult(
+          id: id,
+          data: Map<String, dynamic>.from(map[id] as Map),
+        );
+      }
+    }
+    return null;
   }
 
-  // ── update / delete ──────────────────────────────────────────────────────
+  Future<void> updateRoom({
+    required final String gamePath,
+    required final String roomId,
+    required final Map<String, dynamic> updates,
+  }) =>
+      _nodeRef(gamePath, roomId).update(updates);
 
-  Future<void> update(String path, String id, Map<String, dynamic> updates) =>
-      roomRef(path, id).update(updates);
+  Future<void> addPlayer({
+    required final String gamePath,
+    required final String roomId,
+    required final String playerKey,
+    required final Map<String, dynamic> playerData,
+  }) =>
+      _nodeRef(gamePath, roomId).child('players/$playerKey').set(playerData);
 
-  Future<void> delete(String path, String id) =>
-      roomRef(path, id).remove();
+  Future<void> removePlayer({
+    required final String gamePath,
+    required final String roomId,
+    required final String playerKey,
+  }) =>
+      _nodeRef(gamePath, roomId).child('players/$playerKey').remove();
 
-  // ── listen ────────────────────────────────────────────────────────────────
+  Future<void> setStatus({
+    required final String gamePath,
+    required final String roomId,
+    required final String status,
+  }) =>
+      _nodeRef(gamePath, roomId).child('status').set(status);
 
-  Stream<Map<String, dynamic>?> watchRoom(String path, String id) =>
-      roomRef(path, id).onValue.map((e) {
+  Future<void> deleteRoom({
+    required final String gamePath,
+    required final String roomId,
+  }) =>
+      _nodeRef(gamePath, roomId).remove();
+
+  // ── Streams ───────────────────────────────────────────────────────────────
+
+  Stream<Map<String, dynamic>?> watchRoom({
+    required final String gamePath,
+    required final String roomId,
+  }) =>
+      _nodeRef(gamePath, roomId).onValue.map((final e) {
         if (e.snapshot.value == null) return null;
         return Map<String, dynamic>.from(e.snapshot.value as Map);
       });
