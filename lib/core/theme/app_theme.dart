@@ -1,200 +1,139 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'app_colors.dart';
-import 'app_text_styles.dart';
 
-/// 🎨 Uygulama tema sistemi
-class AppTheme {
-  /// Light tema
-  static ThemeData get lightTheme {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
+// ── Color palette ─────────────────────────────────────────────────────────────
 
-      // Renk şeması
-      colorScheme: ColorScheme.light(
-        primary: AppColors.primary,
-        secondary: AppColors.secondary,
-        surface: AppColors.surface,
-        background: AppColors.background,
-        error: AppColors.error,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onSurface: AppColors.textPrimary,
-        onBackground: AppColors.textPrimary,
-        onError: Colors.white,
-      ),
+class AZColors {
+  AZColors._();
+  static const purple    = Color(0xFF6C63FF);
+  static const purpleDk  = Color(0xFF4834DF);
+  static const red       = Color(0xFFE74C3C);
+  static const redDk     = Color(0xFFC0392B);
+  static const green     = Color(0xFF27AE60);
+  static const greenDk   = Color(0xFF1E8449);
+  static const bg        = Color(0xFFF5F5F5);
+  static const white     = Colors.white;
+  static const success   = Color(0xFF2ECC71);
+  static const error     = Color(0xFFE74C3C);
 
-      // Scaffold arka planı
-      scaffoldBackgroundColor: AppColors.background,
-
-      // AppBar teması
-      appBarTheme: const AppBarTheme(
-        elevation: 0,
-        centerTitle: true,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarBrightness: Brightness.dark,
-          statusBarIconBrightness: Brightness.light,
-        ),
-        titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-
-      // Card teması
-      cardTheme: CardThemeData(
-        elevation: 4,
-        shadowColor: AppColors.cardShadow,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: AppColors.surface,
-      ),
-
-      // Elevated button teması
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 4,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          textStyle: AppTextStyles.button,
-        ),
-      ),
-
-      // Outlined button teması
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          side: const BorderSide(width: 2),
-          textStyle: AppTextStyles.button,
-        ),
-      ),
-
-      // Text button teması
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          textStyle: AppTextStyles.buttonSmall,
-        ),
-      ),
-
-      // Input decoration teması
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-      ),
-
-      // Dialog teması
-      dialogTheme: DialogThemeData(
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titleTextStyle: AppTextStyles.h4,
-        contentTextStyle: AppTextStyles.bodyMedium,
-      ),
-
-      // Divider teması
-      dividerTheme: const DividerThemeData(
-        color: AppColors.divider,
-        thickness: 1,
-        space: 24,
-      ),
-
-      // Text teması
-      textTheme: const TextTheme(
-        displayLarge: AppTextStyles.h1,
-        displayMedium: AppTextStyles.h2,
-        displaySmall: AppTextStyles.h3,
-        headlineMedium: AppTextStyles.h4,
-        headlineSmall: AppTextStyles.h5,
-        bodyLarge: AppTextStyles.bodyLarge,
-        bodyMedium: AppTextStyles.bodyMedium,
-        bodySmall: AppTextStyles.bodySmall,
-        labelLarge: AppTextStyles.button,
-        labelMedium: AppTextStyles.buttonSmall,
-      ),
-
-      // Icon teması
-      iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 24),
-
-      // Chip teması
-      chipTheme: ChipThemeData(
-        backgroundColor: AppColors.divider,
-        selectedColor: AppColors.primary,
-        labelStyle: AppTextStyles.bodySmall,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-
-      // Snackbar teması
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.textPrimary,
-        contentTextStyle: AppTextStyles.bodyMedium.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  /// Dark tema (gelecekte eklenebilir)
-  static ThemeData get darkTheme {
-    return lightTheme.copyWith(
-      brightness: Brightness.dark,
-      // Dark tema özellikleri burada özelleştirilebilir
-    );
-  }
-
-  AppTheme._(); // Private constructor
+  static const gradPurple = LinearGradient(
+    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+  );
+  static const gradRed = LinearGradient(
+    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    colors: [Color(0xFFE74C3C), Color(0xFFC0392B)],
+  );
+  static const gradGreen = LinearGradient(
+    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    colors: [Color(0xFF27AE60), Color(0xFF1E8449)],
+  );
 }
 
-/// 🎨 Tema extension'ları
-extension ThemeExtension on BuildContext {
-  /// Theme data'ya kolay erişim
-  ThemeData get theme => Theme.of(this);
+// ── Theme ──────────────────────────────────────────────────────────────────────
 
-  /// Color scheme'e kolay erişim
-  ColorScheme get colorScheme => theme.colorScheme;
+class AZTheme {
+  AZTheme._();
+  static ThemeData get light => ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(seedColor: AZColors.purple),
+    scaffoldBackgroundColor: AZColors.bg,
+    appBarTheme: const AppBarTheme(elevation: 0, centerTitle: true, systemOverlayStyle: SystemUiOverlayStyle.light),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      filled: true, fillColor: Colors.white,
+    ),
+    dialogTheme: DialogThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      titleTextStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ),
+  );
+}
 
-  /// Text theme'e kolay erişim
-  TextTheme get textTheme => theme.textTheme;
+// ── Reusable widgets ──────────────────────────────────────────────────────────
 
-  /// MediaQuery'e kolay erişim
-  Size get screenSize => MediaQuery.of(this).size;
+class GradientScaffold extends StatelessWidget {
+  const GradientScaffold({super.key, required this.gradient, required this.child, this.resizeToAvoidBottomInset = true});
+  final Gradient gradient;
+  final Widget child;
+  final bool resizeToAvoidBottomInset;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+    body: Container(decoration: BoxDecoration(gradient: gradient), child: SafeArea(child: child)),
+  );
+}
 
-  double get screenWidth => screenSize.width;
+class AZCard extends StatelessWidget {
+  const AZCard({super.key, required this.child, this.padding = const EdgeInsets.all(20)});
+  final Widget child; final EdgeInsets padding;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: padding,
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20),
+      boxShadow: const [BoxShadow(color: Color(0x18000000), blurRadius: 16, offset: Offset(0, 6))]),
+    child: child,
+  );
+}
 
-  double get screenHeight => screenSize.height;
+class FrostCard extends StatelessWidget {
+  const FrostCard({super.key, required this.child, this.padding = const EdgeInsets.all(20), this.opacity = 0.15});
+  final Widget child; final EdgeInsets padding; final double opacity;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: padding,
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(opacity), borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: Colors.white.withOpacity(0.25)),
+    ),
+    child: child,
+  );
+}
 
-  /// Responsive helpers
-  bool get isMobile => screenWidth < 600;
+class BigButton extends StatelessWidget {
+  const BigButton({super.key, required this.label, required this.onPressed, this.icon, this.color = AZColors.purple, this.loading = false, this.width = 300});
+  final String label; final VoidCallback? onPressed; final IconData? icon;
+  final Color color; final bool loading; final double width;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: width, height: 56,
+    child: ElevatedButton(
+      onPressed: loading ? null : onPressed,
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: color,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+      child: loading
+          ? SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: color, strokeWidth: 2.5))
+          : Row(mainAxisSize: MainAxisSize.min, children: [
+              if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 10)],
+              Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ]),
+    ),
+  );
+}
 
-  bool get isTablet => screenWidth >= 600 && screenWidth < 900;
-
-  bool get isDesktop => screenWidth >= 900;
+class JoinButton extends StatelessWidget {
+  const JoinButton({super.key, required this.onPressed, this.loading = false});
+  final VoidCallback? onPressed; final bool loading;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: double.infinity, height: 52,
+    child: ElevatedButton.icon(
+      onPressed: loading ? null : onPressed,
+      icon: loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.login),
+      label: const Text('ODAYA KATIL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+    ),
+  );
 }

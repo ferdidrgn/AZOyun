@@ -14,25 +14,23 @@ class HangmanLobbyScreen extends StatelessWidget {
       colors: [Color(0xFF4CAF93), Color(0xFF731818)],
     ),
     gamePath: GamePaths.hangman,
-    maxPlayers: 8,
+    maxPlayers: 2, // FIX: Hangman 2 oyunculu oyun
     roomScreen: (final roomId, final playerName, final isHost) =>
         GenericRoomScreen(
           roomId: roomId,
           playerName: playerName,
           isHost: isHost,
-          gamePath: GamePaths.vampire,
+          gamePath: GamePaths.hangman, // FIX: vampire yerine hangman
           title: '🎯 ADAM ASMACA',
           gradient: const LinearGradient(
             colors: [Color(0xFF4CAF93), Color(0xFF731818)],
           ),
-          gameScreen: (final roomId, final playerName) => Scaffold(
-            body: HangmanGameScreen(
-              roomId: roomId,
-              playerName: playerName,
-              isHost: isHost,
-              onGameEvent: (final msg) {},
-              onGameEnd: () {},
-            ),
+          gameScreen: (final gRoomId, final gPlayerName) => HangmanGameScreen(
+            roomId: gRoomId,
+            playerName: gPlayerName,
+            isHost: isHost,
+            onGameEvent: (final msg) {},
+            onGameEnd: () {},
           ),
         ),
   );

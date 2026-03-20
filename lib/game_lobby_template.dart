@@ -6,6 +6,7 @@ import 'package:AZOyun/core/widgets/game_button.dart';
 import 'package:AZOyun/room_service.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class GameLobbyTemplate extends StatefulWidget {
@@ -46,19 +47,23 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
     _loadPlayerName();
   }
 
-  // OKUMA: Artık çok daha kolay
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadPlayerName() async {
     final savedName = await _secureStore.read(key: 'player_name');
-    if (savedName != null) {
-      setState(() {
-        playerName = savedName;
-      });
+    if (savedName != null && savedName.isNotEmpty) {
+      setState(() => playerName = savedName);
     } else {
-      _showNameDialog();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showNameDialog();
+      });
     }
   }
 
-  // YAZMA: Tek satır
   Future<void> _savePlayerName(final String name) async {
     await _secureStore.write(key: 'player_name', value: name);
     setState(() => playerName = name);
@@ -71,20 +76,35 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
       barrierDismissible: false,
       builder: (final context) => AlertDialog(
         title: const Text('👤 İsminiz'),
-        content: TextField(
-          controller: nameCtrl,
-          decoration: const InputDecoration(
-            labelText: 'İsim',
-            border: OutlineInputBorder(),
-          ),
-          maxLength: 15,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Oyunda görünecek isminizi girin:'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: 'İsim',
+                border: OutlineInputBorder(),
+                hintText: 'Örn: Ali',
+              ),
+              maxLength: 15,
+              textCapitalization: TextCapitalization.words,
+              autofocus: true,
+            ),
+          ],
         ),
         actions: [
           GameButton(
             text: 'KAYDET',
             onPressed: () {
               final name = nameCtrl.text.trim();
-              if (name.isEmpty) return;
+              if (name.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('İsim boş olamaz!')),
+                );
+                return;
+              }
               _savePlayerName(name);
               Navigator.pop(context);
             },
@@ -97,7 +117,7 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
   Future<void> _createRoom() async {
     if (playerName == null || playerName!.isEmpty) {
       await _showNameDialog();
-      if (playerName == null) return;
+      if (playerName == null || playerName!.isEmpty) return;
     }
 
     setState(() => isLoading = true);
@@ -129,9 +149,9 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Oda oluşturulamadı: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => isLoading = false);
@@ -141,14 +161,14 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
   Future<void> _joinRoom() async {
     if (playerName == null || playerName!.isEmpty) {
       await _showNameDialog();
-      if (playerName == null) return;
+      if (playerName == null || playerName!.isEmpty) return;
     }
 
     final code = _codeController.text.trim().toUpperCase();
     if (code.isEmpty || code.length != 6) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Geçerli kod girin')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Geçerli 6 karakterli kod girin')),
+      );
       return;
     }
 
@@ -161,7 +181,7 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
       );
 
       if (room == null) throw 'Oda bulunamadı';
-      if (room['status'] != 'waiting') throw 'Oyun başlamış';
+      if (room['status'] != 'waiting') throw 'Oyun zaten başlamış';
 
       final players = Map<String, dynamic>.from(room['players'] ?? {});
       if (players.length >= widget.maxPlayers) throw 'Oda dolu';
@@ -194,9 +214,9 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Hata: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
       }
     } finally {
       if (mounted) setState(() => isLoading = false);
@@ -238,7 +258,6 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
                   ],
                 ),
               ),
-
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
@@ -272,18 +291,16 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
                               ],
                             ),
                           ),
-
                         const SizedBox(height: 40),
-
                         GameButton(
                           text: 'YENİ ODA OLUŞTUR',
                           icon: Icons.add_circle,
                           onPressed: isLoading ? null : _createRoom,
                           isLoading: isLoading,
+                          color: Colors.green,
                           width: 300,
                           height: 60,
                         ),
-
                         const SizedBox(height: 20),
                         const Text(
                           'VEYA',
@@ -294,7 +311,6 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -311,20 +327,38 @@ class _GameLobbyTemplateState extends State<GameLobbyTemplate> {
                                   enabledBorder: OutlineInputBorder(
                                     borderSide: BorderSide(color: Colors.white),
                                   ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
                                   filled: true,
                                   fillColor: Colors.white24,
+                                  hintText: '6 haneli kod',
+                                  hintStyle: TextStyle(color: Colors.white54),
                                 ),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 24,
                                   letterSpacing: 4,
+                                  fontWeight: FontWeight.bold,
                                 ),
                                 textAlign: TextAlign.center,
                                 maxLength: 6,
+                                textCapitalization: TextCapitalization.characters,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp('[A-Z0-9]'),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 8),
                               GameButton(
-                                text: 'KATIL',
+                                text: 'ODAYA KATIL',
+                                icon: Icons.login,
                                 onPressed: isLoading ? null : _joinRoom,
+                                color: Colors.orange,
                                 width: double.infinity,
                               ),
                             ],

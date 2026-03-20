@@ -1,10 +1,10 @@
 name: AZOyun
 description: Çok oyunculu (multiple) oyun platformu
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.0+1
 
 environment:
-  sdk: ^3.10.4
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
