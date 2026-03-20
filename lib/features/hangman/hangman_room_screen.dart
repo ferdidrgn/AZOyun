@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../core/services/room_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
-import 'golf_game_screen.dart';
+import 'hangman_game_screen.dart';
 
-class GolfRoomScreen extends StatefulWidget {
-  const GolfRoomScreen({
+class HangmanRoomScreen extends StatefulWidget {
+  const HangmanRoomScreen({
     super.key,
     required this.roomId,
     required this.myKey,
@@ -16,10 +16,10 @@ class GolfRoomScreen extends StatefulWidget {
   final String roomId, myKey, myName;
 
   @override
-  State<GolfRoomScreen> createState() => _GolfRoomScreenState();
+  State<HangmanRoomScreen> createState() => _HangmanRoomScreenState();
 }
 
-class _GolfRoomScreenState extends State<GolfRoomScreen> {
+class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
   final _rooms = RoomService.instance;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
@@ -29,15 +29,12 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
   void initState() {
     super.initState();
     _sub = _rooms
-        .watchRoom(gamePath: GamePaths.golf, roomId: widget.roomId)
+        .watchRoom(gamePath: GamePaths.hangman, roomId: widget.roomId)
         .listen(_onRoomData);
   }
 
   @override
-  void dispose() {
-    _sub?.cancel();
-    super.dispose();
-  }
+  void dispose() { _sub?.cancel(); super.dispose(); }
 
   void _onRoomData(Map<String, dynamic>? data) {
     if (!mounted || data == null) return;
@@ -48,7 +45,7 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => GolfGameScreen(
+          builder: (_) => HangmanGameScreen(
             roomId: widget.roomId,
             myKey:  widget.myKey,
             myName: widget.myName,
@@ -64,21 +61,28 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
   bool   get _canStart => _players.length >= 2;
 
   Future<void> _startGame() async {
-    if (!_canStart) { _snack('En az 2 oyuncu gerekli'); return; }
+    if (!_canStart) { _snack('Rakip bekleniyor...'); return; }
     await _rooms.updateRoom(
-      gamePath: GamePaths.golf,
+      gamePath: GamePaths.hangman,
       roomId:   widget.roomId,
-      updates: {'status': 'playing', 'currentHole': 1},
+      updates: {
+        'status':  'playing',
+        'round':   1,
+        'phase':   'choose',
+        'chooser': 'p1',
+        'game':    null,
+        'result':  null,
+      },
     );
   }
 
   Future<void> _leaveRoom() async {
     if (_isHost) {
       await _rooms.deleteRoom(
-          gamePath: GamePaths.golf, roomId: widget.roomId);
+          gamePath: GamePaths.hangman, roomId: widget.roomId);
     } else {
       await _rooms.removePlayer(
-        gamePath:  GamePaths.golf,
+        gamePath:  GamePaths.hangman,
         roomId:    widget.roomId,
         playerKey: widget.myKey,
       );
@@ -95,18 +99,21 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
       canPop: false,
       onPopInvoked: (_) => _leaveRoom(),
       child: AZGradientScaffold(
-        gradient: AZColors.gradGreen,
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFD32F2F), Color(0xFFB71C1C)],
+        ),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(children: [
-            // AppBar row
             Row(children: [
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white),
                 onPressed: _leaveRoom,
               ),
               const Expanded(
-                child: Text('MİNİ GOLF',
+                child: Text('ADAM ASMACA',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.white,
@@ -117,27 +124,25 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
             ]),
             const SizedBox(height: 20),
 
-            // Room code
-            AZRoomCode(code: _code, accentColor: AZColors.green),
+            AZRoomCode(code: _code, accentColor: AZColors.red),
             const SizedBox(height: 20),
 
-            // Players list
             AZFrostCard(
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Oyuncular (${_players.length}/4)',
+                    Text('Oyuncular (${_players.length}/2)',
                         style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 15)),
                     const SizedBox(height: 14),
-                    for (final slot in ['p1', 'p2', 'p3', 'p4'])
+                    for (final slot in ['p1', 'p2'])
                       AZPlayerTile(
                         name:    (_players[slot]?['name'] as String?) ?? slot,
                         isMe:    slot == widget.myKey,
                         isHost:  _players[slot]?['isHost'] == true,
-                        emoji:   '🏌️',
+                        emoji:   '🎯',
                         present: _players.containsKey(slot),
                       ),
                     if (!_canStart)
@@ -145,8 +150,7 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
                         padding: const EdgeInsets.only(top: 8),
                         child: Row(children: const [
                           SizedBox(
-                            width: 14,
-                            height: 14,
+                            width: 14, height: 14,
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white38),
                           ),
@@ -161,13 +165,12 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
 
             const Spacer(),
 
-            // Start / Wait
             if (_isHost)
               AZButton(
                 label:     'OYUNU BAŞLAT',
                 icon:      Icons.play_arrow_rounded,
                 onPressed: _canStart ? _startGame : null,
-                color:     AZColors.green,
+                color:     AZColors.red,
                 width:     double.infinity,
               )
             else

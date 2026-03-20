@@ -91,14 +91,14 @@ class _GolfLobbyState extends State<GolfLobbyScreen>
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
+      builder: (final _) => AlertDialog(
         title: const Text('👤 Adınız'),
         content: TextField(
             controller: c,
             autofocus: true,
             maxLength: 12,
             textCapitalization: TextCapitalization.words,
-            onSubmitted: (_) => _saveName(c.text)),
+            onSubmitted: (final _) => _saveName(c.text)),
         actions: [
           FilledButton(
               style: FilledButton.styleFrom(backgroundColor: _greenMd),
@@ -109,7 +109,7 @@ class _GolfLobbyState extends State<GolfLobbyScreen>
     );
   }
 
-  Future<void> _saveName(String raw) async {
+  Future<void> _saveName(final String raw) async {
     final n = raw.trim();
     if (n.isEmpty) return;
     await _store.setPlayerName(n);
@@ -126,7 +126,7 @@ class _GolfLobbyState extends State<GolfLobbyScreen>
     try {
       final code = _rooms.generateCode();
       final seed = Random().nextInt(1 << 30);
-      final id = await _rooms.createRoom(path: GamePaths.golf, data: {
+      final id = await _rooms.createRoom(gamePath: GamePaths.golf, data: {
         'code': code,
         'status': 'waiting',
         'createdAt': ServerValue.timestamp,
@@ -164,7 +164,7 @@ class _GolfLobbyState extends State<GolfLobbyScreen>
     }
     setState(() => _busy = true);
     try {
-      final r = await _rooms.findByCode(path: GamePaths.golf, code: code);
+      final r = await _rooms.findByCode(gamePath: GamePaths.golf, code: code);
       if (r == null) {
         _snack('Oda bulunamadı');
         return;
@@ -179,7 +179,7 @@ class _GolfLobbyState extends State<GolfLobbyScreen>
         return;
       }
       final myKey = 'p${players.length + 1}';
-      await _rooms.update(GamePaths.golf, r.id, {
+      await _rooms.update(gamePath: GamePaths.golf, r.id, {
         'players/$myKey': {
           'name': _name,
           'totalShots': 0,
@@ -197,14 +197,14 @@ class _GolfLobbyState extends State<GolfLobbyScreen>
     }
   }
 
-  void _go(Widget w) =>
-      Navigator.push(context, MaterialPageRoute(builder: (_) => w));
+  void _go(final Widget w) =>
+      Navigator.push(context, MaterialPageRoute(builder: (final _) => w));
 
-  void _snack(String m) =>
+  void _snack(final String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GradientScaffold(
       gradient: AZColors.gradGreen,
       child: SingleChildScrollView(
@@ -218,7 +218,7 @@ class _GolfLobbyState extends State<GolfLobbyScreen>
             const SizedBox(height: 4),
             AnimatedBuilder(
                 animation: _bounceY,
-                builder: (_, __) => Transform.translate(
+                builder: (final _, final __) => Transform.translate(
                     offset: Offset(0, _bounceY.value),
                     child: const Text('⛳', style: TextStyle(fontSize: 72)))),
             const SizedBox(height: 8),
@@ -341,7 +341,9 @@ class _GolfRoomState extends State<GolfRoomScreen> {
   @override
   void initState() {
     super.initState();
-    _sub = _rooms.watchRoom(GamePaths.golf, widget.roomId).listen(_onData);
+    _sub = _rooms
+        .watchRoom(gamePath: GamePaths.golf, roomId: widget.roomId)
+        .listen(_onData);
   }
 
   @override
@@ -350,7 +352,7 @@ class _GolfRoomState extends State<GolfRoomScreen> {
     super.dispose();
   }
 
-  void _onData(Map<String, dynamic>? d) {
+  void _onData(final Map<String, dynamic>? d) {
     if (!mounted || d == null) return;
     setState(() => _room = d);
     if (d['status'] == 'playing' && !_nav) {
@@ -358,7 +360,7 @@ class _GolfRoomState extends State<GolfRoomScreen> {
       Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (_) => GolfGameScreen(
+              builder: (final _) => GolfGameScreen(
                   roomId: widget.roomId,
                   myKey: widget.myKey,
                   myName: widget.myName)));
@@ -378,25 +380,25 @@ class _GolfRoomState extends State<GolfRoomScreen> {
       _snack('En az 2 oyuncu gerekli');
       return;
     }
-    await _rooms.update(GamePaths.golf, widget.roomId, {
+    await _rooms.update(gamePath: GamePaths.golf, roomId: widget.roomId, {
       'status': 'playing',
       'currentHole': 1,
     });
   }
 
   Future<void> _leave() async {
-    if (_amHost) await _rooms.delete(GamePaths.golf, widget.roomId);
+    if (_amHost) await _rooms.delete(gamePath: GamePaths.golf, widget.roomId);
     if (mounted) Navigator.pop(context);
   }
 
-  void _snack(String m) =>
+  void _snack(final String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (_) => _leave(),
+      onPopInvoked: (final _) => _leave(),
       child: GradientScaffold(
         gradient: AZColors.gradGreen,
         child: Padding(
@@ -450,7 +452,7 @@ class _GolfRoomState extends State<GolfRoomScreen> {
                             fontWeight: FontWeight.bold,
                             fontSize: 15)),
                     const SizedBox(height: 14),
-                    ...['p1', 'p2', 'p3', 'p4'].map((k) => Padding(
+                    ...['p1', 'p2', 'p3', 'p4'].map((final k) => Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: _GolfRoomTile(
                             pKey: k, data: _players[k], myKey: widget.myKey))),
@@ -502,7 +504,7 @@ class _GolfRoomTile extends StatelessWidget {
   final dynamic data;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final present = data != null;
     final isMe = pKey == myKey;
     return AnimatedContainer(
@@ -622,7 +624,7 @@ class _GolfGameState extends State<GolfGameScreen>
 
   // ── firebase listener ─────────────────────────────────────────────────────
 
-  void _onFirebase(DatabaseEvent e) {
+  void _onFirebase(final DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     setState(() => _room = d);
@@ -639,7 +641,7 @@ class _GolfGameState extends State<GolfGameScreen>
 
   // ── deterministic hole builder ────────────────────────────────────────────
 
-  void _initHole(int holeNo, int seed) {
+  void _initHole(final int holeNo, final int seed) {
     _lastHoleNo = holeNo;
     _lastSeed = seed;
     final rng = Random(seed);
@@ -814,7 +816,7 @@ class _GolfGameState extends State<GolfGameScreen>
     final snap = await _ref.child('players').get();
     if (!snap.exists) return;
     final players = Map<String, dynamic>.from(snap.value as Map);
-    final allDone = players.values.every((p) => p['done'] == true);
+    final allDone = players.values.every((final p) => p['done'] == true);
     if (!allDone) return;
 
     final hole = (_room['currentHole'] as int?) ?? 1;
@@ -839,9 +841,10 @@ class _GolfGameState extends State<GolfGameScreen>
 
   // ── drag handlers ─────────────────────────────────────────────────────────
 
-  Offset _norm(Offset p, Size s) => Offset(p.dx / s.width, p.dy / s.height);
+  Offset _norm(final Offset p, final Size s) =>
+      Offset(p.dx / s.width, p.dy / s.height);
 
-  void _onPanStart(DragStartDetails d, Size s) {
+  void _onPanStart(final DragStartDetails d, final Size s) {
     if (_moving || _myDone) return;
     // tap must be near ball (within 0.12 normalised)
     final tap = _norm(d.localPosition, s);
@@ -851,12 +854,12 @@ class _GolfGameState extends State<GolfGameScreen>
     setState(() {});
   }
 
-  void _onPanUpdate(DragUpdateDetails d, Size s) {
+  void _onPanUpdate(final DragUpdateDetails d, final Size s) {
     if (_ds == null) return;
     setState(() => _dn = _norm(d.localPosition, s));
   }
 
-  void _onPanEnd(DragEndDetails _, Size s) {
+  void _onPanEnd(final DragEndDetails _, final Size s) {
     if (_ds == null || _dn == null || _moving || _myDone) return;
     final delta = _ds! - _dn!;
     if (delta.distance < 0.015) {
@@ -892,17 +895,17 @@ class _GolfGameState extends State<GolfGameScreen>
     if (!mounted) return;
     final players = (_room['players'] as Map?) ?? {};
     final sorted = players.entries.toList()
-      ..sort((a, b) => ((a.value['totalShots'] as int?) ?? 99)
+      ..sort((final a, final b) => ((a.value['totalShots'] as int?) ?? 99)
           .compareTo((b.value['totalShots'] as int?) ?? 99));
 
     showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => AlertDialog(
+        builder: (final _) => AlertDialog(
               title: const Text('🏆 Oyun Bitti!', textAlign: TextAlign.center),
               content: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: sorted.asMap().entries.map((e) {
+                  children: sorted.asMap().entries.map((final e) {
                     final medals = ['🥇', '🥈', '🥉', '4.'];
                     final m = e.key < medals.length ? medals[e.key] : '?';
                     final isMe = e.value.key == widget.myKey;
@@ -937,7 +940,7 @@ class _GolfGameState extends State<GolfGameScreen>
                           .child('${GamePaths.golf}/${widget.roomId}')
                           .remove();
                       if (mounted)
-                        Navigator.popUntil(context, (r) => r.isFirst);
+                        Navigator.popUntil(context, (final r) => r.isFirst);
                     },
                     child: const Text('Ana Menü'))
               ],
@@ -947,7 +950,7 @@ class _GolfGameState extends State<GolfGameScreen>
   // ── build ─────────────────────────────────────────────────────────────────
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (_room.isEmpty) {
       return const Scaffold(
           backgroundColor: _grass2,
@@ -988,12 +991,12 @@ class _GolfGameState extends State<GolfGameScreen>
                         fontSize: 13)))),
 
         // ── game canvas ───────────────────────────────────────────────────
-        Expanded(child: LayoutBuilder(builder: (_, cons) {
+        Expanded(child: LayoutBuilder(builder: (final _, final cons) {
           final size = cons.biggest;
           return GestureDetector(
-            onPanStart: (d) => _onPanStart(d, size),
-            onPanUpdate: (d) => _onPanUpdate(d, size),
-            onPanEnd: (d) => _onPanEnd(d, size),
+            onPanStart: (final d) => _onPanStart(d, size),
+            onPanUpdate: (final d) => _onPanUpdate(d, size),
+            onPanEnd: (final d) => _onPanEnd(d, size),
             child: Stack(children: [
               // field
               CustomPaint(
@@ -1011,7 +1014,7 @@ class _GolfGameState extends State<GolfGameScreen>
               if (_celebrating)
                 AnimatedBuilder(
                   animation: _celebScale,
-                  builder: (_, __) => Positioned.fill(
+                  builder: (final _, final __) => Positioned.fill(
                       child: IgnorePointer(
                           child: Container(
                               color: Colors.white
@@ -1077,7 +1080,7 @@ class _ScoreBar extends StatelessWidget {
   final int hole, maxHole;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(final BuildContext context) => Container(
       color: _green,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(children: [
@@ -1091,7 +1094,7 @@ class _ScoreBar extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
-                    children: players.entries.map((e) {
+                    children: players.entries.map((final e) {
                       final isMe = e.key == myKey;
                       final sc = (e.value['totalShots'] as int?) ?? 0;
                       final done = e.value['done'] == true;
@@ -1175,7 +1178,7 @@ class _FieldPainter extends CustomPainter {
   static final _highlight = Paint()..color = const Color(0xAAFFFFFF);
 
   @override
-  void paint(Canvas canvas, Size s) {
+  void paint(final Canvas canvas, final Size s) {
     // ── grass ──
     canvas.drawRect(Rect.fromLTWH(0, 0, s.width, s.height), _grassP);
     // subtle stripe pattern
@@ -1296,5 +1299,5 @@ class _FieldPainter extends CustomPainter {
   static const double _ballR2 = 0.026;
 
   @override
-  bool shouldRepaint(_) => true;
+  bool shouldRepaint(final _) => true;
 }

@@ -1,0 +1,596 @@
+import 'dart:async';
+import 'dart:math';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/services/room_service.dart';
+import '../../core/services/storage_service.dart';
+import '../../core/theme/az_theme.dart';
+import '../../core/widgets/az_widgets.dart';
+
+const _liarTopics = [
+  'Tatil', 'Okul', 'Yemek', 'Spor', 'Film', 'Müzik',
+  'Hayvan', 'Seyahat', 'Alışveriş', 'Aile', 'İş', 'Hobi',
+];
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOBBY
+// ════════════════════════════════════════════════════════════════════════════
+
+class LiarLobbyScreen extends StatefulWidget {
+  const LiarLobbyScreen({super.key});
+
+  @override
+  State<LiarLobbyScreen> createState() => _LiarLobbyScreenState();
+}
+
+class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
+  final _rooms    = RoomService.instance;
+  final _storage  = StorageService.instance;
+  final _codeCtrl = TextEditingController();
+
+  String? _playerName;
+  bool    _loading = false;
+
+  @override
+  void initState() { super.initState(); _loadName(); }
+
+  @override
+  void dispose() { _codeCtrl.dispose(); super.dispose(); }
+
+  Future<void> _loadName() async {
+    final n = await _storage.getPlayerName();
+    if (!mounted) return;
+    if (n != null && n.isNotEmpty) setState(() => _playerName = n);
+    else _askName();
+  }
+
+  Future<void> _askName() async {
+    final name = await showNameDialog(context,
+        current: _playerName, accentColor: const Color(0xFFd66d75));
+    if (name == null || !mounted) return;
+    await _storage.setPlayerName(name);
+    setState(() => _playerName = name);
+  }
+
+  Future<void> _createRoom() async {
+    if (_playerName == null) { await _askName(); if (_playerName == null) return; }
+    setState(() => _loading = true);
+    try {
+      final code = _rooms.generateCode();
+      final id   = await _rooms.createRoom(
+        gamePath: GamePaths.liarCafe,
+        data: {
+          'code': code, 'status': 'waiting', 'createdAt': ServerValue.timestamp,
+          'phase': 'lobby', 'round': 0, 'maxRounds': 3,
+          'players': {'p1': {'name': _playerName, 'isHost': true, 'score': 0}},
+        },
+      );
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) =>
+          LiarRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!)));
+    } catch (e) { _snack('Hata: $e'); }
+    finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  Future<void> _joinRoom() async {
+    if (_playerName == null) { await _askName(); if (_playerName == null) return; }
+    final code = _codeCtrl.text.trim().toUpperCase();
+    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    setState(() => _loading = true);
+    try {
+      final r = await _rooms.findByCode(gamePath: GamePaths.liarCafe, code: code);
+      if (r == null) { _snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      final players = Map.from((r.data['players'] as Map?) ?? {});
+      if (players.length >= 6) { _snack('Oda dolu (max 6)'); return; }
+      final myKey = 'p${players.length + 1}';
+      await _rooms.updateRoom(gamePath: GamePaths.liarCafe, roomId: r.id,
+          updates: {'players/$myKey': {'name': _playerName, 'isHost': false, 'score': 0}});
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) =>
+          LiarRoomScreen(roomId: r.id, myKey: myKey, myName: _playerName!)));
+    } catch (e) { _snack('Katılınamadı: $e'); }
+    finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  void _snack(String m) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(m)));
+
+  @override
+  Widget build(BuildContext context) {
+    return AZGradientScaffold(
+      gradient: AZColors.gradRose,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(children: [
+          Align(alignment: Alignment.centerLeft,
+              child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context))),
+          const SizedBox(height: 8),
+          const Text('☕', style: TextStyle(fontSize: 72)),
+          const SizedBox(height: 8),
+          const Text('YALANCILAR KAHVESİ',
+              style: TextStyle(color: Colors.white, fontSize: 24,
+                  fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+          const SizedBox(height: 4),
+          const Text('3-6 Oyuncu · 3 Tur · Yalanı yakala!',
+              style: TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 28),
+          GestureDetector(onTap: _askName, child: AZFrostCard(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.person_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(_playerName ?? 'Ad seç',
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 6),
+              const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
+            ]),
+          )),
+          const SizedBox(height: 36),
+          AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
+              onPressed: _createRoom, color: const Color(0xFFd66d75),
+              loading: _loading, width: 300),
+          const SizedBox(height: 28),
+          const Text('— veya —', style: TextStyle(color: Colors.white54)),
+          const SizedBox(height: 28),
+          AZFrostCard(child: Column(children: [
+            AZCodeField(controller: _codeCtrl),
+            const SizedBox(height: 14),
+            AZJoinButton(onPressed: _joinRoom, loading: _loading),
+          ])),
+          const SizedBox(height: 32),
+          AZFrostCard(opacity: 0.08, child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text('☕  Nasıl oynanır?',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                SizedBox(height: 10),
+                Text('• Herkes bir konu alır, 1 kişi yalancıdır\n'
+                    '• Yalancı konuyu bilmez ama biliyormuş gibi davranır\n'
+                    '• Herkes konuyla ilgili bir cümle söyler\n'
+                    '• Oy ver: Kim yalancı?\n'
+                    '• Doğru bulunursa köylüler kazanır, bulunamazsa yalancı!',
+                    style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65)),
+              ])),
+          const SizedBox(height: 24),
+        ]),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ROOM
+// ════════════════════════════════════════════════════════════════════════════
+
+class LiarRoomScreen extends StatefulWidget {
+  const LiarRoomScreen({super.key, required this.roomId,
+      required this.myKey, required this.myName});
+  final String roomId, myKey, myName;
+
+  @override
+  State<LiarRoomScreen> createState() => _LiarRoomScreenState();
+}
+
+class _LiarRoomScreenState extends State<LiarRoomScreen> {
+  final _rooms = RoomService.instance;
+  StreamSubscription? _sub;
+  Map<String, dynamic> _room = {};
+  bool _navigating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = _rooms.watchRoom(gamePath: GamePaths.liarCafe, roomId: widget.roomId).listen(_onData);
+  }
+
+  @override
+  void dispose() { _sub?.cancel(); super.dispose(); }
+
+  void _onData(Map<String, dynamic>? d) {
+    if (!mounted || d == null) return;
+    setState(() => _room = d);
+    if (d['status'] == 'playing' && !_navigating) {
+      _navigating = true;
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) =>
+          LiarGameScreen(roomId: widget.roomId, myKey: widget.myKey, myName: widget.myName)));
+    }
+  }
+
+  Map    get _players  => (_room['players'] as Map?) ?? {};
+  String get _code     => _room['code'] ?? '------';
+  bool   get _isHost   => widget.myKey == 'p1';
+  bool   get _canStart => _players.length >= 3;
+
+  Future<void> _start() async {
+    if (!_canStart) { _snack('En az 3 oyuncu gerekli'); return; }
+    final topic    = _liarTopics[Random().nextInt(_liarTopics.length)];
+    final keys     = _players.keys.toList()..shuffle(Random.secure());
+    final liarKey  = keys.first;
+    final updates  = <String, dynamic>{
+      'status': 'playing', 'phase': 'answer',
+      'round': 1, 'topic': topic, 'liar': liarKey,
+    };
+    for (final k in keys) {
+      updates['players/$k/answer'] = '';
+      updates['players/$k/guess']  = '';
+    }
+    await _rooms.updateRoom(gamePath: GamePaths.liarCafe, roomId: widget.roomId, updates: updates);
+  }
+
+  Future<void> _leave() async {
+    if (_isHost) await _rooms.deleteRoom(gamePath: GamePaths.liarCafe, roomId: widget.roomId);
+    else await _rooms.removePlayer(gamePath: GamePaths.liarCafe, roomId: widget.roomId, playerKey: widget.myKey);
+    if (mounted) Navigator.pop(context);
+  }
+
+  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(canPop: false, onPopInvoked: (_) => _leave(),
+      child: AZGradientScaffold(gradient: AZColors.gradRose,
+        child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
+          Row(children: [
+            IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leave),
+            const Expanded(child: Text('YALANCILAR KAHVESİ', textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold))),
+            const SizedBox(width: 48),
+          ]),
+          const SizedBox(height: 20),
+          AZRoomCode(code: _code, accentColor: const Color(0xFFd66d75)),
+          const SizedBox(height: 20),
+          AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Oyuncular (${_players.length}/6)',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 14),
+            for (final entry in _players.entries)
+              AZPlayerTile(name: entry.value['name'] as String? ?? entry.key,
+                  isMe: entry.key == widget.myKey, isHost: entry.value['isHost'] == true,
+                  emoji: '☕', present: true),
+            if (!_canStart) Padding(padding: const EdgeInsets.only(top: 8),
+                child: const Text('En az 3 oyuncu gerekli',
+                    style: TextStyle(color: Colors.white54, fontSize: 13))),
+          ])),
+          const Spacer(),
+          if (_isHost)
+            AZButton(label: 'OYUNU BAŞLAT', icon: Icons.play_arrow_rounded,
+                onPressed: _canStart ? _start : null,
+                color: const Color(0xFFd66d75), width: double.infinity)
+          else
+            const AZWaitingCard(message: 'Host oyunu başlatacak...'),
+        ])),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// GAME
+// ════════════════════════════════════════════════════════════════════════════
+
+class LiarGameScreen extends StatefulWidget {
+  const LiarGameScreen({super.key, required this.roomId,
+      required this.myKey, required this.myName});
+  final String roomId, myKey, myName;
+
+  @override
+  State<LiarGameScreen> createState() => _LiarGameScreenState();
+}
+
+class _LiarGameScreenState extends State<LiarGameScreen> {
+  final _db  = FirebaseDatabase.instance.ref();
+  late DatabaseReference _ref;
+  StreamSubscription? _sub;
+  Map<String, dynamic> _room = {};
+  bool _finalShown = false;
+  final _answerCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _ref = _db.child('${GamePaths.liarCafe}/${widget.roomId}');
+    _sub = _ref.onValue.listen(_onFirebase);
+  }
+
+  @override
+  void dispose() { _answerCtrl.dispose(); _sub?.cancel(); super.dispose(); }
+
+  void _onFirebase(DatabaseEvent e) {
+    if (!mounted || e.snapshot.value == null) return;
+    final d = Map<String, dynamic>.from(e.snapshot.value as Map);
+    setState(() => _room = d);
+    if (d['status'] == 'finished' && !_finalShown) {
+      _finalShown = true;
+      Future.delayed(const Duration(milliseconds: 300), _showFinal);
+    }
+  }
+
+  Map    get _players  => (_room['players'] as Map?) ?? {};
+  String get _phase    => (_room['phase']   as String?) ?? 'answer';
+  int    get _round    => (_room['round']   as int?)    ?? 1;
+  int    get _maxRound => (_room['maxRounds'] as int?)  ?? 3;
+  String get _topic    => (_room['topic']   as String?) ?? '';
+  String get _liarKey  => (_room['liar']    as String?) ?? '';
+  bool   get _amLiar   => widget.myKey == _liarKey;
+  String get _myAnswer => (_players[widget.myKey]?['answer'] as String?) ?? '';
+  bool   get _hasAnswered => _myAnswer.isNotEmpty;
+  bool   get _hasGuessed  => ((_players[widget.myKey]?['guess'] as String?) ?? '').isNotEmpty;
+
+  Future<void> _submitAnswer() async {
+    final txt = _answerCtrl.text.trim();
+    if (txt.isEmpty) return;
+    await _ref.update({'players/${widget.myKey}/answer': txt});
+    _answerCtrl.clear();
+    _checkAllAnswered();
+  }
+
+  Future<void> _checkAllAnswered() async {
+    final all = _players.values.every((p) {
+      final a = p['answer'] as String? ?? '';
+      return a.isNotEmpty;
+    });
+    if (all) await _ref.update({'phase': 'vote'});
+  }
+
+  Future<void> _vote(String targetKey) async {
+    if (_hasGuessed) return;
+    await _ref.update({'players/${widget.myKey}/guess': targetKey});
+    _checkAllVoted();
+  }
+
+  Future<void> _checkAllVoted() async {
+    final all = _players.values.every((p) {
+      final g = p['guess'] as String? ?? '';
+      return g.isNotEmpty;
+    });
+    if (!all) return;
+
+    // Count votes for liar
+    final votes = <String, int>{};
+    for (final p in _players.values) {
+      final g = p['guess'] as String? ?? '';
+      if (g.isNotEmpty) votes[g] = (votes[g] ?? 0) + 1;
+    }
+    String? topGuess;
+    int max = 0;
+    votes.forEach((k, v) { if (v > max) { max = v; topGuess = k; } });
+
+    final liarCaught = topGuess == _liarKey;
+    await _ref.update({'phase': 'result', 'liarCaught': liarCaught});
+    await Future.delayed(const Duration(seconds: 4));
+
+    if (_round >= _maxRound) {
+      await _ref.update({'status': 'finished'});
+    } else {
+      // New round
+      final topic   = _liarTopics[Random().nextInt(_liarTopics.length)];
+      final keys    = _players.keys.toList()..shuffle(Random.secure());
+      final liarKey = keys.first;
+      final updates = <String, dynamic>{
+        'phase': 'answer', 'round': _round + 1,
+        'topic': topic, 'liar': liarKey,
+      };
+      for (final k in keys) {
+        updates['players/$k/answer'] = '';
+        updates['players/$k/guess']  = '';
+      }
+      await _ref.update(updates);
+    }
+  }
+
+  void _showFinal() {
+    if (!mounted) return;
+    final sorted = _players.entries.toList()
+      ..sort((a, b) => ((b.value['score'] as int?) ?? 0)
+          .compareTo((a.value['score'] as int?) ?? 0));
+    const medals = ['🥇', '🥈', '🥉', '4.', '5.', '6.'];
+
+    showDialog(context: context, barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('☕ Oyun Bitti!', textAlign: TextAlign.center),
+        content: Column(mainAxisSize: MainAxisSize.min,
+          children: sorted.asMap().entries.map((e) {
+            final isMe  = e.value.key == widget.myKey;
+            final score = (e.value.value['score'] as int?) ?? 0;
+            return Container(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                  color: isMe ? Colors.pink.shade50 : null,
+                  borderRadius: BorderRadius.circular(10)),
+              child: Row(children: [
+                Text(e.key < medals.length ? medals[e.key] : '?',
+                    style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 10),
+                Expanded(child: Text(e.value.value['name'] ?? e.value.key,
+                    style: TextStyle(fontWeight: isMe ? FontWeight.bold : FontWeight.normal, fontSize: 16))),
+                Text('$score puan', style: const TextStyle(fontWeight: FontWeight.bold)),
+              ]),
+            );
+          }).toList(),
+        ),
+        actions: [FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFd66d75)),
+          onPressed: () async {
+            await _db.child('${GamePaths.liarCafe}/${widget.roomId}').remove();
+            if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+          },
+          child: const Text('Ana Menü'),
+        )],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_room.isEmpty) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+
+    final bool liarCaught = (_room['liarCaught'] as bool?) ?? false;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFFCE4EC),
+      body: SafeArea(child: Column(children: [
+        // Top bar
+        Container(
+          color: const Color(0xFFd66d75),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(children: [
+            Text('Tur $_round/$_maxRound',
+                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+            Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.end,
+              children: _players.entries.map((e) {
+                final isMe  = e.key == widget.myKey;
+                final score = (e.value['score'] as int?) ?? 0;
+                return Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: isMe ? Colors.white : Colors.white24,
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Text('${e.value['name']}: $score',
+                      style: TextStyle(
+                          color: isMe ? const Color(0xFFd66d75) : Colors.white,
+                          fontWeight: isMe ? FontWeight.bold : FontWeight.normal, fontSize: 12)),
+                );
+              }).toList(),
+            )),
+          ]),
+        ),
+
+        Expanded(child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            // Role + topic card
+            Card(
+              elevation: 6,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                        color: _amLiar ? Colors.red.shade50 : Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(20)),
+                    child: Text(_amLiar ? '😈 SEN YALANCISIN!' : '🗣️ Konu: $_topic',
+                        style: TextStyle(
+                            color: _amLiar ? Colors.red : Colors.green,
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                  if (_amLiar) ...[
+                    const SizedBox(height: 8),
+                    const Text('Konuyu bilmiyorsun ama biliyormuş gibi davran!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  ],
+                ]),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            if (_phase == 'answer') ...[
+              // Answer phase
+              if (!_hasAnswered) ...[
+                const Text('Konuyla ilgili bir cümle söyle:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _answerCtrl,
+                  decoration: InputDecoration(
+                    hintText: _amLiar ? 'Yalan söyle ama inandır...' : 'Konuyla ilgili bir şey söyle...',
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.send_rounded, color: Color(0xFFd66d75)),
+                      onPressed: _submitAnswer,
+                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onSubmitted: (_) => _submitAnswer(),
+                ),
+              ] else
+                AZCard(child: Column(children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 40),
+                  const SizedBox(height: 8),
+                  const Text('Cevabın alındı!', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  const Text('Diğerleri bekleniyor...', style: TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  const CircularProgressIndicator(color: Color(0xFFd66d75)),
+                ])),
+            ] else if (_phase == 'vote') ...[
+              // All answers displayed
+              AZCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Cevaplar:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 12),
+                ..._players.entries.map((e) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(children: [
+                    CircleAvatar(radius: 16, child: Text(
+                        (e.value['name'] as String? ?? '?')[0])),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(e.value['name'] as String? ?? e.key,
+                          style: TextStyle(fontWeight: e.key == widget.myKey
+                              ? FontWeight.bold : FontWeight.normal)),
+                      Text(e.value['answer'] as String? ?? '...',
+                          style: const TextStyle(color: Colors.grey)),
+                    ])),
+                  ]),
+                )),
+              ])),
+              const SizedBox(height: 20),
+              if (!_hasGuessed) ...[
+                const Text('🤔 Kim yalancı?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const SizedBox(height: 14),
+                ..._players.entries
+                    .where((e) => e.key != widget.myKey)
+                    .map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: ElevatedButton(
+                    onPressed: () => _vote(e.key),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFd66d75),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14))),
+                    child: Text(e.value['name'] as String? ?? e.key,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                )),
+              ] else
+                AZCard(child: Column(children: [
+                  const Icon(Icons.how_to_vote, color: Color(0xFFd66d75), size: 40),
+                  const SizedBox(height: 8),
+                  const Text('Oyun bekleniyor...', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const CircularProgressIndicator(color: Color(0xFFd66d75)),
+                ])),
+            ] else if (_phase == 'result') ...[
+              // Result phase
+              AZCard(child: Column(children: [
+                Text(liarCaught ? '🎉 Yalancı Yakalandı!' : '😈 Yalancı Kazandı!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold,
+                        color: liarCaught ? Colors.green : Colors.red)),
+                const SizedBox(height: 12),
+                Text('Yalancı: ${_players[_liarKey]?['name'] ?? _liarKey}',
+                    style: const TextStyle(fontSize: 16)),
+                const SizedBox(height: 4),
+                const Text('Sonraki tura geçiliyor...',
+                    style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 10),
+                const CircularProgressIndicator(color: Color(0xFFd66d75)),
+              ])),
+            ],
+          ]),
+        )),
+      ])),
+    );
+  }
+}
