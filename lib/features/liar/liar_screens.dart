@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import '../../core/services/ad_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/banner_ad_widget.dart';
 
 const _liarTopics = [
   'Tatil', 'Okul', 'Yemek', 'Spor', 'Film', 'Müzik',
@@ -18,26 +20,18 @@ const _liarTopics = [
 
 class LiarLobbyScreen extends StatefulWidget {
   const LiarLobbyScreen({super.key});
-
-  @override
-  State<LiarLobbyScreen> createState() => _LiarLobbyScreenState();
+  @override State<LiarLobbyScreen> createState() => _LiarLobbyScreenState();
 }
 
 class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
   final _rooms    = RoomService.instance;
   final _storage  = StorageService.instance;
   final _codeCtrl = TextEditingController();
-
-  String? _playerName;
-  bool    _loading = false;
-
+  String? _playerName; bool _loading = false;
   static const _kRose = Color(0xFFd66d75);
 
-  @override
-  void initState() { super.initState(); _loadName(); }
-
-  @override
-  void dispose() { _codeCtrl.dispose(); super.dispose(); }
+  @override void initState() { super.initState(); _loadName(); }
+  @override void dispose()   { _codeCtrl.dispose(); super.dispose(); }
 
   Future<void> _loadName() async {
     final n = await _storage.getPlayerName();
@@ -45,14 +39,12 @@ class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
     if (n != null && n.isNotEmpty) setState(() => _playerName = n);
     else _askName();
   }
-
   Future<void> _askName() async {
     final name = await showNameDialog(context, current: _playerName, accentColor: _kRose);
     if (name == null || !mounted) return;
     await _storage.setPlayerName(name);
     setState(() => _playerName = name);
   }
-
   Future<void> _createRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     setState(() => _loading = true);
@@ -73,7 +65,6 @@ class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
     } catch (e) { _snack('Hata: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-
   Future<void> _joinRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
@@ -96,75 +87,74 @@ class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
     } catch (e) { _snack('Katılınamadı: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-
-  void _snack(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
     return AZGradientScaffold(
       gradient: AZColors.gradRose,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(children: [
-          Align(alignment: Alignment.centerLeft,
-              child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context))),
-          const SizedBox(height: 8),
-          const Text('☕', style: TextStyle(fontSize: 72)),
-          const SizedBox(height: 8),
-          const Text('YALANCILAR KAHVESİ',
-              style: TextStyle(color: Colors.white, fontSize: 24,
-                  fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-          const SizedBox(height: 4),
-          const Text('3-6 Oyuncu · 3 Tur · Yalanı yakala!',
-              style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 28),
-
-          GestureDetector(onTap: _askName, child: AZFrostCard(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.person_rounded, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Text(_playerName ?? 'Ad seç',
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 6),
-              const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
-            ]),
-          )),
-          const SizedBox(height: 36),
-
-          AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-              onPressed: _createRoom, color: _kRose, loading: _loading, width: 300),
-          const SizedBox(height: 28),
-          const Text('— veya —', style: TextStyle(color: Colors.white54)),
-          const SizedBox(height: 28),
-
-          AZFrostCard(child: Column(children: [
-            AZCodeField(controller: _codeCtrl),
-            const SizedBox(height: 14),
-            AZJoinButton(onPressed: _joinRoom, loading: _loading),
-          ])),
-          const SizedBox(height: 32),
-
-          AZFrostCard(opacity: 0.08, child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text('☕  Nasıl oynanır?',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                SizedBox(height: 10),
-                Text(
-                  '• Herkes bir konu alır, 1 kişi yalancıdır\n'
-                  '• Yalancı konuyu bilmez ama biliyormuş gibi davranır\n'
-                  '• Herkes konuyla ilgili bir cümle söyler\n'
-                  '• Oy ver: Kim yalancı?\n'
-                  '• Doğru bulunursa köylüler kazanır, bulunamazsa yalancı!',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65),
-                ),
-              ])),
-          const SizedBox(height: 24),
-        ]),
-      ),
+      child: Column(children: [
+        Expanded(child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(children: [
+            Align(alignment: Alignment.centerLeft,
+                child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => Navigator.pop(context))),
+            const SizedBox(height: 8),
+            const Text('☕', style: TextStyle(fontSize: 72)),
+            const SizedBox(height: 8),
+            const Text('YALANCILAR KAHVESİ',
+                style: TextStyle(color: Colors.white, fontSize: 24,
+                    fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+            const SizedBox(height: 4),
+            const Text('3-6 Oyuncu · 3 Tur · Yalanı yakala!',
+                style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const SizedBox(height: 28),
+            GestureDetector(onTap: _askName, child: AZFrostCard(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.person_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(_playerName ?? 'Ad seç',
+                    style: const TextStyle(color: Colors.white,
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 6),
+                const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
+              ]),
+            )),
+            const SizedBox(height: 36),
+            AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
+                onPressed: _createRoom, color: _kRose, loading: _loading, width: 300),
+            const SizedBox(height: 28),
+            const Text('— veya —', style: TextStyle(color: Colors.white54)),
+            const SizedBox(height: 28),
+            AZFrostCard(child: Column(children: [
+              AZCodeField(controller: _codeCtrl),
+              const SizedBox(height: 14),
+              AZJoinButton(onPressed: _joinRoom, loading: _loading),
+            ])),
+            const SizedBox(height: 32),
+            AZFrostCard(opacity: 0.08, child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text('☕  Nasıl oynanır?',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  SizedBox(height: 10),
+                  Text(
+                    '• Herkes bir konu alır, 1 kişi yalancıdır\n'
+                    '• Yalancı konuyu bilmez ama biliyormuş gibi davranır\n'
+                    '• Herkes konuyla ilgili bir cümle söyler\n'
+                    '• Oy ver: Kim yalancı?\n'
+                    '• Doğru bulunursa köylüler, bulunamazsa yalancı kazanır!',
+                    style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65),
+                  ),
+                ])),
+            const SizedBox(height: 24),
+          ]),
+        )),
+        const AdaptiveBannerAdWidget(), // lobby banner
+      ]),
     );
   }
 }
@@ -177,9 +167,7 @@ class LiarRoomScreen extends StatefulWidget {
   const LiarRoomScreen({super.key, required this.roomId,
       required this.myKey, required this.myName});
   final String roomId, myKey, myName;
-
-  @override
-  State<LiarRoomScreen> createState() => _LiarRoomScreenState();
+  @override State<LiarRoomScreen> createState() => _LiarRoomScreenState();
 }
 
 class _LiarRoomScreenState extends State<LiarRoomScreen> {
@@ -187,7 +175,6 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _navigating = false;
-
   static const _kRose = Color(0xFFd66d75);
 
   @override
@@ -196,9 +183,7 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
     _sub = _rooms.watchRoom(gamePath: GamePaths.liarCafe, roomId: widget.roomId)
         .listen(_onData);
   }
-
-  @override
-  void dispose() { _sub?.cancel(); super.dispose(); }
+  @override void dispose() { _sub?.cancel(); super.dispose(); }
 
   void _onData(Map<String, dynamic>? d) {
     if (!mounted || d == null) return;
@@ -221,29 +206,20 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
     final keys    = _players.keys.toList()..shuffle(Random.secure());
     final liarKey = keys.first;
     final updates = <String, dynamic>{
-      'status': 'playing', 'phase': 'answer',
-      'round': 1, 'topic': topic, 'liar': liarKey,
+      'status': 'playing', 'phase': 'answer', 'round': 1,
+      'topic': topic, 'liar': liarKey,
     };
-    for (final k in keys) {
-      updates['players/$k/answer'] = '';
-      updates['players/$k/guess']  = '';
-    }
-    await _rooms.updateRoom(
-        gamePath: GamePaths.liarCafe, roomId: widget.roomId, updates: updates);
+    for (final k in keys) { updates['players/$k/answer'] = ''; updates['players/$k/guess'] = ''; }
+    await _rooms.updateRoom(gamePath: GamePaths.liarCafe, roomId: widget.roomId, updates: updates);
   }
 
   Future<void> _leave() async {
-    if (_isHost) {
-      await _rooms.deleteRoom(gamePath: GamePaths.liarCafe, roomId: widget.roomId);
-    } else {
-      await _rooms.removePlayer(
-          gamePath: GamePaths.liarCafe, roomId: widget.roomId, playerKey: widget.myKey);
-    }
+    if (_isHost) await _rooms.deleteRoom(gamePath: GamePaths.liarCafe, roomId: widget.roomId);
+    else await _rooms.removePlayer(gamePath: GamePaths.liarCafe, roomId: widget.roomId, playerKey: widget.myKey);
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -264,15 +240,12 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 14),
             for (final e in _players.entries)
-              AZPlayerTile(
-                  name:    e.value['name'] as String? ?? e.key,
-                  isMe:    e.key == widget.myKey,
-                  isHost:  e.value['isHost'] == true,
-                  emoji:   '☕', present: true),
-            if (!_canStart)
-              const Padding(padding: EdgeInsets.only(top: 8),
-                  child: Text('En az 3 oyuncu gerekli',
-                      style: TextStyle(color: Colors.white54, fontSize: 13))),
+              AZPlayerTile(name: e.value['name'] as String? ?? e.key,
+                  isMe: e.key == widget.myKey, isHost: e.value['isHost'] == true,
+                  emoji: '☕', present: true),
+            if (!_canStart) const Padding(padding: EdgeInsets.only(top: 8),
+                child: Text('En az 3 oyuncu gerekli',
+                    style: TextStyle(color: Colors.white54, fontSize: 13))),
           ])),
           const Spacer(),
           if (_isHost)
@@ -295,9 +268,7 @@ class LiarGameScreen extends StatefulWidget {
   const LiarGameScreen({super.key, required this.roomId,
       required this.myKey, required this.myName});
   final String roomId, myKey, myName;
-
-  @override
-  State<LiarGameScreen> createState() => _LiarGameScreenState();
+  @override State<LiarGameScreen> createState() => _LiarGameScreenState();
 }
 
 class _LiarGameScreenState extends State<LiarGameScreen> {
@@ -305,9 +276,8 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
   late  DatabaseReference _ref;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
-  bool _finalShown = false;
+  bool _finalShown  = false;
   final _answerCtrl = TextEditingController();
-
   static const _kRose = Color(0xFFd66d75);
 
   @override
@@ -316,9 +286,7 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
     _ref = _db.child('${GamePaths.liarCafe}/${widget.roomId}');
     _sub = _ref.onValue.listen(_onFirebase);
   }
-
-  @override
-  void dispose() { _answerCtrl.dispose(); _sub?.cancel(); super.dispose(); }
+  @override void dispose() { _answerCtrl.dispose(); _sub?.cancel(); super.dispose(); }
 
   void _onFirebase(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
@@ -326,84 +294,66 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
     setState(() => _room = d);
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
+      AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 300), _showFinal);
     }
   }
 
-  Map    get _players    => (_room['players'] as Map?) ?? {};
-  String get _phase      => (_room['phase']   as String?) ?? 'answer';
-  int    get _round      => (_room['round']   as int?)    ?? 1;
-  int    get _maxRound   => (_room['maxRounds'] as int?)  ?? 3;
-  String get _topic      => (_room['topic']   as String?) ?? '';
-  String get _liarKey    => (_room['liar']    as String?) ?? '';
-  bool   get _amLiar     => widget.myKey == _liarKey;
-  String get _myAnswer   => (_players[widget.myKey]?['answer'] as String?) ?? '';
-  bool   get _hasAnswered => _myAnswer.isNotEmpty;
-  bool   get _hasGuessed  => ((_players[widget.myKey]?['guess'] as String?) ?? '').isNotEmpty;
+  Map    get _players   => (_room['players'] as Map?) ?? {};
+  String get _phase     => (_room['phase']   as String?) ?? 'answer';
+  int    get _round     => (_room['round']   as int?)    ?? 1;
+  int    get _maxRound  => (_room['maxRounds'] as int?)  ?? 3;
+  String get _topic     => (_room['topic']   as String?) ?? '';
+  String get _liarKey   => (_room['liar']    as String?) ?? '';
+  bool   get _amLiar    => widget.myKey == _liarKey;
+  bool   get _hasAnswered => ((_players[widget.myKey]?['answer'] as String?) ?? '').isNotEmpty;
+  bool   get _hasGuessed  => ((_players[widget.myKey]?['guess']  as String?) ?? '').isNotEmpty;
 
   Future<void> _submitAnswer() async {
     final txt = _answerCtrl.text.trim();
     if (txt.isEmpty) return;
     await _ref.update({'players/${widget.myKey}/answer': txt});
     _answerCtrl.clear();
-    // Check if all answered
-    final allAnswered = _players.values.every((p) {
-      final a = p['answer'] as String? ?? '';
-      return a.isNotEmpty;
-    });
+    final allAnswered = _players.values.every((p) =>
+        ((p['answer'] as String?) ?? '').isNotEmpty);
     if (allAnswered) await _ref.update({'phase': 'vote'});
   }
 
   Future<void> _vote(String targetKey) async {
     if (_hasGuessed) return;
     await _ref.update({'players/${widget.myKey}/guess': targetKey});
-    // Check if all voted
-    final all = _players.values.every((p) {
-      final g = p['guess'] as String? ?? '';
-      return g.isNotEmpty;
-    });
+    final all = _players.values.every((p) =>
+        ((p['guess'] as String?) ?? '').isNotEmpty);
     if (!all) return;
-
-    // Count votes
     final votes = <String, int>{};
     for (final p in _players.values) {
       final g = p['guess'] as String? ?? '';
       if (g.isNotEmpty) votes[g] = (votes[g] ?? 0) + 1;
     }
-    String? topGuess;
-    int max = 0;
+    String? topGuess; int max = 0;
     votes.forEach((k, v) { if (v > max) { max = v; topGuess = k; } });
-
     final liarCaught = topGuess == _liarKey;
-
-    // Award points
     final updates = <String, dynamic>{};
     for (final e in _players.entries) {
-      final isLiar    = e.key == _liarKey;
+      final isLiar = e.key == _liarKey;
       final guessedRight = e.value['guess'] == _liarKey;
-      final prev      = (e.value['score'] as int?) ?? 0;
-      if (liarCaught && guessedRight && !isLiar) {
-        updates['players/${e.key}/score'] = prev + 3;
-      } else if (!liarCaught && isLiar) {
-        updates['players/${e.key}/score'] = prev + 5;
-      }
+      final prev = (e.value['score'] as int?) ?? 0;
+      if (liarCaught && guessedRight && !isLiar) updates['players/${e.key}/score'] = prev + 3;
+      else if (!liarCaught && isLiar) updates['players/${e.key}/score'] = prev + 5;
       updates['players/${e.key}/guess']  = '';
       updates['players/${e.key}/answer'] = '';
     }
-    updates['phase']      = 'result';
-    updates['liarCaught'] = liarCaught;
+    updates['phase'] = 'result'; updates['liarCaught'] = liarCaught;
     await _ref.update(updates);
-
     await Future.delayed(const Duration(seconds: 4));
     if (_round >= _maxRound) {
       await _ref.update({'status': 'finished'});
     } else {
       final topic   = _liarTopics[Random().nextInt(_liarTopics.length)];
       final keys    = _players.keys.toList()..shuffle(Random.secure());
-      final liarKey = keys.first;
       await _ref.update({
         'phase': 'answer', 'round': _round + 1,
-        'topic': topic, 'liar': liarKey,
+        'topic': topic, 'liar': keys.first,
       });
     }
   }
@@ -411,10 +361,9 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
   void _showFinal() {
     if (!mounted) return;
     final sorted = _players.entries.toList()
-      ..sort((a, b) =>
-          ((b.value['score'] as int?) ?? 0).compareTo((a.value['score'] as int?) ?? 0));
+      ..sort((a, b) => ((b.value['score'] as int?) ?? 0)
+          .compareTo((a.value['score'] as int?) ?? 0));
     const medals = ['🥇', '🥈', '🥉', '4.', '5.', '6.'];
-
     showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: const Text('☕ Oyun Bitti!', textAlign: TextAlign.center),
@@ -432,11 +381,8 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
                 Text(e.key < medals.length ? medals[e.key] : '?',
                     style: const TextStyle(fontSize: 22)),
                 const SizedBox(width: 10),
-                Expanded(child: Text(
-                    e.value.value['name'] as String? ?? e.value.key,
-                    style: TextStyle(
-                        fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 16))),
+                Expanded(child: Text(e.value.value['name'] as String? ?? e.value.key,
+                    style: TextStyle(fontWeight: isMe ? FontWeight.bold : FontWeight.normal, fontSize: 16))),
                 Text('$score puan', style: const TextStyle(fontWeight: FontWeight.bold)),
               ]),
             );
@@ -456,23 +402,20 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_room.isEmpty) return const Scaffold(
-        body: Center(child: CircularProgressIndicator()));
-
+    if (_room.isEmpty) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     final liarCaught = (_room['liarCaught'] as bool?) ?? false;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFCE4EC),
       body: SafeArea(child: Column(children: [
 
-        // ── Top bar ────────────────────────────────────────────────────────
+        // Top bar
         Container(
           color: _kRose,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(children: [
             Text('Tur $_round/$_maxRound',
-                style: const TextStyle(color: Colors.white70,
-                    fontSize: 12, fontWeight: FontWeight.w600)),
+                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
             Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.end,
               children: _players.entries.map((e) {
                 final isMe  = e.key == widget.myKey;
@@ -484,22 +427,20 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
                       color: isMe ? Colors.white : Colors.white24,
                       borderRadius: BorderRadius.circular(12)),
                   child: Text('${e.value['name']}: $score',
-                      style: TextStyle(
-                          color: isMe ? _kRose : Colors.white,
-                          fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 12)),
+                      style: TextStyle(color: isMe ? _kRose : Colors.white,
+                          fontWeight: isMe ? FontWeight.bold : FontWeight.normal, fontSize: 12)),
                 );
               }).toList(),
             )),
           ]),
         ),
 
-        // ── Body ───────────────────────────────────────────────────────────
+        // Body
         Expanded(child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
 
-            // Role card
+            // Rol kartı
             Card(
               elevation: 6,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -520,18 +461,16 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
                   ),
                   if (_amLiar) ...[
                     const SizedBox(height: 8),
-                    const Text(
-                      'Konuyu bilmiyorsun ama biliyormuş gibi davran!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
-                    ),
+                    const Text('Konuyu bilmiyorsun ama biliyormuş gibi davran!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey, fontSize: 13)),
                   ],
                 ]),
               ),
             ),
             const SizedBox(height: 20),
 
-            // ── ANSWER PHASE ───────────────────────────────────────────────
+            // ANSWER PHASE
             if (_phase == 'answer') ...[
               if (!_hasAnswered) ...[
                 const Text('Konuyla ilgili bir cümle söyle:',
@@ -540,26 +479,21 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
                 TextField(
                   controller: _answerCtrl,
                   decoration: InputDecoration(
-                    hintText: _amLiar
-                        ? 'Yalan söyle ama inandır...'
+                    hintText: _amLiar ? 'Yalan söyle ama inandır...'
                         : 'Konuyla ilgili bir şey söyle...',
                     suffixIcon: IconButton(
-                      icon: const Icon(Icons.send_rounded, color: _kRose),
-                      onPressed: _submitAnswer,
-                    ),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        icon: const Icon(Icons.send_rounded, color: _kRose),
+                        onPressed: _submitAnswer),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   onSubmitted: (_) => _submitAnswer(),
                 ),
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: _submitAnswer,
-                  style: FilledButton.styleFrom(
-                      backgroundColor: _kRose,
+                  style: FilledButton.styleFrom(backgroundColor: _kRose,
                       minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14))),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                   child: const Text('GÖNDER',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 ),
@@ -567,19 +501,16 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
                 AZCard(child: Column(children: [
                   const Icon(Icons.check_circle, color: Colors.green, size: 40),
                   const SizedBox(height: 8),
-                  const Text('Cevabın alındı!',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Cevabın alındı!', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  const Text('Diğerleri bekleniyor...',
-                      style: TextStyle(color: Colors.grey)),
+                  const Text('Diğerleri bekleniyor...', style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 8),
                   const CircularProgressIndicator(color: _kRose),
                 ])),
             ],
 
-            // ── VOTE PHASE ─────────────────────────────────────────────────
+            // VOTE PHASE
             if (_phase == 'vote') ...[
-              // Show all answers
               AZCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('Cevaplar:',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -589,30 +520,23 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
                   child: Row(children: [
                     CircleAvatar(
                         radius: 16,
-                        backgroundColor: _kRose.withOpacity(0.2),
-                        child: Text(
-                            (e.value['name'] as String? ?? '?')[0],
-                            style: const TextStyle(
-                                color: _kRose, fontWeight: FontWeight.bold))),
+                        backgroundColor: _kRose.withAlpha(50),
+                        child: Text((e.value['name'] as String? ?? '?')[0],
+                            style: const TextStyle(color: _kRose, fontWeight: FontWeight.bold))),
                     const SizedBox(width: 10),
-                    Expanded(child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(e.value['name'] as String? ?? e.key,
-                              style: TextStyle(
-                                  fontWeight: e.key == widget.myKey
-                                      ? FontWeight.bold : FontWeight.normal)),
-                          Text(e.value['answer'] as String? ?? '...',
-                              style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                        ])),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(e.value['name'] as String? ?? e.key,
+                          style: TextStyle(fontWeight: e.key == widget.myKey
+                              ? FontWeight.bold : FontWeight.normal)),
+                      Text(e.value['answer'] as String? ?? '...',
+                          style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                    ])),
                   ]),
                 )),
               ])),
               const SizedBox(height: 20),
-
               if (!_hasGuessed) ...[
-                const Text('🤔 Kim yalancı?',
-                    textAlign: TextAlign.center,
+                const Text('🤔 Kim yalancı?', textAlign: TextAlign.center,
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 const SizedBox(height: 14),
                 ..._players.entries
@@ -622,48 +546,43 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
                   child: ElevatedButton(
                     onPressed: () => _vote(e.key),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: _kRose,
-                        foregroundColor: Colors.white,
+                        backgroundColor: _kRose, foregroundColor: Colors.white,
                         padding: const EdgeInsets.all(16),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14))),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                     child: Text(e.value['name'] as String? ?? e.key,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 )),
               ] else
                 AZCard(child: Column(children: [
                   const Icon(Icons.how_to_vote, color: _kRose, size: 40),
                   const SizedBox(height: 8),
-                  const Text('Oyun bekleniyor...',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Oyun bekleniyor...', style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   const CircularProgressIndicator(color: _kRose),
                 ])),
             ],
 
-            // ── RESULT PHASE ───────────────────────────────────────────────
+            // RESULT PHASE
             if (_phase == 'result')
               AZCard(child: Column(children: [
-                Text(
-                  liarCaught ? '🎉 Yalancı Yakalandı!' : '😈 Yalancı Kazandı!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold,
-                      color: liarCaught ? Colors.green : Colors.red),
-                ),
+                Text(liarCaught ? '🎉 Yalancı Yakalandı!' : '😈 Yalancı Kazandı!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,
+                        color: liarCaught ? Colors.green : Colors.red)),
                 const SizedBox(height: 12),
                 Text('Yalancı: ${_players[_liarKey]?['name'] ?? _liarKey}',
                     style: const TextStyle(fontSize: 16)),
                 const SizedBox(height: 4),
-                const Text('Sonraki tura geçiliyor...',
-                    style: TextStyle(color: Colors.grey)),
+                const Text('Sonraki tura geçiliyor...', style: TextStyle(color: Colors.grey)),
                 const SizedBox(height: 10),
                 const CircularProgressIndicator(color: _kRose),
               ])),
           ]),
         )),
+
+        // Banner reklam — oyun altında
+        const BannerAdWidget(),
       ])),
     );
   }
