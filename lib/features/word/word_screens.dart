@@ -3,14 +3,12 @@ import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/ad_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
-
-// ════════════════════════════════════════════════════════════════════════════
-// WORD BANK
-// ════════════════════════════════════════════════════════════════════════════
+import '../../core/widgets/banner_ad_widget.dart';
 
 const _wordBank = [
   'ELMA','KALEM','KAPI','MASA','SU','EV','ARABA','KEDI','KOPEK',
@@ -19,37 +17,25 @@ const _wordBank = [
   'BILGISAYAR','TELEFON','TABLET','KLAVYE','FARE','EKRAN',
   'FUTBOL','BASKETBOL','TENIS','YUZME','BISIKLET',
   'EKMEK','SUT','YAG','SEKER','TUZ','BIBER','DOMATES','SALATALIK',
-  'PENCERE','KAPI','TAVAN','ZEMIN','DUVAR','BAHCE','BALKON',
+  'PENCERE','TAVAN','ZEMIN','DUVAR','BAHCE','BALKON',
   'KAPLAN','ASLAN','KARTAL','PENGUEN','YUNUS','ZEBRA',
   'GITAR','PIYANO','KEMAN','DAVUL','TROMPET',
 ];
 
-// ════════════════════════════════════════════════════════════════════════════
-// LOBBY
-// ════════════════════════════════════════════════════════════════════════════
-
 class WordLobbyScreen extends StatefulWidget {
   const WordLobbyScreen({super.key});
-
-  @override
-  State<WordLobbyScreen> createState() => _WordLobbyScreenState();
+  @override State<WordLobbyScreen> createState() => _WordLobbyScreenState();
 }
 
 class _WordLobbyScreenState extends State<WordLobbyScreen> {
   final _rooms    = RoomService.instance;
   final _storage  = StorageService.instance;
   final _codeCtrl = TextEditingController();
-
-  String? _playerName;
-  bool    _loading = false;
-
+  String? _playerName; bool _loading = false;
   static const _kCyan = Color(0xFF00f2fe);
 
-  @override
-  void initState() { super.initState(); _loadName(); }
-
-  @override
-  void dispose() { _codeCtrl.dispose(); super.dispose(); }
+  @override void initState() { super.initState(); _loadName(); }
+  @override void dispose()   { _codeCtrl.dispose(); super.dispose(); }
 
   Future<void> _loadName() async {
     final n = await _storage.getPlayerName();
@@ -57,14 +43,12 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
     if (n != null && n.isNotEmpty) setState(() => _playerName = n);
     else _askName();
   }
-
   Future<void> _askName() async {
     final name = await showNameDialog(context, current: _playerName, accentColor: _kCyan);
     if (name == null || !mounted) return;
     await _storage.setPlayerName(name);
     setState(() => _playerName = name);
   }
-
   Future<void> _createRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     setState(() => _loading = true);
@@ -86,7 +70,6 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
     } catch (e) { _snack('Hata: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-
   Future<void> _joinRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
@@ -99,8 +82,7 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
       final players = Map.from((r.data['players'] as Map?) ?? {});
       if (players.length >= 4)           { _snack('Oda dolu'); return; }
       final myKey = 'p${players.length + 1}';
-      await _rooms.updateRoom(
-          gamePath: GamePaths.wordPuzzle, roomId: r.id,
+      await _rooms.updateRoom(gamePath: GamePaths.wordPuzzle, roomId: r.id,
           updates: {'players/$myKey': {'name': _playerName, 'isHost': false, 'score': 0}});
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
@@ -108,89 +90,80 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
     } catch (e) { _snack('Katılınamadı: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-
-  void _snack(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
     return AZGradientScaffold(
       gradient: AZColors.gradCyan,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(children: [
-          Align(alignment: Alignment.centerLeft,
-              child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context))),
-          const SizedBox(height: 8),
-          const Text('🔤', style: TextStyle(fontSize: 72)),
-          const SizedBox(height: 8),
-          const Text('KELİME BULMACA',
-              style: TextStyle(color: Colors.white, fontSize: 26,
-                  fontWeight: FontWeight.bold, letterSpacing: 2)),
-          const SizedBox(height: 4),
-          const Text('2-4 Oyuncu · 60 Saniye · Harf karıştır kelime yap',
-              style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 28),
-
-          GestureDetector(onTap: _askName, child: AZFrostCard(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.person_rounded, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Text(_playerName ?? 'Ad seç',
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 6),
-              const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
-            ]),
-          )),
-          const SizedBox(height: 36),
-
-          AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-              onPressed: _createRoom, color: _kCyan, loading: _loading, width: 300),
-          const SizedBox(height: 28),
-          const Text('— veya —', style: TextStyle(color: Colors.white54)),
-          const SizedBox(height: 28),
-
-          AZFrostCard(child: Column(children: [
-            AZCodeField(controller: _codeCtrl),
-            const SizedBox(height: 14),
-            AZJoinButton(onPressed: _joinRoom, loading: _loading),
-          ])),
-          const SizedBox(height: 32),
-
-          AZFrostCard(opacity: 0.08, child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text('🔤  Nasıl oynanır?',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                SizedBox(height: 10),
-                Text(
-                  '• Verilen harflerden kelimeler oluştur\n'
-                  '• 60 saniye süren yarışma\n'
-                  '• Uzun kelimeler daha çok puan\n'
-                  '• En çok puan toplayan kazanır',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65),
-                ),
-              ])),
-          const SizedBox(height: 24),
-        ]),
-      ),
+      child: Column(children: [
+        Expanded(child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(children: [
+            Align(alignment: Alignment.centerLeft,
+                child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => Navigator.pop(context))),
+            const SizedBox(height: 8),
+            const Text('🔤', style: TextStyle(fontSize: 72)),
+            const SizedBox(height: 8),
+            const Text('KELİME BULMACA',
+                style: TextStyle(color: Colors.white, fontSize: 26,
+                    fontWeight: FontWeight.bold, letterSpacing: 2)),
+            const SizedBox(height: 4),
+            const Text('2-4 Oyuncu · 60 Saniye · Harf karıştır kelime yap',
+                style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const SizedBox(height: 28),
+            GestureDetector(onTap: _askName, child: AZFrostCard(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.person_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(_playerName ?? 'Ad seç',
+                    style: const TextStyle(color: Colors.white,
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 6),
+                const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
+              ]),
+            )),
+            const SizedBox(height: 36),
+            AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
+                onPressed: _createRoom, color: _kCyan, loading: _loading, width: 300),
+            const SizedBox(height: 28),
+            const Text('— veya —', style: TextStyle(color: Colors.white54)),
+            const SizedBox(height: 28),
+            AZFrostCard(child: Column(children: [
+              AZCodeField(controller: _codeCtrl),
+              const SizedBox(height: 14),
+              AZJoinButton(onPressed: _joinRoom, loading: _loading),
+            ])),
+            const SizedBox(height: 32),
+            AZFrostCard(opacity: 0.08, child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text('🔤  Nasıl oynanır?',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  SizedBox(height: 10),
+                  Text('• Verilen harflerden kelimeler oluştur\n'
+                      '• 60 saniye süren yarışma\n'
+                      '• Uzun kelimeler daha çok puan\n'
+                      '• En çok puan toplayan kazanır',
+                      style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65)),
+                ])),
+            const SizedBox(height: 24),
+          ]),
+        )),
+        const AdaptiveBannerAdWidget(),
+      ]),
     );
   }
 }
-
-// ════════════════════════════════════════════════════════════════════════════
-// ROOM
-// ════════════════════════════════════════════════════════════════════════════
 
 class WordRoomScreen extends StatefulWidget {
   const WordRoomScreen({super.key, required this.roomId,
       required this.myKey, required this.myName});
   final String roomId, myKey, myName;
-
-  @override
-  State<WordRoomScreen> createState() => _WordRoomScreenState();
+  @override State<WordRoomScreen> createState() => _WordRoomScreenState();
 }
 
 class _WordRoomScreenState extends State<WordRoomScreen> {
@@ -198,7 +171,6 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _navigating = false;
-
   static const _kCyan = Color(0xFF00f2fe);
 
   @override
@@ -207,9 +179,7 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
     _sub = _rooms.watchRoom(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId)
         .listen(_onData);
   }
-
-  @override
-  void dispose() { _sub?.cancel(); super.dispose(); }
+  @override void dispose() { _sub?.cancel(); super.dispose(); }
 
   void _onData(Map<String, dynamic>? d) {
     if (!mounted || d == null) return;
@@ -228,23 +198,16 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
 
   Future<void> _start() async {
     if (!_canStart) { _snack('En az 2 oyuncu'); return; }
-    await _rooms.updateRoom(
-        gamePath: GamePaths.wordPuzzle, roomId: widget.roomId,
+    await _rooms.updateRoom(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId,
         updates: {'status': 'playing', 'startTime': ServerValue.timestamp});
   }
-
   Future<void> _leave() async {
-    if (_isHost) {
-      await _rooms.deleteRoom(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId);
-    } else {
-      await _rooms.removePlayer(
-          gamePath: GamePaths.wordPuzzle, roomId: widget.roomId, playerKey: widget.myKey);
-    }
+    if (_isHost) await _rooms.deleteRoom(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId);
+    else await _rooms.removePlayer(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId, playerKey: widget.myKey);
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -272,8 +235,8 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
                   emoji:   '🔤', present: _players.containsKey(slot)),
             if (!_canStart) Padding(padding: const EdgeInsets.only(top: 8),
                 child: Row(children: const [
-                  SizedBox(width: 14, height: 14, child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white38)),
+                  SizedBox(width: 14, height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white38)),
                   SizedBox(width: 8),
                   Text('Rakip bekleniyor...', style: TextStyle(color: Colors.white54, fontSize: 13)),
                 ])),
@@ -291,17 +254,11 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// GAME
-// ════════════════════════════════════════════════════════════════════════════
-
 class WordGameScreen extends StatefulWidget {
   const WordGameScreen({super.key, required this.roomId,
       required this.myKey, required this.myName});
   final String roomId, myKey, myName;
-
-  @override
-  State<WordGameScreen> createState() => _WordGameScreenState();
+  @override State<WordGameScreen> createState() => _WordGameScreenState();
 }
 
 class _WordGameScreenState extends State<WordGameScreen>
@@ -312,17 +269,16 @@ class _WordGameScreenState extends State<WordGameScreen>
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
 
-  List<String> _letters    = [];
-  List<int>    _selected   = [];   // indices into _letters
+  List<String> _letters  = [];
+  List<int>    _selected = [];
   Set<String>  _foundWords = {};
-  int          _myScore    = 0;
-  int          _timeLeft   = 60;
+  int          _myScore  = 0;
+  int          _timeLeft = 60;
   Timer?       _timer;
-  bool         _gameOver   = false;
+  bool         _gameOver = false;
 
   late AnimationController _successCtrl;
   late Animation<double>   _successScale;
-
   static const _kCyan = Color(0xFF00f2fe);
 
   @override
@@ -330,43 +286,33 @@ class _WordGameScreenState extends State<WordGameScreen>
     super.initState();
     _ref = _db.child('${GamePaths.wordPuzzle}/${widget.roomId}');
     _sub = _ref.onValue.listen(_onFirebase);
-
-    _successCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 600));
+    _successCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     _successScale = Tween(begin: 0.5, end: 1.0).animate(
         CurvedAnimation(parent: _successCtrl, curve: Curves.elasticOut));
   }
-
   @override
-  void dispose() {
-    _timer?.cancel();
-    _successCtrl.dispose();
-    _sub?.cancel();
-    super.dispose();
-  }
+  void dispose() { _timer?.cancel(); _successCtrl.dispose(); _sub?.cancel(); super.dispose(); }
 
   void _onFirebase(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     final wasEmpty = _room.isEmpty;
     setState(() => _room = d);
-
-    // Generate letters once we have the seed
     if (wasEmpty && _letters.isEmpty) {
       _generateLetters((d['seed'] as int?) ?? 42);
       _startTimer();
     }
-
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
       _timer?.cancel();
+      AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 300), _showFinal);
     }
   }
 
   void _generateLetters(int seed) {
-    final rng       = Random(seed);
-    const vowels    = 'AEİOÖUÜ';
+    final rng = Random(seed);
+    const vowels     = 'AEİOÖUÜ';
     const consonants = 'BCÇDFGĞHJKLMNPRSŞTVYZ';
     _letters = [
       ...List.generate(5, (_) => vowels[rng.nextInt(vowels.length)]),
@@ -389,7 +335,6 @@ class _WordGameScreenState extends State<WordGameScreen>
       'players/${widget.myKey}/score': _myScore,
       'players/${widget.myKey}/done':  true,
     });
-    // Small delay then finish (host or last player triggers finish)
     await Future.delayed(const Duration(seconds: 3));
     await _ref.update({'status': 'finished'});
   }
@@ -398,26 +343,16 @@ class _WordGameScreenState extends State<WordGameScreen>
     if (_gameOver || _selected.contains(idx)) return;
     setState(() => _selected.add(idx));
   }
-
-  void _removeLast() {
-    if (_selected.isEmpty) return;
-    setState(() => _selected.removeLast());
-  }
-
+  void _removeLast()    { if (_selected.isEmpty) return; setState(() => _selected.removeLast()); }
   void _clearSelection() => setState(() => _selected = []);
 
   Future<void> _submitWord() async {
     if (_selected.isEmpty) return;
     final word = _selected.map((i) => _letters[i]).join();
     if (word.length < 2) return;
-
     if (_wordBank.contains(word) && !_foundWords.contains(word)) {
       final pts = word.length * 10;
-      setState(() {
-        _foundWords.add(word);
-        _myScore += pts;
-        _selected = [];
-      });
+      setState(() { _foundWords.add(word); _myScore += pts; _selected = []; });
       _successCtrl.forward(from: 0);
       HapticFeedback.mediumImpact();
       _snack('✅ $word  +$pts puan!');
@@ -431,18 +366,16 @@ class _WordGameScreenState extends State<WordGameScreen>
     if (!mounted) return;
     final players = (_room['players'] as Map?) ?? {};
     final sorted  = players.entries.toList()
-      ..sort((a, b) =>
-          ((b.value['score'] as int?) ?? 0).compareTo((a.value['score'] as int?) ?? 0));
+      ..sort((a, b) => ((b.value['score'] as int?) ?? 0)
+          .compareTo((a.value['score'] as int?) ?? 0));
     const medals = ['🥇', '🥈', '🥉', '4.'];
-
     showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: const Text('🔤 Süre Doldu!', textAlign: TextAlign.center),
         content: Column(mainAxisSize: MainAxisSize.min,
           children: sorted.asMap().entries.map((e) {
             final isMe  = e.value.key == widget.myKey;
-            final score = e.key == 0 && isMe
-                ? _myScore
+            final score = e.key == 0 && isMe ? _myScore
                 : (e.value.value['score'] as int?) ?? 0;
             return Container(
               margin: const EdgeInsets.symmetric(vertical: 4),
@@ -454,11 +387,8 @@ class _WordGameScreenState extends State<WordGameScreen>
                 Text(e.key < medals.length ? medals[e.key] : '?',
                     style: const TextStyle(fontSize: 22)),
                 const SizedBox(width: 10),
-                Expanded(child: Text(
-                    e.value.value['name'] as String? ?? e.value.key,
-                    style: TextStyle(
-                        fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 16))),
+                Expanded(child: Text(e.value.value['name'] as String? ?? e.value.key,
+                    style: TextStyle(fontWeight: isMe ? FontWeight.bold : FontWeight.normal, fontSize: 16))),
                 Text('$score puan', style: const TextStyle(fontWeight: FontWeight.bold)),
               ]),
             );
@@ -484,7 +414,6 @@ class _WordGameScreenState extends State<WordGameScreen>
     if (_room.isEmpty || _letters.isEmpty) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
     final players = (_room['players'] as Map?) ?? {};
     final current = _selected.map((i) => _letters[i]).join();
 
@@ -492,7 +421,7 @@ class _WordGameScreenState extends State<WordGameScreen>
       backgroundColor: const Color(0xFFE0F7FA),
       body: SafeArea(child: Column(children: [
 
-        // ── Score bar ──────────────────────────────────────────────────────
+        // Score bar
         Container(
           color: _kCyan,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -503,8 +432,7 @@ class _WordGameScreenState extends State<WordGameScreen>
                   color: _timeLeft <= 10 ? Colors.red : Colors.white,
                   borderRadius: BorderRadius.circular(20)),
               child: Text('⏱ $_timeLeft',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                  style: TextStyle(fontWeight: FontWeight.bold,
                       color: _timeLeft <= 10 ? Colors.white : _kCyan)),
             ),
             Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.end,
@@ -518,10 +446,8 @@ class _WordGameScreenState extends State<WordGameScreen>
                       color: isMe ? Colors.white : Colors.white24,
                       borderRadius: BorderRadius.circular(12)),
                   child: Text('${e.value['name']}: $score',
-                      style: TextStyle(
-                          color: isMe ? _kCyan : Colors.white,
-                          fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 12)),
+                      style: TextStyle(color: isMe ? _kCyan : Colors.white,
+                          fontWeight: isMe ? FontWeight.bold : FontWeight.normal, fontSize: 12)),
                 );
               }).toList(),
             )),
@@ -531,14 +457,11 @@ class _WordGameScreenState extends State<WordGameScreen>
         Expanded(child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(children: [
-
-            // Current word display
             AnimatedBuilder(
               animation: _successScale,
               builder: (_, child) => Transform.scale(scale: _successScale.value, child: child),
               child: Container(
-                width: double.infinity, height: 64,
-                alignment: Alignment.center,
+                width: double.infinity, height: 64, alignment: Alignment.center,
                 decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
@@ -552,24 +475,16 @@ class _WordGameScreenState extends State<WordGameScreen>
               ),
             ),
             const SizedBox(height: 12),
-
-            // Found words chips
             if (_foundWords.isNotEmpty)
-              Wrap(
-                spacing: 8, runSpacing: 6,
+              Wrap(spacing: 8, runSpacing: 6,
                 children: _foundWords.map((w) => Chip(
                   label: Text(w, style: const TextStyle(fontWeight: FontWeight.bold)),
                   backgroundColor: Colors.green.shade100,
                   labelStyle: const TextStyle(color: Colors.green),
-                )).toList(),
-              ),
-
+                )).toList()),
             const Spacer(),
-
-            // Letter grid
             Wrap(
-              spacing: 10, runSpacing: 10,
-              alignment: WrapAlignment.center,
+              spacing: 10, runSpacing: 10, alignment: WrapAlignment.center,
               children: _letters.asMap().entries.map((e) {
                 final isUsed = _selected.contains(e.key);
                 return GestureDetector(
@@ -592,8 +507,6 @@ class _WordGameScreenState extends State<WordGameScreen>
               }).toList(),
             ),
             const SizedBox(height: 20),
-
-            // Action buttons
             Row(children: [
               Expanded(child: OutlinedButton.icon(
                 onPressed: _removeLast,
@@ -619,14 +532,16 @@ class _WordGameScreenState extends State<WordGameScreen>
                 icon: const Icon(Icons.check_rounded),
                 label: const Text('KONTROL ET',
                     style: TextStyle(fontWeight: FontWeight.bold)),
-                style: FilledButton.styleFrom(
-                    backgroundColor: _kCyan,
+                style: FilledButton.styleFrom(backgroundColor: _kCyan,
                     padding: const EdgeInsets.symmetric(vertical: 14)),
               )),
             ]),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
           ]),
         )),
+
+        // Banner reklam
+        const BannerAdWidget(),
       ])),
     );
   }
