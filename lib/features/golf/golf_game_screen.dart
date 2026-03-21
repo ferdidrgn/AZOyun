@@ -6,10 +6,6 @@ import 'package:flutter/services.dart';
 import '../../core/services/room_service.dart';
 import '../../core/theme/az_theme.dart';
 
-// ══════════════════════════════════════════════════════════════════════════════
-// DATA CLASSES
-// ══════════════════════════════════════════════════════════════════════════════
-
 class _Obstacle {
   const _Obstacle({required this.center, required this.w, required this.h});
   final Offset center;
@@ -20,10 +16,6 @@ class _Wall {
   const _Wall({required this.a, required this.b});
   final Offset a, b;
 }
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SCREEN
-// ══════════════════════════════════════════════════════════════════════════════
 
 class GolfGameScreen extends StatefulWidget {
   const GolfGameScreen({
@@ -41,33 +33,27 @@ class GolfGameScreen extends StatefulWidget {
 
 class _GolfGameScreenState extends State<GolfGameScreen>
     with TickerProviderStateMixin {
-  // Firebase
   final _db  = FirebaseDatabase.instance.ref();
   late DatabaseReference _ref;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
 
-  // Hole layout (deterministic from holeSeed)
-  int    _lastSeed   = -1;
-  int    _lastHole   = 0;
-  Offset _ballStart  = const Offset(0.5, 0.80);
-  Offset _holePos    = const Offset(0.5, 0.12);
+  int    _lastSeed  = -1;
+  int    _lastHole  = 0;
+  Offset _holePos   = const Offset(0.5, 0.12);
   List<_Obstacle> _obstacles = [];
   List<_Wall>     _walls     = [];
 
-  // Ball physics (local, 60fps)
   Offset _ball    = const Offset(0.5, 0.80);
   Offset _vel     = Offset.zero;
   bool   _moving  = false;
   bool   _myDone  = false;
   int    _myShots = 0;
 
-  // Drag
   Offset? _dragStart;
   Offset? _dragCurrent;
 
-  // Animations
   late AnimationController _physicsCtrl;
   late AnimationController _celebrateCtrl;
   late Animation<double>   _celebrateScale;
@@ -88,7 +74,8 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     _celebrateCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900));
     _celebrateScale = Tween(begin: 0.3, end: 1.0).animate(
-        CurvedAnimation(parent: _celebrateCtrl, curve: Curves.elasticOut));
+        CurvedAnimation(
+            parent: _celebrateCtrl, curve: Curves.elasticOut));
 
     _sub = _ref.onValue.listen(_onFirebase);
   }
@@ -101,11 +88,10 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     super.dispose();
   }
 
-  // ── Firebase ────────────────────────────────────────────────────────────────
-
   void _onFirebase(DatabaseEvent event) {
     if (!mounted || event.snapshot.value == null) return;
-    final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+    final data =
+        Map<String, dynamic>.from(event.snapshot.value as Map);
     setState(() => _room = data);
 
     final holeNo = (data['currentHole'] as int?) ?? 1;
@@ -114,11 +100,10 @@ class _GolfGameScreenState extends State<GolfGameScreen>
 
     if (data['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
-      Future.delayed(const Duration(milliseconds: 500), _showFinalDialog);
+      Future.delayed(
+          const Duration(milliseconds: 500), _showFinalDialog);
     }
   }
-
-  // ── Hole generation (deterministic) ────────────────────────────────────────
 
   void _initHole(int holeNo, int seed) {
     _lastHole = holeNo;
@@ -126,24 +111,21 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     final rng = Random(seed);
 
     _ball = Offset(0.2 + rng.nextDouble() * 0.6,
-                   0.70 + rng.nextDouble() * 0.14);
-    _ballStart = _ball;
-    _vel     = Offset.zero;
-    _moving  = false;
-    _myDone  = false;
-    _myShots = 0;
-    _dragStart = null;
+        0.70 + rng.nextDouble() * 0.14);
+    _vel         = Offset.zero;
+    _moving      = false;
+    _myDone      = false;
+    _myShots     = 0;
+    _dragStart   = null;
     _dragCurrent = null;
 
-    // Hole position (upper area, not too close to ball)
     Offset h;
     do {
       h = Offset(0.12 + rng.nextDouble() * 0.76,
-                 0.06 + rng.nextDouble() * 0.20);
+          0.06 + rng.nextDouble() * 0.20);
     } while ((h - _ball).distance < 0.35);
     _holePos = h;
 
-    // Obstacles (scale with hole number)
     final obsCount = (holeNo + 1).clamp(2, 7);
     _obstacles = [];
     for (var i = 0; i < obsCount; i++) {
@@ -151,11 +133,11 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       var tries = 0;
       do {
         c = Offset(0.07 + rng.nextDouble() * 0.86,
-                   0.26 + rng.nextDouble() * 0.44);
+            0.26 + rng.nextDouble() * 0.44);
         tries++;
       } while (tries < 40 &&
           ((c - _holePos).distance < 0.12 ||
-           (c - _ball).distance < 0.12));
+              (c - _ball).distance < 0.12));
       _obstacles.add(_Obstacle(
         center: c,
         w: 0.055 + rng.nextDouble() * 0.07,
@@ -163,7 +145,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       ));
     }
 
-    // Walls (from hole 2 onward)
     final wallCount = (holeNo - 1).clamp(0, 4);
     _walls = [];
     for (var i = 0; i < wallCount; i++) {
@@ -172,37 +153,36 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       final cy    = 0.28 + rng.nextDouble() * 0.40;
       final len   = 0.13 + rng.nextDouble() * 0.12;
       _walls.add(_Wall(
-        a: Offset(cx - (horiz ? len : 0.01), cy - (horiz ? 0.01 : len)),
-        b: Offset(cx + (horiz ? len : 0.01), cy + (horiz ? 0.01 : len)),
+        a: Offset(cx - (horiz ? len : 0.01),
+            cy - (horiz ? 0.01 : len)),
+        b: Offset(cx + (horiz ? len : 0.01),
+            cy + (horiz ? 0.01 : len)),
       ));
     }
-
     setState(() {});
   }
-
-  // ── Physics ─────────────────────────────────────────────────────────────────
 
   void _physicsTick() {
     if (!_moving) return;
     setState(() {
       _ball += _vel * _dt;
-      _vel  *= 0.975; // rolling friction
+      _vel  *= 0.975;
 
-      // Boundary bounce
       void bounceX(double x) {
         _ball = Offset(x, _ball.dy);
         _vel  = Offset(-_vel.dx * 0.58, _vel.dy);
       }
+
       void bounceY(double y) {
         _ball = Offset(_ball.dx, y);
         _vel  = Offset(_vel.dx, -_vel.dy * 0.58);
       }
-      if (_ball.dx < _ballRadius)       bounceX(_ballRadius);
-      if (_ball.dx > 1 - _ballRadius)   bounceX(1 - _ballRadius);
-      if (_ball.dy < _ballRadius)       bounceY(_ballRadius);
-      if (_ball.dy > 1 - _ballRadius)   bounceY(1 - _ballRadius);
 
-      // Obstacle AABB collisions
+      if (_ball.dx < _ballRadius) bounceX(_ballRadius);
+      if (_ball.dx > 1 - _ballRadius) bounceX(1 - _ballRadius);
+      if (_ball.dy < _ballRadius) bounceY(_ballRadius);
+      if (_ball.dy > 1 - _ballRadius) bounceY(1 - _ballRadius);
+
       for (final o in _obstacles) {
         final hw = o.w / 2 + _ballRadius;
         final hh = o.h / 2 + _ballRadius;
@@ -210,16 +190,17 @@ class _GolfGameScreenState extends State<GolfGameScreen>
         final dy = _ball.dy - o.center.dy;
         if (dx.abs() < hw && dy.abs() < hh) {
           if (dx.abs() / hw < dy.abs() / hh) {
-            _ball = Offset(_ball.dx, o.center.dy + (dy > 0 ? hh : -hh));
-            _vel  = Offset(_vel.dx * 0.85, -_vel.dy * 0.55);
+            _ball =
+                Offset(_ball.dx, o.center.dy + (dy > 0 ? hh : -hh));
+            _vel = Offset(_vel.dx * 0.85, -_vel.dy * 0.55);
           } else {
-            _ball = Offset(o.center.dx + (dx > 0 ? hw : -hw), _ball.dy);
-            _vel  = Offset(-_vel.dx * 0.55, _vel.dy * 0.85);
+            _ball =
+                Offset(o.center.dx + (dx > 0 ? hw : -hw), _ball.dy);
+            _vel = Offset(-_vel.dx * 0.55, _vel.dy * 0.85);
           }
         }
       }
 
-      // Wall (thin AABB) collisions
       for (final wall in _walls) {
         final wx  = (wall.a.dx + wall.b.dx) / 2;
         final wy  = (wall.a.dy + wall.b.dy) / 2;
@@ -231,16 +212,17 @@ class _GolfGameScreenState extends State<GolfGameScreen>
         final dy  = _ball.dy - wy;
         if (dx.abs() < hw2 && dy.abs() < hh2) {
           if (ww > wh) {
-            _ball = Offset(_ball.dx, wy + (dy > 0 ? hh2 : -hh2));
-            _vel  = Offset(_vel.dx * 0.90, -_vel.dy * 0.55);
+            _ball = Offset(
+                _ball.dx, wy + (dy > 0 ? hh2 : -hh2));
+            _vel = Offset(_vel.dx * 0.90, -_vel.dy * 0.55);
           } else {
-            _ball = Offset(wx + (dx > 0 ? hw2 : -hw2), _ball.dy);
-            _vel  = Offset(-_vel.dx * 0.55, _vel.dy * 0.90);
+            _ball = Offset(
+                wx + (dx > 0 ? hw2 : -hw2), _ball.dy);
+            _vel = Offset(-_vel.dx * 0.55, _vel.dy * 0.90);
           }
         }
       }
 
-      // Stop condition
       if (_vel.distance < 0.006) {
         _vel    = Offset.zero;
         _moving = false;
@@ -254,36 +236,33 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     if ((_ball - _holePos).distance < 0.05) _onGoal();
   }
 
-  // ── Goal ────────────────────────────────────────────────────────────────────
-
   Future<void> _onGoal() async {
     if (_myDone) return;
     _myDone = true;
 
-    // Celebrate
     setState(() => _celebrating = true);
     _celebrateCtrl.forward(from: 0);
     HapticFeedback.heavyImpact();
     await Future.delayed(const Duration(milliseconds: 1600));
     if (mounted) setState(() => _celebrating = false);
 
-    // Write to Firebase
     final holeNo  = (_room['currentHole'] as int?) ?? 1;
-    final prevTot = (_room['players']?[widget.myKey]?['totalShots'] as int?) ?? 0;
+    final prevTot =
+        (_room['players']?[widget.myKey]?['totalShots'] as int?) ?? 0;
     await _ref.update({
-      'players/${widget.myKey}/done':                  true,
-      'players/${widget.myKey}/holeShots/$holeNo':     _myShots,
-      'players/${widget.myKey}/totalShots':            prevTot + _myShots,
+      'players/${widget.myKey}/done':              true,
+      'players/${widget.myKey}/holeShots/$holeNo': _myShots,
+      'players/${widget.myKey}/totalShots':        prevTot + _myShots,
     });
 
-    // Host advances the hole
     if (widget.myKey == 'p1') await _hostAdvance();
   }
 
   Future<void> _hostAdvance() async {
-    final snap    = await _ref.child('players').get();
+    final snap = await _ref.child('players').get();
     if (!snap.exists) return;
-    final players = Map<String, dynamic>.from(snap.value as Map);
+    final players =
+        Map<String, dynamic>.from(snap.value as Map);
     if (!players.values.every((p) => p['done'] == true)) return;
 
     final hole  = (_room['currentHole'] as int?) ?? 1;
@@ -297,12 +276,12 @@ class _GolfGameScreenState extends State<GolfGameScreen>
         'currentHole': hole + 1,
         'holeSeed':    newSeed,
       };
-      for (final k in players.keys) updates['players/$k/done'] = false;
+      for (final k in players.keys) {
+        updates['players/$k/done'] = false;
+      }
       await _ref.update(updates);
     }
   }
-
-  // ── Drag input ───────────────────────────────────────────────────────────────
 
   Offset _normalize(Offset local, Size size) =>
       Offset(local.dx / size.width, local.dy / size.height);
@@ -311,26 +290,36 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     if (_moving || _myDone) return;
     final tap = _normalize(d.localPosition, size);
     if ((tap - _ball).distance > 0.14) return;
-    setState(() { _dragStart = tap; _dragCurrent = tap; });
+    setState(() {
+      _dragStart   = tap;
+      _dragCurrent = tap;
+    });
   }
 
   void _onPanUpdate(DragUpdateDetails d, Size size) {
     if (_dragStart == null) return;
-    setState(() => _dragCurrent = _normalize(d.localPosition, size));
+    setState(() =>
+        _dragCurrent = _normalize(d.localPosition, size));
   }
 
   void _onPanEnd(DragEndDetails _, Size size) {
-    if (_dragStart == null || _dragCurrent == null || _moving || _myDone) return;
+    if (_dragStart   == null ||
+        _dragCurrent == null ||
+        _moving ||
+        _myDone) return;
     final delta = _dragStart! - _dragCurrent!;
     if (delta.distance < 0.012) {
-      setState(() { _dragStart = null; _dragCurrent = null; });
+      setState(() {
+        _dragStart   = null;
+        _dragCurrent = null;
+      });
       return;
     }
     final power = (delta.distance * 7.5).clamp(0.4, 6.0);
     final dir   = delta / delta.distance;
     setState(() {
-      _vel     = dir * power;
-      _moving  = true;
+      _vel         = dir * power;
+      _moving      = true;
       _myShots++;
       _dragStart   = null;
       _dragCurrent = null;
@@ -340,8 +329,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     _ref.child('players/${widget.myKey}/shots').set(_myShots);
   }
 
-  // ── Final dialog ─────────────────────────────────────────────────────────────
-
   void _showFinalDialog() {
     if (!mounted) return;
     final players = (_room['players'] as Map?) ?? {};
@@ -349,7 +336,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       ..sort((a, b) =>
           ((a.value['totalShots'] as int?) ?? 99)
               .compareTo((b.value['totalShots'] as int?) ?? 99));
-
     const medals = ['🥇', '🥈', '🥉', '4.'];
 
     showDialog(
@@ -377,7 +363,8 @@ class _GolfGameScreenState extends State<GolfGameScreen>
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    e.value.value['name'] ?? e.value.key,
+                    e.value.value['name'] as String? ??
+                        e.value.key,
                     style: TextStyle(
                         fontWeight: isMe
                             ? FontWeight.bold
@@ -386,7 +373,8 @@ class _GolfGameScreenState extends State<GolfGameScreen>
                   ),
                 ),
                 Text('$sc vuruş',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold)),
               ]),
             );
           }).toList(),
@@ -397,10 +385,12 @@ class _GolfGameScreenState extends State<GolfGameScreen>
                 backgroundColor: AZColors.green),
             onPressed: () async {
               await _db
-                  .child('${GamePaths.golf}/${widget.roomId}')
+                  .child(
+                      '${GamePaths.golf}/${widget.roomId}')
                   .remove();
               if (mounted) {
-                Navigator.popUntil(context, (r) => r.isFirst);
+                Navigator.popUntil(
+                    context, (r) => r.isFirst);
               }
             },
             child: const Text('Ana Menü'),
@@ -410,15 +400,14 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     );
   }
 
-  // ── Build ────────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     if (_room.isEmpty) {
       return const Scaffold(
         backgroundColor: Color(0xFF2E7D32),
         body: Center(
-            child: CircularProgressIndicator(color: Colors.white)),
+            child:
+                CircularProgressIndicator(color: Colors.white)),
       );
     }
 
@@ -430,15 +419,12 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       backgroundColor: const Color(0xFF2E7D32),
       body: SafeArea(
         child: Column(children: [
-          // Score bar
           _ScoreBar(
-            players:  players,
-            myKey:    widget.myKey,
-            holeNo:   holeNo,
-            maxHole:  maxHole,
+            players: players,
+            myKey:   widget.myKey,
+            holeNo:  holeNo,
+            maxHole: maxHole,
           ),
-
-          // Status strip
           AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             color: _myDone
@@ -461,30 +447,28 @@ class _GolfGameScreenState extends State<GolfGameScreen>
               ),
             ),
           ),
-
-          // Game canvas
           Expanded(
             child: LayoutBuilder(builder: (_, constraints) {
               final size = constraints.biggest;
               return GestureDetector(
-                onPanStart:  (d) => _onPanStart(d, size),
-                onPanUpdate: (d) => _onPanUpdate(d, size),
-                onPanEnd:    (d) => _onPanEnd(d, size),
+                onPanStart:
+                    (d) => _onPanStart(d, size),
+                onPanUpdate:
+                    (d) => _onPanUpdate(d, size),
+                onPanEnd: (d) => _onPanEnd(d, size),
                 child: Stack(children: [
                   CustomPaint(
                     size: size,
                     painter: _GolfFieldPainter(
-                      ball:       _ball,
-                      holePos:    _holePos,
-                      obstacles:  _obstacles,
-                      walls:      _walls,
-                      dragStart:  _myDone ? null : _dragStart,
+                      ball:        _ball,
+                      holePos:     _holePos,
+                      obstacles:   _obstacles,
+                      walls:       _walls,
+                      dragStart:   _myDone ? null : _dragStart,
                       dragCurrent: _dragCurrent,
-                      moving:     _moving,
+                      moving:      _moving,
                     ),
                   ),
-
-                  // Shot counter badge
                   if (!_myDone)
                     Positioned(
                       bottom: 14,
@@ -493,8 +477,9 @@ class _GolfGameScreenState extends State<GolfGameScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.55),
-                            borderRadius: BorderRadius.circular(20)),
+                            color: const Color(0x8C000000),
+                            borderRadius:
+                                BorderRadius.circular(20)),
                         child: Text('🏌️  $_myShots vuruş',
                             style: const TextStyle(
                                 color: Colors.white,
@@ -502,34 +487,43 @@ class _GolfGameScreenState extends State<GolfGameScreen>
                                 fontSize: 13)),
                       ),
                     ),
-
-                  // Celebration overlay
                   if (_celebrating)
                     AnimatedBuilder(
                       animation: _celebrateScale,
                       builder: (_, __) => Positioned.fill(
                         child: IgnorePointer(
                           child: Container(
-                            color: Colors.white.withOpacity(
-                                0.15 * (1 - _celebrateCtrl.value)),
+                            color: Color.fromRGBO(
+                                255,
+                                255,
+                                255,
+                                0.15 *
+                                    (1 -
+                                        _celebrateCtrl
+                                            .value)),
                             child: Center(
                               child: Transform.scale(
                                 scale: _celebrateScale.value,
                                 child: Column(
-                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisSize:
+                                        MainAxisSize.min,
                                     children: [
                                       const Text('⛳',
-                                          style: TextStyle(fontSize: 80)),
+                                          style: TextStyle(
+                                              fontSize: 80)),
                                       const SizedBox(height: 8),
-                                      Text('$_myShots vuruşla girdi!',
+                                      Text(
+                                          '$_myShots vuruşla girdi!',
                                           style: const TextStyle(
                                               fontSize: 26,
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight:
+                                                  FontWeight.bold,
                                               color: Colors.white,
                                               shadows: [
                                                 Shadow(
                                                     blurRadius: 16,
-                                                    color: Colors.black54)
+                                                    color: Colors
+                                                        .black54)
                                               ])),
                                     ]),
                               ),
@@ -549,10 +543,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SCORE BAR
-// ══════════════════════════════════════════════════════════════════════════════
-
 class _ScoreBar extends StatelessWidget {
   const _ScoreBar({
     required this.players,
@@ -568,11 +558,12 @@ class _ScoreBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     color: const Color(0xFF1B5E20),
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    padding:
+        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
     child: Row(children: [
       Text('Delik $holeNo/$maxHole',
           style: const TextStyle(
-              color: Colors.white70,
+              color: Color(0xB3FFFFFF),
               fontSize: 12,
               fontWeight: FontWeight.w600)),
       Expanded(
@@ -582,8 +573,9 @@ class _ScoreBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: players.entries.map((e) {
               final isMe  = e.key == myKey;
-              final shots = (e.value['totalShots'] as int?) ?? 0;
-              final done  = e.value['done'] == true;
+              final shots =
+                  (e.value['totalShots'] as int?) ?? 0;
+              final done = e.value['done'] == true;
               return Container(
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(
@@ -594,7 +586,8 @@ class _ScoreBar extends StatelessWidget {
                       : isMe
                           ? Colors.white
                           : Colors.white24,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius:
+                      BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${done ? "✓ " : ""}${e.value['name']}: $shots',
@@ -616,10 +609,6 @@ class _ScoreBar extends StatelessWidget {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// CUSTOM PAINTER — Golf field
-// ══════════════════════════════════════════════════════════════════════════════
-
 class _GolfFieldPainter extends CustomPainter {
   const _GolfFieldPainter({
     required this.ball,
@@ -631,22 +620,19 @@ class _GolfFieldPainter extends CustomPainter {
     required this.moving,
   });
 
-  final Offset        ball, holePos;
+  final Offset          ball, holePos;
   final List<_Obstacle> obstacles;
-  final List<_Wall>   walls;
-  final Offset?       dragStart, dragCurrent;
-  final bool          moving;
+  final List<_Wall>     walls;
+  final Offset?         dragStart, dragCurrent;
+  final bool            moving;
 
   static const _ballR = 0.026;
 
   @override
   void paint(Canvas canvas, Size s) {
-    // ── Grass ──
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, s.width, s.height),
-      Paint()..color = const Color(0xFF388E3C),
-    );
-    // Stripe pattern
+    // Grass
+    canvas.drawRect(Rect.fromLTWH(0, 0, s.width, s.height),
+        Paint()..color = const Color(0xFF388E3C));
     final stripe = Paint()..color = const Color(0x0A000000);
     for (var i = 0; i < 10; i++) {
       if (i.isOdd) {
@@ -657,7 +643,7 @@ class _GolfFieldPainter extends CustomPainter {
       }
     }
 
-    // ── Walls ──
+    // Walls
     final wallPaint = Paint()
       ..color       = const Color(0xFF6D4C41)
       ..strokeWidth = 8
@@ -670,38 +656,44 @@ class _GolfFieldPainter extends CustomPainter {
           wallPaint);
     }
 
-    // ── Obstacles ──
+    // Obstacles
     for (final o in obstacles) {
       final rect = Rect.fromCenter(
-          center: Offset(o.center.dx * s.width, o.center.dy * s.height),
+          center: Offset(
+              o.center.dx * s.width, o.center.dy * s.height),
           width:  o.w * s.width,
           height: o.h * s.height);
-      final rr = RRect.fromRectAndRadius(rect, const Radius.circular(6));
+      final rr =
+          RRect.fromRectAndRadius(rect, const Radius.circular(6));
       canvas.drawRRect(
           rr.shift(const Offset(2, 3)),
           Paint()
             ..color      = Colors.black26
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
-      canvas.drawRRect(rr, Paint()..color = const Color(0xFF795548));
+            ..maskFilter =
+                const MaskFilter.blur(BlurStyle.normal, 5));
+      canvas.drawRRect(
+          rr, Paint()..color = const Color(0xFF795548));
       canvas.drawRRect(
           rr,
           Paint()
-            ..color       = Colors.white.withOpacity(0.14)
+            ..color       = const Color(0x24FFFFFF)
             ..style       = PaintingStyle.stroke
             ..strokeWidth = 1.2);
     }
 
-    // ── Hole ──
+    // Hole
     final hx = holePos.dx * s.width;
     final hy = holePos.dy * s.height;
     final hr = s.width * 0.024;
-    canvas.drawCircle(Offset(hx + 2, hy + 2), hr,
+    canvas.drawCircle(
+        Offset(hx + 2, hy + 2),
+        hr,
         Paint()
           ..color      = Colors.black26
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
-    canvas.drawCircle(Offset(hx, hy), hr,
-        Paint()..color = Colors.black87);
-    // Flag pole
+          ..maskFilter =
+              const MaskFilter.blur(BlurStyle.normal, 6));
+    canvas.drawCircle(
+        Offset(hx, hy), hr, Paint()..color = Colors.black87);
     canvas.drawLine(
         Offset(hx, hy),
         Offset(hx, hy - s.height * 0.075),
@@ -709,7 +701,6 @@ class _GolfFieldPainter extends CustomPainter {
           ..color       = Colors.white
           ..strokeWidth = 2.5
           ..strokeCap   = StrokeCap.round);
-    // Flag triangle
     final flag = Path()
       ..moveTo(hx, hy - s.height * 0.075)
       ..lineTo(hx + s.width * 0.048, hy - s.height * 0.056)
@@ -717,7 +708,7 @@ class _GolfFieldPainter extends CustomPainter {
       ..close();
     canvas.drawPath(flag, Paint()..color = Colors.redAccent);
 
-    // ── Power indicator ──
+    // Power indicator
     if (dragStart != null && dragCurrent != null && !moving) {
       final bx    = ball.dx * s.width;
       final by    = ball.dy * s.height;
@@ -732,51 +723,56 @@ class _GolfFieldPainter extends CustomPainter {
           Offset(bx, by),
           Offset(tx, ty),
           Paint()
-            ..color       = Color.lerp(Colors.white.withOpacity(0.85),
-                Colors.red.withOpacity(0.85), power)!
+            ..color = Color.lerp(
+                    Colors.white.withAlpha(217),
+                    Colors.red.withAlpha(217),
+                    power)!
             ..strokeWidth = 3.5
             ..strokeCap   = StrokeCap.round);
 
       for (var i = 1; i <= 5; i++) {
         canvas.drawCircle(
-            Offset(bx + dx * 1.4 * i / 6, by + dy * 1.4 * i / 6),
+            Offset(bx + dx * 1.4 * i / 6,
+                by + dy * 1.4 * i / 6),
             5,
             Paint()
-              ..color = Colors.yellowAccent
-                  .withOpacity(power > i / 5.0 ? 0.9 : 0.2));
+              ..color = Colors.yellowAccent.withAlpha(
+                  power > i / 5.0 ? 230 : 51));
       }
 
       canvas.drawCircle(
           Offset(bx, by),
           s.width * 0.034,
           Paint()
-            ..color       = Color.lerp(Colors.white38,
-                Colors.redAccent.withOpacity(0.6), power)!
+            ..color = Color.lerp(Colors.white38,
+                    Colors.redAccent.withAlpha(153), power)!
             ..style       = PaintingStyle.stroke
             ..strokeWidth = 2.5);
     }
 
-    // ── Ball ──
+    // Ball
     final bx = ball.dx * s.width;
     final by = ball.dy * s.height;
     final br = s.width * _ballR;
-    canvas.drawCircle(Offset(bx + 2, by + 3), br * 0.88,
+    canvas.drawCircle(
+        Offset(bx + 2, by + 3),
+        br * 0.88,
         Paint()
           ..color      = Colors.black38
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7));
-    canvas.drawCircle(Offset(bx, by), br,
-        Paint()..color = Colors.white);
-    // Dimples
+          ..maskFilter =
+              const MaskFilter.blur(BlurStyle.normal, 7));
+    canvas.drawCircle(
+        Offset(bx, by), br, Paint()..color = Colors.white);
     final dimple = Paint()..color = const Color(0x1A000000);
     for (var i = 0; i < 5; i++) {
       final a = i * 2 * pi / 5 - pi / 2;
       canvas.drawCircle(
-          Offset(bx + cos(a) * br * 0.52, by + sin(a) * br * 0.52),
+          Offset(bx + cos(a) * br * 0.52,
+              by + sin(a) * br * 0.52),
           br * 0.18,
           dimple);
     }
     canvas.drawCircle(Offset(bx, by), br * 0.2, dimple);
-    // Highlight
     canvas.drawCircle(
         Offset(bx - br * 0.36, by - br * 0.36),
         br * 0.30,

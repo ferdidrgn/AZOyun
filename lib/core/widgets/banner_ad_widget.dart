@@ -3,12 +3,12 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_service.dart';
 
 class BannerAdWidget extends StatefulWidget {
-  final AdSize adSize;
+  final AdSize    adSize;
   final EdgeInsets padding;
 
   const BannerAdWidget({
     super.key,
-    this.adSize = AdSize.banner,
+    this.adSize  = AdSize.banner,
     this.padding = const EdgeInsets.all(8),
   });
 
@@ -22,10 +22,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   bool _disposed = false;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  void initState() { super.initState(); _load(); }
 
   void _load() {
     if (!AdService.instance.isInitialized || !AdService.instance.adsEnabled) return;
@@ -50,11 +47,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   @override
-  void dispose() {
-    _disposed = true;
-    _ad?.dispose();
-    super.dispose();
-  }
+  void dispose() { _disposed = true; _ad?.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -64,10 +57,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     return Container(
       padding: widget.padding,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        border: Border(top: BorderSide(color: Colors.grey.shade300)),
-      ),
+      color: Colors.grey.shade100,
       child: SizedBox(
         width:  _ad!.size.width.toDouble(),
         height: _ad!.size.height.toDouble(),
@@ -77,34 +67,34 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 }
 
-// ── Adaptive ──────────────────────────────────────────────────────────────────
-
 class AdaptiveBannerAdWidget extends StatefulWidget {
   final EdgeInsets padding;
-  const AdaptiveBannerAdWidget({super.key, this.padding = const EdgeInsets.all(8)});
+  const AdaptiveBannerAdWidget(
+      {super.key, this.padding = const EdgeInsets.all(8)});
 
   @override
-  State<AdaptiveBannerAdWidget> createState() => _AdaptiveBannerAdWidgetState();
+  State<AdaptiveBannerAdWidget> createState() =>
+      _AdaptiveBannerAdWidgetState();
 }
 
-class _AdaptiveBannerAdWidgetState extends State<AdaptiveBannerAdWidget> {
+class _AdaptiveBannerAdWidgetState
+    extends State<AdaptiveBannerAdWidget> {
   BannerAd? _ad;
   bool _loaded   = false;
   bool _disposed = false;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
-    if (!AdService.instance.isInitialized || !AdService.instance.adsEnabled) return;
+    if (!AdService.instance.isInitialized ||
+        !AdService.instance.adsEnabled) return;
     await Future.delayed(const Duration(milliseconds: 100));
     if (!mounted || _disposed) return;
 
     final width = MediaQuery.of(context).size.width.toInt();
-    final size  = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+    final size  = await AdSize
+        .getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
     if (size == null || !mounted || _disposed) return;
 
     _ad = BannerAd(
@@ -125,11 +115,7 @@ class _AdaptiveBannerAdWidgetState extends State<AdaptiveBannerAdWidget> {
   }
 
   @override
-  void dispose() {
-    _disposed = true;
-    _ad?.dispose();
-    super.dispose();
-  }
+  void dispose() { _disposed = true; _ad?.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -139,10 +125,7 @@ class _AdaptiveBannerAdWidgetState extends State<AdaptiveBannerAdWidget> {
     return Container(
       padding: widget.padding,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        border: Border(top: BorderSide(color: Colors.grey.shade300)),
-      ),
+      color: Colors.grey.shade100,
       child: SizedBox(
         width:  _ad!.size.width.toDouble(),
         height: _ad!.size.height.toDouble(),

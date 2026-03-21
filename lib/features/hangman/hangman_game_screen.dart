@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/services/room_service.dart';
-import '../../core/theme/az_theme.dart';
 
 // ── Word bank ─────────────────────────────────────────────────────────────────
 

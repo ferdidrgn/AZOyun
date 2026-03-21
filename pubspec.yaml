@@ -10,7 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # UI
   cupertino_icons: ^1.0.8
 
   # Firebase
@@ -22,15 +21,6 @@ dependencies:
 
   # Ads
   google_mobile_ads: ^5.1.0
-
-  # Physics game engine (Mini Golf & Soccer canvas)
-  # flame and flame_forge2d only needed for the Flame-based soccer demo.
-  # The custom-painter soccer/golf screens don't need it.
-  # Keep only if you keep the Flame soccer game variant.
-  # flame: ^1.34.0
-
-  # Haptics
-  # vibration: ^2.0.1   # optional — replaced by HapticFeedback from flutter
 
   # Animations
   flutter_animate: ^4.5.0
