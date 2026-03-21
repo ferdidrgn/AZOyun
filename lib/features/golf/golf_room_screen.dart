@@ -30,30 +30,24 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
     super.initState();
     _sub = _rooms
         .watchRoom(gamePath: GamePaths.golf, roomId: widget.roomId)
-        .listen(_onRoomData);
+        .listen(_onData);
   }
 
   @override
-  void dispose() {
-    _sub?.cancel();
-    super.dispose();
-  }
+  void dispose() { _sub?.cancel(); super.dispose(); }
 
-  void _onRoomData(Map<String, dynamic>? data) {
-    if (!mounted || data == null) return;
-    setState(() => _room = data);
-
-    if (data['status'] == 'playing' && !_navigating) {
+  void _onData(Map<String, dynamic>? d) {
+    if (!mounted || d == null) return;
+    setState(() => _room = d);
+    if (d['status'] == 'playing' && !_navigating) {
       _navigating = true;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => GolfGameScreen(
-            roomId: widget.roomId,
-            myKey:  widget.myKey,
-            myName: widget.myName,
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => GolfGameScreen(
+          roomId: widget.roomId,
+          myKey:  widget.myKey,
+          myName: widget.myName,
+        )),
       );
     }
   }
@@ -68,20 +62,16 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
     await _rooms.updateRoom(
       gamePath: GamePaths.golf,
       roomId:   widget.roomId,
-      updates: {'status': 'playing', 'currentHole': 1},
+      updates:  {'status': 'playing', 'currentHole': 1},
     );
   }
 
   Future<void> _leaveRoom() async {
     if (_isHost) {
-      await _rooms.deleteRoom(
-          gamePath: GamePaths.golf, roomId: widget.roomId);
+      await _rooms.deleteRoom(gamePath: GamePaths.golf, roomId: widget.roomId);
     } else {
       await _rooms.removePlayer(
-        gamePath:  GamePaths.golf,
-        roomId:    widget.roomId,
-        playerKey: widget.myKey,
-      );
+          gamePath: GamePaths.golf, roomId: widget.roomId, playerKey: widget.myKey);
     }
     if (mounted) Navigator.pop(context);
   }
@@ -99,79 +89,57 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(children: [
-            // AppBar row
             Row(children: [
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: _leaveRoom,
-              ),
-              const Expanded(
-                child: Text('MİNİ GOLF',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-              ),
+              IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leaveRoom),
+              const Expanded(child: Text('MİNİ GOLF',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
               const SizedBox(width: 48),
             ]),
             const SizedBox(height: 20),
 
-            // Room code
             AZRoomCode(code: _code, accentColor: AZColors.green),
             const SizedBox(height: 20),
 
-            // Players list
             AZFrostCard(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Oyuncular (${_players.length}/4)',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15)),
-                    const SizedBox(height: 14),
-                    for (final slot in ['p1', 'p2', 'p3', 'p4'])
-                      AZPlayerTile(
-                        name:    (_players[slot]?['name'] as String?) ?? slot,
-                        isMe:    slot == widget.myKey,
-                        isHost:  _players[slot]?['isHost'] == true,
-                        emoji:   '🏌️',
-                        present: _players.containsKey(slot),
-                      ),
-                    if (!_canStart)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Row(children: const [
-                          SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white38),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Rakip bekleniyor...',
-                              style: TextStyle(
-                                  color: Colors.white54, fontSize: 13)),
-                        ]),
-                      ),
-                  ]),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Oyuncular (${_players.length}/4)',
+                    style: const TextStyle(color: Colors.white,
+                        fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 14),
+                for (final slot in ['p1', 'p2', 'p3', 'p4'])
+                  AZPlayerTile(
+                    name:    (_players[slot]?['name'] as String?) ?? slot,
+                    isMe:    slot == widget.myKey,
+                    isHost:  _players[slot]?['isHost'] == true,
+                    emoji:   '🏌️',
+                    present: _players.containsKey(slot),
+                  ),
+                if (!_canStart)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(children: const [
+                      SizedBox(width: 14, height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white38)),
+                      SizedBox(width: 8),
+                      Text('Rakip bekleniyor...',
+                          style: TextStyle(color: Colors.white54, fontSize: 13)),
+                    ]),
+                  ),
+              ]),
             ),
 
             const Spacer(),
 
-            // Start / Wait
             if (_isHost)
               AZButton(
-                label:     'OYUNU BAŞLAT',
-                icon:      Icons.play_arrow_rounded,
+                label: 'OYUNU BAŞLAT', icon: Icons.play_arrow_rounded,
                 onPressed: _canStart ? _startGame : null,
-                color:     AZColors.green,
-                width:     double.infinity,
+                color: AZColors.green, width: double.infinity,
               )
             else
-              AZWaitingCard(message: 'Host oyunu başlatacak...'),
+              const AZWaitingCard(message: 'Host oyunu başlatacak...'),
           ]),
         ),
       ),

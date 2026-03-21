@@ -25,32 +25,31 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
   Map<String, dynamic> _room = {};
   bool _navigating = false;
 
+  static const _kRed = Color(0xFFD32F2F);
+
   @override
   void initState() {
     super.initState();
     _sub = _rooms
         .watchRoom(gamePath: GamePaths.hangman, roomId: widget.roomId)
-        .listen(_onRoomData);
+        .listen(_onData);
   }
 
   @override
   void dispose() { _sub?.cancel(); super.dispose(); }
 
-  void _onRoomData(Map<String, dynamic>? data) {
-    if (!mounted || data == null) return;
-    setState(() => _room = data);
-
-    if (data['status'] == 'playing' && !_navigating) {
+  void _onData(Map<String, dynamic>? d) {
+    if (!mounted || d == null) return;
+    setState(() => _room = d);
+    if (d['status'] == 'playing' && !_navigating) {
       _navigating = true;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => HangmanGameScreen(
-            roomId: widget.roomId,
-            myKey:  widget.myKey,
-            myName: widget.myName,
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => HangmanGameScreen(
+          roomId: widget.roomId,
+          myKey:  widget.myKey,
+          myName: widget.myName,
+        )),
       );
     }
   }
@@ -66,26 +65,19 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
       gamePath: GamePaths.hangman,
       roomId:   widget.roomId,
       updates: {
-        'status':  'playing',
-        'round':   1,
-        'phase':   'choose',
-        'chooser': 'p1',
-        'game':    null,
-        'result':  null,
+        'status': 'playing', 'round': 1,
+        'phase': 'choose', 'chooser': 'p1',
+        'game': null, 'result': null,
       },
     );
   }
 
   Future<void> _leaveRoom() async {
     if (_isHost) {
-      await _rooms.deleteRoom(
-          gamePath: GamePaths.hangman, roomId: widget.roomId);
+      await _rooms.deleteRoom(gamePath: GamePaths.hangman, roomId: widget.roomId);
     } else {
       await _rooms.removePlayer(
-        gamePath:  GamePaths.hangman,
-        roomId:    widget.roomId,
-        playerKey: widget.myKey,
-      );
+          gamePath: GamePaths.hangman, roomId: widget.roomId, playerKey: widget.myKey);
     }
     if (mounted) Navigator.pop(context);
   }
@@ -100,81 +92,62 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
       onPopInvoked: (_) => _leaveRoom(),
       child: AZGradientScaffold(
         gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          begin: Alignment.topCenter, end: Alignment.bottomCenter,
           colors: [Color(0xFFD32F2F), Color(0xFFB71C1C)],
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(children: [
             Row(children: [
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: _leaveRoom,
-              ),
-              const Expanded(
-                child: Text('ADAM ASMACA',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-              ),
+              IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leaveRoom),
+              const Expanded(child: Text('ADAM ASMACA',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
               const SizedBox(width: 48),
             ]),
             const SizedBox(height: 20),
 
-            AZRoomCode(code: _code, accentColor: AZColors.red),
+            AZRoomCode(code: _code, accentColor: _kRed),
             const SizedBox(height: 20),
 
             AZFrostCard(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Oyuncular (${_players.length}/2)',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15)),
-                    const SizedBox(height: 14),
-                    for (final slot in ['p1', 'p2'])
-                      AZPlayerTile(
-                        name:    (_players[slot]?['name'] as String?) ?? slot,
-                        isMe:    slot == widget.myKey,
-                        isHost:  _players[slot]?['isHost'] == true,
-                        emoji:   '🎯',
-                        present: _players.containsKey(slot),
-                      ),
-                    if (!_canStart)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Row(children: const [
-                          SizedBox(
-                            width: 14, height: 14,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white38),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Rakip bekleniyor...',
-                              style: TextStyle(
-                                  color: Colors.white54, fontSize: 13)),
-                        ]),
-                      ),
-                  ]),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Oyuncular (${_players.length}/2)',
+                    style: const TextStyle(color: Colors.white,
+                        fontWeight: FontWeight.bold, fontSize: 15)),
+                const SizedBox(height: 14),
+                for (final slot in ['p1', 'p2'])
+                  AZPlayerTile(
+                    name:    (_players[slot]?['name'] as String?) ?? slot,
+                    isMe:    slot == widget.myKey,
+                    isHost:  _players[slot]?['isHost'] == true,
+                    emoji:   '🎯',
+                    present: _players.containsKey(slot),
+                  ),
+                if (!_canStart)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(children: const [
+                      SizedBox(width: 14, height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white38)),
+                      SizedBox(width: 8),
+                      Text('Rakip bekleniyor...',
+                          style: TextStyle(color: Colors.white54, fontSize: 13)),
+                    ]),
+                  ),
+              ]),
             ),
 
             const Spacer(),
 
             if (_isHost)
               AZButton(
-                label:     'OYUNU BAŞLAT',
-                icon:      Icons.play_arrow_rounded,
+                label: 'OYUNU BAŞLAT', icon: Icons.play_arrow_rounded,
                 onPressed: _canStart ? _startGame : null,
-                color:     AZColors.red,
-                width:     double.infinity,
+                color: _kRed, width: double.infinity,
               )
             else
-              AZWaitingCard(message: 'Host oyunu başlatacak...'),
+              const AZWaitingCard(message: 'Host oyunu başlatacak...'),
           ]),
         ),
       ),

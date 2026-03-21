@@ -55,8 +55,8 @@ class _VampireLobbyScreenState extends State<VampireLobbyScreen> {
       final id   = await _rooms.createRoom(
         gamePath: GamePaths.vampire,
         data: {
-          'code': code, 'status': 'waiting', 'createdAt': ServerValue.timestamp,
-          'phase': 'lobby',
+          'code': code, 'status': 'waiting',
+          'createdAt': ServerValue.timestamp, 'phase': 'lobby',
           'players': {'p1': {'name': _playerName, 'isHost': true,
               'role': null, 'alive': true, 'vote': ''}},
         },
@@ -113,6 +113,7 @@ class _VampireLobbyScreenState extends State<VampireLobbyScreen> {
           const Text('4-8 Oyuncu · Rol bazlı · Mafia tarzı',
               style: TextStyle(color: Colors.white70, fontSize: 13)),
           const SizedBox(height: 28),
+
           GestureDetector(onTap: _askName, child: AZFrostCard(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -125,30 +126,35 @@ class _VampireLobbyScreenState extends State<VampireLobbyScreen> {
             ]),
           )),
           const SizedBox(height: 36),
+
           AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
               onPressed: _createRoom, color: Colors.deepPurple,
               loading: _loading, width: 300),
           const SizedBox(height: 28),
           const Text('— veya —', style: TextStyle(color: Colors.white54)),
           const SizedBox(height: 28),
+
           AZFrostCard(child: Column(children: [
             AZCodeField(controller: _codeCtrl),
             const SizedBox(height: 14),
             AZJoinButton(onPressed: _joinRoom, loading: _loading),
           ])),
           const SizedBox(height: 32),
+
           AZFrostCard(opacity: 0.08, child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 Text('🧛  Nasıl oynanır?',
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                 SizedBox(height: 10),
-                Text('• 4-8 oyuncu ile oynanır\n'
-                    '• Host rolleri dağıtır: Vampir veya Köylü\n'
-                    '• Gece: Vampirler köylü seçer\n'
-                    '• Gündüz: Herkes vampir sandığını oylar\n'
-                    '• Vampirler yoksa Köylüler, sayı eşitlenirsek Vampirler kazanır',
-                    style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65)),
+                Text(
+                  '• 4-8 oyuncu ile oynanır\n'
+                  '• Host rolleri dağıtır: Vampir veya Köylü\n'
+                  '• Gece: Vampirler kurban seçer\n'
+                  '• Gündüz: Herkes vampir sandığını oylar\n'
+                  '• Vampirler yoksa Köylüler, sayı eşitlenirsek Vampirler kazanır',
+                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65),
+                ),
               ])),
           const SizedBox(height: 24),
         ]),
@@ -179,7 +185,8 @@ class _VampireRoomScreenState extends State<VampireRoomScreen> {
   @override
   void initState() {
     super.initState();
-    _sub = _rooms.watchRoom(gamePath: GamePaths.vampire, roomId: widget.roomId).listen(_onData);
+    _sub = _rooms.watchRoom(gamePath: GamePaths.vampire, roomId: widget.roomId)
+        .listen(_onData);
   }
 
   @override
@@ -202,12 +209,12 @@ class _VampireRoomScreenState extends State<VampireRoomScreen> {
 
   Future<void> _start() async {
     if (!_canStart) { _snack('En az 4 oyuncu gerekli'); return; }
-    // Assign roles
-    final playerKeys  = _players.keys.toList()..shuffle(Random.secure());
-    final vampireCount = max(1, (playerKeys.length / 4).floor());
-    final updates = <String, dynamic>{'status': 'playing', 'phase': 'night', 'day': 1};
-    for (var i = 0; i < playerKeys.length; i++) {
-      updates['players/${playerKeys[i]}/role'] = i < vampireCount ? 'vampire' : 'villager';
+    final keys         = _players.keys.toList()..shuffle(Random.secure());
+    final vampireCount = max(1, (keys.length / 4).floor());
+    final updates      = <String, dynamic>{'status': 'playing', 'phase': 'night', 'day': 1};
+    for (var i = 0; i < keys.length; i++) {
+      updates['players/${keys[i]}/role'] = i < vampireCount ? 'vampire' : 'villager';
+      updates['players/${keys[i]}/vote'] = '';
     }
     await _rooms.updateRoom(gamePath: GamePaths.vampire, roomId: widget.roomId, updates: updates);
   }
@@ -218,7 +225,8 @@ class _VampireRoomScreenState extends State<VampireRoomScreen> {
     if (mounted) Navigator.pop(context);
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -238,12 +246,12 @@ class _VampireRoomScreenState extends State<VampireRoomScreen> {
             Text('Oyuncular (${_players.length}/8)',
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 14),
-            for (final entry in _players.entries)
+            for (final e in _players.entries)
               AZPlayerTile(
-                  name: entry.value['name'] as String? ?? entry.key,
-                  isMe: entry.key == widget.myKey,
-                  isHost: entry.value['isHost'] == true,
-                  emoji: '🧛', present: true),
+                  name:    e.value['name'] as String? ?? e.key,
+                  isMe:    e.key == widget.myKey,
+                  isHost:  e.value['isHost'] == true,
+                  emoji:   '🧛', present: true),
             if (!_canStart) Padding(padding: const EdgeInsets.only(top: 8),
                 child: const Text('En az 4 oyuncu gerekli',
                     style: TextStyle(color: Colors.white54, fontSize: 13))),
@@ -275,8 +283,8 @@ class VampireGameScreen extends StatefulWidget {
 }
 
 class _VampireGameScreenState extends State<VampireGameScreen> {
-  final _db  = FirebaseDatabase.instance.ref();
-  late DatabaseReference _ref;
+  final _db   = FirebaseDatabase.instance.ref();
+  late  DatabaseReference _ref;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
@@ -297,8 +305,8 @@ class _VampireGameScreenState extends State<VampireGameScreen> {
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     setState(() {
       _room  = d;
-      _voted = d['players']?[widget.myKey]?['vote'] != null &&
-               (d['players'][widget.myKey]['vote'] as String).isNotEmpty;
+      final myVote = d['players']?[widget.myKey]?['vote'] as String? ?? '';
+      _voted = myVote.isNotEmpty;
     });
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
@@ -306,52 +314,55 @@ class _VampireGameScreenState extends State<VampireGameScreen> {
     }
   }
 
-  Map    get _players => (_room['players'] as Map?) ?? {};
-  String get _phase   => (_room['phase']   as String?) ?? 'night';
-  int    get _day     => (_room['day']      as int?)    ?? 1;
-  String get _myRole  => (_players[widget.myKey]?['role'] as String?) ?? 'villager';
-  bool   get _alive   => (_players[widget.myKey]?['alive'] as bool?) ?? true;
+  Map    get _players   => (_room['players'] as Map?) ?? {};
+  String get _phase     => (_room['phase']   as String?) ?? 'night';
+  int    get _day       => (_room['day']      as int?)    ?? 1;
+  String get _myRole    => (_players[widget.myKey]?['role'] as String?) ?? 'villager';
+  bool   get _alive     => (_players[widget.myKey]?['alive'] as bool?)  ?? true;
   bool   get _isVampire => _myRole == 'vampire';
+
+  // FIX: dayText is now a local method, not a computed getter used inside build
+  String _dayLabel() => _day > 1 ? ' — Gün $_day' : '';
 
   Future<void> _vote(String targetKey) async {
     if (_voted || !_alive) return;
     await _ref.update({'players/${widget.myKey}/vote': targetKey});
-    _checkAllVoted();
+    await _checkAllVoted();
   }
 
   Future<void> _checkAllVoted() async {
-    final alive = _players.entries.where((e) => e.value['alive'] == true).toList();
+    final alive    = _players.entries.where((e) => e.value['alive'] == true).toList();
     final allVoted = alive.every((e) {
-      final vote = e.value['vote'] as String? ?? '';
-      return vote.isNotEmpty;
+      final v = e.value['vote'] as String? ?? '';
+      return v.isNotEmpty;
     });
     if (!allVoted) return;
 
-    // Count votes
     final votes = <String, int>{};
     for (final p in alive) {
       final v = p.value['vote'] as String? ?? '';
       if (v.isNotEmpty) votes[v] = (votes[v] ?? 0) + 1;
     }
-
     String? eliminated;
     int max = 0;
     votes.forEach((k, v) { if (v > max) { max = v; eliminated = k; } });
 
     final updates = <String, dynamic>{};
-    // Clear votes
     for (final p in alive) updates['players/${p.key}/vote'] = '';
     if (eliminated != null) updates['players/$eliminated/alive'] = false;
-    // Toggle phase
     updates['phase'] = _phase == 'night' ? 'day' : 'night';
     if (_phase == 'day') updates['day'] = _day + 1;
 
     await _ref.update(updates);
-    _checkWin();
+    await _checkWin();
   }
 
   Future<void> _checkWin() async {
-    final alive     = _players.entries.where((e) => e.value['alive'] == true);
+    // Re-fetch to get updated alive statuses
+    final snap = await _ref.child('players').get();
+    if (!snap.exists) return;
+    final players   = Map<String, dynamic>.from(snap.value as Map);
+    final alive     = players.entries.where((e) => e.value['alive'] == true);
     final vampires  = alive.where((e) => e.value['role'] == 'vampire').length;
     final villagers = alive.where((e) => e.value['role'] == 'villager').length;
 
@@ -364,9 +375,8 @@ class _VampireGameScreenState extends State<VampireGameScreen> {
 
   void _showFinal() {
     if (!mounted) return;
-    final winner = (_room['winner'] as String?) ?? 'villagers';
+    final winner   = (_room['winner'] as String?) ?? 'villagers';
     final isWinner = winner == 'vampires' ? _isVampire : !_isVampire;
-
     showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: Text(winner == 'vampires' ? '🧛 Vampirler Kazandı!' : '🎉 Köylüler Kazandı!',
@@ -404,13 +414,15 @@ class _VampireGameScreenState extends State<VampireGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_room.isEmpty) return const Scaffold(backgroundColor: Color(0xFF1A1A2E),
+    if (_room.isEmpty) return const Scaffold(
+        backgroundColor: Color(0xFF1A1A2E),
         body: Center(child: CircularProgressIndicator(color: Colors.purple)));
 
     final isNight = _phase == 'night';
-    final targets = _players.entries
+    // At night only vampires can vote; during day everyone votes
+    final canVote  = _alive && !_voted && (isNight ? _isVampire : true);
+    final targets  = _players.entries
         .where((e) => e.key != widget.myKey && e.value['alive'] == true)
-        .where((e) => isNight ? _isVampire : true) // at night only vampires vote
         .toList();
 
     return Scaffold(
@@ -418,7 +430,8 @@ class _VampireGameScreenState extends State<VampireGameScreen> {
       body: SafeArea(child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(children: [
-          // Phase indicator
+
+          // Phase badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
@@ -427,14 +440,16 @@ class _VampireGameScreenState extends State<VampireGameScreen> {
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Text(isNight ? '🌙' : '☀️', style: const TextStyle(fontSize: 24)),
               const SizedBox(width: 10),
-              Text(isNight ? 'GECE $dayText' : 'GÜNDÜZ $dayText',
-                  style: const TextStyle(color: Colors.white,
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                (isNight ? 'GECE' : 'GÜNDÜZ') + _dayLabel(),
+                style: const TextStyle(color: Colors.white,
+                    fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ]),
           ),
           const SizedBox(height: 20),
 
-          // My role card
+          // Role card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -445,7 +460,8 @@ class _VampireGameScreenState extends State<VampireGameScreen> {
               const SizedBox(width: 14),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(_isVampire ? 'SEN BİR VAMPİRSİN' : 'SEN BİR KÖYLÜSÜN',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    style: const TextStyle(color: Colors.white,
+                        fontWeight: FontWeight.bold, fontSize: 16)),
                 Text(_isVampire
                     ? 'Köylüleri seç — kimliğini gizle!'
                     : 'Vampiri bul ve oyla!',
@@ -456,27 +472,36 @@ class _VampireGameScreenState extends State<VampireGameScreen> {
           const SizedBox(height: 20),
 
           // Action area
-          if (!_alive)
-            AZFrostCard(child: const Center(child: Text('☠️ Elendin\nİzlemeye devam edebilirsin',
+          Expanded(child: Builder(builder: (_) {
+            if (!_alive) {
+              return const AZFrostCard(child: Center(child: Text(
+                '☠️ Elendin\nİzlemeye devam edebilirsin',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 16))))
-          else if (_voted)
-            AZFrostCard(child: const Center(child: Column(children: [
-              SizedBox(width: 24, height: 24,
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-              SizedBox(height: 10),
-              Text('Oyun bekleniyor...', style: TextStyle(color: Colors.white)),
-            ])))
-          else if (isNight && !_isVampire)
-            AZFrostCard(child: const Text(
-              '🌙 Uyku vakti...\nVampirler kurban seçiyor.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ))
-          else
-            Expanded(child: Column(children: [
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              )));
+            }
+            if (_voted) {
+              return AZFrostCard(child: Center(child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  SizedBox(width: 24, height: 24,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                  SizedBox(height: 10),
+                  Text('Oyu bekleniyor...', style: TextStyle(color: Colors.white)),
+                ],
+              )));
+            }
+            if (isNight && !_isVampire) {
+              return AZFrostCard(child: const Text(
+                '🌙 Uyku vakti...\nVampirler kurban seçiyor.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ));
+            }
+            return Column(children: [
               Text(isNight ? '🩸 Kim ısırılsın?' : '🗳️ Kim vampir?',
-                  style: TextStyle(color: isNight ? Colors.white : Colors.black87,
+                  style: TextStyle(
+                      color: isNight ? Colors.white : Colors.black87,
                       fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 14),
               Expanded(child: ListView(
@@ -485,23 +510,24 @@ class _VampireGameScreenState extends State<VampireGameScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: ElevatedButton(
-                      onPressed: () => _vote(e.key),
+                      onPressed: canVote ? () => _vote(e.key) : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isNight ? Colors.red.shade800 : Colors.amber,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.all(16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
                       ),
-                      child: Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      child: Text(name,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
                   );
                 }).toList(),
               )),
-            ])),
+            ]);
+          })),
         ]),
       )),
     );
   }
-
-  String get dayText => _day > 1 ? '- Gün $_day' : '';
 }

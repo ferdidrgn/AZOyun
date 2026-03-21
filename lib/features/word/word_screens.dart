@@ -9,16 +9,19 @@ import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
-// DATA
+// WORD BANK
 // ════════════════════════════════════════════════════════════════════════════
 
 const _wordBank = [
   'ELMA','KALEM','KAPI','MASA','SU','EV','ARABA','KEDI','KOPEK',
   'GUNES','AY','YILDIZ','DENIZ','DAG','ORMAN','CICEK','AGAC',
-  'KITAP','KALEM','SILGI','CETVEL','DEFTER','CANTA','SANDALYE',
+  'KITAP','SILGI','CETVEL','DEFTER','CANTA','SANDALYE',
   'BILGISAYAR','TELEFON','TABLET','KLAVYE','FARE','EKRAN',
   'FUTBOL','BASKETBOL','TENIS','YUZME','BISIKLET',
   'EKMEK','SUT','YAG','SEKER','TUZ','BIBER','DOMATES','SALATALIK',
+  'PENCERE','KAPI','TAVAN','ZEMIN','DUVAR','BAHCE','BALKON',
+  'KAPLAN','ASLAN','KARTAL','PENGUEN','YUNUS','ZEBRA',
+  'GITAR','PIYANO','KEMAN','DAVUL','TROMPET',
 ];
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -40,6 +43,8 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
   String? _playerName;
   bool    _loading = false;
 
+  static const _kCyan = Color(0xFF00f2fe);
+
   @override
   void initState() { super.initState(); _loadName(); }
 
@@ -54,8 +59,7 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
   }
 
   Future<void> _askName() async {
-    final name = await showNameDialog(context,
-        current: _playerName, accentColor: const Color(0xFF00f2fe));
+    final name = await showNameDialog(context, current: _playerName, accentColor: _kCyan);
     if (name == null || !mounted) return;
     await _storage.setPlayerName(name);
     setState(() => _playerName = name);
@@ -65,9 +69,9 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     setState(() => _loading = true);
     try {
-      final code  = _rooms.generateCode();
-      final seed  = Random().nextInt(100000);
-      final id    = await _rooms.createRoom(
+      final code = _rooms.generateCode();
+      final seed = Random().nextInt(100000);
+      final id   = await _rooms.createRoom(
         gamePath: GamePaths.wordPuzzle,
         data: {
           'code': code, 'status': 'waiting',
@@ -90,12 +94,13 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.wordPuzzle, code: code);
-      if (r == null) { _snack('Oda bulunamadı'); return; }
+      if (r == null)                     { _snack('Oda bulunamadı'); return; }
       if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 4) { _snack('Oda dolu'); return; }
+      if (players.length >= 4)           { _snack('Oda dolu'); return; }
       final myKey = 'p${players.length + 1}';
-      await _rooms.updateRoom(gamePath: GamePaths.wordPuzzle, roomId: r.id,
+      await _rooms.updateRoom(
+          gamePath: GamePaths.wordPuzzle, roomId: r.id,
           updates: {'players/$myKey': {'name': _playerName, 'isHost': false, 'score': 0}});
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
@@ -127,41 +132,46 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
           const Text('2-4 Oyuncu · 60 Saniye · Harf karıştır kelime yap',
               style: TextStyle(color: Colors.white70, fontSize: 13)),
           const SizedBox(height: 28),
+
           GestureDetector(onTap: _askName, child: AZFrostCard(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               const Icon(Icons.person_rounded, color: Colors.white, size: 20),
               const SizedBox(width: 8),
-              Text(_playerName ?? 'Ad seç', style: const TextStyle(color: Colors.white,
-                  fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(_playerName ?? 'Ad seç',
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(width: 6),
               const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
             ]),
           )),
           const SizedBox(height: 36),
+
           AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-              onPressed: _createRoom, color: const Color(0xFF00f2fe),
-              loading: _loading, width: 300),
+              onPressed: _createRoom, color: _kCyan, loading: _loading, width: 300),
           const SizedBox(height: 28),
           const Text('— veya —', style: TextStyle(color: Colors.white54)),
           const SizedBox(height: 28),
+
           AZFrostCard(child: Column(children: [
             AZCodeField(controller: _codeCtrl),
             const SizedBox(height: 14),
             AZJoinButton(onPressed: _joinRoom, loading: _loading),
           ])),
           const SizedBox(height: 32),
+
           AZFrostCard(opacity: 0.08, child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 Text('🔤  Nasıl oynanır?',
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                 SizedBox(height: 10),
-                Text('• Verilen harflerden kelimeler oluştur\n'
-                    '• 60 saniye süren yarışma\n'
-                    '• Uzun kelimeler daha çok puan\n'
-                    '• En çok puan toplayan kazanır',
-                    style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65)),
+                Text(
+                  '• Verilen harflerden kelimeler oluştur\n'
+                  '• 60 saniye süren yarışma\n'
+                  '• Uzun kelimeler daha çok puan\n'
+                  '• En çok puan toplayan kazanır',
+                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65),
+                ),
               ])),
           const SizedBox(height: 24),
         ]),
@@ -188,6 +198,8 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _navigating = false;
+
+  static const _kCyan = Color(0xFF00f2fe);
 
   @override
   void initState() {
@@ -216,17 +228,23 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
 
   Future<void> _start() async {
     if (!_canStart) { _snack('En az 2 oyuncu'); return; }
-    await _rooms.updateRoom(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId,
+    await _rooms.updateRoom(
+        gamePath: GamePaths.wordPuzzle, roomId: widget.roomId,
         updates: {'status': 'playing', 'startTime': ServerValue.timestamp});
   }
 
   Future<void> _leave() async {
-    if (_isHost) await _rooms.deleteRoom(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId);
-    else await _rooms.removePlayer(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId, playerKey: widget.myKey);
+    if (_isHost) {
+      await _rooms.deleteRoom(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(
+          gamePath: GamePaths.wordPuzzle, roomId: widget.roomId, playerKey: widget.myKey);
+    }
     if (mounted) Navigator.pop(context);
   }
 
-  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _snack(String m) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -240,19 +258,22 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
             const SizedBox(width: 48),
           ]),
           const SizedBox(height: 20),
-          AZRoomCode(code: _code, accentColor: const Color(0xFF00f2fe)),
+          AZRoomCode(code: _code, accentColor: _kCyan),
           const SizedBox(height: 20),
           AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Oyuncular (${_players.length}/4)',
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 14),
             for (final slot in ['p1', 'p2', 'p3', 'p4'])
-              AZPlayerTile(name: (_players[slot]?['name'] as String?) ?? slot,
-                  isMe: slot == widget.myKey, isHost: _players[slot]?['isHost'] == true,
-                  emoji: '🔤', present: _players.containsKey(slot)),
+              AZPlayerTile(
+                  name:    (_players[slot]?['name'] as String?) ?? slot,
+                  isMe:    slot == widget.myKey,
+                  isHost:  _players[slot]?['isHost'] == true,
+                  emoji:   '🔤', present: _players.containsKey(slot)),
             if (!_canStart) Padding(padding: const EdgeInsets.only(top: 8),
                 child: Row(children: const [
-                  SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white38)),
+                  SizedBox(width: 14, height: 14, child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white38)),
                   SizedBox(width: 8),
                   Text('Rakip bekleniyor...', style: TextStyle(color: Colors.white54, fontSize: 13)),
                 ])),
@@ -261,7 +282,7 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
           if (_isHost)
             AZButton(label: 'OYUNU BAŞLAT', icon: Icons.play_arrow_rounded,
                 onPressed: _canStart ? _start : null,
-                color: const Color(0xFF00f2fe), width: double.infinity)
+                color: _kCyan, width: double.infinity)
           else
             const AZWaitingCard(message: 'Host oyunu başlatacak...'),
         ])),
@@ -283,24 +304,26 @@ class WordGameScreen extends StatefulWidget {
   State<WordGameScreen> createState() => _WordGameScreenState();
 }
 
-class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStateMixin {
-  final _db  = FirebaseDatabase.instance.ref();
-  late DatabaseReference _ref;
+class _WordGameScreenState extends State<WordGameScreen>
+    with TickerProviderStateMixin {
+  final _db   = FirebaseDatabase.instance.ref();
+  late  DatabaseReference _ref;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
 
-  // Local game state
-  List<String> _letters     = [];
-  List<String> _selected    = [];
-  Set<String>  _foundWords  = {};
-  int          _myScore     = 0;
-  int          _timeLeft    = 60;
+  List<String> _letters    = [];
+  List<int>    _selected   = [];   // indices into _letters
+  Set<String>  _foundWords = {};
+  int          _myScore    = 0;
+  int          _timeLeft   = 60;
   Timer?       _timer;
-  bool         _gameOver    = false;
+  bool         _gameOver   = false;
 
   late AnimationController _successCtrl;
   late Animation<double>   _successScale;
+
+  static const _kCyan = Color(0xFF00f2fe);
 
   @override
   void initState() {
@@ -308,21 +331,32 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
     _ref = _db.child('${GamePaths.wordPuzzle}/${widget.roomId}');
     _sub = _ref.onValue.listen(_onFirebase);
 
-    _successCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _successCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 600));
     _successScale = Tween(begin: 0.5, end: 1.0).animate(
         CurvedAnimation(parent: _successCtrl, curve: Curves.elasticOut));
-
-    _generateLetters();
-    _startTimer();
   }
 
   @override
-  void dispose() { _timer?.cancel(); _successCtrl.dispose(); _sub?.cancel(); super.dispose(); }
+  void dispose() {
+    _timer?.cancel();
+    _successCtrl.dispose();
+    _sub?.cancel();
+    super.dispose();
+  }
 
   void _onFirebase(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
+    final wasEmpty = _room.isEmpty;
     setState(() => _room = d);
+
+    // Generate letters once we have the seed
+    if (wasEmpty && _letters.isEmpty) {
+      _generateLetters((d['seed'] as int?) ?? 42);
+      _startTimer();
+    }
+
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
       _timer?.cancel();
@@ -330,42 +364,39 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
     }
   }
 
-  void _generateLetters() {
-    final seed    = (_room['seed'] as int?) ?? 42;
-    final rng     = Random(seed);
-    const vowels  = 'AEIİOÖUÜ';
+  void _generateLetters(int seed) {
+    final rng       = Random(seed);
+    const vowels    = 'AEİOÖUÜ';
     const consonants = 'BCÇDFGĞHJKLMNPRSŞTVYZ';
     _letters = [
-      ...List.generate(5, (_) => String.fromCharCode(vowels.codeUnitAt(rng.nextInt(vowels.length)))),
-      ...List.generate(7, (_) => String.fromCharCode(consonants.codeUnitAt(rng.nextInt(consonants.length)))),
+      ...List.generate(5, (_) => vowels[rng.nextInt(vowels.length)]),
+      ...List.generate(7, (_) => consonants[rng.nextInt(consonants.length)]),
     ]..shuffle(rng);
   }
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) { t.cancel(); return; }
+      if (_timeLeft <= 0) { t.cancel(); _endGame(); return; }
       setState(() => _timeLeft--);
-      if (_timeLeft <= 0) {
-        t.cancel();
-        _endGame();
-      }
     });
   }
 
   Future<void> _endGame() async {
+    if (_gameOver) return;
     setState(() => _gameOver = true);
     await _ref.update({
       'players/${widget.myKey}/score': _myScore,
       'players/${widget.myKey}/done':  true,
     });
-    // Wait for all players
+    // Small delay then finish (host or last player triggers finish)
     await Future.delayed(const Duration(seconds: 3));
     await _ref.update({'status': 'finished'});
   }
 
   void _tapLetter(int idx) {
-    if (_gameOver || _selected.contains('$idx')) return;
-    setState(() => _selected.add('$idx'));
+    if (_gameOver || _selected.contains(idx)) return;
+    setState(() => _selected.add(idx));
   }
 
   void _removeLast() {
@@ -373,20 +404,26 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
     setState(() => _selected.removeLast());
   }
 
+  void _clearSelection() => setState(() => _selected = []);
+
   Future<void> _submitWord() async {
-    final word = _selected.map((i) => _letters[int.parse(i)]).join();
+    if (_selected.isEmpty) return;
+    final word = _selected.map((i) => _letters[i]).join();
     if (word.length < 2) return;
 
     if (_wordBank.contains(word) && !_foundWords.contains(word)) {
-      _foundWords.add(word);
       final pts = word.length * 10;
-      setState(() { _myScore += pts; _selected = []; });
+      setState(() {
+        _foundWords.add(word);
+        _myScore += pts;
+        _selected = [];
+      });
       _successCtrl.forward(from: 0);
       HapticFeedback.mediumImpact();
       _snack('✅ $word  +$pts puan!');
     } else {
-      _snack('❌ Geçersiz kelime');
-      setState(() => _selected = []);
+      _snack('❌ ${_wordBank.contains(word) ? "Zaten bulundu!" : "Geçersiz kelime"}');
+      _clearSelection();
     }
   }
 
@@ -394,8 +431,8 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
     if (!mounted) return;
     final players = (_room['players'] as Map?) ?? {};
     final sorted  = players.entries.toList()
-      ..sort((a, b) => ((b.value['score'] as int?) ?? 0)
-          .compareTo((a.value['score'] as int?) ?? 0));
+      ..sort((a, b) =>
+          ((b.value['score'] as int?) ?? 0).compareTo((a.value['score'] as int?) ?? 0));
     const medals = ['🥇', '🥈', '🥉', '4.'];
 
     showDialog(context: context, barrierDismissible: false,
@@ -404,7 +441,9 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
         content: Column(mainAxisSize: MainAxisSize.min,
           children: sorted.asMap().entries.map((e) {
             final isMe  = e.value.key == widget.myKey;
-            final score = (e.value.value['score'] as int?) ?? 0;
+            final score = e.key == 0 && isMe
+                ? _myScore
+                : (e.value.value['score'] as int?) ?? 0;
             return Container(
               margin: const EdgeInsets.symmetric(vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -415,15 +454,18 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
                 Text(e.key < medals.length ? medals[e.key] : '?',
                     style: const TextStyle(fontSize: 22)),
                 const SizedBox(width: 10),
-                Expanded(child: Text(e.value.value['name'] ?? e.value.key,
-                    style: TextStyle(fontWeight: isMe ? FontWeight.bold : FontWeight.normal, fontSize: 16))),
+                Expanded(child: Text(
+                    e.value.value['name'] as String? ?? e.value.key,
+                    style: TextStyle(
+                        fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 16))),
                 Text('$score puan', style: const TextStyle(fontWeight: FontWeight.bold)),
               ]),
             );
           }).toList(),
         ),
         actions: [FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF00f2fe)),
+          style: FilledButton.styleFrom(backgroundColor: _kCyan),
           onPressed: () async {
             await _db.child('${GamePaths.wordPuzzle}/${widget.roomId}').remove();
             if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
@@ -439,18 +481,22 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    if (_room.isEmpty) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_room.isEmpty || _letters.isEmpty) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final players = (_room['players'] as Map?) ?? {};
+    final current = _selected.map((i) => _letters[i]).join();
 
     return Scaffold(
       backgroundColor: const Color(0xFFE0F7FA),
       body: SafeArea(child: Column(children: [
-        // Top bar
+
+        // ── Score bar ──────────────────────────────────────────────────────
         Container(
-          color: const Color(0xFF00f2fe),
+          color: _kCyan,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(children: [
-            // Timer
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -459,12 +505,12 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
               child: Text('⏱ $_timeLeft',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: _timeLeft <= 10 ? Colors.white : const Color(0xFF00f2fe))),
+                      color: _timeLeft <= 10 ? Colors.white : _kCyan)),
             ),
             Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.end,
               children: players.entries.map((e) {
                 final isMe  = e.key == widget.myKey;
-                final score = (e.key == widget.myKey) ? _myScore : ((e.value['score'] as int?) ?? 0);
+                final score = isMe ? _myScore : ((e.value['score'] as int?) ?? 0);
                 return Container(
                   margin: const EdgeInsets.only(left: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -473,8 +519,9 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
                       borderRadius: BorderRadius.circular(12)),
                   child: Text('${e.value['name']}: $score',
                       style: TextStyle(
-                          color: isMe ? const Color(0xFF00f2fe) : Colors.white,
-                          fontWeight: isMe ? FontWeight.bold : FontWeight.normal, fontSize: 12)),
+                          color: isMe ? _kCyan : Colors.white,
+                          fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 12)),
                 );
               }).toList(),
             )),
@@ -484,6 +531,7 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
         Expanded(child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(children: [
+
             // Current word display
             AnimatedBuilder(
               animation: _successScale,
@@ -494,10 +542,10 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
                 decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF00f2fe), width: 2),
+                    border: Border.all(color: _kCyan, width: 2),
                     boxShadow: const [BoxShadow(color: Color(0x18000000), blurRadius: 8)]),
                 child: Text(
-                  _selected.isEmpty ? '...' : _selected.map((i) => _letters[int.parse(i)]).join(' '),
+                  current.isEmpty ? '...' : current.split('').join(' '),
                   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold,
                       letterSpacing: 6, color: Color(0xFF00838F)),
                 ),
@@ -505,7 +553,7 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
             ),
             const SizedBox(height: 12),
 
-            // Found words
+            // Found words chips
             if (_foundWords.isNotEmpty)
               Wrap(
                 spacing: 8, runSpacing: 6,
@@ -515,6 +563,7 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
                   labelStyle: const TextStyle(color: Colors.green),
                 )).toList(),
               ),
+
             const Spacer(),
 
             // Letter grid
@@ -522,22 +571,20 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
               spacing: 10, runSpacing: 10,
               alignment: WrapAlignment.center,
               children: _letters.asMap().entries.map((e) {
-                final idx      = e.key;
-                final letter   = e.value;
-                final isUsed   = _selected.contains('$idx');
+                final isUsed = _selected.contains(e.key);
                 return GestureDetector(
-                  onTap: () => _tapLetter(idx),
+                  onTap: () => _tapLetter(e.key),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     width: 54, height: 54,
                     decoration: BoxDecoration(
-                      color: isUsed ? const Color(0xFF00f2fe) : Colors.white,
+                      color: isUsed ? _kCyan : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: isUsed ? [] : const [
                         BoxShadow(color: Color(0x18000000), blurRadius: 4, offset: Offset(0, 2))
                       ],
                     ),
-                    child: Center(child: Text(letter,
+                    child: Center(child: Text(e.value,
                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,
                             color: isUsed ? Colors.white : Colors.black87))),
                   ),
@@ -546,7 +593,7 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
             ),
             const SizedBox(height: 20),
 
-            // Actions
+            // Action buttons
             Row(children: [
               Expanded(child: OutlinedButton.icon(
                 onPressed: _removeLast,
@@ -557,13 +604,23 @@ class _WordGameScreenState extends State<WordGameScreen> with TickerProviderStat
                     side: BorderSide(color: Colors.grey.shade300),
                     padding: const EdgeInsets.symmetric(vertical: 14)),
               )),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: _clearSelection,
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey.shade700,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12)),
+                child: const Icon(Icons.clear),
+              ),
+              const SizedBox(width: 8),
               Expanded(flex: 2, child: FilledButton.icon(
                 onPressed: _submitWord,
                 icon: const Icon(Icons.check_rounded),
-                label: const Text('KONTROL ET', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text('KONTROL ET',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF00f2fe),
+                    backgroundColor: _kCyan,
                     padding: const EdgeInsets.symmetric(vertical: 14)),
               )),
             ]),
