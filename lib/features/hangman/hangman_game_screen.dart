@@ -2,9 +2,10 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/ad_service.dart';
 import '../../core/services/room_service.dart';
-
-// ── Word bank ─────────────────────────────────────────────────────────────────
+import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/banner_ad_widget.dart';
 
 const _kWords = [
   'FLUTTER','ANDROID','KOTLIN','PYTHON','JAVASCRIPT','YAZILIM',
@@ -22,43 +23,36 @@ const _kWords = [
   'KITAP','ROMAN','SENARYO','MAKALE','DERGI','GAZETE',
 ];
 
-// ── Colours ───────────────────────────────────────────────────────────────────
 const _kRed   = Color(0xFFD32F2F);
 const _kGreen = Color(0xFF2E7D32);
 const _kGrey  = Color(0xFF9E9E9E);
 const _kRedLt = Color(0xFFFFEBEE);
 const _kBg    = Color(0xFFFAFAFA);
 
-// ════════════════════════════════════════════════════════════════════════════
-// GAME SCREEN
-// ════════════════════════════════════════════════════════════════════════════
-
 class HangmanGameScreen extends StatefulWidget {
   const HangmanGameScreen({
-    super.key,
-    required this.roomId,
-    required this.myKey,
-    required this.myName,
+    super.key, required this.roomId,
+    required this.myKey, required this.myName,
   });
-
   final String roomId, myKey, myName;
-
   @override
   State<HangmanGameScreen> createState() => _HangmanGameScreenState();
 }
 
 class _HangmanGameScreenState extends State<HangmanGameScreen>
     with TickerProviderStateMixin {
-  final _db   = FirebaseDatabase.instance.ref();
-  late  DatabaseReference _ref;
+  final _db  = FirebaseDatabase.instance.ref();
+  late DatabaseReference _ref;
   StreamSubscription? _sub;
-
   Map<String, dynamic> _room = {};
   final _handled = <String>{};
 
   late final AnimationController _shakeCtrl;
   late final Animation<double>   _shakeAnim;
   int _prevWrong = 0;
+
+  // Rewarded: bu tur canlandırma hakkı kullanıldı mı?
+  bool _usedRevive = false;
 
   @override
   void initState() {
@@ -68,10 +62,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     _shakeCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 450));
     _shakeAnim = TweenSequence([
-      TweenSequenceItem(tween: Tween(begin: 0.0,   end: -12.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -12.0,  end: 12.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 12.0,   end: -8.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -8.0,   end:  0.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 0.0,  end: -12.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -12.0, end: 12.0),  weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 12.0,  end: -8.0),  weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -8.0,  end:  0.0),  weight: 1),
     ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeOut));
 
     _sub = _ref.onValue.listen(_onFirebase);
@@ -80,27 +74,30 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   @override
   void dispose() { _shakeCtrl.dispose(); _sub?.cancel(); super.dispose(); }
 
-  // ── Computed ──────────────────────────────────────────────────────────────
+  // ── Computed ────────────────────────────────────────────────────────────
 
-  Map    get _players  => (_room['players'] as Map?) ?? {};
-  String get _phase    => (_room['phase']   as String?) ?? 'choose';
-  int    get _round    => (_room['round']   as int?)    ?? 1;
-  int    get _maxRound => (_room['maxRounds'] as int?)  ?? 6;
-  String get _chooser  => (_room['chooser'] as String?) ?? 'p1';
-  String get _guesser  => _chooser == 'p1' ? 'p2' : 'p1';
-  bool   get _isHost   => widget.myKey == 'p1';
+  Map    get _players   => (_room['players'] as Map?) ?? {};
+  String get _phase     => (_room['phase']   as String?) ?? 'choose';
+  int    get _round     => (_room['round']   as int?)    ?? 1;
+  int    get _maxRound  => (_room['maxRounds'] as int?)  ?? 6;
+  String get _chooser   => (_room['chooser'] as String?) ?? 'p1';
+  String get _guesser   => _chooser == 'p1' ? 'p2' : 'p1';
+  bool   get _isHost    => widget.myKey == 'p1';
   bool   get _amChooser => widget.myKey == _chooser;
   bool   get _amGuesser => widget.myKey == _guesser;
 
-  String? get _word    => _room['game']?['word'] as String?;
-  List<String> get _guessed =>
-      List<String>.from(_room['game']?['guessed'] ?? []);
-  int get _wrong => (_room['game']?['wrong'] as int?) ?? 0;
+  String?      get _word    => _room['game']?['word'] as String?;
+  List<String> get _guessed => List<String>.from(_room['game']?['guessed'] ?? []);
+  int          get _wrong   => (_room['game']?['wrong'] as int?) ?? 0;
 
-  String _pName(String key)  => (_players[key]?['name']  as String?) ?? key;
-  int    _pScore(String key) => (_players[key]?['score'] as int?)    ?? 0;
+  String _pName(String k)  => (_players[k]?['name']  as String?) ?? k;
+  int    _pScore(String k) => (_players[k]?['score'] as int?)    ?? 0;
 
-  // ── Firebase ──────────────────────────────────────────────────────────────
+  // 5 yanlışta "revive" hakkı göster (henüz 6'ya ulaşmadan)
+  bool get _canShowRevive =>
+      _amGuesser && _wrong == 5 && !_usedRevive && _phase == 'play';
+
+  // ── Firebase ────────────────────────────────────────────────────────────
 
   void _onFirebase(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
@@ -109,6 +106,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     final nw = (d['game']?['wrong'] as int?) ?? 0;
     if (nw > _prevWrong) { _prevWrong = nw; _shakeCtrl.forward(from: 0); }
 
+    // Yeni tura geçince revive sıfırla
+    final newRound = (d['round'] as int?) ?? 1;
+    if (newRound != _round) setState(() => _usedRevive = false);
+
     setState(() => _room = d);
 
     final status = d['status'] as String? ?? '';
@@ -116,7 +117,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     final round  = d['round']  as int?    ?? 1;
 
     if (status == 'finished') {
-      if (_handled.add('final')) _showFinalDialog(d);
+      if (_handled.add('final')) {
+        AdService.instance.onGameEnd(); // interstitial tetikle
+        _showFinalDialog(d);
+      }
       return;
     }
     if (phase == 'result') {
@@ -124,7 +128,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     }
   }
 
-  // ── Actions ───────────────────────────────────────────────────────────────
+  // ── Actions ─────────────────────────────────────────────────────────────
 
   Future<void> _submitWord(String raw) async {
     final word = raw.toUpperCase().replaceAll(RegExp(r'[^A-ZÇĞİÖŞÜ]'), '');
@@ -147,8 +151,21 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     await _ref.child('game').update({'guessed': newGuessed, 'wrong': newWrong});
 
     final allFound = _word!.split('').every(newGuessed.contains);
-    if (allFound)      await _endRound(guesserWon: true,  wrong: newWrong);
+    if (allFound)        await _endRound(guesserWon: true,  wrong: newWrong);
     else if (newWrong >= 6) await _endRound(guesserWon: false, wrong: newWrong);
+  }
+
+  /// Rewarded reklam izleyerek 1 yanlış sil (5 → 4)
+  void _watchAdForRevive() {
+    AdService.instance.showRewarded(
+      onRewarded: (_) async {
+        if (!mounted) return;
+        setState(() => _usedRevive = true);
+        await _ref.child('game').update({'wrong': _wrong - 1});
+        _snack('🎁 Reklam izledin! 1 can kazandın.');
+      },
+      onNotReady: () => _snack('Reklam henüz hazır değil.'),
+    );
   }
 
   Future<void> _endRound({required bool guesserWon, required int wrong}) async {
@@ -184,18 +201,17 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   Future<void> _deleteRoom() =>
       _db.child('${GamePaths.hangman}/${widget.roomId}').remove();
 
-  // ── Dialogs ───────────────────────────────────────────────────────────────
+  // ── Dialogs ──────────────────────────────────────────────────────────────
 
   void _showResultDialog(Map<String, dynamic> d, int round) {
-    final result  = Map<String, dynamic>.from(d['result'] as Map);
-    final winner  = result['winner']  as String;
-    final word    = result['word']    as String;
-    final reason  = result['reason']  as String;
-    final iWon    = winner == widget.myKey;
-    final isLast  = round >= ((d['maxRounds'] as int?) ?? 6);
+    final result = Map<String, dynamic>.from(d['result'] as Map);
+    final winner = result['winner']  as String;
+    final word   = result['word']    as String;
+    final reason = result['reason']  as String;
+    final iWon   = winner == widget.myKey;
+    final isLast = round >= ((d['maxRounds'] as int?) ?? 6);
 
-    showDialog(
-      context: context, barrierDismissible: false,
+    showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: Text(iWon ? '🎉 Tur Kazandın!' : '😔 Tur Kaybettin',
             textAlign: TextAlign.center),
@@ -221,20 +237,18 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
           ),
           const SizedBox(height: 14),
           _ScoreRow(
-              p1Name:  _pName('p1'),  p1Score: _pScore('p1'),
-              p2Name:  _pName('p2'),  p2Score: _pScore('p2'),
-              myKey:   widget.myKey),
+              p1Name: _pName('p1'), p1Score: _pScore('p1'),
+              p2Name: _pName('p2'), p2Score: _pScore('p2'),
+              myKey:  widget.myKey),
         ]),
-        actions: [
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: _kRed),
-            onPressed: () {
-              Navigator.pop(context);
-              if (!isLast) _advanceRound();
-            },
-            child: Text(isLast ? 'Sonuçlara Git' : 'Sonraki Tur →'),
-          ),
-        ],
+        actions: [FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: _kRed),
+          onPressed: () {
+            Navigator.pop(context);
+            if (!isLast) _advanceRound();
+          },
+          child: Text(isLast ? 'Sonuçlara Git' : 'Sonraki Tur →'),
+        )],
       ),
     );
   }
@@ -244,11 +258,9 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     final p2s = _pScore('p2');
     final headline = p1s > p2s
         ? '🏆 ${_pName("p1")} kazandı!'
-        : p2s > p1s ? '🏆 ${_pName("p2")} kazandı!'
-        : '🤝 Berabere!';
+        : p2s > p1s ? '🏆 ${_pName("p2")} kazandı!' : '🤝 Berabere!';
 
-    showDialog(
-      context: context, barrierDismissible: false,
+    showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: const Text('Oyun Bitti!', textAlign: TextAlign.center),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -260,16 +272,14 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
               p2Name: _pName('p2'), p2Score: p2s,
               myKey:  widget.myKey),
         ]),
-        actions: [
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: _kRed),
-            onPressed: () async {
-              await _deleteRoom();
-              if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
-            },
-            child: const Text('Ana Menü'),
-          ),
-        ],
+        actions: [FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: _kRed),
+          onPressed: () async {
+            await _deleteRoom();
+            if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+          },
+          child: const Text('Ana Menü'),
+        )],
       ),
     );
   }
@@ -277,7 +287,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   void _snack(String msg) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(msg)));
 
-  // ── Build ─────────────────────────────────────────────────────────────────
+  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -299,6 +309,8 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
         Expanded(
           child: _phase == 'choose' ? _buildChoosePhase() : _buildPlayPhase(),
         ),
+        // Banner reklam — oyun altında
+        const BannerAdWidget(),
       ])),
     );
   }
@@ -328,7 +340,11 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
         margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: (_amGuesser ? _kGreen : Colors.orange).withOpacity(0.12),
+          color: Color.fromRGBO(
+              _amGuesser ? 46 : 255,
+              _amGuesser ? 125 : 152,
+              _amGuesser ? 50  : 0,
+              0.12),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: _amGuesser ? _kGreen : Colors.orange),
         ),
@@ -341,14 +357,32 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
           textAlign: TextAlign.center,
         ),
       ),
+
+      // ── Revive butonu (5 yanlışta göster) ──────────────────────────────
+      if (_canShowRevive)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: RewardedAdButton(
+            label: '1 Can Kazan',
+            icon:  Icons.favorite_rounded,
+            color: Colors.deepOrange,
+            onRewarded: (_) async {
+              if (!mounted) return;
+              setState(() => _usedRevive = true);
+              await _ref.child('game').update({'wrong': _wrong - 1});
+              _snack('🎁 1 can kazandın!');
+            },
+          ),
+        ),
+
       AnimatedBuilder(
         animation: _shakeAnim,
         builder: (_, child) =>
             Transform.translate(offset: Offset(_shakeAnim.value, 0), child: child),
         child: SizedBox(
-          height: 190,
+          height: 180,
           child: CustomPaint(
-              size: const Size(220, 190),
+              size: const Size(220, 180),
               painter: _HangmanPainter(_wrong)),
         ),
       ),
@@ -369,7 +403,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
               style: const TextStyle(
                   color: _kGrey, fontStyle: FontStyle.italic, fontSize: 14)),
         ),
-      const SizedBox(height: 6),
+      const SizedBox(height: 4),
     ]);
   }
 }
@@ -380,10 +414,8 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
 
 class _WordChooserPanel extends StatefulWidget {
   const _WordChooserPanel({required this.guesserName, required this.onSubmit});
-
   final String guesserName;
   final Future<void> Function(String) onSubmit;
-
   @override
   State<_WordChooserPanel> createState() => _WordChooserPanelState();
 }
@@ -421,7 +453,6 @@ class _WordChooserPanelState extends State<_WordChooserPanel> {
           ]),
         ),
         const SizedBox(height: 20),
-
         TextField(
           controller: _ctrl,
           textCapitalization: TextCapitalization.characters,
@@ -463,7 +494,6 @@ class _WordChooserPanelState extends State<_WordChooserPanel> {
             style: TextStyle(color: _kGrey, fontSize: 13),
             textAlign: TextAlign.center),
         const SizedBox(height: 12),
-
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -476,8 +506,9 @@ class _WordChooserPanelState extends State<_WordChooserPanel> {
             child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                  color: _kRedLt, borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _kRed.withOpacity(0.3))),
+                  color: _kRedLt,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _kRed.withAlpha(76))),
               child: Text(_kWords[i],
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 11, color: _kRed)),
@@ -529,7 +560,6 @@ class _WordDisplay extends StatelessWidget {
 class _TurkishKeyboard extends StatelessWidget {
   const _TurkishKeyboard({
     required this.guessed, required this.word, required this.onTap});
-
   final List<String> guessed;
   final String       word;
   final Future<void> Function(String) onTap;
@@ -543,7 +573,7 @@ class _TurkishKeyboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
       child: Column(
         children: _rows.map((row) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -637,7 +667,6 @@ class _TopBar extends StatelessWidget {
     required this.p1Name, required this.p1Score, required this.isP1Me,
     required this.p2Name, required this.p2Score,
   });
-
   final int round, maxRounds;
   final String p1Name, p2Name;
   final int p1Score, p2Score;
@@ -651,11 +680,9 @@ class _TopBar extends StatelessWidget {
       _Pill(name: p1Name, score: p1Score, isMe: isP1Me),
       Expanded(child: Column(children: [
         Text('Tur $round/$maxRounds',
-            style: const TextStyle(color: Colors.white60,
-                fontSize: 12, fontWeight: FontWeight.w600)),
+            style: const TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w600)),
         const Text('ADAM ASMACA',
-            style: TextStyle(color: Colors.white,
-                fontSize: 13, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
       ])),
       _Pill(name: p2Name, score: p2Score, isMe: !isP1Me),
     ]),

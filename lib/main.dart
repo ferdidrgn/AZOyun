@@ -20,11 +20,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await AdService.instance.initialize();
+  await AdService.instance.initialize(); // reklamları başlat
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
+    statusBarColor:          Colors.transparent,
     statusBarIconBrightness: Brightness.light,
   ));
 
@@ -43,156 +43,159 @@ class AZOyunApp extends StatelessWidget {
       );
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// HOME SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return AZGradientScaffold(
-      gradient: AZColors.gradPurple,
-      child: CustomScrollView(slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 40),
+    return Scaffold(
+      // Banner için standart Scaffold kullan
+      body: Container(
+        decoration: const BoxDecoration(gradient: AZColors.gradPurple),
+        child: SafeArea(
+          bottom: false, // Banner için alt safe area'yı kapatma
+          child: Column(children: [
+            // İçerik
+            Expanded(
+              child: CustomScrollView(slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 40),
 
-                // Header
-                Column(children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        shape: BoxShape.circle),
-                    child: const Icon(Icons.sports_esports,
-                        size: 56, color: Colors.white),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('AZ OYUN',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 4)),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 5),
-                    decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20)),
-                    child: const Text('GERÇEK ZAMANLI ÇOKLU OYUNCU',
-                        style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                            letterSpacing: 1.5)),
-                  ),
-                ]),
-                const SizedBox(height: 44),
+                        // ── Header ──────────────────────────────────────────
+                        Column(children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                                color: const Color(0x26FFFFFF),
+                                shape: BoxShape.circle),
+                            child: const Icon(Icons.sports_esports,
+                                size: 56, color: Colors.white),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('AZ OYUN',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 36, fontWeight: FontWeight.bold,
+                                  color: Colors.white, letterSpacing: 4)),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 5),
+                            decoration: BoxDecoration(
+                                color: const Color(0x26FFFFFF),
+                                borderRadius: BorderRadius.circular(20)),
+                            child: const Text('GERÇEK ZAMANLI ÇOKLU OYUNCU',
+                                style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11, letterSpacing: 1.5)),
+                          ),
+                        ]),
+                        const SizedBox(height: 44),
 
-                // Sports
-                _section('⚽  SPOR OYUNLARI'),
-                AZGameCard(
-                  emoji: '⛳',
-                  title: 'Mini Golf',
-                  subtitle: '2-4 Oyuncu · 5 Delik · En az vuruş kazanır',
-                  gradient: AZColors.gradGreen,
-                  onTap: () => _push(context, const GolfLobbyScreen()),
-                ),
-                const SizedBox(height: 14),
-                AZGameCard(
-                  emoji: '⚽',
-                  title: 'Serbest Vuruş',
-                  subtitle: '2 Oyuncu · 5 Vuruş · Gol atan kazanır',
-                  gradient: AZColors.gradOrange,
-                  onTap: () => _push(context, const SoccerLobbyScreen()),
-                ),
-                const SizedBox(height: 32),
+                        // ── Sports ──────────────────────────────────────────
+                        _section('⚽  SPOR OYUNLARI'),
+                        AZGameCard(
+                          emoji: '⛳', title: 'Mini Golf',
+                          subtitle: '2-4 Oyuncu · 5 Delik · En az vuruş kazanır',
+                          gradient: AZColors.gradGreen,
+                          onTap: () => _push(context, const GolfLobbyScreen()),
+                        ),
+                        const SizedBox(height: 14),
+                        AZGameCard(
+                          emoji: '⚽', title: 'Serbest Vuruş',
+                          subtitle: '2 Oyuncu · 5 Vuruş · Gol atan kazanır',
+                          gradient: AZColors.gradOrange,
+                          onTap: () => _push(context, const SoccerLobbyScreen()),
+                        ),
+                        const SizedBox(height: 32),
 
-                // Mind
-                _section('🧠  ZİHİNSEL OYUNLAR'),
-                AZGameCard(
-                  emoji: '🎯',
-                  title: 'Adam Asmaca',
-                  subtitle: '2 Oyuncu · Kelime Tahmin · 6 Tur',
-                  gradient: AZColors.gradRed,
-                  onTap: () => _push(context, const HangmanLobbyScreen()),
-                ),
-                const SizedBox(height: 14),
-                AZGameCard(
-                  emoji: '🏙️',
-                  title: 'Şehir Bulmaca',
-                  subtitle: '2-4 Oyuncu · İpuçlarla şehri bul',
-                  gradient: AZColors.gradPink,
-                  onTap: () => _push(context, const CityLobbyScreen()),
-                ),
-                const SizedBox(height: 14),
-                AZGameCard(
-                  emoji: '🔤',
-                  title: 'Kelime Bulmaca',
-                  subtitle: '2-4 Oyuncu · 60 Saniye · Harf karıştır',
-                  gradient: AZColors.gradCyan,
-                  onTap: () => _push(context, const WordLobbyScreen()),
-                ),
-                const SizedBox(height: 32),
+                        // ── Mind ────────────────────────────────────────────
+                        _section('🧠  ZİHİNSEL OYUNLAR'),
+                        AZGameCard(
+                          emoji: '🎯', title: 'Adam Asmaca',
+                          subtitle: '2 Oyuncu · Kelime Tahmin · 6 Tur',
+                          gradient: AZColors.gradRed,
+                          onTap: () => _push(context, const HangmanLobbyScreen()),
+                        ),
+                        const SizedBox(height: 14),
+                        AZGameCard(
+                          emoji: '🏙️', title: 'Şehir Bulmaca',
+                          subtitle: '2-4 Oyuncu · İpuçlarla şehri bul',
+                          gradient: AZColors.gradPink,
+                          onTap: () => _push(context, const CityLobbyScreen()),
+                        ),
+                        const SizedBox(height: 14),
+                        AZGameCard(
+                          emoji: '🔤', title: 'Kelime Bulmaca',
+                          subtitle: '2-4 Oyuncu · 60 Saniye · Harf karıştır',
+                          gradient: AZColors.gradCyan,
+                          onTap: () => _push(context, const WordLobbyScreen()),
+                        ),
+                        const SizedBox(height: 32),
 
-                // Social
-                _section('🎭  SOSYAL OYUNLAR'),
-                AZGameCard(
-                  emoji: '🧛',
-                  title: 'Vampir Köylü',
-                  subtitle: '4-8 Oyuncu · Rol bazlı · Mafia tarzı',
-                  gradient: AZColors.gradDark,
-                  onTap: () => _push(context, const VampireLobbyScreen()),
-                ),
-                const SizedBox(height: 14),
-                AZGameCard(
-                  emoji: '☕',
-                  title: 'Yalancilar Kahvesi',
-                  subtitle: '3-6 Oyuncu · 3 Tur · Yalanı yakala',
-                  gradient: AZColors.gradRose,
-                  onTap: () => _push(context, const LiarLobbyScreen()),
-                ),
-                const SizedBox(height: 32),
+                        // ── Social ──────────────────────────────────────────
+                        _section('🎭  SOSYAL OYUNLAR'),
+                        AZGameCard(
+                          emoji: '🧛', title: 'Vampir Köylü',
+                          subtitle: '4-8 Oyuncu · Rol bazlı · Mafia tarzı',
+                          gradient: AZColors.gradDark,
+                          onTap: () => _push(context, const VampireLobbyScreen()),
+                        ),
+                        const SizedBox(height: 14),
+                        AZGameCard(
+                          emoji: '☕', title: 'Yalancilar Kahvesi',
+                          subtitle: '3-6 Oyuncu · 3 Tur · Yalanı yakala',
+                          gradient: AZColors.gradRose,
+                          onTap: () => _push(context, const LiarLobbyScreen()),
+                        ),
+                        const SizedBox(height: 32),
 
-                // How to play
-                AZFrostCard(
-                  opacity: 0.10,
-                  child: const Column(children: [
-                    Icon(Icons.info_outline_rounded,
-                        color: Colors.white70, size: 26),
-                    SizedBox(height: 10),
-                    Text('NASIL OYNANIR?',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1)),
-                    SizedBox(height: 10),
-                    Text(
-                      '1. Oyun seç\n'
-                      '2. "Yeni Oda Oluştur" a bas\n'
-                      '3. 6 haneli kodu arkadaşına gönder\n'
-                      '4. Arkadaşın "Odaya Katıl" ile girer\n'
-                      '5. Host "Oyunu Başlat" a basar → Oyna!',
-                      style: TextStyle(
-                          color: Colors.white70, height: 1.7, fontSize: 13),
-                      textAlign: TextAlign.center,
+                        // ── How to play ─────────────────────────────────────
+                        AZFrostCard(
+                          opacity: 0.10,
+                          child: const Column(children: [
+                            Icon(Icons.info_outline_rounded,
+                                color: Colors.white70, size: 26),
+                            SizedBox(height: 10),
+                            Text('NASIL OYNANIR?',
+                                style: TextStyle(color: Colors.white,
+                                    fontWeight: FontWeight.bold, letterSpacing: 1)),
+                            SizedBox(height: 10),
+                            Text(
+                              '1. Oyun seç\n'
+                              '2. "Yeni Oda Oluştur" a bas\n'
+                              '3. 6 haneli kodu arkadaşına gönder\n'
+                              '4. Arkadaşın "Odaya Katıl" ile girer\n'
+                              '5. Host "Oyunu Başlat" a basar → Oyna!',
+                              style: TextStyle(
+                                  color: Colors.white70, height: 1.7, fontSize: 13),
+                              textAlign: TextAlign.center,
+                            ),
+                          ]),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
-                  ]),
+                  ),
                 ),
-                const SizedBox(height: 16),
-              ],
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              ]),
             ),
-          ),
+
+            // ── Banner reklam — ana menü altında ──────────────────────────
+            const AdaptiveBannerAdWidget(),
+          ]),
         ),
-        const SliverToBoxAdapter(
-          child: AdaptiveBannerAdWidget(padding: EdgeInsets.zero),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
-      ]),
+      ),
     );
   }
 
@@ -200,10 +203,8 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 14),
         child: Text(t,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1)),
+                color: Colors.white, fontSize: 17,
+                fontWeight: FontWeight.bold, letterSpacing: 1)),
       );
 
   void _push(BuildContext context, Widget screen) =>
