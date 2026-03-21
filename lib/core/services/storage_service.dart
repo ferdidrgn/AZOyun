@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// Unified local storage — replaces both SecureLocalStorage and old StorageService.
 class StorageService {
   StorageService._();
   static final StorageService instance = StorageService._();
@@ -9,17 +10,17 @@ class StorageService {
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
-  static const _kName            = 'player_name';
-  static const _kGameEnterCount  = 'game_enter_count';
+  static const _kName           = 'player_name';
+  static const _kGameEnterCount = 'game_enter_count';
 
-  // ── Player Name ───────────────────────────────────────────────────────────
+  // ── Player name ───────────────────────────────────────────────────────────
 
   Future<String?> getPlayerName() => _storage.read(key: _kName);
 
   Future<void> setPlayerName(String name) =>
       _storage.write(key: _kName, value: name);
 
-  // ── Ad Counters ───────────────────────────────────────────────────────────
+  // ── Ad counters ───────────────────────────────────────────────────────────
 
   Future<int> getGameEnterCount() async {
     final v = await _storage.read(key: _kGameEnterCount);
@@ -38,4 +39,6 @@ class StorageService {
 
   Future<void> markRewardedShownForRoom(String roomId) =>
       _storage.write(key: 'rewarded_$roomId', value: 'true');
+
+  Future<void> clearAll() => _storage.deleteAll();
 }

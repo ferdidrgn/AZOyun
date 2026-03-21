@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import '../../core/services/room_service.dart';
 import '../../core/theme/az_theme.dart';
 
-// ── Word bank ────────────────────────────────────────────────────────────────
+// ── Word bank ─────────────────────────────────────────────────────────────────
 
 const _kWords = [
   'FLUTTER','ANDROID','KOTLIN','PYTHON','JAVASCRIPT','YAZILIM',
@@ -24,12 +24,12 @@ const _kWords = [
   'KITAP','ROMAN','SENARYO','MAKALE','DERGI','GAZETE',
 ];
 
-// ── Colours ──────────────────────────────────────────────────────────────────
-const _kRed    = Color(0xFFD32F2F);
-const _kGreen  = Color(0xFF2E7D32);
-const _kGrey   = Color(0xFF9E9E9E);
-const _kRedLt  = Color(0xFFFFEBEE);
-const _kBg     = Color(0xFFFAFAFA);
+// ── Colours ───────────────────────────────────────────────────────────────────
+const _kRed   = Color(0xFFD32F2F);
+const _kGreen = Color(0xFF2E7D32);
+const _kGrey  = Color(0xFF9E9E9E);
+const _kRedLt = Color(0xFFFFEBEE);
+const _kBg    = Color(0xFFFAFAFA);
 
 // ════════════════════════════════════════════════════════════════════════════
 // GAME SCREEN
@@ -51,16 +51,13 @@ class HangmanGameScreen extends StatefulWidget {
 
 class _HangmanGameScreenState extends State<HangmanGameScreen>
     with TickerProviderStateMixin {
-  final _db  = FirebaseDatabase.instance.ref();
+  final _db   = FirebaseDatabase.instance.ref();
   late  DatabaseReference _ref;
   StreamSubscription? _sub;
 
   Map<String, dynamic> _room = {};
+  final _handled = <String>{};
 
-  // Guard against duplicate dialogs
-  final _handledEvents = <String>{};
-
-  // Shake animation on wrong guess
   late final AnimationController _shakeCtrl;
   late final Animation<double>   _shakeAnim;
   int _prevWrong = 0;
@@ -73,10 +70,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     _shakeCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 450));
     _shakeAnim = TweenSequence([
-      TweenSequenceItem(tween: Tween(begin: 0.0,  end: -12.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -12.0, end: 12.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 12.0,  end: -8.0), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -8.0,  end: 0.0),  weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 0.0,   end: -12.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -12.0,  end: 12.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 12.0,   end: -8.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -8.0,   end:  0.0), weight: 1),
     ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.easeOut));
 
     _sub = _ref.onValue.listen(_onFirebase);
@@ -85,12 +82,12 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   @override
   void dispose() { _shakeCtrl.dispose(); _sub?.cancel(); super.dispose(); }
 
-  // ── Computed ─────────────────────────────────────────────────────────────
+  // ── Computed ──────────────────────────────────────────────────────────────
 
   Map    get _players  => (_room['players'] as Map?) ?? {};
   String get _phase    => (_room['phase']   as String?) ?? 'choose';
-  int    get _round    => (_room['round']   as int?) ?? 1;
-  int    get _maxRound => (_room['maxRounds'] as int?) ?? 6;
+  int    get _round    => (_room['round']   as int?)    ?? 1;
+  int    get _maxRound => (_room['maxRounds'] as int?)  ?? 6;
   String get _chooser  => (_room['chooser'] as String?) ?? 'p1';
   String get _guesser  => _chooser == 'p1' ? 'p2' : 'p1';
   bool   get _isHost   => widget.myKey == 'p1';
@@ -100,14 +97,12 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   String? get _word    => _room['game']?['word'] as String?;
   List<String> get _guessed =>
       List<String>.from(_room['game']?['guessed'] ?? []);
-  int    get _wrong    => (_room['game']?['wrong'] as int?) ?? 0;
+  int get _wrong => (_room['game']?['wrong'] as int?) ?? 0;
 
-  String _pName(String key) =>
-      (_players[key]?['name'] as String?) ?? key;
-  int    _pScore(String key) =>
-      (_players[key]?['score'] as int?) ?? 0;
+  String _pName(String key)  => (_players[key]?['name']  as String?) ?? key;
+  int    _pScore(String key) => (_players[key]?['score'] as int?)    ?? 0;
 
-  // ── Firebase listener ─────────────────────────────────────────────────────
+  // ── Firebase ──────────────────────────────────────────────────────────────
 
   void _onFirebase(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
@@ -123,11 +118,11 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     final round  = d['round']  as int?    ?? 1;
 
     if (status == 'finished') {
-      if (_handledEvents.add('final')) _showFinalDialog(d);
+      if (_handled.add('final')) _showFinalDialog(d);
       return;
     }
     if (phase == 'result') {
-      if (_handledEvents.add('result_$round')) _showResultDialog(d, round);
+      if (_handled.add('result_$round')) _showResultDialog(d, round);
     }
   }
 
@@ -151,30 +146,21 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     final hit        = _word!.contains(letter);
     final newWrong   = hit ? _wrong : _wrong + 1;
 
-    await _ref.child('game').update({
-      'guessed': newGuessed,
-      'wrong':   newWrong,
-    });
+    await _ref.child('game').update({'guessed': newGuessed, 'wrong': newWrong});
 
     final allFound = _word!.split('').every(newGuessed.contains);
-    if (allFound) {
-      await _endRound(guesserWon: true,  wrong: newWrong);
-    } else if (newWrong >= 6) {
-      await _endRound(guesserWon: false, wrong: newWrong);
-    }
+    if (allFound)      await _endRound(guesserWon: true,  wrong: newWrong);
+    else if (newWrong >= 6) await _endRound(guesserWon: false, wrong: newWrong);
   }
 
-  Future<void> _endRound({
-    required bool guesserWon,
-    required int  wrong,
-  }) async {
-    final winner  = guesserWon ? _guesser : _chooser;
-    final bonus   = guesserWon ? (10 - wrong).clamp(4, 10) : 5;
-    final prevSc  = _pScore(winner);
-    final isLast  = _round >= _maxRound;
+  Future<void> _endRound({required bool guesserWon, required int wrong}) async {
+    final winner = guesserWon ? _guesser : _chooser;
+    final bonus  = guesserWon ? (10 - wrong).clamp(4, 10) : 5;
+    final prevSc = _pScore(winner);
+    final isLast = _round >= _maxRound;
 
     await _ref.update({
-      'phase':                    'result',
+      'phase': 'result',
       'result': {
         'winner': winner,
         'word':   _word,
@@ -185,7 +171,6 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     });
   }
 
-  /// Only host advances to prevent race conditions
   Future<void> _advanceRound() async {
     if (!_isHost) return;
     final nextChooser = _chooser == 'p1' ? 'p2' : 'p1';
@@ -204,16 +189,15 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   // ── Dialogs ───────────────────────────────────────────────────────────────
 
   void _showResultDialog(Map<String, dynamic> d, int round) {
-    final result = Map<String, dynamic>.from(d['result'] as Map);
-    final winner = result['winner'] as String;
-    final word   = result['word']   as String;
-    final reason = result['reason'] as String;
-    final iWon   = winner == widget.myKey;
-    final isLast = round >= ((d['maxRounds'] as int?) ?? 6);
+    final result  = Map<String, dynamic>.from(d['result'] as Map);
+    final winner  = result['winner']  as String;
+    final word    = result['word']    as String;
+    final reason  = result['reason']  as String;
+    final iWon    = winner == widget.myKey;
+    final isLast  = round >= ((d['maxRounds'] as int?) ?? 6);
 
     showDialog(
-      context: context,
-      barrierDismissible: false,
+      context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: Text(iWon ? '🎉 Tur Kazandın!' : '😔 Tur Kaybettin',
             textAlign: TextAlign.center),
@@ -232,12 +216,9 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
                 borderRadius: BorderRadius.circular(10)),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Text('Kelime: ', style: TextStyle(color: Colors.grey)),
-              Text(word,
-                  style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                      letterSpacing: 3)),
+              Text(word, style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.bold,
+                  color: Colors.blue, letterSpacing: 3)),
             ]),
           ),
           const SizedBox(height: 14),
@@ -265,25 +246,21 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     final p2s = _pScore('p2');
     final headline = p1s > p2s
         ? '🏆 ${_pName("p1")} kazandı!'
-        : p2s > p1s
-            ? '🏆 ${_pName("p2")} kazandı!'
-            : '🤝 Berabere!';
+        : p2s > p1s ? '🏆 ${_pName("p2")} kazandı!'
+        : '🤝 Berabere!';
 
     showDialog(
-      context: context,
-      barrierDismissible: false,
+      context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
         title: const Text('Oyun Bitti!', textAlign: TextAlign.center),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(headline,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(headline, textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           _ScoreRow(
-              p1Name:  _pName('p1'),  p1Score: p1s,
-              p2Name:  _pName('p2'),  p2Score: p2s,
-              myKey:   widget.myKey),
+              p1Name: _pName('p1'), p1Score: p1s,
+              p2Name: _pName('p2'), p2Score: p2s,
+              myKey:  widget.myKey),
         ]),
         actions: [
           FilledButton(
@@ -316,13 +293,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
       backgroundColor: _kBg,
       body: SafeArea(child: Column(children: [
         _TopBar(
-          round:     _round,
-          maxRounds: _maxRound,
-          p1Name:    _pName('p1'),
-          p1Score:   _pScore('p1'),
-          isP1Me:    widget.myKey == 'p1',
-          p2Name:    _pName('p2'),
-          p2Score:   _pScore('p2'),
+          round: _round, maxRounds: _maxRound,
+          p1Name: _pName('p1'), p1Score: _pScore('p1'),
+          isP1Me: widget.myKey == 'p1',
+          p2Name: _pName('p2'), p2Score: _pScore('p2'),
         ),
         Expanded(
           child: _phase == 'choose' ? _buildChoosePhase() : _buildPlayPhase(),
@@ -331,18 +305,13 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     );
   }
 
-  // ── Choose phase ──────────────────────────────────────────────────────────
-
   Widget _buildChoosePhase() {
     if (_amChooser) {
       return _WordChooserPanel(
-        guesserName: _pName(_guesser),
-        onSubmit:    _submitWord,
-      );
+          guesserName: _pName(_guesser), onSubmit: _submitWord);
     }
     return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      const SizedBox(
-          width: 56, height: 56,
+      const SizedBox(width: 56, height: 56,
           child: CircularProgressIndicator(strokeWidth: 3, color: _kRed)),
       const SizedBox(height: 24),
       Text('${_pName(_chooser)} kelime seçiyor...',
@@ -352,35 +321,28 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     ]));
   }
 
-  // ── Play phase ────────────────────────────────────────────────────────────
-
   Widget _buildPlayPhase() {
     if (_word == null) {
       return const Center(child: CircularProgressIndicator(color: _kRed));
     }
     return Column(children: [
-      // Role badge
       Container(
         margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color:  (_amGuesser ? _kGreen : Colors.orange).withOpacity(0.12),
+          color: (_amGuesser ? _kGreen : Colors.orange).withOpacity(0.12),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: _amGuesser ? _kGreen : Colors.orange),
         ),
         child: Text(
-          _amGuesser
-              ? '🔍 Sıra sende — harf seç!'
+          _amGuesser ? '🔍 Sıra sende — harf seç!'
               : '👀 ${_pName(_guesser)} tahmin ediyor...',
           style: TextStyle(
               color: _amGuesser ? _kGreen : Colors.orange.shade800,
-              fontWeight: FontWeight.bold,
-              fontSize: 14),
+              fontWeight: FontWeight.bold, fontSize: 14),
           textAlign: TextAlign.center,
         ),
       ),
-
-      // Hangman drawing with shake
       AnimatedBuilder(
         animation: _shakeAnim,
         builder: (_, child) =>
@@ -392,19 +354,14 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
               painter: _HangmanPainter(_wrong)),
         ),
       ),
-
       Text('${_wrong}/6 yanlış',
           style: TextStyle(
               color: _wrong >= 4 ? _kRed : _kGrey,
               fontSize: 12,
               fontWeight: _wrong >= 5 ? FontWeight.bold : FontWeight.normal)),
       const SizedBox(height: 8),
-
-      // Word display
       _WordDisplay(word: _word!, guessed: _guessed),
       const Spacer(),
-
-      // Keyboard or wait label
       if (_amGuesser)
         _TurkishKeyboard(guessed: _guessed, word: _word!, onTap: _guessLetter)
       else
@@ -424,10 +381,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
 // ════════════════════════════════════════════════════════════════════════════
 
 class _WordChooserPanel extends StatefulWidget {
-  const _WordChooserPanel({
-    required this.guesserName,
-    required this.onSubmit,
-  });
+  const _WordChooserPanel({required this.guesserName, required this.onSubmit});
 
   final String guesserName;
   final Future<void> Function(String) onSubmit;
@@ -448,6 +402,9 @@ class _WordChooserPanelState extends State<_WordChooserPanel> {
   }
 
   @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -459,33 +416,27 @@ class _WordChooserPanelState extends State<_WordChooserPanel> {
           child: Row(children: [
             const Icon(Icons.info_outline, color: _kRed, size: 18),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                '${widget.guesserName} bu kelimeyi tahmin edecek!',
-                style: const TextStyle(color: _kRed, fontSize: 13),
-              ),
-            ),
+            Expanded(child: Text(
+              '${widget.guesserName} bu kelimeyi tahmin edecek!',
+              style: const TextStyle(color: _kRed, fontSize: 13),
+            )),
           ]),
         ),
         const SizedBox(height: 20),
 
-        // Custom word input
         TextField(
           controller: _ctrl,
           textCapitalization: TextCapitalization.characters,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[A-ZÇĞİÖŞÜa-zçğışöü]'))
           ],
-          style: const TextStyle(
-              fontSize: 22, letterSpacing: 4, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 22, letterSpacing: 4, fontWeight: FontWeight.bold),
           decoration: InputDecoration(
             labelText: 'Kendi kelimenizi yazın',
             suffixIcon: IconButton(
               icon: _busy
-                  ? const SizedBox(
-                      width: 18, height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: _kRed))
+                  ? const SizedBox(width: 18, height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: _kRed))
                   : const Icon(Icons.send_rounded, color: _kRed),
               onPressed: _busy ? null : () => _send(_ctrl.text),
             ),
@@ -502,12 +453,9 @@ class _WordChooserPanelState extends State<_WordChooserPanel> {
                     borderRadius: BorderRadius.circular(12))),
             onPressed: _busy ? null : () => _send(_ctrl.text),
             child: _busy
-                ? const SizedBox(
-                    width: 20, height: 20,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2))
-                : const Text('GÖNDER',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                ? const SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('GÖNDER', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ),
         const SizedBox(height: 24),
@@ -517,28 +465,24 @@ class _WordChooserPanelState extends State<_WordChooserPanel> {
             style: TextStyle(color: _kGrey, fontSize: 13),
             textAlign: TextAlign.center),
         const SizedBox(height: 12),
+
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount:  3,
-            childAspectRatio: 2.5,
-            mainAxisSpacing:  8,
-            crossAxisSpacing: 8,
-          ),
+              crossAxisCount: 3, childAspectRatio: 2.5,
+              mainAxisSpacing: 8, crossAxisSpacing: 8),
           itemCount: _kWords.length,
           itemBuilder: (_, i) => GestureDetector(
             onTap: _busy ? null : () => _send(_kWords[i]),
             child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                  color:  _kRedLt,
-                  borderRadius: BorderRadius.circular(8),
+                  color: _kRedLt, borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: _kRed.withOpacity(0.3))),
               child: Text(_kWords[i],
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11, color: _kRed)),
+                      fontWeight: FontWeight.bold, fontSize: 11, color: _kRed)),
             ),
           ),
         ),
@@ -559,23 +503,20 @@ class _WordDisplay extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 8),
     child: Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 5, runSpacing: 6,
+      alignment: WrapAlignment.center, spacing: 5, runSpacing: 6,
       children: word.split('').map((l) {
         final show = guessed.contains(l);
         return SizedBox(
           width: 32, height: 44,
           child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
             Text(show ? l : '',
-                style: const TextStyle(
-                    fontSize: 22, fontWeight: FontWeight.bold, color: _kRed)),
+                style: const TextStyle(fontSize: 22,
+                    fontWeight: FontWeight.bold, color: _kRed)),
             const SizedBox(height: 2),
-            Container(
-              height: 2.5,
-              decoration: BoxDecoration(
-                  color: show ? _kRed : Colors.grey.shade400,
-                  borderRadius: BorderRadius.circular(2)),
-            ),
+            Container(height: 2.5,
+                decoration: BoxDecoration(
+                    color: show ? _kRed : Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2))),
           ]),
         );
       }).toList(),
@@ -589,10 +530,7 @@ class _WordDisplay extends StatelessWidget {
 
 class _TurkishKeyboard extends StatelessWidget {
   const _TurkishKeyboard({
-    required this.guessed,
-    required this.word,
-    required this.onTap,
-  });
+    required this.guessed, required this.word, required this.onTap});
 
   final List<String> guessed;
   final String       word;
@@ -621,37 +559,24 @@ class _TurkishKeyboard extends StatelessWidget {
                 onTap: used ? null : () => onTap(letter),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 220),
-                  width: 28, height: 36,
-                  margin: const EdgeInsets.all(2),
+                  width: 28, height: 36, margin: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: correct
-                        ? _kGreen
-                        : wrong
-                            ? Colors.grey.shade200
-                            : Colors.white,
+                    color: correct ? _kGreen
+                        : wrong ? Colors.grey.shade200 : Colors.white,
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                         color: correct ? _kGreen : Colors.grey.shade300),
-                    boxShadow: used
-                        ? []
-                        : const [
-                            BoxShadow(
-                                color: Color(0x14000000),
-                                blurRadius: 2,
-                                offset: Offset(0, 1))
-                          ],
+                    boxShadow: used ? [] : const [
+                      BoxShadow(color: Color(0x14000000),
+                          blurRadius: 2, offset: Offset(0, 1))
+                    ],
                   ),
-                  child: Center(
-                    child: Text(letter,
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: correct
-                                ? Colors.white
-                                : wrong
-                                    ? Colors.grey.shade400
-                                    : Colors.black87)),
-                  ),
+                  child: Center(child: Text(letter,
+                      style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.bold,
+                          color: correct ? Colors.white
+                              : wrong ? Colors.grey.shade400
+                              : Colors.black87))),
                 ),
               );
             }).toList(),
@@ -701,8 +626,7 @@ class _HangmanPainter extends CustomPainter {
     }
   }
 
-  @override
-  bool shouldRepaint(_HangmanPainter o) => o.wrong != wrong;
+  @override bool shouldRepaint(_HangmanPainter o) => o.wrong != wrong;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -717,7 +641,9 @@ class _TopBar extends StatelessWidget {
   });
 
   final int round, maxRounds;
-  final String p1Name, p2Name; final int p1Score, p2Score; final bool isP1Me;
+  final String p1Name, p2Name;
+  final int p1Score, p2Score;
+  final bool isP1Me;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -727,11 +653,11 @@ class _TopBar extends StatelessWidget {
       _Pill(name: p1Name, score: p1Score, isMe: isP1Me),
       Expanded(child: Column(children: [
         Text('Tur $round/$maxRounds',
-            style: const TextStyle(color: Colors.white60, fontSize: 12,
-                fontWeight: FontWeight.w600)),
+            style: const TextStyle(color: Colors.white60,
+                fontSize: 12, fontWeight: FontWeight.w600)),
         const Text('ADAM ASMACA',
-            style: TextStyle(color: Colors.white, fontSize: 13,
-                fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.white,
+                fontSize: 13, fontWeight: FontWeight.bold)),
       ])),
       _Pill(name: p2Name, score: p2Score, isMe: !isP1Me),
     ]),
@@ -767,7 +693,8 @@ class _ScoreRow extends StatelessWidget {
     required this.p2Name, required this.p2Score,
     required this.myKey,
   });
-  final String p1Name, p2Name, myKey; final int p1Score, p2Score;
+  final String p1Name, p2Name, myKey;
+  final int p1Score, p2Score;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -785,13 +712,13 @@ class _ScoreRow extends StatelessWidget {
 class _Item extends StatelessWidget {
   const _Item({required this.name, required this.score, required this.isMe});
   final String name; final int score; final bool isMe;
+
   @override
   Widget build(BuildContext context) => Column(children: [
     Text(name, style: TextStyle(fontWeight: FontWeight.bold,
         color: isMe ? _kRed : Colors.black87)),
-    Text('$score', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold,
-        color: isMe ? _kRed : Colors.black54)),
-    Text('puan', style: TextStyle(fontSize: 11,
-        color: isMe ? _kRed : _kGrey)),
+    Text('$score', style: TextStyle(fontSize: 24,
+        fontWeight: FontWeight.bold, color: isMe ? _kRed : Colors.black54)),
+    Text('puan', style: TextStyle(fontSize: 11, color: isMe ? _kRed : _kGrey)),
   ]);
 }

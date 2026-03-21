@@ -15,42 +15,35 @@ class SoccerLobbyScreen extends StatefulWidget {
 
 class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
     with SingleTickerProviderStateMixin {
-  final _rooms   = RoomService.instance;
-  final _storage = StorageService.instance;
+  final _rooms    = RoomService.instance;
+  final _storage  = StorageService.instance;
   final _codeCtrl = TextEditingController();
 
   String? _playerName;
   bool    _loading = false;
 
-  late final AnimationController _bounceCtrl;
+  late final AnimationController _bounce;
   late final Animation<double>   _bounceY;
 
   @override
   void initState() {
     super.initState();
-    _bounceCtrl = AnimationController(
+    _bounce = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 700))
       ..repeat(reverse: true);
-    _bounceY = Tween(begin: 0.0, end: -14.0).animate(
-        CurvedAnimation(parent: _bounceCtrl, curve: Curves.easeInOut));
+    _bounceY = Tween(begin: 0.0, end: -14.0)
+        .animate(CurvedAnimation(parent: _bounce, curve: Curves.easeInOut));
     _loadName();
   }
 
   @override
-  void dispose() {
-    _bounceCtrl.dispose();
-    _codeCtrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _bounce.dispose(); _codeCtrl.dispose(); super.dispose(); }
 
   Future<void> _loadName() async {
     final n = await _storage.getPlayerName();
     if (!mounted) return;
-    if (n != null && n.isNotEmpty) {
-      setState(() => _playerName = n);
-    } else {
-      _askName();
-    }
+    if (n != null && n.isNotEmpty) setState(() => _playerName = n);
+    else                           _askName();
   }
 
   Future<void> _askName() async {
@@ -76,59 +69,39 @@ class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
           'totalRounds':   5,
           'currentPlayer': 'p1',
           'players': {
-            'p1': {
-              'name':   _playerName,
-              'isHost': true,
-              'score':  0,
-            }
+            'p1': {'name': _playerName, 'isHost': true, 'score': 0}
           },
         },
       );
       if (!mounted) return;
-      _navigate(SoccerRoomScreen(
-          roomId: id, myKey: 'p1', myName: _playerName!));
-    } catch (e) {
-      _snack('Oda oluşturulamadı: $e');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+      _navigate(SoccerRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!));
+    } catch (e) { _snack('Oda oluşturulamadı: $e'); }
+    finally     { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _joinRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
     if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
-
     setState(() => _loading = true);
     try {
-      final result = await _rooms.findByCode(
-          gamePath: GamePaths.soccer, code: code);
-      if (result == null)                     { _snack('Oda bulunamadı'); return; }
-      if (result.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
-      final players = Map.from((result.data['players'] as Map?) ?? {});
-      if (players.length >= 2)                { _snack('Oda dolu (max 2)'); return; }
-
+      final r = await _rooms.findByCode(gamePath: GamePaths.soccer, code: code);
+      if (r == null)                     { _snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      final players = Map.from((r.data['players'] as Map?) ?? {});
+      if (players.length >= 2)           { _snack('Oda dolu (max 2)'); return; }
       await _rooms.updateRoom(
-        gamePath: GamePaths.soccer,
-        roomId:   result.id,
-        updates: {
-          'players/p2': {
-            'name': _playerName, 'isHost': false, 'score': 0,
-          }
-        },
+        gamePath: GamePaths.soccer, roomId: r.id,
+        updates: {'players/p2': {'name': _playerName, 'isHost': false, 'score': 0}},
       );
       if (!mounted) return;
-      _navigate(SoccerRoomScreen(
-          roomId: result.id, myKey: 'p2', myName: _playerName!));
-    } catch (e) {
-      _snack('Katılınamadı: $e');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+      _navigate(SoccerRoomScreen(roomId: r.id, myKey: 'p2', myName: _playerName!));
+    } catch (e) { _snack('Katılınamadı: $e'); }
+    finally     { if (mounted) setState(() => _loading = false); }
   }
 
-  void _navigate(Widget screen) =>
-      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  void _navigate(Widget s) =>
+      Navigator.push(context, MaterialPageRoute(builder: (_) => s));
 
   void _snack(String msg) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(msg)));
@@ -140,13 +113,9 @@ class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
+          Align(alignment: Alignment.centerLeft,
+            child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context))),
           const SizedBox(height: 8),
           AnimatedBuilder(
             animation: _bounceY,
@@ -157,8 +126,7 @@ class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
           ),
           const SizedBox(height: 8),
           const Text('SERBEST VURUŞ',
-              style: TextStyle(
-                  color: Colors.white, fontSize: 26,
+              style: TextStyle(color: Colors.white, fontSize: 26,
                   fontWeight: FontWeight.bold, letterSpacing: 2)),
           const SizedBox(height: 4),
           const Text('2 Oyuncu · 5 Vuruş · En çok gol atan kazanır',
@@ -191,21 +159,18 @@ class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
           const Text('— veya —', style: TextStyle(color: Colors.white54)),
           const SizedBox(height: 28),
 
-          AZFrostCard(
-            child: Column(children: [
-              AZCodeField(controller: _codeCtrl),
-              const SizedBox(height: 14),
-              AZJoinButton(onPressed: _joinRoom, loading: _loading),
-            ]),
-          ),
+          AZFrostCard(child: Column(children: [
+            AZCodeField(controller: _codeCtrl),
+            const SizedBox(height: 14),
+            AZJoinButton(onPressed: _joinRoom, loading: _loading),
+          ])),
           const SizedBox(height: 32),
 
           AZFrostCard(
             opacity: 0.08,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
               Text('⚽  Nasıl oynanır?',
-                  style: TextStyle(color: Colors.white,
-                      fontWeight: FontWeight.bold, fontSize: 14)),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
               SizedBox(height: 10),
               Text(
                 '• Parmağını sürükle → yön ve güç ayarla → bırak\n'

@@ -1,6 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
@@ -22,6 +21,8 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
   String? _playerName;
   bool    _loading = false;
 
+  static const _kRed = Color(0xFFD32F2F);
+
   @override
   void initState() { super.initState(); _loadName(); }
 
@@ -31,16 +32,13 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
   Future<void> _loadName() async {
     final n = await _storage.getPlayerName();
     if (!mounted) return;
-    if (n != null && n.isNotEmpty) {
-      setState(() => _playerName = n);
-    } else {
-      _askName();
-    }
+    if (n != null && n.isNotEmpty) setState(() => _playerName = n);
+    else                           _askName();
   }
 
   Future<void> _askName() async {
     final name = await showNameDialog(context,
-        current: _playerName, accentColor: AZColors.red);
+        current: _playerName, accentColor: _kRed);
     if (name == null || !mounted) return;
     await _storage.setPlayerName(name);
     setState(() => _playerName = name);
@@ -54,26 +52,22 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
       final id   = await _rooms.createRoom(
         gamePath: GamePaths.hangman,
         data: {
-          'code':       code,
-          'status':     'waiting',
-          'createdAt':  ServerValue.timestamp,
-          'round':      0,
-          'maxRounds':  6,
-          'phase':      'lobby',
-          'chooser':    'p1',
+          'code':      code,
+          'status':    'waiting',
+          'createdAt': ServerValue.timestamp,
+          'round':     0,
+          'maxRounds': 6,
+          'phase':     'lobby',
+          'chooser':   'p1',
           'players': {
             'p1': {'name': _playerName, 'score': 0, 'isHost': true}
           },
         },
       );
       if (!mounted) return;
-      _navigate(HangmanRoomScreen(
-          roomId: id, myKey: 'p1', myName: _playerName!));
-    } catch (e) {
-      _snack('Oda oluşturulamadı: $e');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+      _navigate(HangmanRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!));
+    } catch (e) { _snack('Oda oluşturulamadı: $e'); }
+    finally     { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _joinRoom() async {
@@ -83,34 +77,25 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
 
     setState(() => _loading = true);
     try {
-      final result = await _rooms.findByCode(
-          gamePath: GamePaths.hangman, code: code);
-      if (result == null)                       { _snack('Oda bulunamadı'); return; }
-      if (result.data['status'] != 'waiting')   { _snack('Oyun başlamış'); return; }
-      final players = Map.from((result.data['players'] as Map?) ?? {});
-      if (players.length >= 2)                  { _snack('Oda dolu'); return; }
+      final r = await _rooms.findByCode(gamePath: GamePaths.hangman, code: code);
+      if (r == null)                     { _snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      final players = Map.from((r.data['players'] as Map?) ?? {});
+      if (players.length >= 2)           { _snack('Oda dolu'); return; }
 
       await _rooms.updateRoom(
         gamePath: GamePaths.hangman,
-        roomId:   result.id,
-        updates: {
-          'players/p2': {
-            'name': _playerName, 'score': 0, 'isHost': false
-          }
-        },
+        roomId:   r.id,
+        updates:  {'players/p2': {'name': _playerName, 'score': 0, 'isHost': false}},
       );
       if (!mounted) return;
-      _navigate(HangmanRoomScreen(
-          roomId: result.id, myKey: 'p2', myName: _playerName!));
-    } catch (e) {
-      _snack('Katılınamadı: $e');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+      _navigate(HangmanRoomScreen(roomId: r.id, myKey: 'p2', myName: _playerName!));
+    } catch (e) { _snack('Katılınamadı: $e'); }
+    finally     { if (mounted) setState(() => _loading = false); }
   }
 
-  void _navigate(Widget screen) =>
-      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  void _navigate(Widget s) =>
+      Navigator.push(context, MaterialPageRoute(builder: (_) => s));
 
   void _snack(String msg) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(msg)));
@@ -119,15 +104,13 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
   Widget build(BuildContext context) {
     return AZGradientScaffold(
       gradient: const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
         colors: [Color(0xFFD32F2F), Color(0xFFB71C1C)],
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(children: [
-          Align(
-            alignment: Alignment.centerLeft,
+          Align(alignment: Alignment.centerLeft,
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.pop(context),
@@ -137,11 +120,8 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
           const Text('🎯', style: TextStyle(fontSize: 72)),
           const SizedBox(height: 8),
           const Text('ADAM ASMACA',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2)),
+              style: TextStyle(color: Colors.white, fontSize: 26,
+                  fontWeight: FontWeight.bold, letterSpacing: 2)),
           const SizedBox(height: 4),
           const Text('2 Oyuncu · 6 Tur · Kelime Tahmin',
               style: TextStyle(color: Colors.white70, fontSize: 13)),
@@ -150,69 +130,50 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
           GestureDetector(
             onTap: _askName,
             child: AZFrostCard(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.person_rounded,
-                    color: Colors.white, size: 20),
+                const Icon(Icons.person_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 Text(_playerName ?? 'Ad seç',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold)),
+                    style: const TextStyle(color: Colors.white,
+                        fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(width: 6),
-                const Icon(Icons.edit_rounded,
-                    color: Colors.white60, size: 14),
+                const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
               ]),
             ),
           ),
           const SizedBox(height: 36),
 
           AZButton(
-            label:     'YENİ ODA OLUŞTUR',
-            icon:      Icons.add_circle_outline_rounded,
-            onPressed: _createRoom,
-            color:     AZColors.red,
-            loading:   _loading,
-            width:     300,
+            label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
+            onPressed: _createRoom, color: _kRed, loading: _loading, width: 300,
           ),
           const SizedBox(height: 28),
-          const Text('— veya —',
-              style: TextStyle(color: Colors.white54)),
+          const Text('— veya —', style: TextStyle(color: Colors.white54)),
           const SizedBox(height: 28),
 
-          AZFrostCard(
-            child: Column(children: [
-              AZCodeField(controller: _codeCtrl),
-              const SizedBox(height: 14),
-              AZJoinButton(onPressed: _joinRoom, loading: _loading),
-            ]),
-          ),
+          AZFrostCard(child: Column(children: [
+            AZCodeField(controller: _codeCtrl),
+            const SizedBox(height: 14),
+            AZJoinButton(onPressed: _joinRoom, loading: _loading),
+          ])),
           const SizedBox(height: 32),
 
           AZFrostCard(
             opacity: 0.08,
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('🎯  Nasıl oynanır?',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14)),
-                  SizedBox(height: 10),
-                  Text(
-                    '• P1 kelime seçer, P2 tahmin eder\n'
-                    '• Her tur roller değişir (6 tur toplam)\n'
-                    '• Doğru tahmin → +10 puan (hata başına −1)\n'
-                    '• Adam asılırsa kelimeyi seçen +5 puan alır',
-                    style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        height: 1.65),
-                  ),
-                ]),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+              Text('🎯  Nasıl oynanır?',
+                  style: TextStyle(color: Colors.white,
+                      fontWeight: FontWeight.bold, fontSize: 14)),
+              SizedBox(height: 10),
+              Text(
+                '• P1 kelime seçer, P2 tahmin eder\n'
+                '• Her tur roller değişir (6 tur toplam)\n'
+                '• Doğru tahmin → +10 puan (hata başına −1)\n'
+                '• Adam asılırsa kelimeyi seçen +5 puan alır',
+                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65),
+              ),
+            ]),
           ),
           const SizedBox(height: 24),
         ]),

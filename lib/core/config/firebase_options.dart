@@ -12,6 +12,7 @@ class DefaultFirebaseOptions {
       default: throw UnsupportedError('Unsupported platform');
     }
   }
+
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyDnsV6mwRd8ONmGIREmmIJt0V8c3o_VjmY',
     appId: '1:517819561284:web:28e044933e416b16c01311',
@@ -21,6 +22,7 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://azoyun-569b2-default-rtdb.firebaseio.com',
     storageBucket: 'azoyun-569b2.firebasestorage.app',
   );
+
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD4g57Y9pdan7U8I9sO2Jhgtz7yyCcGKp8',
     appId: '1:517819561284:android:d8f5631f7e8d72e1c01311',
@@ -29,6 +31,7 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://azoyun-569b2-default-rtdb.firebaseio.com',
     storageBucket: 'azoyun-569b2.firebasestorage.app',
   );
+
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCb-brF3v0wyZ4aHu3yjdrQI6jBoNTay2c',
     appId: '1:517819561284:ios:1790d41295fb5868c01311',

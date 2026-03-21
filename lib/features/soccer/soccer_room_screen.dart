@@ -32,7 +32,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
     WidgetsBinding.instance.addObserver(this);
     _sub = _rooms
         .watchRoom(gamePath: GamePaths.soccer, roomId: widget.roomId)
-        .listen(_onRoomData);
+        .listen(_onData);
   }
 
   @override
@@ -50,21 +50,18 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
     }
   }
 
-  void _onRoomData(Map<String, dynamic>? data) {
-    if (!mounted || data == null) return;
-    setState(() => _room = data);
-
-    if (data['status'] == 'playing' && !_navigating) {
+  void _onData(Map<String, dynamic>? d) {
+    if (!mounted || d == null) return;
+    setState(() => _room = d);
+    if (d['status'] == 'playing' && !_navigating) {
       _navigating = true;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => SoccerGameScreen(
-            roomId: widget.roomId,
-            myKey:  widget.myKey,
-            myName: widget.myName,
-          ),
-        ),
+        MaterialPageRoute(builder: (_) => SoccerGameScreen(
+          roomId: widget.roomId,
+          myKey:  widget.myKey,
+          myName: widget.myName,
+        )),
       );
     }
   }
@@ -77,9 +74,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
   Future<void> _startGame() async {
     if (!_canStart) { _snack('En az 2 oyuncu gerekli'); return; }
     await _rooms.setStatus(
-        gamePath: GamePaths.soccer,
-        roomId:   widget.roomId,
-        status:   'playing');
+        gamePath: GamePaths.soccer, roomId: widget.roomId, status: 'playing');
   }
 
   Future<void> _leaveRoom() async {
@@ -106,16 +101,10 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
           padding: const EdgeInsets.all(20),
           child: Column(children: [
             Row(children: [
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: _leaveRoom,
-              ),
-              const Expanded(
-                child: Text('SERBEST VURUŞ',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white,
-                        fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
+              IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leaveRoom),
+              const Expanded(child: Text('SERBEST VURUŞ',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
               const SizedBox(width: 48),
             ]),
             const SizedBox(height: 20),
@@ -142,8 +131,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
                     padding: const EdgeInsets.only(top: 8),
                     child: Row(children: const [
                       SizedBox(width: 14, height: 14,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white38)),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white38)),
                       SizedBox(width: 8),
                       Text('Rakip bekleniyor...',
                           style: TextStyle(color: Colors.white54, fontSize: 13)),

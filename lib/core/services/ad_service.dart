@@ -3,13 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'storage_service.dart';
 
+/// Single ad service — replaces both AdManager and old AdService.
 class AdService {
   AdService._();
   static final AdService instance = AdService._();
 
-  bool _initialized = false;
-  bool _adsEnabled  = true;
-  int  _sessionAds  = 0;
+  bool _initialized  = false;
+  bool _adsEnabled   = true;
+  int  _sessionAds   = 0;
 
   static const _gamesBeforeInterstitial = 5;
   static const _maxAdsPerSession        = 8;
@@ -19,40 +20,40 @@ class AdService {
   bool _interstitialReady = false;
   bool _rewardedReady     = false;
 
-  // ── IDs ───────────────────────────────────────────────────────────────────
+  // ── Ad unit IDs ───────────────────────────────────────────────────────────
 
-  static String get _bannerIdAndroid =>
+  static String get _bannerAndroid =>
       kDebugMode ? 'ca-app-pub-3940256099942544/6300978111'
                  : 'ca-app-pub-5779807348211992/4555290310';
 
-  static String get _bannerIdIos =>
+  static String get _bannerIos =>
       kDebugMode ? 'ca-app-pub-3940256099942544/2934735716'
                  : 'YOUR_IOS_BANNER_ID';
 
-  static String get _interstitialIdAndroid =>
+  static String get _interstitialAndroid =>
       kDebugMode ? 'ca-app-pub-3940256099942544/1033173712'
                  : 'ca-app-pub-5779807348211992/8336524049';
 
-  static String get _interstitialIdIos =>
+  static String get _interstitialIos =>
       kDebugMode ? 'ca-app-pub-3940256099942544/4411468910'
                  : 'YOUR_IOS_INTERSTITIAL_ID';
 
-  static String get _rewardedIdAndroid =>
+  static String get _rewardedAndroid =>
       kDebugMode ? 'ca-app-pub-3940256099942544/5224354917'
                  : 'ca-app-pub-5779807348211992/6241661981';
 
-  static String get _rewardedIdIos =>
+  static String get _rewardedIos =>
       kDebugMode ? 'ca-app-pub-3940256099942544/1712485313'
                  : 'YOUR_IOS_REWARDED_ID';
 
-  static String get bannerAdUnitId =>
-      Platform.isAndroid ? _bannerIdAndroid : _bannerIdIos;
+  static String get bannerAdUnitId  =>
+      Platform.isAndroid ? _bannerAndroid  : _bannerIos;
 
   static String get interstitialAdUnitId =>
-      Platform.isAndroid ? _interstitialIdAndroid : _interstitialIdIos;
+      Platform.isAndroid ? _interstitialAndroid : _interstitialIos;
 
   static String get rewardedAdUnitId =>
-      Platform.isAndroid ? _rewardedIdAndroid : _rewardedIdIos;
+      Platform.isAndroid ? _rewardedAndroid : _rewardedIos;
 
   // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ class AdService {
       _initialized = true;
       _loadInterstitial();
       _loadRewarded();
+      debugPrint('[AdService] initialized');
     } catch (e) {
       debugPrint('[AdService] init failed: $e');
     }
@@ -78,8 +80,7 @@ class AdService {
         onAdLoaded: (ad) {
           _interstitial = ad;
           _interstitialReady = true;
-          _interstitial!.fullScreenContentCallback =
-              FullScreenContentCallback(
+          _interstitial!.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (_) {
               ad.dispose();
               _interstitialReady = false;
@@ -94,8 +95,7 @@ class AdService {
         },
         onAdFailedToLoad: (_) {
           _interstitialReady = false;
-          Future.delayed(
-              const Duration(seconds: 30), _loadInterstitial);
+          Future.delayed(const Duration(seconds: 30), _loadInterstitial);
         },
       ),
     );
@@ -109,8 +109,7 @@ class AdService {
         onAdLoaded: (ad) {
           _rewarded = ad;
           _rewardedReady = true;
-          _rewarded!.fullScreenContentCallback =
-              FullScreenContentCallback(
+          _rewarded!.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (_) {
               ad.dispose();
               _rewardedReady = false;
@@ -133,14 +132,12 @@ class AdService {
 
   // ── Hooks ─────────────────────────────────────────────────────────────────
 
-  Future<void> onGameEnter() async {
-    await StorageService.instance.incrementGameEnterCount();
-  }
+  Future<void> onGameEnter() =>
+      StorageService.instance.incrementGameEnterCount();
 
   Future<void> onGameEnd() async {
     if (!_initialized || !_adsEnabled) return;
     if (_sessionAds >= _maxAdsPerSession) return;
-
     final count = await StorageService.instance.getGameEnterCount();
     if (count % _gamesBeforeInterstitial == 0 &&
         _interstitialReady &&
@@ -153,12 +150,13 @@ class AdService {
 
   // ── Getters ───────────────────────────────────────────────────────────────
 
-  bool get isInitialized   => _initialized;
-  bool get adsEnabled      => _adsEnabled;
-  bool get rewardedReady   => _rewardedReady;
+  bool get isInitialized => _initialized;
+  bool get adsEnabled    => _adsEnabled;
+  bool get rewardedReady => _rewardedReady;
 
   void disableAds() => _adsEnabled = false;
   void enableAds()  => _adsEnabled = true;
+  void resetSession() => _sessionAds = 0;
 
   void dispose() {
     _interstitial?.dispose();
