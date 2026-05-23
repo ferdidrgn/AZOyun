@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GAME PATHS
+// GAME PATHS — tüm oyunlar
 // ═══════════════════════════════════════════════════════════════════════════
 
 abstract class GamePaths {
@@ -13,6 +13,11 @@ abstract class GamePaths {
   static const wordPuzzle = 'word_puzzle_rooms';
   static const vampire    = 'vampire_rooms';
   static const liarCafe   = 'liar_cafe_rooms';
+  // YENİ
+  static const okey       = 'okey_rooms';
+  static const fighter    = 'fighter_rooms';
+  static const racing     = 'racing_rooms';
+  static const dama       = 'dama_rooms';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -35,8 +40,6 @@ class RoomService {
 
   final _db = FirebaseDatabase.instance.ref();
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
   String generateCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rng = Random.secure();
@@ -45,8 +48,6 @@ class RoomService {
 
   DatabaseReference _ref(String gamePath, String roomId) =>
       _db.child('$gamePath/$roomId');
-
-  // ── CRUD ─────────────────────────────────────────────────────────────────
 
   Future<String> createRoom({
     required String gamePath,
@@ -57,7 +58,6 @@ class RoomService {
     return ref.key!;
   }
 
-  /// Searches 'code' then 'roomCode' for legacy compatibility.
   Future<RoomResult?> findByCode({
     required String gamePath,
     required String code,
@@ -85,38 +85,31 @@ class RoomService {
     required String gamePath,
     required String roomId,
     required Map<String, dynamic> updates,
-  }) =>
-      _ref(gamePath, roomId).update(updates);
+  }) => _ref(gamePath, roomId).update(updates);
 
   Future<void> addPlayer({
     required String gamePath,
     required String roomId,
     required String playerKey,
     required Map<String, dynamic> playerData,
-  }) =>
-      _ref(gamePath, roomId).child('players/$playerKey').set(playerData);
+  }) => _ref(gamePath, roomId).child('players/$playerKey').set(playerData);
 
   Future<void> removePlayer({
     required String gamePath,
     required String roomId,
     required String playerKey,
-  }) =>
-      _ref(gamePath, roomId).child('players/$playerKey').remove();
+  }) => _ref(gamePath, roomId).child('players/$playerKey').remove();
 
   Future<void> setStatus({
     required String gamePath,
     required String roomId,
     required String status,
-  }) =>
-      _ref(gamePath, roomId).child('status').set(status);
+  }) => _ref(gamePath, roomId).child('status').set(status);
 
   Future<void> deleteRoom({
     required String gamePath,
     required String roomId,
-  }) =>
-      _ref(gamePath, roomId).remove();
-
-  // ── Stream ───────────────────────────────────────────────────────────────
+  }) => _ref(gamePath, roomId).remove();
 
   Stream<Map<String, dynamic>?> watchRoom({
     required String gamePath,

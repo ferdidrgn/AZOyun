@@ -1,0 +1,748 @@
+import 'dart:async';
+import 'dart:math';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/services/ad_service.dart';
+import '../../core/services/room_service.dart';
+import '../../core/services/storage_service.dart';
+import '../../core/theme/az_theme.dart';
+import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/banner_ad_widget.dart';
+
+// ═══════════════════════════════════════════════════════════════════
+// TILE MODEL
+// ═══════════════════════════════════════════════════════════════════
+
+enum TColor { sari, mavi, kirmizi, siyah }
+
+class OTile {
+  final int num;
+  final TColor color;
+  final bool joker;
+  final String id;
+  const OTile({required this.num, required this.color, required this.joker, required this.id});
+
+  factory OTile.fromMap(Map m) => OTile(
+    num: m['n'] as int, color: TColor.values[m['c'] as int],
+    joker: m['j'] as bool? ?? false, id: m['id'] as String,
+  );
+  Map<String, dynamic> toMap() => {'n': num, 'c': color.index, 'j': joker, 'id': id};
+
+  static Color uiColor(TColor c) => [
+    const Color(0xFFFFD600), const Color(0xFF1565C0),
+    const Color(0xFFD32F2F), const Color(0xFF212121),
+  ][c.index];
+
+  String get display => joker ? '★' : '$num';
+}
+
+List<Map<String, dynamic>> buildDeck(int seed) {
+  final rng = Random(seed);
+  final tiles = <Map<String, dynamic>>[];
+  int id = 0;
+  for (var copy = 0; copy < 2; copy++) {
+    for (var c = 0; c < 4; c++) {
+      for (var n = 1; n <= 13; n++) {
+        tiles.add(OTile(num: n, color: TColor.values[c], joker: false, id: 't${id++}').toMap());
+      }
+    }
+  }
+  tiles.add(OTile(num: 0, color: TColor.sari, joker: true, id: 'j0').toMap());
+  tiles.add(OTile(num: 0, color: TColor.siyah, joker: true, id: 'j1').toMap());
+  tiles.shuffle(rng);
+  return tiles;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// LOBBY
+// ═══════════════════════════════════════════════════════════════════
+
+class OkeyLobbyScreen extends StatefulWidget {
+  const OkeyLobbyScreen({super.key, this.mode = 'okey'});
+  final String mode;
+  @override State<OkeyLobbyScreen> createState() => _OLobbyState();
+}
+
+class _OLobbyState extends State<OkeyLobbyScreen> {
+  final _rooms = RoomService.instance;
+  final _storage = StorageService.instance;
+  final _codeCtrl = TextEditingController();
+  String? _name; bool _loading = false;
+  late String _mode;
+
+  @override void initState() { super.initState(); _mode = widget.mode; _load(); }
+  @override void dispose() { _codeCtrl.dispose(); super.dispose(); }
+
+  Color get _accent => _mode == '101' ? const Color(0xFFE65100) : const Color(0xFF1B5E20);
+  Gradient get _grad => _mode == '101' ? AZColors.gradOrange : AZColors.gradGreen;
+
+  Future<void> _load() async {
+    final n = await _storage.getPlayerName(); if (!mounted) return;
+    if (n != null && n.isNotEmpty) setState(() => _name = n); else _ask();
+  }
+  Future<void> _ask() async {
+    final n = await showNameDialog(context, current: _name, accentColor: _accent);
+    if (n == null || !mounted) return;
+    await _storage.setPlayerName(n); setState(() => _name = n);
+  }
+
+  Future<void> _create() async {
+    if (_name == null) { await _ask(); if (_name == null) return; }
+    setState(() => _loading = true);
+    try {
+      final code = _rooms.generateCode();
+      final seed = Random().nextInt(999999);
+      final id = await _rooms.createRoom(gamePath: GamePaths.okey, data: {
+        'code': code, 'status': 'waiting', 'mode': _mode,
+        'createdAt': ServerValue.timestamp, 'seed': seed,
+        'players': {'p1': {'name': _name, 'isHost': true, 'score': 0, 'hand': []}},
+      });
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) =>
+          OkeyRoomScreen(roomId: id, myKey: 'p1', myName: _name!, mode: _mode)));
+    } catch (e) { _snack('Hata: $e'); }
+    finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  Future<void> _join() async {
+    if (_name == null) { await _ask(); if (_name == null) return; }
+    final code = _codeCtrl.text.trim().toUpperCase();
+    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    setState(() => _loading = true);
+    try {
+      final r = await _rooms.findByCode(gamePath: GamePaths.okey, code: code);
+      if (r == null) { _snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      final players = Map.from((r.data['players'] as Map?) ?? {});
+      if (players.length >= 4) { _snack('Oda dolu'); return; }
+      final myKey = 'p${players.length + 1}';
+      final roomMode = r.data['mode'] as String? ?? 'okey';
+      await _rooms.updateRoom(gamePath: GamePaths.okey, roomId: r.id,
+          updates: {'players/$myKey': {'name': _name, 'isHost': false, 'score': 0, 'hand': []}});
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) =>
+          OkeyRoomScreen(roomId: r.id, myKey: myKey, myName: _name!, mode: roomMode)));
+    } catch (e) { _snack('Katılınamadı: $e'); }
+    finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+
+  @override
+  Widget build(BuildContext context) => AZGradientScaffold(
+    gradient: _grad,
+    child: Column(children: [
+      Expanded(child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(children: [
+          Align(alignment: Alignment.centerLeft,
+              child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context))),
+          const Text('🀄', style: TextStyle(fontSize: 64)),
+          const SizedBox(height: 8),
+          // Mod seçici
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            _ModeBtn(label: 'Okey', sel: _mode == 'okey', onTap: () => setState(() => _mode = 'okey')),
+            const SizedBox(width: 12),
+            _ModeBtn(label: '101', sel: _mode == '101', onTap: () => setState(() => _mode = '101')),
+          ]),
+          const SizedBox(height: 8),
+          Text(_mode == '101'
+              ? '2-4 Oyuncu · 101 puana ulaşan elenır'
+              : '2-4 Oyuncu · El aç, kazan!',
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 20),
+          GestureDetector(onTap: _ask, child: AZFrostCard(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.person_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text(_name ?? 'Ad seç', style: const TextStyle(color: Colors.white,
+                  fontSize: 15, fontWeight: FontWeight.bold)),
+            ]),
+          )),
+          const SizedBox(height: 20),
+          AZButton(label: 'ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
+              onPressed: _create, color: _accent, loading: _loading, width: 280),
+          const SizedBox(height: 20),
+          const Text('— veya —', style: TextStyle(color: Colors.white54)),
+          const SizedBox(height: 20),
+          AZFrostCard(child: Column(children: [
+            AZCodeField(controller: _codeCtrl),
+            const SizedBox(height: 14),
+            AZJoinButton(onPressed: _join, loading: _loading),
+          ])),
+          const SizedBox(height: 20),
+          AZFrostCard(opacity: 0.1, child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_mode == '101' ? '🃏 101 Nasıl?' : '🀄 Okey Nasıl?',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(_mode == '101'
+                  ? '• Her raunt 7 taş dağıtılır\n'
+                    '• Sırayla demetden çek, at\n'
+                    '• Elindeki puanı düşür\n'
+                    '• 101\'e ulaşan elenır, son kişi kazanır!'
+                  : '• 21 taş dağıtılır\n'
+                    '• Sırayla çek veya atıktan al\n'
+                    '• Seri + grup yapıp AÇTIM de\n'
+                    '• İlk açan kazanır!',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.6)),
+            ],
+          )),
+          const SizedBox(height: 16),
+        ]),
+      )),
+      const AdaptiveBannerAdWidget(),
+    ]),
+  );
+}
+
+class _ModeBtn extends StatelessWidget {
+  const _ModeBtn({required this.label, required this.sel, required this.onTap});
+  final String label; final bool sel; final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+      decoration: BoxDecoration(
+        color: sel ? Colors.white : Colors.white24,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white, width: sel ? 2 : 1),
+      ),
+      child: Text(label, style: TextStyle(
+          color: sel ? Colors.black87 : Colors.white,
+          fontWeight: FontWeight.bold, fontSize: 16)),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ROOM
+// ═══════════════════════════════════════════════════════════════════
+
+class OkeyRoomScreen extends StatefulWidget {
+  const OkeyRoomScreen({super.key, required this.roomId,
+      required this.myKey, required this.myName, required this.mode});
+  final String roomId, myKey, myName, mode;
+  @override State<OkeyRoomScreen> createState() => _ORoomState();
+}
+
+class _ORoomState extends State<OkeyRoomScreen> {
+  final _rooms = RoomService.instance;
+  StreamSubscription? _sub;
+  Map<String, dynamic> _room = {};
+  bool _nav = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = _rooms.watchRoom(gamePath: GamePaths.okey, roomId: widget.roomId).listen(_onData);
+  }
+  @override void dispose() { _sub?.cancel(); super.dispose(); }
+
+  void _onData(Map<String, dynamic>? d) {
+    if (!mounted || d == null) return;
+    setState(() => _room = d);
+    final players = (d['players'] as Map?) ?? {};
+    if (players.isEmpty) {
+      _rooms.deleteRoom(gamePath: GamePaths.okey, roomId: widget.roomId);
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+    if (d['status'] == 'playing' && !_nav) {
+      _nav = true;
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) =>
+          OkeyGameScreen(roomId: widget.roomId, myKey: widget.myKey,
+              myName: widget.myName, mode: widget.mode)));
+    }
+  }
+
+  Map get _players => (_room['players'] as Map?) ?? {};
+  String get _code => _room['code'] ?? '------';
+  bool get _isHost => widget.myKey == 'p1';
+  bool get _canStart => _players.length >= 2;
+  String get _mode => _room['mode'] ?? widget.mode;
+  Color get _accent => _mode == '101' ? const Color(0xFFE65100) : const Color(0xFF1B5E20);
+  Gradient get _grad => _mode == '101' ? AZColors.gradOrange : AZColors.gradGreen;
+
+  Future<void> _start() async {
+    if (!_canStart) { _snack('En az 2 oyuncu'); return; }
+    final seed = (_room['seed'] as int?) ?? Random().nextInt(999999);
+    final deck = buildDeck(seed);
+    final keys = _players.keys.toList();
+    final handSz = _mode == '101' ? 7 : 21;
+    final updates = <String, dynamic>{
+      'status': 'playing', 'turn': keys.first,
+      'round': 1,
+    };
+    for (var i = 0; i < keys.length; i++) {
+      updates['players/${keys[i]}/hand'] = deck.sublist(i * handSz, (i + 1) * handSz);
+    }
+    final remaining = deck.sublist(keys.length * handSz);
+    // Okey göstergesi
+    if (remaining.isNotEmpty) {
+      final ind = remaining.first;
+      final okN = (ind['n'] as int % 13) + 1;
+      updates['indicator'] = ind;
+      updates['okeyN'] = okN;
+      updates['okeyC'] = ind['c'];
+    }
+    updates['deck'] = remaining.length > 1 ? remaining.sublist(1) : [];
+    updates['discard'] = [];
+    await _rooms.updateRoom(gamePath: GamePaths.okey, roomId: widget.roomId, updates: updates);
+  }
+
+  Future<void> _leave() async {
+    final pl = Map.from(_players)..remove(widget.myKey);
+    if (pl.isEmpty || _isHost) {
+      await _rooms.deleteRoom(gamePath: GamePaths.okey, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(gamePath: GamePaths.okey, roomId: widget.roomId, playerKey: widget.myKey);
+    }
+    if (mounted) Navigator.pop(context);
+  }
+
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+
+  @override
+  Widget build(BuildContext context) => PopScope(canPop: false, onPopInvoked: (_) => _leave(),
+    child: AZGradientScaffold(gradient: _grad,
+      child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
+        Row(children: [
+          IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leave),
+          Expanded(child: Text(_mode == '101' ? 'OKEY 101' : 'OKEY',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+          const SizedBox(width: 48),
+        ]),
+        const SizedBox(height: 20),
+        AZRoomCode(code: _code, accentColor: _accent),
+        const SizedBox(height: 20),
+        AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Oyuncular (${_players.length}/4)',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 14),
+          for (final e in _players.entries)
+            AZPlayerTile(name: e.value['name'] as String? ?? e.key,
+                isMe: e.key == widget.myKey, isHost: e.value['isHost'] == true,
+                emoji: '🀄', present: true),
+          if (!_canStart) const Text('En az 2 oyuncu gerekli',
+              style: TextStyle(color: Colors.white54, fontSize: 13)),
+        ])),
+        const Spacer(),
+        if (_isHost) AZButton(label: 'DAĞIT!', icon: Icons.shuffle_rounded,
+            onPressed: _canStart ? _start : null, color: _accent, width: double.infinity)
+        else const AZWaitingCard(message: 'Host dağıtacak...'),
+      ])),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GAME
+// ═══════════════════════════════════════════════════════════════════
+
+class OkeyGameScreen extends StatefulWidget {
+  const OkeyGameScreen({super.key, required this.roomId,
+      required this.myKey, required this.myName, required this.mode});
+  final String roomId, myKey, myName, mode;
+  @override State<OkeyGameScreen> createState() => _OGameState();
+}
+
+class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMixin {
+  final _db = FirebaseDatabase.instance.ref();
+  late DatabaseReference _ref;
+  StreamSubscription? _sub;
+  Map<String, dynamic> _room = {};
+  bool _finalShown = false, _processing = false;
+  bool _mustDiscard = false;
+  int? _selIdx;
+  bool _wonDialog = false;
+
+  late AnimationController _winCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ref = _db.child('${GamePaths.okey}/${widget.roomId}');
+    _sub = _ref.onValue.listen(_onFB);
+    _winCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+  }
+  @override void dispose() { _winCtrl.dispose(); _sub?.cancel(); super.dispose(); }
+
+  void _onFB(DatabaseEvent e) {
+    if (!mounted || e.snapshot.value == null) return;
+    final d = Map<String, dynamic>.from(e.snapshot.value as Map);
+    setState(() => _room = d);
+    if (d['status'] == 'finished' && !_finalShown) {
+      _finalShown = true; AdService.instance.onGameEnd();
+      Future.delayed(const Duration(milliseconds: 400), _showFinal);
+    }
+  }
+
+  Map get _players => (_room['players'] as Map?) ?? {};
+  String get _turn => (_room['turn'] as String?) ?? '';
+  bool get _isMyTurn => _turn == widget.myKey;
+  List get _deck => (_room['deck'] as List?) ?? [];
+  List get _discard => (_room['discard'] as List?) ?? [];
+  Map? get _indicator => _room['indicator'] as Map?;
+  int? get _okeyN => _room['okeyN'] as int?;
+  int? get _okeyC => _room['okeyC'] as int?;
+  String get _mode => _room['mode'] ?? widget.mode;
+
+  List<OTile> get _hand {
+    final raw = (_players[widget.myKey]?['hand'] as List?) ?? [];
+    return raw.map((t) => OTile.fromMap(Map<String, dynamic>.from(t as Map))).toList();
+  }
+
+  bool _isOkey(OTile t) {
+    if (t.joker) return true;
+    if (_okeyN == null || _okeyC == null) return false;
+    return t.num == _okeyN && t.color.index == _okeyC;
+  }
+
+  Future<void> _drawDeck() async {
+    if (!_isMyTurn || _mustDiscard || _processing || _deck.isEmpty) return;
+    setState(() => _processing = true);
+    try {
+      final newDeck = List.from(_deck);
+      final drawn = Map<String, dynamic>.from(newDeck.removeLast() as Map);
+      final hand = _hand;
+      await _ref.update({
+        'deck': newDeck,
+        'players/${widget.myKey}/hand': [...hand.map((t) => t.toMap()), drawn],
+      });
+      setState(() { _mustDiscard = true; });
+      HapticFeedback.selectionClick();
+    } finally { setState(() => _processing = false); }
+  }
+
+  Future<void> _drawDiscard() async {
+    if (!_isMyTurn || _mustDiscard || _processing || _discard.isEmpty) return;
+    setState(() => _processing = true);
+    try {
+      final newDiscard = List.from(_discard);
+      final drawn = Map<String, dynamic>.from(newDiscard.removeLast() as Map);
+      final hand = _hand;
+      await _ref.update({
+        'discard': newDiscard,
+        'players/${widget.myKey}/hand': [...hand.map((t) => t.toMap()), drawn],
+      });
+      setState(() { _mustDiscard = true; });
+      HapticFeedback.selectionClick();
+    } finally { setState(() => _processing = false); }
+  }
+
+  Future<void> _discardTile(int idx) async {
+    if (!_isMyTurn || !_mustDiscard || _processing) return;
+    setState(() => _processing = true);
+    try {
+      final hand = List.from(_hand.map((t) => t.toMap()));
+      final tile = hand.removeAt(idx);
+      final newDiscard = [..._discard, tile];
+      // Sıradaki oyuncu
+      final keys = _players.keys.toList();
+      final next = keys[(keys.indexOf(widget.myKey) + 1) % keys.length];
+      await _ref.update({
+        'players/${widget.myKey}/hand': hand,
+        'discard': newDiscard,
+        'turn': next,
+      });
+      setState(() { _mustDiscard = false; _selIdx = null; });
+      HapticFeedback.lightImpact();
+    } finally { setState(() => _processing = false); }
+  }
+
+  Future<void> _declareWin() async {
+    if (!_isMyTurn || _processing || _wonDialog) return;
+    setState(() => _wonDialog = true);
+    // Oyuncuya kontrol sor
+    final ok = await showDialog<bool>(context: context, builder: (_) => AlertDialog(
+      title: const Text('🎉 AÇTIM!'),
+      content: const Text('Elindeki tüm taşları uyumlu grupladın mı?\n'
+          'Yanlış açarsan puan kaybedersin!'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false),
+            child: const Text('İptal')),
+        FilledButton(onPressed: () => Navigator.pop(context, true),
+            child: const Text('Evet, aç!')),
+      ],
+    ));
+    if (ok != true) { setState(() => _wonDialog = false); return; }
+
+    setState(() => _processing = true);
+    try {
+      final bonus = _mode == '101' ? 50 : 100;
+      await _ref.update({
+        'status': 'finished', 'winner': widget.myKey,
+        'players/${widget.myKey}/score':
+            ((_players[widget.myKey]?['score'] as int?) ?? 0) + bonus,
+      });
+    } finally { setState(() => _processing = false); }
+  }
+
+  void _showFinal() {
+    if (!mounted) return;
+    final winner = _room['winner'] as String? ?? '';
+    final sorted = _players.entries.toList()
+      ..sort((a, b) => ((b.value['score'] as int?) ?? 0).compareTo((a.value['score'] as int?) ?? 0));
+    const medals = ['🥇', '🥈', '🥉', '4.'];
+    showDialog(context: context, barrierDismissible: false, builder: (_) => AlertDialog(
+      title: Text(_mode == '101' ? '🃏 Oyun Bitti!' : '🀄 Oyun Bitti!',
+          textAlign: TextAlign.center),
+      content: Column(mainAxisSize: MainAxisSize.min,
+        children: sorted.asMap().entries.map((e) {
+          final isMe = e.value.key == widget.myKey;
+          final score = (e.value.value['score'] as int?) ?? 0;
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+                color: isMe ? Colors.green.shade50 : null,
+                borderRadius: BorderRadius.circular(10)),
+            child: Row(children: [
+              Text(e.key < medals.length ? medals[e.key] : '?',
+                  style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 10),
+              Expanded(child: Text(e.value.value['name'] as String? ?? e.value.key,
+                  style: TextStyle(fontWeight: isMe ? FontWeight.bold : FontWeight.normal, fontSize: 16))),
+              if (e.value.key == winner) const Text('👑 ', style: TextStyle(fontSize: 16)),
+              Text('$score', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ]),
+          );
+        }).toList(),
+      ),
+      actions: [FilledButton(
+        style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1B5E20)),
+        onPressed: () async {
+          await _db.child('${GamePaths.okey}/${widget.roomId}').remove();
+          if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+        },
+        child: const Text('Ana Menü'),
+      )],
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_room.isEmpty) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final hand = _hand;
+    final topDiscard = _discard.isNotEmpty
+        ? OTile.fromMap(Map<String, dynamic>.from(_discard.last as Map)) : null;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF1B5E20),
+      body: SafeArea(child: Column(children: [
+        // Score bar
+        Container(
+          color: const Color(0xFF0D3B18),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(children: [
+            Text(_mode == '101' ? 'OKEY 101' : 'OKEY',
+                style: const TextStyle(color: Colors.white70, fontSize: 11,
+                    fontWeight: FontWeight.w700, letterSpacing: 1)),
+            const Spacer(),
+            ..._players.entries.map((e) {
+              final isMe = e.key == widget.myKey;
+              final score = (e.value['score'] as int?) ?? 0;
+              final isTurn = e.key == _turn;
+              return Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                    color: isMe ? Colors.white : Colors.white24,
+                    borderRadius: BorderRadius.circular(12),
+                    border: isTurn ? Border.all(color: Colors.yellow, width: 2) : null),
+                child: Text('${e.value['name']}: $score',
+                    style: TextStyle(color: isMe ? const Color(0xFF1B5E20) : Colors.white,
+                        fontWeight: FontWeight.bold, fontSize: 12)),
+              );
+            }),
+          ]),
+        ),
+
+        // Okey göstergesi + Demet + Atık
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            // Gösterge
+            if (_indicator != null) Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('GÖSTERGE', style: TextStyle(color: Colors.white54, fontSize: 9,
+                  fontWeight: FontWeight.w700)),
+              _TileW(tile: OTile.fromMap(Map<String, dynamic>.from(_indicator as Map)),
+                  isOkey: false, selected: false, mustDiscard: false, size: 42),
+              if (_okeyN != null && _okeyC != null) ...[
+                const Text('OKEY', style: TextStyle(color: Colors.yellow, fontSize: 9,
+                    fontWeight: FontWeight.w700)),
+                _TileW(tile: OTile(num: _okeyN!, color: TColor.values[_okeyC!],
+                    joker: false, id: 'ok'), isOkey: true, selected: false,
+                    mustDiscard: false, size: 42),
+              ],
+            ]),
+            const Spacer(),
+            // Demet
+            GestureDetector(
+              onTap: _isMyTurn && !_mustDiscard ? _drawDeck : null,
+              child: Stack(clipBehavior: Clip.none, children: [
+                for (var i = 2; i >= 0; i--)
+                  Positioned(left: i * 1.5, top: i * -1.5,
+                    child: Container(width: 50, height: 75,
+                      decoration: BoxDecoration(
+                          color: const Color(0xFF37474F),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white24)))),
+                Container(
+                  width: 50, height: 75,
+                  decoration: BoxDecoration(
+                    color: _isMyTurn && !_mustDiscard
+                        ? const Color(0xFF546E7A) : const Color(0xFF263238),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: _isMyTurn && !_mustDiscard ? Colors.white60 : Colors.white24,
+                        width: 2)),
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const Icon(Icons.style_rounded, color: Colors.white60, size: 18),
+                    const SizedBox(height: 4),
+                    Text('${_deck.length}', style: const TextStyle(color: Colors.white,
+                        fontSize: 12, fontWeight: FontWeight.bold)),
+                  ]),
+                ),
+              ]),
+            ),
+            const SizedBox(width: 12),
+            // Atık
+            GestureDetector(
+              onTap: _isMyTurn && !_mustDiscard && topDiscard != null ? _drawDiscard : null,
+              child: topDiscard != null
+                  ? _TileW(tile: topDiscard, isOkey: _isOkey(topDiscard),
+                      selected: false, mustDiscard: false, size: 56,
+                      highlighted: _isMyTurn && !_mustDiscard)
+                  : Container(width: 50, height: 75,
+                      decoration: BoxDecoration(
+                          color: Colors.white12, borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white24)),
+                      child: const Center(child: Icon(Icons.block_rounded,
+                          color: Colors.white30, size: 18))),
+            ),
+          ]),
+        ),
+
+        // Durum
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+              color: _isMyTurn ? const Color(0xFF2E7D32) : Colors.black26,
+              borderRadius: BorderRadius.circular(12)),
+          child: Text(
+            _isMyTurn
+                ? (_mustDiscard ? '🗑️ Bir taş at!' : '👆 Demetden veya atıktan çek')
+                : '⏳ ${_players[_turn]?['name'] ?? _turn} oynuyor...',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ),
+
+        // El
+        Expanded(child: Column(children: [
+          const Padding(padding: EdgeInsets.only(left: 12, top: 4),
+              child: Align(alignment: Alignment.centerLeft,
+                  child: Text('ELİM', style: TextStyle(color: Colors.white54, fontSize: 10,
+                      fontWeight: FontWeight.w600, letterSpacing: 1)))),
+          Expanded(child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(children: hand.asMap().entries.map((e) {
+              final sel = _selIdx == e.key;
+              return GestureDetector(
+                onTap: () {
+                  if (_isMyTurn && _mustDiscard) {
+                    _discardTile(e.key);
+                  } else {
+                    setState(() => _selIdx = sel ? null : e.key);
+                  }
+                },
+                child: _TileW(tile: e.value, isOkey: _isOkey(e.value),
+                    selected: sel, mustDiscard: _isMyTurn && _mustDiscard),
+              );
+            }).toList()),
+          )),
+        ])),
+
+        // Buton
+        if (_isMyTurn && _mustDiscard)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: FilledButton.icon(
+              onPressed: _declareWin,
+              icon: const Icon(Icons.celebration_rounded),
+              label: const Text('AÇTIM! 🎉',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              style: FilledButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.black87,
+                  minimumSize: const Size(double.infinity, 52),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+            ),
+          ),
+
+        const BannerAdWidget(),
+      ])),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TILE WIDGET
+// ═══════════════════════════════════════════════════════════════════
+
+class _TileW extends StatelessWidget {
+  const _TileW({required this.tile, required this.isOkey,
+      required this.selected, required this.mustDiscard,
+      this.highlighted = false, this.size = 52});
+  final OTile tile; final bool isOkey, selected, mustDiscard, highlighted;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isOkey ? Colors.amber.shade200 : Colors.grey.shade100;
+    final numColor = tile.joker ? Colors.deepPurple : OTile.uiColor(tile.color);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 120),
+      margin: EdgeInsets.symmetric(horizontal: 3, vertical: selected ? 0 : 8),
+      width: size * 0.85, height: size,
+      decoration: BoxDecoration(
+        color: selected ? Colors.yellow.shade100 : bg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+            color: isOkey ? Colors.amber.shade600
+                : selected ? Colors.orange.shade400
+                : highlighted ? Colors.greenAccent
+                : mustDiscard ? Colors.red.withAlpha(100)
+                : Colors.grey.shade400,
+            width: selected || isOkey ? 2.5 : 1.5),
+        boxShadow: [BoxShadow(
+            color: Colors.black.withAlpha(selected ? 80 : 30),
+            blurRadius: selected ? 8 : 3, offset: const Offset(0, 2))],
+      ),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Text(tile.display,
+            style: TextStyle(fontSize: size * 0.36,
+                fontWeight: FontWeight.bold, color: numColor)),
+        if (isOkey && !tile.joker)
+          Text('OK', style: TextStyle(fontSize: size * 0.14,
+              color: Colors.amber.shade700, fontWeight: FontWeight.bold)),
+        if (tile.joker)
+          Text('JKR', style: TextStyle(fontSize: size * 0.14,
+              color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+      ]),
+    );
+  }
+}
