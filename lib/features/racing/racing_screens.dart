@@ -1,0 +1,767 @@
+import 'dart:async';
+import 'dart:math';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/services/ad_service.dart';
+import '../../core/services/room_service.dart';
+import '../../core/services/storage_service.dart';
+import '../../core/theme/az_theme.dart';
+import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/banner_ad_widget.dart';
+
+// ═══════════════════════════════════════════════════════════════════
+// CAR MODEL
+// ═══════════════════════════════════════════════════════════════════
+
+class CarData {
+  final String id, name, emoji;
+  final double maxSpeed, acceleration, handling;
+  final Color color;
+  const CarData({required this.id, required this.name, required this.emoji,
+      required this.maxSpeed, required this.acceleration,
+      required this.handling, required this.color});
+}
+
+const _cars = [
+  CarData(id:'sport',  name:'Spor',    emoji:'🏎️', maxSpeed:1.0,  acceleration:0.7, handling:0.8, color:Color(0xFFE53935)),
+  CarData(id:'muscle', name:'Muscle',  emoji:'🚗', maxSpeed:0.9,  acceleration:0.9, handling:0.6, color:Color(0xFF1565C0)),
+  CarData(id:'rally',  name:'Rally',   emoji:'🚙', maxSpeed:0.8,  acceleration:0.8, handling:1.0, color:Color(0xFF2E7D32)),
+  CarData(id:'turbo',  name:'Turbo',   emoji:'🚕', maxSpeed:1.1,  acceleration:0.6, handling:0.7, color:Color(0xFFF57F17)),
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// LOBBY
+// ═══════════════════════════════════════════════════════════════════
+
+class RacingLobbyScreen extends StatefulWidget {
+  const RacingLobbyScreen({super.key});
+  @override State<RacingLobbyScreen> createState() => _RacingLobbyState();
+}
+
+class _RacingLobbyState extends State<RacingLobbyScreen> {
+  final _rooms = RoomService.instance;
+  final _storage = StorageService.instance;
+  final _codeCtrl = TextEditingController();
+  String? _name; bool _loading = false;
+  CarData _car = _cars[0];
+
+  @override void initState() { super.initState(); _load(); }
+  @override void dispose() { _codeCtrl.dispose(); super.dispose(); }
+
+  Future<void> _load() async {
+    final n = await _storage.getPlayerName(); if (!mounted) return;
+    if (n != null && n.isNotEmpty) setState(() => _name = n); else _ask();
+  }
+  Future<void> _ask() async {
+    final n = await showNameDialog(context, current: _name, accentColor: const Color(0xFFE53935));
+    if (n == null || !mounted) return;
+    await _storage.setPlayerName(n); setState(() => _name = n);
+  }
+
+  Future<void> _create() async {
+    if (_name == null) { await _ask(); if (_name == null) return; }
+    setState(() => _loading = true);
+    try {
+      final code = _rooms.generateCode();
+      final id = await _rooms.createRoom(gamePath: GamePaths.racing, data: {
+        'code': code, 'status': 'waiting', 'laps': 3,
+        'createdAt': ServerValue.timestamp,
+        'players': {'p1': {
+          'name': _name, 'isHost': true, 'carId': _car.id,
+          'x': 0.3, 'y': 0.8, 'angle': 0.0, 'speed': 0.0,
+          'lap': 0, 'checkpoint': 0, 'finished': false, 'score': 0,
+        }},
+      });
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) =>
+          RacingRoomScreen(roomId: id, myKey: 'p1', myName: _name!, car: _car)));
+    } catch (e) { _snack('Hata: $e'); }
+    finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  Future<void> _join() async {
+    if (_name == null) { await _ask(); if (_name == null) return; }
+    final code = _codeCtrl.text.trim().toUpperCase();
+    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    setState(() => _loading = true);
+    try {
+      final r = await _rooms.findByCode(gamePath: GamePaths.racing, code: code);
+      if (r == null) { _snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { _snack('Yarış başlamış'); return; }
+      final players = Map.from((r.data['players'] as Map?) ?? {});
+      if (players.length >= 4) { _snack('Oda dolu (max 4)'); return; }
+      final myKey = 'p${players.length + 1}';
+      final startX = 0.3 + players.length * 0.1;
+      await _rooms.updateRoom(gamePath: GamePaths.racing, roomId: r.id,
+          updates: {'players/$myKey': {
+            'name': _name, 'isHost': false, 'carId': _car.id,
+            'x': startX, 'y': 0.8, 'angle': 0.0, 'speed': 0.0,
+            'lap': 0, 'checkpoint': 0, 'finished': false, 'score': 0,
+          }});
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) =>
+          RacingRoomScreen(roomId: r.id, myKey: myKey, myName: _name!, car: _car)));
+    } catch (e) { _snack('Katılınamadı: $e'); }
+    finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+
+  @override
+  Widget build(BuildContext context) => AZGradientScaffold(
+    gradient: const LinearGradient(
+      colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+      begin: Alignment.topLeft, end: Alignment.bottomRight,
+    ),
+    child: Column(children: [
+      Expanded(child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(children: [
+          Align(alignment: Alignment.centerLeft,
+              child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context))),
+          const Text('🏁', style: TextStyle(fontSize: 64)),
+          const SizedBox(height: 8),
+          const Text('ARABA YARIŞI', style: TextStyle(color: Colors.white, fontSize: 26,
+              fontWeight: FontWeight.bold, letterSpacing: 2)),
+          const Text('2-4 Oyuncu · 3 Tur · Üstten görünüş',
+              style: TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 20),
+          // Araba seçimi
+          const Text('ARABANIZI SEÇİN', style: TextStyle(color: Colors.white70,
+              fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          Row(mainAxisAlignment: MainAxisAlignment.center,
+            children: _cars.map((c) {
+              final sel = c.id == _car.id;
+              return GestureDetector(
+                onTap: () => setState(() => _car = c),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: sel ? c.color.withAlpha(180) : Colors.white12,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: sel ? Colors.white : Colors.white24, width: sel ? 2 : 1),
+                  ),
+                  child: Column(children: [
+                    Text(c.emoji, style: const TextStyle(fontSize: 28)),
+                    Text(c.name, style: const TextStyle(color: Colors.white, fontSize: 11,
+                        fontWeight: FontWeight.bold)),
+                  ]),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Seçili araba stats
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: _car.color.withAlpha(60),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _car.color.withAlpha(120))),
+            child: Column(children: [
+              Text('${_car.emoji} ${_car.name}',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              _StatBarW('🏎️ Hız', _car.maxSpeed, Colors.red),
+              _StatBarW('⚡ İvme', _car.acceleration, Colors.orange),
+              _StatBarW('🎮 Kontrol', _car.handling, Colors.green),
+            ]),
+          ),
+          const SizedBox(height: 20),
+          GestureDetector(onTap: _ask, child: AZFrostCard(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.person_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text(_name ?? 'Ad seç', style: const TextStyle(color: Colors.white,
+                  fontSize: 15, fontWeight: FontWeight.bold)),
+            ]),
+          )),
+          const SizedBox(height: 20),
+          AZButton(label: 'ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
+              onPressed: _create, color: const Color(0xFFE53935), loading: _loading, width: 280),
+          const SizedBox(height: 20),
+          const Text('— veya —', style: TextStyle(color: Colors.white54)),
+          const SizedBox(height: 20),
+          AZFrostCard(child: Column(children: [
+            AZCodeField(controller: _codeCtrl),
+            const SizedBox(height: 14),
+            AZJoinButton(onPressed: _join, loading: _loading),
+          ])),
+          const SizedBox(height: 20),
+          AZFrostCard(opacity: 0.1, child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('🏁 Nasıl Oynanır?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text('• Ekrana basılı tut = gaz\n'
+                  '• Sol/Sağ butonlarla dön\n'
+                  '• Checkpoint\'leri sırayla geç\n'
+                  '• 3 turu bitiren kazanır!\n'
+                  '• Turuncu ışık = drift bonusu ✨',
+                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6)),
+            ],
+          )),
+          const SizedBox(height: 16),
+        ]),
+      )),
+      const AdaptiveBannerAdWidget(),
+    ]),
+  );
+}
+
+class _StatBarW extends StatelessWidget {
+  const _StatBarW(this.label, this.val, this.color);
+  final String label; final double val; final Color color;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Row(children: [
+      SizedBox(width: 70, child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12))),
+      Expanded(child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: LinearProgressIndicator(value: val, backgroundColor: Colors.white12,
+            valueColor: AlwaysStoppedAnimation(color), minHeight: 10),
+      )),
+    ]),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ROOM
+// ═══════════════════════════════════════════════════════════════════
+
+class RacingRoomScreen extends StatefulWidget {
+  const RacingRoomScreen({super.key, required this.roomId,
+      required this.myKey, required this.myName, required this.car});
+  final String roomId, myKey, myName; final CarData car;
+  @override State<RacingRoomScreen> createState() => _RRoomState();
+}
+
+class _RRoomState extends State<RacingRoomScreen> {
+  final _rooms = RoomService.instance;
+  StreamSubscription? _sub;
+  Map<String, dynamic> _room = {};
+  bool _nav = false;
+
+  @override void initState() { super.initState();
+    _sub = _rooms.watchRoom(gamePath: GamePaths.racing, roomId: widget.roomId).listen(_onData);}
+  @override void dispose() { _sub?.cancel(); super.dispose(); }
+
+  void _onData(Map<String, dynamic>? d) {
+    if (!mounted || d == null) return;
+    setState(() => _room = d);
+    final players = (d['players'] as Map?) ?? {};
+    if (players.isEmpty) {
+      _rooms.deleteRoom(gamePath: GamePaths.racing, roomId: widget.roomId);
+      if (mounted) Navigator.pop(context); return;
+    }
+    if (d['status'] == 'racing' && !_nav) {
+      _nav = true;
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) =>
+          RacingGameScreen(roomId: widget.roomId, myKey: widget.myKey,
+              myName: widget.myName, car: widget.car)));
+    }
+  }
+
+  Map get _players => (_room['players'] as Map?) ?? {};
+  String get _code => _room['code'] ?? '------';
+  bool get _isHost => widget.myKey == 'p1';
+  bool get _canStart => _players.length >= 2;
+
+  Future<void> _start() async {
+    if (!_canStart) { _snack('En az 2 oyuncu'); return; }
+    await _rooms.updateRoom(gamePath: GamePaths.racing, roomId: widget.roomId,
+        updates: {'status': 'racing', 'startTime': ServerValue.timestamp});
+  }
+
+  Future<void> _leave() async {
+    final pl = Map.from(_players)..remove(widget.myKey);
+    if (pl.isEmpty || _isHost) {
+      await _rooms.deleteRoom(gamePath: GamePaths.racing, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(gamePath: GamePaths.racing, roomId: widget.roomId, playerKey: widget.myKey);
+    }
+    if (mounted) Navigator.pop(context);
+  }
+
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+
+  @override
+  Widget build(BuildContext context) => PopScope(canPop: false, onPopInvoked: (_) => _leave(),
+    child: AZGradientScaffold(
+      gradient: const LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)]),
+      child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
+        Row(children: [
+          IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leave),
+          const Expanded(child: Text('🏁 ARABA YARIŞI', textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+          const SizedBox(width: 48),
+        ]),
+        const SizedBox(height: 20),
+        AZRoomCode(code: _code, accentColor: const Color(0xFFE53935)),
+        const SizedBox(height: 20),
+        AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Pilotlar (${_players.length}/4)',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+          const SizedBox(height: 14),
+          for (final e in _players.entries) ...[
+            final carId = e.value['carId'] as String? ?? 'sport',
+            final c = _cars.firstWhere((c) => c.id == carId, orElse: () => _cars[0]),
+            AZPlayerTile(name: '${c.emoji} ${e.value['name'] ?? e.key}',
+                isMe: e.key == widget.myKey, isHost: e.value['isHost'] == true,
+                emoji: c.emoji, present: true),
+          ],
+          if (!_canStart) const Text('En az 2 pilot gerekli',
+              style: TextStyle(color: Colors.white54, fontSize: 13)),
+        ])),
+        const Spacer(),
+        if (_isHost) AZButton(label: 'YARISMAYI BAŞLAT! 🏁', icon: Icons.sports_motorsports_rounded,
+            onPressed: _canStart ? _start : null,
+            color: const Color(0xFFE53935), width: double.infinity)
+        else const AZWaitingCard(message: 'Host yarışı başlatacak...'),
+      ])),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// GAME — Top-down racer
+// ═══════════════════════════════════════════════════════════════════
+
+// Pist checkpointleri (normalize 0-1)
+const _checkpoints = [
+  Offset(0.5, 0.12),  // üst merkez
+  Offset(0.88, 0.30), // sağ üst
+  Offset(0.88, 0.70), // sağ alt
+  Offset(0.5, 0.88),  // alt merkez
+  Offset(0.12, 0.70), // sol alt
+  Offset(0.12, 0.30), // sol üst
+];
+
+class RacingGameScreen extends StatefulWidget {
+  const RacingGameScreen({super.key, required this.roomId,
+      required this.myKey, required this.myName, required this.car});
+  final String roomId, myKey, myName; final CarData car;
+  @override State<RacingGameScreen> createState() => _RGameState();
+}
+
+class _RGameState extends State<RacingGameScreen> with SingleTickerProviderStateMixin {
+  final _db = FirebaseDatabase.instance.ref();
+  late DatabaseReference _ref;
+  StreamSubscription? _sub;
+  Map<String, dynamic> _room = {};
+  bool _finalShown = false;
+
+  // Fizik state
+  double _x = 0.5, _y = 0.75, _angle = -pi / 2;
+  double _speed = 0.0, _angularVel = 0.0;
+  bool _gasDown = false, _leftDown = false, _rightDown = false, _brakeDown = false;
+  int _myLap = 0, _myCheckpoint = 0;
+  bool _finished = false;
+  double _drift = 0.0;
+
+  Timer? _physicsTimer;
+  Timer? _syncTimer;
+  late AnimationController _countdownCtrl;
+  int _countdown = 3;
+  bool _started = false;
+
+  static const _laps = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _ref = _db.child('${GamePaths.racing}/${widget.roomId}');
+    _sub = _ref.onValue.listen(_onFB);
+    _countdownCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 1));
+    // Countdown
+    Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() => _countdown--);
+      if (_countdown <= 0) { t.cancel(); _startRace(); }
+    });
+  }
+
+  @override void dispose() {
+    _physicsTimer?.cancel(); _syncTimer?.cancel();
+    _countdownCtrl.dispose(); _sub?.cancel(); super.dispose();
+  }
+
+  void _onFB(DatabaseEvent e) {
+    if (!mounted || e.snapshot.value == null) return;
+    final d = Map<String, dynamic>.from(e.snapshot.value as Map);
+    setState(() => _room = d);
+    if (d['status'] == 'finished' && !_finalShown) {
+      _finalShown = true; AdService.instance.onGameEnd();
+      _physicsTimer?.cancel(); _syncTimer?.cancel();
+      Future.delayed(const Duration(milliseconds: 500), _showFinal);
+    }
+  }
+
+  void _startRace() {
+    if (!mounted) return;
+    setState(() => _started = true);
+    // 60fps fizik
+    _physicsTimer = Timer.periodic(const Duration(milliseconds: 16), (_) => _physicsTick());
+    // 10fps Firebase sync
+    _syncTimer = Timer.periodic(const Duration(milliseconds: 100), (_) => _syncToFirebase());
+  }
+
+  void _physicsTick() {
+    if (!mounted || !_started || _finished) return;
+    setState(() {
+      final car = widget.car;
+      const dt = 0.016;
+      const maxSpd = 0.006;
+
+      // Dönüş
+      final turnRate = 2.5 * car.handling;
+      if (_leftDown)  _angularVel = -turnRate;
+      else if (_rightDown) _angularVel = turnRate;
+      else _angularVel *= 0.7;
+
+      _angle += _angularVel * dt;
+      _drift = (_angularVel * _speed * 20).clamp(-1.0, 1.0);
+
+      // Hız
+      final accel = car.acceleration * 0.00025;
+      final brake = 0.0004;
+      if (_gasDown && !_brakeDown) {
+        _speed = (_speed + accel).clamp(0.0, maxSpd * car.maxSpeed);
+      } else if (_brakeDown) {
+        _speed = (_speed - brake).clamp(0.0, maxSpd * car.maxSpeed);
+      } else {
+        _speed *= 0.97; // friction
+      }
+
+      // Hareket
+      _x += cos(_angle) * _speed;
+      _y += sin(_angle) * _speed;
+
+      // Duvar çarpışması
+      if (_x < 0.06) { _x = 0.06; _speed *= 0.5; }
+      if (_x > 0.94) { _x = 0.94; _speed *= 0.5; }
+      if (_y < 0.06) { _y = 0.06; _speed *= 0.5; }
+      if (_y > 0.94) { _y = 0.94; _speed *= 0.5; }
+
+      // Checkpoint kontrolü
+      final nextCp = _checkpoints[_myCheckpoint % _checkpoints.length];
+      final dx = _x - nextCp.dx; final dy = _y - nextCp.dy;
+      if (dx * dx + dy * dy < 0.004) {
+        _myCheckpoint++;
+        HapticFeedback.lightImpact();
+        if (_myCheckpoint % _checkpoints.length == 0) {
+          _myLap++;
+          HapticFeedback.heavyImpact();
+          if (_myLap >= _laps) _finish();
+        }
+      }
+    });
+  }
+
+  Future<void> _syncToFirebase() async {
+    if (!_started) return;
+    await _ref.update({
+      'players/${widget.myKey}/x': _x,
+      'players/${widget.myKey}/y': _y,
+      'players/${widget.myKey}/angle': _angle,
+      'players/${widget.myKey}/speed': _speed,
+      'players/${widget.myKey}/lap': _myLap,
+      'players/${widget.myKey}/checkpoint': _myCheckpoint,
+    });
+  }
+
+  Future<void> _finish() async {
+    if (_finished) return;
+    setState(() { _finished = true; _speed = 0; });
+    _physicsTimer?.cancel();
+    final players = (_room['players'] as Map?) ?? {};
+    final finishedCount = players.values.where((p) => p['finished'] == true).length;
+    final pos = finishedCount + 1;
+    final score = [100, 75, 50, 25][min(pos - 1, 3)];
+    await _ref.update({
+      'players/${widget.myKey}/finished': true,
+      'players/${widget.myKey}/position': pos,
+      'players/${widget.myKey}/score': score,
+    });
+    // Herkez bitince oyun biter
+    final allFinished = players.length == (players.values.where((p) => p['finished'] == true).length + 1);
+    if (allFinished || pos == 1) {
+      await _ref.update({'status': 'finished', 'winner': widget.myKey});
+    }
+  }
+
+  void _showFinal() {
+    if (!mounted) return;
+    final players = (_room['players'] as Map?) ?? {};
+    final sorted = players.entries.toList()
+      ..sort((a, b) => ((a.value['position'] as int?) ?? 99)
+          .compareTo((b.value['position'] as int?) ?? 99));
+    const medals = ['🥇', '🥈', '🥉', '4.'];
+    showDialog(context: context, barrierDismissible: false, builder: (_) => AlertDialog(
+      title: const Text('🏁 Yarış Bitti!', textAlign: TextAlign.center),
+      content: Column(mainAxisSize: MainAxisSize.min,
+        children: sorted.asMap().entries.map((e) {
+          final isMe = e.value.key == widget.myKey;
+          final pos = (e.value.value['position'] as int?) ?? e.key + 1;
+          final score = (e.value.value['score'] as int?) ?? 0;
+          final carId = e.value.value['carId'] as String? ?? 'sport';
+          final c = _cars.firstWhere((c) => c.id == carId, orElse: () => _cars[0]);
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+                color: isMe ? Colors.orange.shade50 : null,
+                borderRadius: BorderRadius.circular(10)),
+            child: Row(children: [
+              Text(pos <= medals.length ? medals[pos - 1] : '?',
+                  style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 8),
+              Text(c.emoji, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              Expanded(child: Text(e.value.value['name'] as String? ?? e.value.key,
+                  style: TextStyle(fontWeight: isMe ? FontWeight.bold : FontWeight.normal))),
+              Text('$score pt', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ]),
+          );
+        }).toList(),
+      ),
+      actions: [FilledButton(
+        style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE53935)),
+        onPressed: () async {
+          await _db.child('${GamePaths.racing}/${widget.roomId}').remove();
+          if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+        },
+        child: const Text('Ana Menü'),
+      )],
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final players = (_room['players'] as Map?) ?? {};
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF2C2C2C),
+      body: SafeArea(child: Column(children: [
+        // HUD üst
+        Container(
+          color: const Color(0xFF1A1A2E),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          child: Row(children: [
+            Text('Tur: $_myLap/$_laps',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(width: 16),
+            Text('Hız: ${(_speed * 1000).toStringAsFixed(0)} km/h',
+                style: TextStyle(color: Colors.yellow.shade300, fontSize: 13)),
+            const Spacer(),
+            ...players.entries.map((e) {
+              final isMe = e.key == widget.myKey;
+              final lap = (e.value['lap'] as int?) ?? 0;
+              final carId = e.value['carId'] as String? ?? 'sport';
+              final c = _cars.firstWhere((cd) => cd.id == carId, orElse: () => _cars[0]);
+              return Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                    color: isMe ? Colors.white : Colors.white24,
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text('${c.emoji}$lap',
+                    style: TextStyle(color: isMe ? Colors.black87 : Colors.white,
+                        fontWeight: FontWeight.bold, fontSize: 12)),
+              );
+            }),
+          ]),
+        ),
+
+        // Pist
+        Expanded(child: LayoutBuilder(builder: (_, constraints) {
+          final W = constraints.maxWidth;
+          final H = constraints.maxHeight;
+          return GestureDetector(
+            child: Stack(children: [
+              // Zemin
+              CustomPaint(size: Size(W, H),
+                  painter: _TrackPainter(checkpoints: _checkpoints,
+                      myCheckpoint: _myCheckpoint % _checkpoints.length)),
+
+              // Rakip arabalar
+              for (final e in players.entries)
+                if (e.key != widget.myKey) ...[
+                  final ox = (e.value['x'] as double? ?? 0.5) * W,
+                  final oy = (e.value['y'] as double? ?? 0.5) * H,
+                  final oa = (e.value['angle'] as double? ?? 0.0),
+                  final carId = e.value['carId'] as String? ?? 'sport',
+                  final c = _cars.firstWhere((cd) => cd.id == carId, orElse: () => _cars[0]),
+                  Positioned(left: ox - 14, top: oy - 14,
+                      child: Transform.rotate(angle: oa,
+                          child: _CarSprite(emoji: c.emoji, color: c.color, size: 28))),
+                ],
+
+              // Mein auto
+              Positioned(left: _x * W - 16, top: _y * H - 16,
+                child: Transform.rotate(angle: _angle,
+                  child: _CarSprite(emoji: widget.car.emoji, color: widget.car.color,
+                      size: 32, isMe: true, drift: _drift.abs())),
+              ),
+
+              // Countdown
+              if (!_started)
+                Center(child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(color: Colors.black87,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.yellow, width: 3)),
+                  child: Text(_countdown > 0 ? '$_countdown' : 'GO!',
+                      style: TextStyle(color: _countdown > 0 ? Colors.white : Colors.green,
+                          fontSize: 48, fontWeight: FontWeight.bold)),
+                )),
+
+              // Finish banner
+              if (_finished)
+                Center(child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  decoration: BoxDecoration(color: Colors.black87,
+                      borderRadius: BorderRadius.circular(20)),
+                  child: const Text('🏁 BİTTİ!',
+                      style: TextStyle(color: Colors.amber, fontSize: 32,
+                          fontWeight: FontWeight.bold)),
+                )),
+            ]),
+          );
+        })),
+
+        // Kontroller
+        Container(
+          color: const Color(0xFF1A1A2E),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(children: [
+            // Sol
+            _CtrlBtn(label: '◀', onDown: () => setState(() => _leftDown = true),
+                onUp: () => setState(() => _leftDown = false), color: Colors.blue),
+            const SizedBox(width: 8),
+            // Fren
+            _CtrlBtn(label: '🔴', onDown: () => setState(() => _brakeDown = true),
+                onUp: () => setState(() => _brakeDown = false), color: Colors.red.shade800),
+            const Spacer(),
+            // Gaz
+            _CtrlBtn(label: '⚡ GAZ', onDown: () => setState(() => _gasDown = true),
+                onUp: () => setState(() => _gasDown = false),
+                color: _gasDown ? Colors.green.shade700 : Colors.green.shade900,
+                wide: true),
+            const Spacer(),
+            // Sağ
+            _CtrlBtn(label: '▶', onDown: () => setState(() => _rightDown = true),
+                onUp: () => setState(() => _rightDown = false), color: Colors.blue),
+          ]),
+        ),
+
+        const BannerAdWidget(),
+      ])),
+    );
+  }
+}
+
+class _CarSprite extends StatelessWidget {
+  const _CarSprite({required this.emoji, required this.color, required this.size,
+      this.isMe = false, this.drift = 0});
+  final String emoji; final Color color; final double size;
+  final bool isMe; final double drift;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size, height: size,
+    decoration: BoxDecoration(
+        color: color.withAlpha(isMe ? 180 : 120),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+            color: isMe ? (drift > 0.3 ? Colors.orange : Colors.white) : Colors.white30,
+            width: isMe ? 2 : 1),
+        boxShadow: isMe ? [BoxShadow(
+            color: (drift > 0.3 ? Colors.orange : color).withAlpha(150),
+            blurRadius: 8)] : []),
+    child: Center(child: Text(emoji,
+        style: TextStyle(fontSize: size * 0.5))),
+  );
+}
+
+class _TrackPainter extends CustomPainter {
+  const _TrackPainter({required this.checkpoints, required this.myCheckpoint});
+  final List<Offset> checkpoints; final int myCheckpoint;
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    // Zemin
+    canvas.drawRect(Rect.fromLTWH(0, 0, s.width, s.height),
+        Paint()..color = const Color(0xFF4CAF50));
+
+    // Pist (kapalı devre — oval/döngüsel)
+    final pts = checkpoints.map((cp) => Offset(cp.dx * s.width, cp.dy * s.height)).toList();
+
+    final trackPaint = Paint()
+      ..color = const Color(0xFF616161) ..strokeWidth = s.width * 0.18
+      ..strokeCap = StrokeCap.round ..style = PaintingStyle.stroke;
+    final path = Path();
+    path.moveTo(pts.first.dx, pts.first.dy);
+    for (var i = 1; i < pts.length; i++) path.lineTo(pts[i].dx, pts[i].dy);
+    path.close();
+    canvas.drawPath(path, trackPaint);
+
+    // Pist çizgisi
+    final linePaint = Paint()
+      ..color = Colors.white.withAlpha(80) ..strokeWidth = s.width * 0.002
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(path, linePaint);
+
+    // Checkpointler
+    for (var i = 0; i < pts.length; i++) {
+      final past = i < myCheckpoint;
+      canvas.drawCircle(pts[i], 14,
+          Paint()..color = past ? Colors.green.withAlpha(180) : Colors.yellow.withAlpha(180));
+      canvas.drawCircle(pts[i], 14,
+          Paint()..color = Colors.white ..style = PaintingStyle.stroke ..strokeWidth = 2);
+    }
+
+    // Start/Finish
+    canvas.drawRect(Rect.fromCenter(center: pts[0], width: s.width * 0.18, height: 4),
+        Paint()..color = Colors.white);
+    // Dama deseni
+    final checkPaint = Paint()..color = Colors.black;
+    for (var i = 0; i < 6; i++) {
+      if (i % 2 == 0) canvas.drawRect(
+          Rect.fromLTWH(pts[0].dx - s.width * 0.09 + i * s.width * 0.03,
+              pts[0].dy - 2, s.width * 0.03, 4), checkPaint);
+    }
+  }
+
+  @override bool shouldRepaint(_TrackPainter o) => o.myCheckpoint != myCheckpoint;
+}
+
+class _CtrlBtn extends StatelessWidget {
+  const _CtrlBtn({required this.label, required this.onDown, required this.onUp,
+      required this.color, this.wide = false});
+  final String label; final VoidCallback onDown, onUp;
+  final Color color; final bool wide;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTapDown: (_) => onDown(),
+    onTapUp: (_) => onUp(),
+    onTapCancel: onUp,
+    child: Container(
+      width: wide ? 100 : 60, height: 54,
+      decoration: BoxDecoration(
+          color: color, borderRadius: BorderRadius.circular(14),
+          boxShadow: [BoxShadow(color: color.withAlpha(150), blurRadius: 8)]),
+      child: Center(child: Text(label,
+          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+    ),
+  );
+}
