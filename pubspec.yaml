@@ -22,6 +22,15 @@ dependencies:
   # Ads
   google_mobile_ads: ^5.1.0
 
+  # Uygulama içi satın alma (reklamsız, coin paketleri, destek ol)
+  in_app_purchase: ^3.2.0
+
+  # Google Play Games Services (giriş, liderlik tablosu, başarımlar, bulut kayıt)
+  games_services: ^4.1.1
+
+  # Hızlı oyunlar için yerel profil/XP/liderlik depolama
+  shared_preferences: ^2.3.3
+
   # Animations
   flutter_animate: ^4.5.0
 
