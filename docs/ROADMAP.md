@@ -9,10 +9,13 @@ kalmak.**
 
 Proje zaten olgun bir temele sahip:
 
-- **11 online oda-tabanlı oyun** (Firebase Realtime Database, 6 haneli oda
+- **12 online oda-tabanlı oyun** (Firebase Realtime Database, 6 haneli oda
   kodu ile arkadaş davet etme): Mini Golf, Serbest Vuruş (futbol), Araba
   Yarışı, Adam Asmaca, Şehir Bulmaca, Kelime Bulmaca, Okey, Okey 101, Dama,
-  Dövüşçüler, Vampir Köylü, Yalancılar Kahvesi.
+  Dövüşçüler, Vampir Köylü, Yalancılar Kahvesi, **Hain Kim? (Among Us
+  tarzı — görev + gizli hain + toplantı/oylama, telif nedeniyle özgün isim
+  ve tema ile)**.
+- **15 hızlı (tek cihaz) oyun**: bkz. bölüm 3 ve 3.1.
 - AdMob entegrasyonu (banner + interstitial + rewarded), tutarlı bir tasarım
   dili (`AZTheme`, `AZColors`, `AZGameCard` vb.), güvenli yerel depolama.
 - **Eksik olan:** tek cihazda "pas-at-oyna" (hot-seat) basit oyunlar, XP/seviye
