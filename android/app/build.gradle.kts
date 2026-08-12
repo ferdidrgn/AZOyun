@@ -20,7 +20,11 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.ferdidrgn.azgame"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Firebase / AdMob / Games Services gibi native eklentiler flutter.ndkVersion'ın
+    // sağladığından daha yeni bir NDK istiyor; sabit, güncel bir sürüme pinliyoruz.
+    // Android Studio > SDK Manager > SDK Tools > NDK (Side by side) kısmından bu
+    // sürümün kurulu olduğundan emin ol.
+    ndkVersion = "27.0.12077973"
 
     defaultConfig {
         applicationId = "com.ferdidrgn.azgame"
