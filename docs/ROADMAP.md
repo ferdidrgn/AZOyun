@@ -15,7 +15,8 @@ Proje zaten olgun bir temele sahip:
   Dövüşçüler, Vampir Köylü, Yalancılar Kahvesi, **Hain Kim? (Among Us
   tarzı — görev + gizli hain + toplantı/oylama, telif nedeniyle özgün isim
   ve tema ile)**.
-- **15 hızlı (tek cihaz) oyun**: bkz. bölüm 3 ve 3.1.
+- **18 hızlı (tek cihaz) oyun**: bkz. bölüm 3, 3.1, 3.2 — içlerinde artık
+  öykü tabanlı bir polisiye oyun da var (bkz. bölüm 3.3).
 - AdMob entegrasyonu (banner + interstitial + rewarded), tutarlı bir tasarım
   dili (`AZTheme`, `AZColors`, `AZGameCard` vb.), güvenli yerel depolama.
 - **Eksik olan:** tek cihazda "pas-at-oyna" (hot-seat) basit oyunlar, XP/seviye
@@ -113,6 +114,27 @@ göre **XP + coin** verilir.
 Bu 5 oyun, tekrar kullanılabilir bir **`TurnBasedChase`** iskeleti üzerine
 kuruldu (`lib/core/quickplay/quickplay.dart`) — "cihazı sırayla ver, herkes
 bir oturum oynasın, en iyi sonuç kazansın" mantığını tek yerden yönetir.
+
+## 3.3 "Büyük oyun" — Gece Ekspresi Cinayeti (tamamlandı ✅)
+
+Heavy Rain / polisiye iz sürme esintili, tek seferlik ama tekrar oynanabilir
+öykü oyunu (`lib/features/mystery/`). Flutter'da gerçek 3D fizik/kamera
+motoru olmadığından "3D his" yerine **anlatı derinliğine** yatırım yapıldı:
+
+- Sinematik giriş (3 sahne, ilerleme çubuğu, hafif perspektif `Transform`
+  ile tilt edilmiş "dosya kartı" görünümü)
+- 🔍 Olay yeri: 6 tıklanabilir kanıt, her biri Not Defteri'ne ekleniyor
+- 🗣️ 4 şüpheli, her biri 2 soruluk diyalog; cevaplar kanıtlarla
+  çelişebiliyor (dikkatli oyuncu yalanı yakalar)
+- ⚖️ Suçlama ekranı → **4 farklı son** (1 doğru + 3 yanlış), gerçek
+  katilin tam hikâyesi ve twist'i her sonda açıklanıyor
+- Maç sonunda XP/başarım sistemine bağlı (`ProfileService.reportGameResult`)
+
+**Sırada olabilecekler:** bu "vaka motoru" genişletilip 2. bir vaka
+eklenebilir; ayrıca kullanıcı Steam'deki *Liars Bar*'a benzer bir
+mekanik istedi (kart blöfü + rus ruleti cezası) — mevcut "Yalancılar
+Kahvesi" bundan farklı çalışıyor, istenirse ayrı bir oyun olarak
+eklenebilir.
 
 ## 4. Oyun dışı sistemler (bu fazda kurulan altyapı)
 
