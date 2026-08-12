@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'core/config/firebase_options.dart';
+import 'core/quickplay/quickplay.dart';
 import 'core/services/ad_service.dart';
+import 'core/services/profile_service.dart';
 import 'core/theme/az_theme.dart';
 import 'core/widgets/az_widgets.dart';
 import 'core/widgets/banner_ad_widget.dart';
@@ -21,9 +23,23 @@ import 'features/fighter/fighter_screens.dart';
 import 'features/racing/racing_screens.dart';
 import 'features/checkers/dama_screens.dart';
 
+// HIZLI OYUNLAR — aynı cihazda 2-6 kişi ya da bilgisayara karşı
+import 'features/profile/profile_screen.dart';
+import 'features/quickgames/tic_tac_toe_screen.dart';
+import 'features/quickgames/connect_four_screen.dart';
+import 'features/quickgames/reversi_screen.dart';
+import 'features/quickgames/rps_screen.dart';
+import 'features/quickgames/memory_match_screen.dart';
+import 'features/quickgames/dots_boxes_screen.dart';
+import 'features/quickgames/nim_screen.dart';
+import 'features/quickgames/snake_screen.dart';
+import 'features/quickgames/game_2048_screen.dart';
+import 'features/quickgames/reflex_tap_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await ProfileService.instance.load();
   await AdService.instance.initialize();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -85,12 +101,121 @@ class HomeScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                           decoration: BoxDecoration(color: const Color(0x26FFFFFF),
                               borderRadius: BorderRadius.circular(20)),
-                          child: const Text('GERÇEK ZAMANLI · 11 OYUN',
+                          child: const Text('21 OYUN · ONLINE & AYNI CİHAZDA',
                               style: TextStyle(color: Colors.white70,
                                   fontSize: 11, letterSpacing: 1.5)),
                         ),
                       ]),
-                      const SizedBox(height: 36),
+                      const SizedBox(height: 20),
+
+                      // ── PROFİL ──────────────────────────────────────────
+                      GestureDetector(
+                        onTap: () => _push(context, const ProfileScreen()),
+                        child: AZFrostCard(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                          child: Row(children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                  color: Color(0x33FFFFFF), shape: BoxShape.circle),
+                              child: const Icon(Icons.person_rounded, color: Colors.white),
+                            ),
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Profilim',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15)),
+                                  Text('Seviye · Başarımlar · Liderlik Tablosu',
+                                      style: TextStyle(color: Colors.white60, fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded,
+                                color: Color(0x99FFFFFF), size: 16),
+                          ]),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // ── HIZLI OYUNLAR ───────────────────────────────────
+                      _Section('⚡  HIZLI OYUNLAR · Aynı Cihazda'),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 1.35,
+                        children: [
+                          _QuickTile(
+                            emoji: '❌⭕', title: 'XOX', subtitle: '2 Kişi · AI',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const TicTacToeLobbyScreen(),
+                                game: (p) => TicTacToeGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🔴🟡', title: "4'lü Bağlantı", subtitle: '2 Kişi · AI',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const ConnectFourLobbyScreen(),
+                                game: (p) => ConnectFourGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '⚫⚪', title: 'Reversi', subtitle: '2 Kişi · AI',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const ReversiLobbyScreen(),
+                                game: (p) => ReversiGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🪨📄✂️', title: 'Taş Kağıt Makas', subtitle: '2-6 Kişi · AI',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const RpsLobbyScreen(),
+                                game: (p) => RpsGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🧠', title: 'Hafıza Kartları', subtitle: '2-6 Kişi',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const MemoryMatchLobbyScreen(),
+                                game: (p) => MemoryMatchGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '📦', title: 'Çizgi Doldurma', subtitle: '2-4 Kişi',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const DotsBoxesLobbyScreen(),
+                                game: (p) => DotsBoxesGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🪨', title: 'Taş Alma', subtitle: '2 Kişi · AI',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const NimLobbyScreen(),
+                                game: (p) => NimGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🐍', title: 'Yılan', subtitle: '1-6 Kişi · Skor',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const SnakeLobbyScreen(),
+                                game: (p) => SnakeGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🔢', title: '2048', subtitle: '1-6 Kişi · Skor',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const Game2048LobbyScreen(),
+                                game: (p) => Game2048GameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '⚡', title: 'Refleks Çarpışması', subtitle: '2-6 Kişi',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const ReflexTapLobbyScreen(),
+                                game: (p) => ReflexTapGameScreen(players: p)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
 
                       // ── SPOR ────────────────────────────────────────────
                       _Section('⚽  SPOR'),
@@ -249,4 +374,66 @@ class HomeScreen extends StatelessWidget {
 
   void _push(BuildContext context, Widget screen) =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HIZLI OYUN NAVİGASYONU
+// ════════════════════════════════════════════════════════════════════════════
+
+/// Kurulum ekranını açar (oyuncu sayısı/adı/AI seçimi), oyuncu listesiyle
+/// dönerse oyun ekranına geçer. Kullanıcı kurulumdan geri dönerse hiçbir şey
+/// olmaz.
+Future<void> _openQuickGame(
+  BuildContext context, {
+  required Widget lobby,
+  required Widget Function(List<QPPlayer> players) game,
+}) async {
+  final players = await Navigator.push<List<QPPlayer>>(
+    context,
+    MaterialPageRoute(builder: (_) => lobby),
+  );
+  if (players == null || !context.mounted) return;
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => game(players)));
+}
+
+class _QuickTile extends StatelessWidget {
+  const _QuickTile({
+    required this.emoji,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final String emoji, title, subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AZRadius.lg),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0x1FFFFFFF),
+          borderRadius: BorderRadius.circular(AZRadius.lg),
+          border: Border.all(color: const Color(0x33FFFFFF)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 28)),
+            const SizedBox(height: 8),
+            Text(title,
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 2),
+            Text(subtitle, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+          ],
+        ),
+      ),
+    ),
+  );
 }
