@@ -22,6 +22,7 @@ import 'features/okey/okey_screens.dart';
 import 'features/fighter/fighter_screens.dart';
 import 'features/racing/racing_screens.dart';
 import 'features/checkers/dama_screens.dart';
+import 'features/impostor/impostor_screens.dart';
 
 // HIZLI OYUNLAR — aynı cihazda 2-6 kişi ya da bilgisayara karşı
 import 'features/profile/profile_screen.dart';
@@ -106,7 +107,7 @@ class HomeScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                           decoration: BoxDecoration(color: const Color(0x26FFFFFF),
                               borderRadius: BorderRadius.circular(20)),
-                          child: const Text('26 OYUN · ONLINE & AYNI CİHAZDA',
+                          child: const Text('27 OYUN · ONLINE & AYNI CİHAZDA',
                               style: TextStyle(color: Colors.white70,
                                   fontSize: 11, letterSpacing: 1.5)),
                         ),
@@ -350,6 +351,17 @@ class HomeScreen extends StatelessWidget {
 
                       // ── SOSYAL ──────────────────────────────────────────
                       _Section('🎭  SOSYAL'),
+                      AZGameCard(
+                        emoji: '👨‍🚀', title: 'Hain Kim?',
+                        subtitle: '4-10 Oyuncu · Görev tamamla · Gizli haini bul',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+                          begin: Alignment.topLeft, end: Alignment.bottomRight,
+                        ),
+                        onTap: () => _push(context, const ImpostorLobbyScreen()),
+                        badge: 'YENİ',
+                      ),
+                      const SizedBox(height: 12),
                       AZGameCard(
                         emoji: '🧛', title: 'Vampir Köylü',
                         subtitle: '4-8 Oyuncu · Rol bazlı · Mafia tarzı',
