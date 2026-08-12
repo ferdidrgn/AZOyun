@@ -311,13 +311,13 @@ class _RRoomState extends State<RacingRoomScreen> {
           Text('Pilotlar (${_players.length}/4)',
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
           const SizedBox(height: 14),
-          for (final e in _players.entries) ...[
-            final carId = e.value['carId'] as String? ?? 'sport',
-            final c = _cars.firstWhere((c) => c.id == carId, orElse: () => _cars[0]),
-            AZPlayerTile(name: '${c.emoji} ${e.value['name'] ?? e.key}',
+          ..._players.entries.map((e) {
+            final carId = e.value['carId'] as String? ?? 'sport';
+            final c = _cars.firstWhere((c) => c.id == carId, orElse: () => _cars[0]);
+            return AZPlayerTile(name: '${c.emoji} ${e.value['name'] ?? e.key}',
                 isMe: e.key == widget.myKey, isHost: e.value['isHost'] == true,
-                emoji: c.emoji, present: true),
-          ],
+                emoji: c.emoji, present: true);
+          }),
           if (!_canStart) const Text('En az 2 pilot gerekli',
               style: TextStyle(color: Colors.white54, fontSize: 13)),
         ])),
@@ -593,17 +593,16 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
                       myCheckpoint: _myCheckpoint % _checkpoints.length)),
 
               // Rakip arabalar
-              for (final e in players.entries)
-                if (e.key != widget.myKey) ...[
-                  final ox = (e.value['x'] as double? ?? 0.5) * W,
-                  final oy = (e.value['y'] as double? ?? 0.5) * H,
-                  final oa = (e.value['angle'] as double? ?? 0.0),
-                  final carId = e.value['carId'] as String? ?? 'sport',
-                  final c = _cars.firstWhere((cd) => cd.id == carId, orElse: () => _cars[0]),
-                  Positioned(left: ox - 14, top: oy - 14,
-                      child: Transform.rotate(angle: oa,
-                          child: _CarSprite(emoji: c.emoji, color: c.color, size: 28))),
-                ],
+              ...players.entries.where((e) => e.key != widget.myKey).map((e) {
+                final ox = (e.value['x'] as double? ?? 0.5) * W;
+                final oy = (e.value['y'] as double? ?? 0.5) * H;
+                final oa = (e.value['angle'] as double? ?? 0.0);
+                final carId = e.value['carId'] as String? ?? 'sport';
+                final c = _cars.firstWhere((cd) => cd.id == carId, orElse: () => _cars[0]);
+                return Positioned(left: ox - 14, top: oy - 14,
+                    child: Transform.rotate(angle: oa,
+                        child: _CarSprite(emoji: c.emoji, color: c.color, size: 28)));
+              }),
 
               // Mein auto
               Positioned(left: _x * W - 16, top: _y * H - 16,

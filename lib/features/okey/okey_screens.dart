@@ -288,7 +288,7 @@ class _ORoomState extends State<OkeyRoomScreen> {
     // Okey göstergesi
     if (remaining.isNotEmpty) {
       final ind = remaining.first;
-      final okN = (ind['n'] as int % 13) + 1;
+      final okN = ((ind['n'] as int) % 13) + 1;
       updates['indicator'] = ind;
       updates['okeyN'] = okN;
       updates['okeyC'] = ind['c'];

@@ -35,6 +35,11 @@ import 'features/quickgames/nim_screen.dart';
 import 'features/quickgames/snake_screen.dart';
 import 'features/quickgames/game_2048_screen.dart';
 import 'features/quickgames/reflex_tap_screen.dart';
+import 'features/quickgames/trivia_screen.dart';
+import 'features/quickgames/bulls_cows_screen.dart';
+import 'features/quickgames/balloon_pop_screen.dart';
+import 'features/quickgames/dice_party_screen.dart';
+import 'features/quickgames/sliding_puzzle_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -101,7 +106,7 @@ class HomeScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                           decoration: BoxDecoration(color: const Color(0x26FFFFFF),
                               borderRadius: BorderRadius.circular(20)),
-                          child: const Text('21 OYUN · ONLINE & AYNI CİHAZDA',
+                          child: const Text('26 OYUN · ONLINE & AYNI CİHAZDA',
                               style: TextStyle(color: Colors.white70,
                                   fontSize: 11, letterSpacing: 1.5)),
                         ),
@@ -212,6 +217,36 @@ class HomeScreen extends StatelessWidget {
                             onTap: () => _openQuickGame(context,
                                 lobby: const ReflexTapLobbyScreen(),
                                 game: (p) => ReflexTapGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🧠❓', title: 'Kim Bilir?', subtitle: '1-6 Kişi · Skor',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const TriviaLobbyScreen(),
+                                game: (p) => TriviaGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🔢🕵️', title: 'Sayı Tahmin Düellosu', subtitle: '1-6 Kişi · Skor',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const BullsCowsLobbyScreen(),
+                                game: (p) => BullsCowsGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🎈', title: 'Balon Patlatma', subtitle: '1-6 Kişi · Skor',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const BalloonPopLobbyScreen(),
+                                game: (p) => BalloonPopGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🎲', title: 'Parti Zarı', subtitle: '1-6 Kişi · Skor',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const DicePartyLobbyScreen(),
+                                game: (p) => DicePartyGameScreen(players: p)),
+                          ),
+                          _QuickTile(
+                            emoji: '🧩', title: 'Kayan Yapboz', subtitle: '1-6 Kişi · Skor',
+                            onTap: () => _openQuickGame(context,
+                                lobby: const SlidingPuzzleLobbyScreen(),
+                                game: (p) => SlidingPuzzleGameScreen(players: p)),
                           ),
                         ],
                       ),
