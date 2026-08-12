@@ -20,6 +20,7 @@ const List<String> kQuickGameIds = [
   'jumpdash',
   'colormemory',
   'minibowling',
+  'mysterycase1',
 ];
 
 const Map<String, String> kQuickGameTitles = {
@@ -41,4 +42,5 @@ const Map<String, String> kQuickGameTitles = {
   'jumpdash': 'Zıpla Geç',
   'colormemory': 'Renk Hafızası',
   'minibowling': 'Mini Bovling',
+  'mysterycase1': 'Gece Ekspresi Cinayeti',
 };

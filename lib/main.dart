@@ -23,6 +23,7 @@ import 'features/fighter/fighter_screens.dart';
 import 'features/racing/racing_screens.dart';
 import 'features/checkers/dama_screens.dart';
 import 'features/impostor/impostor_screens.dart';
+import 'features/mystery/mystery_case_screen.dart';
 
 // HIZLI OYUNLAR — aynı cihazda 2-6 kişi ya da bilgisayara karşı
 import 'features/profile/profile_screen.dart';
@@ -126,7 +127,7 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       decoration: BoxDecoration(color: const Color(0x26FFFFFF),
           borderRadius: BorderRadius.circular(20)),
-      child: const Text('30 OYUN · ONLINE & AYNI CİHAZDA',
+      child: const Text('31 OYUN · ONLINE & AYNI CİHAZDA',
           style: TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1.2)),
     ),
   ]);
@@ -205,6 +206,16 @@ class _QuickGamesTab extends StatelessWidget {
   Widget build(BuildContext context) => SingleChildScrollView(
     padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _sectionHeader('🕵️  BÜYÜK OYUN'),
+      AZGameCard(
+        emoji: '🚂', title: 'Gece Ekspresi Cinayeti',
+        subtitle: 'Polisiye · İz Sürme · Şaşırtıcı Final · ~10 dk',
+        gradient: kNoirGradient,
+        badge: 'YENİ',
+        onTap: () => _push(context, const MysteryLobbyScreen()),
+      ),
+      const SizedBox(height: 26),
+
       _sectionHeader('🧠  STRATEJİ OYUNLARI'),
       _grid([
         _QuickTile(
