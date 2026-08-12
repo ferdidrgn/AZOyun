@@ -41,6 +41,9 @@ import 'features/quickgames/bulls_cows_screen.dart';
 import 'features/quickgames/balloon_pop_screen.dart';
 import 'features/quickgames/dice_party_screen.dart';
 import 'features/quickgames/sliding_puzzle_screen.dart';
+import 'features/quickgames/jump_dash_screen.dart';
+import 'features/quickgames/color_memory_screen.dart';
+import 'features/quickgames/mini_bowling_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -123,7 +126,7 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       decoration: BoxDecoration(color: const Color(0x26FFFFFF),
           borderRadius: BorderRadius.circular(20)),
-      child: const Text('27 OYUN · ONLINE & AYNI CİHAZDA',
+      child: const Text('30 OYUN · ONLINE & AYNI CİHAZDA',
           style: TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1.2)),
     ),
   ]);
@@ -194,109 +197,146 @@ class _HomeTabBar extends StatelessWidget {
 class _QuickGamesTab extends StatelessWidget {
   const _QuickGamesTab();
 
+  static const _strategyGrad = AZColors.gradPurple;
+  static const _partyGrad = AZColors.gradOrange;
+  static const _arcadeGrad = AZColors.gradCyan;
+
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
     padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-    child: GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.35,
-      children: [
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _sectionHeader('🧠  STRATEJİ OYUNLARI'),
+      _grid([
         _QuickTile(
-          emoji: '❌⭕', title: 'XOX', subtitle: '2 Kişi · AI',
+          emoji: '❌⭕', title: 'XOX', subtitle: '2 Kişi · AI', gradient: _strategyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const TicTacToeLobbyScreen(),
               game: (p) => TicTacToeGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🔴🟡', title: "4'lü Bağlantı", subtitle: '2 Kişi · AI',
+          emoji: '🔴🟡', title: "4'lü Bağlantı", subtitle: '2 Kişi · AI', gradient: _strategyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const ConnectFourLobbyScreen(),
               game: (p) => ConnectFourGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '⚫⚪', title: 'Reversi', subtitle: '2 Kişi · AI',
+          emoji: '⚫⚪', title: 'Reversi', subtitle: '2 Kişi · AI', gradient: _strategyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const ReversiLobbyScreen(),
               game: (p) => ReversiGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🪨📄✂️', title: 'Taş Kağıt Makas', subtitle: '2-6 Kişi · AI',
+          emoji: '🪨', title: 'Taş Alma', subtitle: '2 Kişi · AI', gradient: _strategyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const NimLobbyScreen(),
+              game: (p) => NimGameScreen(players: p)),
+        ),
+      ]),
+      const SizedBox(height: 26),
+
+      _sectionHeader('🎉  PARTİ OYUNLARI'),
+      _grid([
+        _QuickTile(
+          emoji: '🪨📄✂️', title: 'Taş Kağıt Makas', subtitle: '2-6 Kişi · AI', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const RpsLobbyScreen(),
               game: (p) => RpsGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🧠', title: 'Hafıza Kartları', subtitle: '2-6 Kişi',
+          emoji: '🧠', title: 'Hafıza Kartları', subtitle: '2-6 Kişi', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const MemoryMatchLobbyScreen(),
               game: (p) => MemoryMatchGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '📦', title: 'Çizgi Doldurma', subtitle: '2-4 Kişi',
+          emoji: '📦', title: 'Çizgi Doldurma', subtitle: '2-4 Kişi', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const DotsBoxesLobbyScreen(),
               game: (p) => DotsBoxesGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🪨', title: 'Taş Alma', subtitle: '2 Kişi · AI',
-          onTap: () => _openQuickGame(context,
-              lobby: const NimLobbyScreen(),
-              game: (p) => NimGameScreen(players: p)),
-        ),
-        _QuickTile(
-          emoji: '🐍', title: 'Yılan', subtitle: '1-6 Kişi · Skor',
-          onTap: () => _openQuickGame(context,
-              lobby: const SnakeLobbyScreen(),
-              game: (p) => SnakeGameScreen(players: p)),
-        ),
-        _QuickTile(
-          emoji: '🔢', title: '2048', subtitle: '1-6 Kişi · Skor',
-          onTap: () => _openQuickGame(context,
-              lobby: const Game2048LobbyScreen(),
-              game: (p) => Game2048GameScreen(players: p)),
-        ),
-        _QuickTile(
-          emoji: '⚡', title: 'Refleks Çarpışması', subtitle: '2-6 Kişi',
+          emoji: '⚡', title: 'Refleks Çarpışması', subtitle: '2-6 Kişi', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const ReflexTapLobbyScreen(),
               game: (p) => ReflexTapGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🧠❓', title: 'Kim Bilir?', subtitle: '1-6 Kişi · Skor',
+          emoji: '🧠❓', title: 'Kim Bilir?', subtitle: '1-6 Kişi · Skor', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const TriviaLobbyScreen(),
               game: (p) => TriviaGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🔢🕵️', title: 'Sayı Tahmin Düellosu', subtitle: '1-6 Kişi · Skor',
+          emoji: '🔢🕵️', title: 'Sayı Tahmin Düellosu', subtitle: '1-6 Kişi · Skor', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const BullsCowsLobbyScreen(),
               game: (p) => BullsCowsGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🎈', title: 'Balon Patlatma', subtitle: '1-6 Kişi · Skor',
+          emoji: '🎈', title: 'Balon Patlatma', subtitle: '1-6 Kişi · Skor', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const BalloonPopLobbyScreen(),
               game: (p) => BalloonPopGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🎲', title: 'Parti Zarı', subtitle: '1-6 Kişi · Skor',
+          emoji: '🎲', title: 'Parti Zarı', subtitle: '1-6 Kişi · Skor', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const DicePartyLobbyScreen(),
               game: (p) => DicePartyGameScreen(players: p)),
         ),
+      ]),
+      const SizedBox(height: 26),
+
+      _sectionHeader('🕹️  ARCADE & SKOR'),
+      _grid([
         _QuickTile(
-          emoji: '🧩', title: 'Kayan Yapboz', subtitle: '1-6 Kişi · Skor',
+          emoji: '🐍', title: 'Yılan', subtitle: '1-6 Kişi · Skor', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const SnakeLobbyScreen(),
+              game: (p) => SnakeGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🔢', title: '2048', subtitle: '1-6 Kişi · Skor', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const Game2048LobbyScreen(),
+              game: (p) => Game2048GameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🧩', title: 'Kayan Yapboz', subtitle: '1-6 Kişi · Skor', gradient: _arcadeGrad,
           onTap: () => _openQuickGame(context,
               lobby: const SlidingPuzzleLobbyScreen(),
               game: (p) => SlidingPuzzleGameScreen(players: p)),
         ),
-      ],
-    ),
+        _QuickTile(
+          emoji: '🐤', title: 'Zıpla Geç', subtitle: '1-6 Kişi · Skor', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const JumpDashLobbyScreen(),
+              game: (p) => JumpDashGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🎨', title: 'Renk Hafızası', subtitle: '1-6 Kişi · Skor', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const ColorMemoryLobbyScreen(),
+              game: (p) => ColorMemoryGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🎳', title: 'Mini Bovling', subtitle: '1-6 Kişi · 3D · Skor', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const MiniBowlingLobbyScreen(),
+              game: (p) => MiniBowlingGameScreen(players: p)),
+        ),
+      ]),
+    ]),
+  );
+
+  Widget _grid(List<Widget> tiles) => GridView.count(
+    crossAxisCount: 2,
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    crossAxisSpacing: 12,
+    mainAxisSpacing: 12,
+    childAspectRatio: 1.35,
+    children: tiles,
   );
 }
 
@@ -489,39 +529,60 @@ class _QuickTile extends StatelessWidget {
     required this.emoji,
     required this.title,
     required this.subtitle,
+    required this.gradient,
     required this.onTap,
   });
 
   final String emoji, title, subtitle;
+  final Gradient gradient;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AZRadius.lg),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0x1FFFFFFF),
-          borderRadius: BorderRadius.circular(AZRadius.lg),
-          border: Border.all(color: const Color(0x33FFFFFF)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 28)),
-            const SizedBox(height: 8),
-            Text(title,
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-            const SizedBox(height: 2),
-            Text(subtitle, style: const TextStyle(color: Colors.white60, fontSize: 11)),
-          ],
+  Widget build(BuildContext context) {
+    final accent =
+        gradient is LinearGradient ? (gradient as LinearGradient).colors.first : AZColors.purple;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AZRadius.lg),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(AZRadius.lg),
+            boxShadow: [
+              BoxShadow(color: accent.withAlpha(70), blurRadius: 10, offset: const Offset(0, 5)),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration:
+                      const BoxDecoration(color: Color(0x33FFFFFF), shape: BoxShape.circle),
+                  child: Center(child: Text(emoji, style: const TextStyle(fontSize: 18))),
+                ),
+                const SizedBox(height: 10),
+                Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 10.5)),
+              ],
+            ),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

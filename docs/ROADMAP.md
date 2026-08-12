@@ -51,16 +51,29 @@ ise aynı masadaki arkadaşlar / tek başına oyalanma için.
 ### C) Arcade / tek kişilik (skor tabanlı, sırayla yüksek skor yarışı olarak da oynanır)
 16. Yılan (Snake) ✅ *seçildi*
 17. 2048 ✅ *seçildi*
-18. Flappy tarzı "Zıpla Geç" — gelecek
+18. Flappy tarzı "Zıpla Geç" ✅ *seçildi (Faz 3)*
 19. Kayan Yapboz (15-puzzle) ✅ *seçildi (Faz 2)*
-20. Renk Eşleştir / Simon Says hafıza dizisi — gelecek
+20. Renk Eşleştir / Simon Says hafıza dizisi ✅ *seçildi (Faz 3, "Renk Hafızası")*
 21. Meyve Kesme tarzı dokunma oyunu — gelecek
 
-### D) 3D / fizik tabanlı (orta-uzun vadeli, Flame/Forge3D veya basit 3D gerektirir)
-22. 3D Bowling (mini bovling) — gelecek
+### D) 3D / fizik tabanlı (Transform + perspektif ile "pseudo-3D" görünüm)
+22. 3D Bowling (mini bovling) ✅ *seçildi (Faz 3, "Mini Bovling" — perspektif Transform ile tilt edilmiş lane, nişan+güç zamanlama mekaniği)*
 23. 3D Air Hockey — gelecek
 24. Top Toplama / Labirent (tilt/dokunma kontrollü 3D top) — gelecek
 25. Basit araba park etme (3D perspektif) — gelecek
+
+## 3.2 Faz 3 — eklenen 3 oyun (tamamlandı ✅)
+
+| # | Oyun | Oyuncu | Tür | Not |
+|---|------|--------|-----|-----|
+| 16 | Zıpla Geç | 1-6 (sırayla) | Arcade (gerçek zamanlı) | Flappy Bird tarzı, dokun-zıpla, engellerden geç |
+| 17 | Renk Hafızası | 1-6 (sırayla) | Arcade (hafıza) | Simon Says — büyüyen renk dizisini tekrarla |
+| 18 | Mini Bovling | 1-6 (sırayla) | Arcade / pseudo-3D | `Transform` ile perspektif tilt edilmiş lane; 2 atışlık çerçeve |
+
+Ayrıca bu turda **tasarım yenilendi**: `AZGameCard` basılma animasyonu ve
+daha yumuşak gölge/rozet tasarımı aldı; Hızlı Oyunlar sekmesi tek büyük
+gride yerine **Strateji / Parti / Arcade & Skor** olmak üzere 3 alt
+bölüme ayrıldı, her bölümün kendi renk kimliği var.
 
 > Not: "3D" oyunlar Flutter'da ya `flutter_3d_controller`/`three_dart` gibi
 > paketler ya da Flame + basit izometrik çizim ile yapılabilir. İlk fazda
