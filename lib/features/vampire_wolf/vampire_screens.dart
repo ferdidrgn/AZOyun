@@ -120,7 +120,7 @@ class _VRS extends State<VampireRoomScreen> {
     if(d['status']=='playing'&&!_nav){_nav=true;
     Navigator.pushReplacement(context,MaterialPageRoute(builder:(final _)=>VampireGameScreen(roomId:widget.roomId,myKey:widget.myKey,myName:widget.myName)));}
   }
-  Map get _players=>(_room['players'] as Map?)??{};
+  Map<String,dynamic> get _players=>Map<String,dynamic>.from((_room['players'] as Map?)??{});
   String get _code=>_room['code']??'------';
   bool get _isHost=>widget.myKey=='p1';
   bool get _canStart=>_players.length>=4;
@@ -161,7 +161,7 @@ class _VRS extends State<VampireRoomScreen> {
                   style:const TextStyle(color:Colors.white,fontWeight:FontWeight.bold,fontSize:15)),
               const SizedBox(height:14),
               for(final e in _players.entries)
-                AZPlayerTile(name:e.value['name'] as String??e.key,isMe:e.key==widget.myKey,
+                AZPlayerTile(name:e.value['name'] as String? ?? e.key,isMe:e.key==widget.myKey,
                     isHost:e.value['isHost']==true,emoji:'🧛',present:true),
               if(!_canStart) Text('En az ${4-_players.length} oyuncu daha',
                   style:const TextStyle(color:Colors.white54,fontSize:13)),
@@ -204,10 +204,10 @@ class _VGS extends State<VampireGameScreen> {
 
   Future<void> _checkVotes(final Map<String,dynamic> d) async {
     if(_processing)return;
-    final phase=d['phase'] as String??'night';
+    final phase=d['phase'] as String? ?? 'night';
     if(phase=='dawn'||phase=='dusk')return; // geçiş aşamaları, bekle
     final players=Map<String,dynamic>.from((d['players'] as Map?)??{});
-    final alive=players.entries.where((final e)=>e.value['alive'] as bool?==true).toList();
+    final alive=players.entries.where((final e)=>(e.value['alive'] as bool?)==true).toList();
     final voters=phase=='night'
         ? alive.where((final e)=>(e.value['role'] as String?)=='vampire').toList()
         : alive;
@@ -217,7 +217,7 @@ class _VGS extends State<VampireGameScreen> {
     setState(()=>_processing=true);
     try {
       final votes=<String,int>{};
-      for(final v in voters){final g=v.value['vote'] as String??'';if(g.isNotEmpty)votes[g]=(votes[g]??0)+1;}
+      for(final v in voters){final g=v.value['vote'] as String? ?? '';if(g.isNotEmpty)votes[g]=(votes[g]??0)+1;}
       String? elim; int mx=0; votes.forEach((final k,final v){if(v>mx){mx=v;elim=k;}});
       final upd=<String,dynamic>{};
       for(final p in alive) upd['players/${p.key}/vote']='';
@@ -233,7 +233,7 @@ class _VGS extends State<VampireGameScreen> {
       } else {
         // Gündüz: elim, akşama geç, sonra geceye
         if(elim!=null){upd['players/$elim/alive']=false;upd['lastEliminated']=elim;}
-        upd['phase']='dusk'; upd['day']=(d['day'] as int??1)+1;
+        upd['phase']='dusk'; upd['day']=(d['day'] as int? ?? 1)+1;
         await _ref.update(upd);
         await _checkWin();
         await Future.delayed(const Duration(seconds:3));
@@ -247,14 +247,14 @@ class _VGS extends State<VampireGameScreen> {
   Future<void> _checkWin() async {
     final snap=await _ref.child('players').get(); if(!snap.exists)return;
     final players=Map<String,dynamic>.from(snap.value as Map);
-    final alive=players.entries.where((final e)=>e.value['alive'] as bool?==true);
+    final alive=players.entries.where((final e)=>(e.value['alive'] as bool?)==true);
     final vamps=alive.where((final e)=>(e.value['role'] as String?)=='vampire').length;
     final villagers=alive.where((final e)=>(e.value['role'] as String?)=='villager').length;
     if(vamps==0) await _ref.update({'status':'finished','winner':'villagers'});
     else if(vamps>=villagers) await _ref.update({'status':'finished','winner':'vampires'});
   }
 
-  Map get _players=>(_room['players'] as Map?)??{};
+  Map<String,dynamic> get _players=>Map<String,dynamic>.from((_room['players'] as Map?)??{});
   String get _phase=>(_room['phase'] as String?)?? 'night';
   int get _day=>(_room['day'] as int?)?? 1;
   bool get _isNight=>_phase=='night';
@@ -302,7 +302,7 @@ class _VGS extends State<VampireGameScreen> {
         ..._players.entries.map((final e)=>Padding(padding:const EdgeInsets.symmetric(vertical:3),
             child:Row(mainAxisAlignment:MainAxisAlignment.center,children:[
               Text((e.value['role'] as String?)=='vampire'?'🧛':'👨‍🌾'),const SizedBox(width:8),
-              Text(e.value['name'] as String??e.key),
+              Text(e.value['name'] as String? ?? e.key),
               if(e.value['alive']!=true) const Text(' ☠️'),
             ]))),
       ]),
@@ -417,7 +417,7 @@ class _VGS extends State<VampireGameScreen> {
                       backgroundColor:_isNight?Colors.deepPurple.shade700:Colors.amber.shade600,
                       foregroundColor:Colors.white,padding:const EdgeInsets.all(16),
                       shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(14))),
-                  child:Text(e.value['name'] as String??e.key,
+                  child:Text(e.value['name'] as String? ?? e.key,
                       style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold))),
             )).toList())),
           ]));

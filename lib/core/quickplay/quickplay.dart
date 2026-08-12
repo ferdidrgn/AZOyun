@@ -6,7 +6,6 @@ import '../services/leaderboard_service.dart';
 import '../services/profile_service.dart';
 import '../theme/az_theme.dart';
 import '../widgets/az_widgets.dart';
-import 'game_ids.dart';
 
 export 'game_ids.dart';
 
@@ -411,4 +410,152 @@ class _ResultDialog extends StatelessWidget {
             ),
         ],
       );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIRAYLA OYNA — ORTAK İSKELET
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Her oyuncunun cihazı sırayla alıp bir oturum oynadığı, en iyi sonucun
+/// kazandığı basit oyunlar için ortak kabuk (Kim Bilir, Sayı Tahmini, Balon
+/// Patlatma, Zar, Kayan Yapboz vb.). Oturumun kendisini [sessionBuilder]
+/// üretir; oturum bitince [onFinished] ile skoru bildirir.
+class TurnBasedChase extends StatefulWidget {
+  const TurnBasedChase({
+    super.key,
+    required this.players,
+    required this.gameId,
+    required this.gradient,
+    required this.title,
+    required this.emoji,
+    required this.sessionBuilder,
+    this.higherIsBetter = true,
+    this.formatScore,
+    this.handoffHint,
+  });
+
+  final List<QPPlayer> players;
+  final String gameId;
+  final Gradient gradient;
+  final String title;
+  final String emoji;
+
+  /// Bir oyuncunun oturumunu oluşturur. Oturum bitince [onFinished] çağrılır.
+  final Widget Function(
+    BuildContext context,
+    QPPlayer player,
+    void Function(int score) onFinished,
+  ) sessionBuilder;
+
+  /// true ise en yüksek skor kazanır (varsayılan), false ise en düşük
+  /// (ör. en az hamle/deneme) kazanır.
+  final bool higherIsBetter;
+  final String Function(int score)? formatScore;
+  final String? handoffHint;
+
+  @override
+  State<TurnBasedChase> createState() => _TurnBasedChaseState();
+}
+
+class _TurnBasedChaseState extends State<TurnBasedChase> {
+  late List<int> _scores = List.filled(widget.players.length, 0);
+  int _playerIndex = 0;
+  bool _waitingHandoff = true;
+  int _sessionKey = 0;
+
+  void _start() => setState(() => _waitingHandoff = false);
+
+  void _onSessionFinished(int score) {
+    _scores[_playerIndex] = score;
+    if (_playerIndex < widget.players.length - 1) {
+      setState(() {
+        _playerIndex++;
+        _waitingHandoff = true;
+        _sessionKey++;
+      });
+    } else {
+      _finishAll();
+    }
+  }
+
+  Future<void> _finishAll() async {
+    var bestIdx = 0;
+    for (var i = 1; i < _scores.length; i++) {
+      final better =
+          widget.higherIsBetter ? _scores[i] > _scores[bestIdx] : _scores[i] < _scores[bestIdx];
+      if (better) bestIdx = i;
+    }
+    final winner = widget.players[bestIdx];
+    final winnerScore = _scores[bestIdx];
+    final display = widget.formatScore?.call(winnerScore) ?? '$winnerScore puan';
+    if (!mounted) return;
+    await QuickPlayResult.show(
+      context,
+      gameId: widget.gameId,
+      resultTitle: '${winner.name} kazandı! 🏆',
+      resultMessage: '${winner.name}: $display',
+      humanWon: true,
+      score: winnerScore,
+      scorerName: winner.name,
+      onRematch: () {
+        setState(() {
+          _playerIndex = 0;
+          _waitingHandoff = true;
+          _sessionKey++;
+          _scores = List.filled(widget.players.length, 0);
+        });
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final singlePlayer = widget.players.length == 1;
+    return AZGradientScaffold(
+      gradient: widget.gradient,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(children: [
+          QuickPlayTopBar(title: widget.title),
+          const SizedBox(height: 12),
+          if (_waitingHandoff)
+            Expanded(
+              child: Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(widget.emoji, style: const TextStyle(fontSize: 56)),
+                  const SizedBox(height: 16),
+                  Text(
+                    singlePlayer
+                        ? 'Hazır mısın?'
+                        : 'Sıra: ${widget.players[_playerIndex].name}',
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  if (widget.handoffHint != null) ...[
+                    const SizedBox(height: 10),
+                    Text(widget.handoffHint!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white60, fontSize: 13)),
+                  ],
+                  const SizedBox(height: 24),
+                  AZButton(
+                      label: 'BAŞLA',
+                      icon: Icons.play_arrow_rounded,
+                      color: AZColors.purple,
+                      onPressed: _start),
+                ]),
+              ),
+            )
+          else
+            Expanded(
+              child: KeyedSubtree(
+                key: ValueKey(_sessionKey),
+                child: widget.sessionBuilder(
+                    context, widget.players[_playerIndex], _onSessionFinished),
+              ),
+            ),
+        ]),
+      ),
+    );
+  }
 }

@@ -12,6 +12,11 @@ const List<String> kQuickGameIds = [
   'snake',
   '2048',
   'reflex',
+  'trivia',
+  'bullscows',
+  'balloonpop',
+  'diceparty',
+  'slidingpuzzle',
 ];
 
 const Map<String, String> kQuickGameTitles = {
@@ -25,4 +30,9 @@ const Map<String, String> kQuickGameTitles = {
   'snake': 'Yılan',
   '2048': '2048',
   'reflex': 'Refleks Çarpışması',
+  'trivia': 'Kim Bilir?',
+  'bullscows': 'Sayı Tahmin Düellosu',
+  'balloonpop': 'Balon Patlatma',
+  'diceparty': 'Parti Zarı',
+  'slidingpuzzle': 'Kayan Yapboz',
 };

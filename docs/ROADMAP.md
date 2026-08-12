@@ -40,16 +40,16 @@ ise aynı masadaki arkadaşlar / tek başına oyalanma için.
 9. Hafıza Kartları (eşleştirme) ✅ *seçildi*
 10. Çizgi Doldurma (Dots and Boxes) ✅ *seçildi*
 11. Refleks Çarpışması (en hızlı basan kazanır) ✅ *seçildi*
-12. Kim Bilir? (trivia / bilgi yarışması, sırayla soru) — gelecek
-13. Sayı Tahmin Düellosu (Bulls & Cows) — gelecek
-14. Balon Patlatma Yarışı (dokunma hızı) — gelecek
-15. Parti Zarı (Yahtzee tarzı basit zar oyunu) — gelecek
+12. Kim Bilir? (trivia / bilgi yarışması, sırayla soru) ✅ *seçildi (Faz 2)*
+13. Sayı Tahmin Düellosu (Bulls & Cows) ✅ *seçildi (Faz 2)*
+14. Balon Patlatma Yarışı (dokunma hızı) ✅ *seçildi (Faz 2)*
+15. Parti Zarı (basit zar oyunu, set bonuslu) ✅ *seçildi (Faz 2)*
 
 ### C) Arcade / tek kişilik (skor tabanlı, sırayla yüksek skor yarışı olarak da oynanır)
 16. Yılan (Snake) ✅ *seçildi*
 17. 2048 ✅ *seçildi*
 18. Flappy tarzı "Zıpla Geç" — gelecek
-19. Kayan Yapboz (15-puzzle) — gelecek
+19. Kayan Yapboz (15-puzzle) ✅ *seçildi (Faz 2)*
 20. Renk Eşleştir / Simon Says hafıza dizisi — gelecek
 21. Meyve Kesme tarzı dokunma oyunu — gelecek
 
@@ -83,6 +83,20 @@ Basitlik + çeşitlilik + "arkadaşla oynanabilirlik" dengesine göre seçildi:
 
 Hepsi tek cihazda oynanır (oda kodu gerekmez), her maç sonunda kazanana/skora
 göre **XP + coin** verilir.
+
+## 3.1 Faz 2 — eklenen 5 oyun (tamamlandı ✅)
+
+| # | Oyun | Oyuncu | Tür | Kazanma kriteri |
+|---|------|--------|-----|-----------------|
+| 11 | Kim Bilir? (Trivia) | 1-6 (sırayla) | Bilgi yarışması | En yüksek puan (5 soru × 20 puan) |
+| 12 | Sayı Tahmin Düellosu | 1-6 (sırayla) | Mantık/Bulls&Cows | En az denemede bulan |
+| 13 | Balon Patlatma | 1-6 (sırayla) | Refleks/skor | 20 saniyede en çok balon |
+| 14 | Parti Zarı | 1-6 (sırayla) | Zar/şans | En yüksek puan (set bonuslu) |
+| 15 | Kayan Yapboz | 1-6 (sırayla) | Bulmaca | En az hamlede çözen |
+
+Bu 5 oyun, tekrar kullanılabilir bir **`TurnBasedChase`** iskeleti üzerine
+kuruldu (`lib/core/quickplay/quickplay.dart`) — "cihazı sırayla ver, herkes
+bir oturum oynasın, en iyi sonuç kazansın" mantığını tek yerden yönetir.
 
 ## 4. Oyun dışı sistemler (bu fazda kurulan altyapı)
 
