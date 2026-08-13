@@ -324,18 +324,31 @@ satır silinmez. Bu bölüm, kullanıcının 13 Ağustos 2026 turunda istediği,
 "artık gerçek bir oyun mağazası ürünü gibi olsun" kapsamındaki işlerin kaydı.
 
 ### 8.1 Dedektif oyunu → çok vakalı kampanya
-- [ ] "Gece Ekspresi Cinayeti" tek vakadan, birbirine bağlı **10 vaka + 1
-      final bonus vaka** zincirine genişletilecek
-- [ ] Final vakada şok twist: oyuncunun çözdüğü tüm vakalar aslında
-      perde arkasındaki tek bir kişinin (büyük kötü) uzun vadeli planının
-      parçalarıymış; o kişi herkesi kullanmış/kandırmış ve planını
-      tamamlayarak büyük bir güç/kontrol elde etmiş olacak
-- [ ] Final, ana karakterin şaşkınlığıyla ve akıbeti belirsiz bırakılarak
-      biter (klasik "to be continued" hissi) — aksiyonlu, nefes nefese temp
-- Not: 10 vakanın hepsini ilk vaka (Gece Ekspresi) kadar uzun/detaylı
-  yazmak tek oturumda bitecek bir iş değil — kampanya **iskeleti**
-  (vaka zinciri state'i, ilerleme kaydı, XP artışı) ve **birden fazla yeni
-  vaka + final** bu turda eklenecek, kalanlar sıradaki turlarda tamamlanacak.
+- [x] "Gece Ekspresi Cinayeti" tek vakadan, kampanya yapısına geçirildi:
+      `MysteryCase` veri modeli, `kMysteryCases` sıralı listesi,
+      `MysteryCampaignService` (SharedPreferences tabanlı ilerleme kaydı —
+      bir vaka bitirilince bir sonraki açılır), vaka seçim ekranı
+      (`MysteryLobbyScreen` artık kilit durumlarını gösteren bir hub)
+- [x] **4 vaka** yazıldı ve tam oynanabilir: Vaka 1 "Gece Ekspresi
+      Cinayeti" (mevcut), Vaka 2 "Galeri Sirius'taki Sahtekârlık", Vaka 3
+      "Borsa Kulesi'nde Ölüm", ve **Büyük Final "Çember"**. Üçü de aynı
+      görünmez ipucunu taşıyor: daire içinde bir göz mührü ve "V.K." baş
+      harfleri.
+- [x] Final vakada şok twist: oyuncunun çözdüğü tüm vakaların arkasında
+      tek bir kişi var — Vedat Korkmaz (V.K.), balo boyunca dedektife
+      "yardımcı" olan sıcakkanlı bir tanıdık kılığında dolaşıyor. Onu
+      doğru tahmin etsen bile "Merkez Sistem" imzası birkaç dakika önce
+      atılmış olur — çok geçsin.
+- [x] Final, ana karakterin şaşkınlığıyla ve akıbeti belirsiz bırakılarak
+      bitiyor ("İZ SÜRMEYE DEVAM EDECEK...") — aksiyonlu, nefes nefese ton.
+- Not: 10 vakanın **hepsini** ilk vaka kadar uzun/detaylı yazmak tek
+  oturumda bitecek bir iş değildi — bu turda kampanya **iskeleti** (vaka
+  zinciri, ilerleme kaydı, kilit sistemi) TAM olarak kuruldu ve **4 vaka**
+  (1 mevcut + 2 yeni ara vaka + final) uçtan uca yazıldı/oynanabilir.
+  Kalan ~6 ara vaka (kampanyanın "Vaka 5-9" kısmı), aynı `MysteryCase`
+  şablonuna yeni bir sabit eklemek kadar basit bir iş — istenirse
+  sıradaki turlarda vaka vaka eklenir. Vaka seçim ekranında bunu
+  hatırlatan bir not var ("Daha fazla vaka yakında geliyor").
 
 ### 8.2 Reklam & Premium
 - [x] Interstitial sıklığı: her oyun sonunda değil, **5 oyunda 1** (önceden
