@@ -137,4 +137,57 @@ abstract class AZTheme {
           borderRadius: BorderRadius.circular(AZRadius.lg)),
     ),
   );
+
+  static ThemeData get dark => ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.fromSeed(
+        seedColor: AZColors.purple, brightness: Brightness.dark),
+    scaffoldBackgroundColor: const Color(0xFF121218),
+    fontFamily: 'Roboto',
+    appBarTheme: const AppBarTheme(
+      elevation: 0,
+      centerTitle: true,
+      backgroundColor: Color(0xFF121218),
+      systemOverlayStyle: SystemUiOverlayStyle(
+        statusBarColor:            Colors.transparent,
+        statusBarIconBrightness:   Brightness.light,
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AZRadius.lg)),
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AZRadius.md)),
+      filled: true,
+      fillColor: const Color(0xFF1E1E28),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: const Color(0xFF1E1E28),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AZRadius.xl)),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AZRadius.md)),
+    ),
+    cardTheme: CardThemeData(
+      elevation: 4,
+      color: const Color(0xFF1E1E28),
+      shadowColor: Colors.black45,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AZRadius.lg)),
+    ),
+  );
+
+  /// Ayarlar/Splash/Onboarding gibi "chrome" ekranlarında koyu temada
+  /// kullanılan marka gradyanı.
+  static const darkBrandGradient = AZColors.gradDark;
 }

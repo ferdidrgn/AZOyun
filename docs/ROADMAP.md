@@ -216,3 +216,103 @@ giriş yok (misafir olarak da oynanabilir). Gelir; gönüllü IAP (reklamsız,
 kozmetik, destek ol) ve makul sıklıkta interstitial/rewarded reklamdan gelir.
 Amaç viral büyüme (arkadaşını davet et → oda kodu paylaş) ve elde tutma
 (XP/seviye/başarım) — reklam geliri bunun doğal sonucu, öncelik değil.
+
+## 7. Endüstriyel altyapı — kalıcı liste (ASLA UNUTMA)
+
+Bu bölüm kullanıcının açıkça istediği, "sanayi/endüstriyel standartta çalışan
+uygulama" için gereken tüm alt yapı parçalarının kalıcı kaydıdır. Bir madde
+tamamlandığında ✅ işaretlenir ama **satır silinmez** — gelecekteki oturumlar
+neyin yapıldığını, neyin hâlâ eksik/manuel adım gerektirdiğini buradan görür.
+
+### 7.1 İlk açılış deneyimi
+- [x] Splash ekranı (native Android launch + Flutter tarafı) —
+      `lib/features/onboarding/splash_screen.dart`
+- [x] 3 sayfalık Onboarding (ilk açılışta bir kez, sonra `SharedPreferences`
+      ile bir daha gösterilmez) — `lib/features/onboarding/onboarding_screen.dart`,
+      `OnboardingService`
+- [x] Onboarding sonunda bildirim izni isteme akışı
+
+### 7.2 Bildirimler
+- [x] `NotificationService` — izin isteme (Android 13+ `POST_NOTIFICATIONS`),
+      Firebase Cloud Messaging token alma, foreground/background mesaj
+      dinleme
+- [x] Ayarlar ekranında "Bildirim İzinlerine Git" butonu (sistem ayarlarını
+      açar)
+- ⚠️ **Kullanıcı tarafında kalan adım:** Gerçek push göndermek için Firebase
+  Console → Cloud Messaging'den kampanya/test mesajı gönderilmeli. Kod
+  alıcı tarafı hazır (token alınıyor, foreground/background dinleniyor) ama
+  "gönderici" (sunucu/console) tarafı bizim elimizde değil.
+
+### 7.3 Deep link
+- [x] `DeepLinkService` — `azoyun://` özel şema ile oda daveti gibi
+      senaryoları uygulama içinde yönlendirme (`main.dart`'ta ilk link +
+      canlı akış dinleniyor, `AndroidManifest.xml`'de intent-filter var)
+- ⚠️ **Gelecek iş:** Gerçek `https://azoyun.app/...` tarzı Universal/App
+  Links için barındırılan bir domain + `assetlinks.json`/
+  `apple-app-site-association` dosyası gerekir — bu bizim elimizde değil,
+  domain alındığında eklenir. (Not: Firebase Dynamic Links Ağustos 2025'te
+  Google tarafından kapatıldı, kullanılmıyor.) Ayrıca deep link şu an
+  sadece bir SnackBar ile bilgi gösteriyor — otomatik oda-doldurma her
+  online oyunun lobi ekranını güncellemeyi gerektirir, kapsam dışı bırakıldı.
+
+### 7.4 Tema sistemi
+- [x] 3 seçenek: **Sistem** (telefonun temasını takip et), **Açık Tema**
+      (marka renklerimiz, mevcut mor gradyan), **Koyu Tema** (yeni,
+      koyu marka rengi) — `AZTheme.light` / `AZTheme.dark`
+- [x] `ThemeService` ile tercih `SharedPreferences`'ta saklanır, Ayarlar'da
+      3 seçenekli kart ile değiştirilir
+- Not: Tema sistemi `MaterialApp.themeMode` üzerinden Ayarlar/Profil/Splash/
+  Onboarding gibi "chrome" ekranlarını kapsar. 30+ oyun ekranının her biri
+  kendi özel gradyan temasıyla çalışmaya devam ediyor (Vampir Köylü'nün
+  karanlık teması, Gece Ekspresi'nin noir teması gibi) — bunları da genel
+  tema sistemine bağlamak ayrı, büyük bir iştir; şimdilik kapsam dışı.
+
+### 7.5 Dil sistemi
+- [x] `LanguageService` — TR/EN arası anlık geçiş, `SharedPreferences`'ta
+      saklanır, Ayarlar'da dil seçim ekranı (`LanguageScreen`)
+- Not: Flutter'ın resmi `flutter gen-l10n` (ARB tabanlı) sistemi **bilinçli
+  olarak kullanılmadı** çünkü bu ortamda Flutter SDK çalıştırılamıyor, kod
+  üretimi doğrulanamaz. Bunun yerine elle yazılmış, derleme zamanı kod
+  üretimi gerektirmeyen basit bir çeviri haritası (`AppStrings`) kullanıldı.
+- ⚠️ **Kapsam:** Bu turda yeni eklenen ekranlar (Ayarlar, Onboarding, dil
+  seçimi, yasal metinler) iki dilde de çalışır. 31 oyunun **içindeki** tüm
+  metinleri İngilizce'ye çevirmek ayrı, büyük bir içerik işidir — istenirse
+  oyun oyun ilerlenir. Yeni bir dil eklemek `AppLanguage`'e bir değer ve
+  `AppStrings`'e yeni bir `Map` eklemek kadar basit.
+
+### 7.6 Google Play Games
+- [x] Uygulama açılışında otomatik (sessiz) giriş denemesi — `main.dart`
+      `runApp()` sonrası `PlayGamesService.instance.signIn()` çağrılıyor;
+      önceden sadece Profil/Ayarlar ekranında manuel "BAĞLAN" butonu vardı,
+      o da hâlâ duruyor (otomatik giriş başarısız olursa manuel bağlanılabilir)
+- ⚠️ **Kullanıcı tarafında kalan adım:** Play Console'da liderlik
+  tablosu/başarım ID'lerini oluşturup `play_games_service.dart`'taki
+  placeholder'lara yapıştırman gerekiyor (bkz. bölüm 4.5).
+
+### 7.7 Ayarlar ekranı (yeni, hepsini birleştiren merkez)
+- [x] Tema seçici, dil seçici, bildirim izni butonu, Play Games durumu —
+      `lib/features/settings/settings_screen.dart`, ana ekranda sağ üst
+      dişli ikonundan açılıyor
+- [x] Gizlilik Politikası (uygulama içi metin ekranı — barındırılan URL yok)
+- [x] Kullanım Şartları (uygulama içi metin ekranı)
+- [x] Bağış butonu → IAP ürünü **`donation_small`**
+- [x] Uygulamayı paylaş (`share_plus`)
+- [x] Uygulamayı değerlendir / App Review (`in_app_review`)
+- ⚠️ **Kullanıcı tarafında kalan adım:** Gizlilik Politikası/Kullanım
+  Şartları metinleri taslak olarak yazıldı (`legal_screens.dart` içinde
+  ekranda da amber uyarı bandı var) ama **gerçek yayın öncesi bir
+  avukat/uzman tarafından gözden geçirilmeli** — özellikle KVKK/GDPR ve
+  reklam SDK'ları (AdMob, Firebase) ile ilgili veri toplama beyanları için.
+  `donation_small` ürününün Play Console'da (tüketilebilir olarak)
+  oluşturulması gerekiyor (bkz. bölüm 4.8).
+
+### 7.8 Firebase (genel güçlendirme)
+- [x] Cloud Messaging entegrasyonu (bkz. 7.2)
+- [ ] Analytics (opsiyonel, gelecek — kullanıcı davranışını anlamak için)
+- [ ] Crashlytics (opsiyonel, gelecek — `firebaseCrashlytics` bloğu
+      `build.gradle.kts`'de zaten yorum satırı olarak duruyor, aktif değil)
+
+### 7.9 Android manifest / platform ayarları
+- [x] Deep link için `intent-filter` (custom scheme `azoyun://`)
+- [x] `POST_NOTIFICATIONS` izni (Android 13+)
+- [x] FCM meta-data (varsayılan bildirim ikonu/kanalı)

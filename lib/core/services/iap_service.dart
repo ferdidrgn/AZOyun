@@ -18,13 +18,17 @@ class IAPService {
   static const removeAdsId = 'az_oyun_remove_ads';
   static const coinsSmallId = 'az_oyun_coins_small';
   static const coinsMediumId = 'az_oyun_coins_medium';
-  static const supportUsId = 'az_oyun_support_coffee';
+
+  /// Gönüllü bağış ürünü ("Bize kahve ısmarla"). İsim, İngilizce Play
+  /// Console listelerinde tanınabilir olsun diye bilinçli olarak
+  /// `donation_small` (küçük bağış) şeklinde seçildi.
+  static const donationSmallId = 'donation_small';
 
   static const Set<String> productIds = {
     removeAdsId,
     coinsSmallId,
     coinsMediumId,
-    supportUsId,
+    donationSmallId,
   };
 
   final InAppPurchase _iap = InAppPurchase.instance;
@@ -67,6 +71,25 @@ class IAPService {
     } catch (e) {
       debugPrint('[IAPService] init hatası: $e');
     }
+  }
+
+  ProductDetails? productById(String id) {
+    for (final p in products) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+
+  /// Play Console'da tüketilebilir (consumable) olarak tanımlanmalı — bir
+  /// kullanıcı bağışı birden çok kez yapabilsin diye.
+  Future<bool> buyDonationSmall() async {
+    final product = productById(donationSmallId);
+    if (product == null) {
+      debugPrint('[IAPService] donation_small ürünü bulunamadı (Play Console\'da oluşturulmamış olabilir)');
+      return false;
+    }
+    await buyConsumable(product);
+    return true;
   }
 
   Future<void> buyConsumable(ProductDetails product) =>
