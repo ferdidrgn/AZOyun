@@ -403,14 +403,22 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
   sadece **anormal/kontrolsüz kopma** durumuydu, `onDisconnect()` ile
   kapatılıyor.
 
-### 8.5 Oyun içi hata taraması
+### 8.5 Eski 10 oyuna XP/başarım entegrasyonu
+- [x] Golf, Serbest Vuruş (soccer), Araba Yarışı, Adam Asmaca, Şehir
+      Bulmaca, Kelime Bulmaca, Okey/Okey 101, Dama, Dövüşçüler, Yalancılar
+      Kahvesi — hepsinin final ekranına `ProfileService.reportGameResult`
+      + `AchievementService.checkAndUnlock` eklendi. Artık online 12
+      oyunun (bunlara + Vampir Köylü + Hain Kim? + Gece Ekspresi) TAMAMI
+      maç sonunda XP/coin/başarım kazandırıyor.
+
+### 8.6 Oyun içi hata taraması
 - [x] Araba Yarışı: araba sprite'ları fizik yönüne göre hep **ters**
       duruyordu (emoji varsayılan olarak sola bakar, hareket matematiği
       açı 0'ı "sağa" kabul eder) — `+pi` düzeltmesiyle çözüldü
 - [ ] Diğer oyunlarda (özellikle Dövüşçüler, Dama, Okey) benzer görsel/
       mantık hataları için tarama devam ediyor
 
-### 8.6 Google Play Games Services v2
+### 8.7 Google Play Games Services v2
 - [ ] `developer.android.com/games/pgs/android/android-start` rehberine
       göre kurulumun güncel olup olmadığı gözden geçirilecek
 - Not: Şu an `games_services` Flutter paketi kullanılıyor (bkz. bölüm 4.5,
@@ -419,7 +427,7 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
   geçmek, paketi tamamen değiştirmek anlamına gelir; bu büyük bir karar,
   önce mevcut paketin v2 ile uyumlu olup olmadığı doğrulanacak.
 
-### 8.7 Tüm oyunları "çocuksu 2D"den "3D/eğlenceli" hale getirme
+### 8.8 Tüm oyunları "çocuksu 2D"den "3D/eğlenceli" hale getirme
 - [ ] Kullanıcı geri bildirimi: mevcut UI'lar güzel ama oyunların çoğu
       (özellikle strateji/parti oyunları) düz 2D ve "çocuksu" hissettiriyor;
       Araba Yarışı ve Dövüşçüler'deki gibi daha "3D hissi veren" bir

@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
@@ -494,6 +496,9 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
       'players/${widget.myKey}/position': pos,
       'players/${widget.myKey}/score': score,
     });
+    ProfileService.instance
+        .reportGameResult(gameId: 'racing', won: pos == 1)
+        .then((_) => AchievementService.instance.checkAndUnlock());
     // Herkez bitince oyun biter
     final allFinished = players.length == (players.values.where((p) => p['finished'] == true).length + 1);
     if (allFinished || pos == 1) {

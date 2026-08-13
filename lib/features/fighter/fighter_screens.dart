@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/widgets/az_widgets.dart';
@@ -806,6 +808,9 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
     if (!mounted) return;
     final winner = _room['winner'] as String? ?? '';
     final iWon = winner == widget.myKey;
+    ProfileService.instance
+        .reportGameResult(gameId: 'fighter', won: iWon)
+        .then((_) => AchievementService.instance.checkAndUnlock());
     final oppData = _players[_oppKey];
     final myF = widget.fighter;
     final oppF = getFighter(oppData?['fighterId'] as String? ?? 'warrior');
