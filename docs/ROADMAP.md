@@ -418,14 +418,35 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
 - [ ] Diğer oyunlarda (özellikle Dövüşçüler, Dama, Okey) benzer görsel/
       mantık hataları için tarama devam ediyor
 
-### 8.7 Google Play Games Services v2
-- [ ] `developer.android.com/games/pgs/android/android-start` rehberine
-      göre kurulumun güncel olup olmadığı gözden geçirilecek
-- Not: Şu an `games_services` Flutter paketi kullanılıyor (bkz. bölüm 4.5,
-  7.6) — Google'ın native "Play Games Services v2" SDK'sına (Kotlin/Java
-  tarafında doğrudan `com.google.android.gms:play-services-games-v2`)
-  geçmek, paketi tamamen değiştirmek anlamına gelir; bu büyük bir karar,
-  önce mevcut paketin v2 ile uyumlu olup olmadığı doğrulanacak.
+### 8.7 Google Play Games Services v2 — gözden geçirildi ve tamamlandı
+- [x] Google'ın resmi rehberi (`developer.android.com/games/pgs/android/
+      android-start` + `android-signin` + `migration_overview`) incelendi.
+      **Önemli bulgu:** Google, eski v1 kimlik doğrulama akışını
+      (`GoogleSignInClient` tabanlı) 2025'te Play Services Auth SDK'dan
+      kaldırdı — hâlâ v1 kullanan uygulamalar çalışmaz hale gelebilirdi.
+      Kullandığımız `games_services` Flutter paketi (pub.dev
+      changelog'una göre) **4.0.0 sürümünden beri zaten PGS v2'ye migrate
+      olmuş** — `pubspec.yaml`'daki `^4.1.1` kısıtlaması bu migrasyonu
+      zaten kapsıyor, paket değişikliği gerekmedi.
+- [x] Eksik olan, native tarafın kendisiydi — eklendi:
+      - `android/app/build.gradle.kts`: `com.google.android.gms:
+        play-services-games-v2:+` bağımlılığı (Google'ın resmi adım 1'i)
+      - `AndroidManifest.xml`: `com.google.android.gms.games.APP_ID`
+        meta-data, `res/values/strings.xml`'deki
+        `game_services_project_id` string'ine işaret ediyor
+      - `MainActivity.kt`: `PlayGamesSdk.initialize(this)`,
+        `super.onCreate()`'den önce çağrılıyor (Google'ın zorunlu kıldığı
+        sıra)
+- Not: v2'de platform kimlik doğrulaması **otomatik ve sessiz** çalışır
+  (kullanıcı payı gerektirmez) — bu da `main.dart`'taki
+  `PlayGamesService.instance.signIn()` çağrısının tam olarak istenen
+  "dinamik bağlantı" davranışıyla örtüştüğünü doğruluyor.
+- ⚠️ **Kullanıcı tarafında kalan adım:** `res/values/strings.xml`
+  içindeki `game_services_project_id` değeri hâlâ placeholder
+  (`REPLACE_WITH_PLAY_CONSOLE_PROJECT_ID`) — Play Console → Oyun
+  Hizmetleri → Yapılandırma sayfasından gerçek proje ID'sini alıp
+  yapıştırman gerekiyor. Değiştirilene kadar Play Games Services sessizce
+  devre dışı kalır (uygulamanın geri kalanı etkilenmez).
 
 ### 8.8 Tüm oyunları "çocuksu 2D"den "3D/eğlenceli" hale getirme
 - [ ] Kullanıcı geri bildirimi: mevcut UI'lar güzel ama oyunların çoğu

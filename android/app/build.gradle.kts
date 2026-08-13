@@ -83,4 +83,11 @@ dependencies {
     // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-database")
+
+    // Play Games Services v2 (bkz. ROADMAP 8.7) — games_services Flutter
+    // eklentisi 4.x'ten beri bunu transitive olarak getiriyor, ama
+    // MainActivity.kt içinde PlayGamesSdk.initialize() çağırabilmek için
+    // burada da açıkça tanımlanması gerekiyor (Google'ın resmi kurulum
+    // adımı da bu şekilde).
+    implementation("com.google.android.gms:play-services-games-v2:+")
 }
