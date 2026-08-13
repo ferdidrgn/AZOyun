@@ -182,6 +182,8 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
     super.initState();
     _sub = _rooms.watchRoom(gamePath: GamePaths.liarCafe, roomId: widget.roomId)
         .listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.liarCafe, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
   @override void dispose() { _sub?.cancel(); super.dispose(); }
 

@@ -13,7 +13,7 @@ class AdService {
   bool _adsEnabled       = true;
   int  _sessionAds       = 0;
 
-  static const _gamesBeforeInterstitial = 3; // kaç oyun sonra interstitial
+  static const _gamesBeforeInterstitial = 5; // kaç oyun sonra interstitial (kullanıcıyı boğmamak için)
   static const _maxAdsPerSession        = 10;
 
   InterstitialAd? _interstitial;
@@ -214,6 +214,17 @@ class AdService {
   void disableAds()   => _adsEnabled = false;
   void enableAds()    => _adsEnabled = true;
   void resetSession() => _sessionAds = 0;
+
+  /// `main()` içinde `initialize()`'dan hemen sonra çağrılır: daha önce
+  /// satın alınmış bir premium süresi hâlâ geçerliyse reklamları kapalı
+  /// başlatır (aksi halde her açılışta varsayılan olarak reklamlar açık
+  /// başlar).
+  Future<void> applyPremiumStateIfActive() async {
+    if (await StorageService.instance.isPremiumActive()) {
+      disableAds();
+      debugPrint('[AdService] premium aktif, reklamlar kapalı başladı');
+    }
+  }
 
   void dispose() {
     _interstitial?.dispose();
