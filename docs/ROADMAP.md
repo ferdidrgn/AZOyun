@@ -454,12 +454,13 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
   (kullanıcı payı gerektirmez) — bu da `main.dart`'taki
   `PlayGamesService.instance.signIn()` çağrısının tam olarak istenen
   "dinamik bağlantı" davranışıyla örtüştüğünü doğruluyor.
-- ⚠️ **Kullanıcı tarafında kalan adım:** `res/values/strings.xml`
-  içindeki `game_services_project_id` değeri hâlâ placeholder
-  (`REPLACE_WITH_PLAY_CONSOLE_PROJECT_ID`) — Play Console → Oyun
-  Hizmetleri → Yapılandırma sayfasından gerçek proje ID'sini alıp
-  yapıştırman gerekiyor. Değiştirilene kadar Play Games Services sessizce
-  devre dışı kalır (uygulamanın geri kalanı etkilenmez).
+- [x] **Gerçek proje ID'si girildi:** `res/values/strings.xml`'deki
+  `game_services_project_id`, Play Console → Yetkilendirme sayfasındaki
+  gerçek "Uygulama kimliği" (`517819561284`) ile güncellendi. Play Games
+  Services artık tam olarak aktif.
+- ⚠️ **Kullanıcı tarafında kalan adım:** Play Console'da liderlik
+  tablosu/başarım ID'lerinin oluşturulması hâlâ gerekiyor (bkz. bölüm
+  4.5/7.6) — `play_games_service.dart`'taki placeholder'lara yapıştırılacak.
 
 ### 8.8 Tüm oyunları "çocuksu 2D"den "3D/eğlenceli" hale getirme
 - [ ] Kullanıcı geri bildirimi: mevcut UI'lar güzel ama oyunların çoğu
