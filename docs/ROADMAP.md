@@ -161,16 +161,16 @@ eklenebilir.
 - Google Play Games bağlıysa aynı skor resmi bulut liderlik tablosuna da
   gönderilir (yapılandırma sonrası).
 
-### 4.5 Google Play Games Services
+### 4.5 Google Play Games Services — kuruldu ve aktif
 - `lib/core/services/play_games_service.dart` — `games_services` paketiyle:
-  giriş (sign-in), başarım açma, skor gönderme, **bulut kayıt (saved game)**.
-- **Yapılması gereken (Play Console tarafında, kod hazır):**
-  1. Play Console'da uygulamayı oluştur, Play Games Services'i etkinleştir.
-  2. Liderlik tablosu ve başarım ID'lerini oluştur, `play_games_ids.dart`
-     dosyasındaki placeholder'ları gerçek ID'lerle doldur.
-  3. `android/app/src/main/res/values/strings.xml` içine
-     `app_id` (Play Games) ekle.
-- ID'ler girilene kadar servis sessizce no-op çalışır (uygulama çökmez).
+  giriş (sign-in), başarım açma, skor gönderme.
+- Play Console tarafı tamamlandı: proje kimliği `517819561284`
+  `res/values/strings.xml`'e girildi, 1 liderlik tablosu ("Skorboard")
+  ve 1 başarım ("İlk") oluşturulup ID'leri kodda eşlendi (ayrıntı: 7.6).
+- Oyuna özel yeni liderlik tablosu/başarım eklemek istersen: Play
+  Console'da oluştur → ID'yi `play_games_service.dart`'taki
+  `_leaderboardIds`/`_achievementIds` haritalarına ekle. ID'ler
+  boş/eksikse servis sessizce no-op çalışır (uygulama çökmez).
 
 ### 4.6 Kayıt / Save sistemi
 - Yerel: `SharedPreferences` (profil, XP, coin, başarımlar, skor geçmişi).
@@ -285,9 +285,18 @@ neyin yapıldığını, neyin hâlâ eksik/manuel adım gerektirdiğini buradan 
       `runApp()` sonrası `PlayGamesService.instance.signIn()` çağrılıyor;
       önceden sadece Profil/Ayarlar ekranında manuel "BAĞLAN" butonu vardı,
       o da hâlâ duruyor (otomatik giriş başarısız olursa manuel bağlanılabilir)
-- ⚠️ **Kullanıcı tarafında kalan adım:** Play Console'da liderlik
-  tablosu/başarım ID'lerini oluşturup `play_games_service.dart`'taki
-  placeholder'lara yapıştırman gerekiyor (bkz. bölüm 4.5).
+- [x] Play Console'da liderlik tablosu + başarım oluşturuldu ve ID'ler
+      `play_games_service.dart`'a işlendi:
+      - Skor tablosu **"Skorboard"** (`CgkIxOrNg4kPEAIQAQ`) — şimdilik
+        oyuna özel tablo yok, tüm hızlı oyunların skoru buraya gidiyor
+        (`_defaultLeaderboardId`); ileride oyun başına ayrı tablo
+        açılırsa `_leaderboardIds` haritasına eklenmesi yeterli
+      - Başarım **"İlk"** (`CgkIxOrNg4kPEAIQAw`) → uygulama içi
+        `first_step` başarımına eşlendi
+- Not: Play Console'da bir de **"Hoşgeldin"** adında bir Etkinlik
+  (Events API) oluşturulmuş ama bu, liderlik tablosu/başarımlardan farklı
+  bir Play Games özelliği — kodda henüz karşılığı yok, istenirse ayrı bir
+  iş olarak eklenir.
 
 ### 7.7 Ayarlar ekranı (yeni, hepsini birleştiren merkez)
 - [x] Tema seçici, dil seçici, bildirim izni butonu, Play Games durumu —
@@ -458,9 +467,8 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
   `game_services_project_id`, Play Console → Yetkilendirme sayfasındaki
   gerçek "Uygulama kimliği" (`517819561284`) ile güncellendi. Play Games
   Services artık tam olarak aktif.
-- ⚠️ **Kullanıcı tarafında kalan adım:** Play Console'da liderlik
-  tablosu/başarım ID'lerinin oluşturulması hâlâ gerekiyor (bkz. bölüm
-  4.5/7.6) — `play_games_service.dart`'taki placeholder'lara yapıştırılacak.
+- [x] Play Console'da liderlik tablosu + başarım oluşturuldu, ID'ler
+  `play_games_service.dart`'a işlendi (bkz. bölüm 7.6 için ayrıntı).
 
 ### 8.8 Tüm oyunları "çocuksu 2D"den "3D/eğlenceli" hale getirme
 - [ ] Kullanıcı geri bildirimi: mevcut UI'lar güzel ama oyunların çoğu
