@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/widgets/az_widgets.dart';
@@ -477,6 +479,9 @@ class _DamaGameState extends State<DamaGameScreen> {
     if (!mounted) return;
     final winner = _room['winner'] as String? ?? '';
     final iWon = winner == widget.myKey;
+    ProfileService.instance
+        .reportGameResult(gameId: 'dama', won: iWon)
+        .then((_) => AchievementService.instance.checkAndUnlock());
     final myColor = _isWhite ? '⚪' : '⚫';
     final oppKey = widget.myKey == 'p1' ? 'p2' : 'p1';
     final oppName = _players[oppKey]?['name'] as String? ?? '?';
