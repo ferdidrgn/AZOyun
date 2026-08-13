@@ -13,11 +13,23 @@ class LanguageScreen extends StatelessWidget {
       listenable: LanguageService.instance,
       builder: (context, _) {
         final current = LanguageService.instance.language;
+        const options = [
+          (AppLanguage.tr, 'language_tr', '🇹🇷'),
+          (AppLanguage.en, 'language_en', '🇬🇧'),
+          (AppLanguage.de, 'language_de', '🇩🇪'),
+          (AppLanguage.fr, 'language_fr', '🇫🇷'),
+          (AppLanguage.es, 'language_es', '🇪🇸'),
+          (AppLanguage.ru, 'language_ru', '🇷🇺'),
+        ];
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _tile(context, label: t('language_tr'), flag: '🇹🇷', selected: current == AppLanguage.tr, onTap: () => LanguageService.instance.setLanguage(AppLanguage.tr)),
-            _tile(context, label: t('language_en'), flag: '🇬🇧', selected: current == AppLanguage.en, onTap: () => LanguageService.instance.setLanguage(AppLanguage.en)),
+            for (final (lang, key, flag) in options)
+              _tile(context,
+                  label: t(key),
+                  flag: flag,
+                  selected: current == lang,
+                  onTap: () => LanguageService.instance.setLanguage(lang)),
           ],
         );
       },

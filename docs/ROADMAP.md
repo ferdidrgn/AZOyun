@@ -238,10 +238,19 @@ neyin yapıldığını, neyin hâlâ eksik/manuel adım gerektirdiğini buradan 
       dinleme
 - [x] Ayarlar ekranında "Bildirim İzinlerine Git" butonu (sistem ayarlarını
       açar)
+- [x] **Uygulama açıkken (foreground) gerçek bildirim gösterme:** FCM,
+      mesajı SADECE arka planda/kapalıyken otomatik sistem bildirimi
+      olarak gösterir — ön plandayken hiçbir şey göstermiyordu (sadece
+      `debugPrint`). `flutter_local_notifications` eklendi,
+      `az_oyun_default_channel` kanalı (AndroidManifest'teki FCM varsayılan
+      kanalıyla aynı ID) üzerinden foreground mesajları artık gerçek bir
+      heads-up bildirim olarak gösteriliyor + kısa bir uygulama-içi banner
+      (SnackBar) de eşlik ediyor, oyun içindeyken kaçırılmasın diye.
 - ⚠️ **Kullanıcı tarafında kalan adım:** Gerçek push göndermek için Firebase
   Console → Cloud Messaging'den kampanya/test mesajı gönderilmeli. Kod
-  alıcı tarafı hazır (token alınıyor, foreground/background dinleniyor) ama
-  "gönderici" (sunucu/console) tarafı bizim elimizde değil.
+  alıcı tarafı tamamen hazır (token alınıyor, foreground/background
+  dinleniyor, foreground'da da görünür bildirim çıkıyor) ama "gönderici"
+  (sunucu/console) tarafı bizim elimizde değil.
 
 ### 7.3 Deep link
 - [x] `DeepLinkService` — `azoyun://` özel şema ile oda daveti gibi
@@ -256,11 +265,15 @@ neyin yapıldığını, neyin hâlâ eksik/manuel adım gerektirdiğini buradan 
   online oyunun lobi ekranını güncellemeyi gerektirir, kapsam dışı bırakıldı.
 
 ### 7.4 Tema sistemi
-- [x] 3 seçenek: **Sistem** (telefonun temasını takip et), **Açık Tema**
-      (marka renklerimiz, mevcut mor gradyan), **Koyu Tema** (yeni,
-      koyu marka rengi) — `AZTheme.light` / `AZTheme.dark`
-- [x] `ThemeService` ile tercih `SharedPreferences`'ta saklanır, Ayarlar'da
-      3 seçenekli kart ile değiştirilir
+- [x] 4 seçenek: **Sistem** (telefonun temasını takip et), **Açık Tema**
+      (marka renklerimiz, mevcut mor gradyan), **Koyu Tema** (koyu marka
+      rengi) — `AZTheme.light` / `AZTheme.dark` — ve **Özel Renk**
+      (kullanıcı kendi vurgu rengini seçer, 12 renklik hazır bir paletten)
+      — `AZTheme.fromSeed(seed, brightness)`, `Ayarlar → Görünüm`'de renk
+      dairesine dokunarak seçiliyor. Özel renk seçiliyken bile cihazın
+      açık/koyu anahtarına uyulur, sadece vurgu rengi değişir.
+- [x] `ThemeService` ile tercih (ve seçilen özel renk) `SharedPreferences`'ta
+      saklanır, Ayarlar'da 4 seçenekli kart ile değiştirilir
 - Not: Tema sistemi `MaterialApp.themeMode` üzerinden Ayarlar/Profil/Splash/
   Onboarding gibi "chrome" ekranlarını kapsar. 30+ oyun ekranının her biri
   kendi özel gradyan temasıyla çalışmaya devam ediyor (Vampir Köylü'nün
@@ -268,17 +281,25 @@ neyin yapıldığını, neyin hâlâ eksik/manuel adım gerektirdiğini buradan 
   tema sistemine bağlamak ayrı, büyük bir iştir; şimdilik kapsam dışı.
 
 ### 7.5 Dil sistemi
-- [x] `LanguageService` — TR/EN arası anlık geçiş, `SharedPreferences`'ta
+- [x] `LanguageService` — **6 dil** arası anlık geçiş (Türkçe, İngilizce,
+      Almanca, Fransızca, İspanyolca, Rusça), `SharedPreferences`'ta
       saklanır, Ayarlar'da dil seçim ekranı (`LanguageScreen`)
 - Not: Flutter'ın resmi `flutter gen-l10n` (ARB tabanlı) sistemi **bilinçli
   olarak kullanılmadı** çünkü bu ortamda Flutter SDK çalıştırılamıyor, kod
   üretimi doğrulanamaz. Bunun yerine elle yazılmış, derleme zamanı kod
-  üretimi gerektirmeyen basit bir çeviri haritası (`AppStrings`) kullanıldı.
+  üretimi gerektirmeyen basit bir çeviri haritası (`AppStrings`) kullanıldı
+  — 6 dilin her birinde aynı 61 anahtar birebir dolu (otomatik script ile
+  doğrulandı).
 - ⚠️ **Kapsam:** Bu turda yeni eklenen ekranlar (Ayarlar, Onboarding, dil
-  seçimi, yasal metinler) iki dilde de çalışır. 31 oyunun **içindeki** tüm
-  metinleri İngilizce'ye çevirmek ayrı, büyük bir içerik işidir — istenirse
-  oyun oyun ilerlenir. Yeni bir dil eklemek `AppLanguage`'e bir değer ve
+  seçimi, yasal metinler) 6 dilde de çalışır. 31 oyunun **içindeki** tüm
+  metinleri çevirmek ayrı, büyük bir içerik işidir — istenirse oyun oyun
+  ilerlenir. Yeni bir dil eklemek `AppLanguage`'e bir değer ve
   `AppStrings`'e yeni bir `Map` eklemek kadar basit.
+- Not: **Arapça bilerek eklenmedi** — Arapça sağdan-sola (RTL) yazım
+  gerektirir ve bizim özel `AppStrings` sistemimiz Flutter'ın resmi
+  `Directionality`/`Localizations` altyapısına bağlı değil, bu yüzden RTL
+  otomatik olarak düzgün çalışmaz (metin solda hizalı kalır). RTL desteği
+  ayrı, gerçek bir mühendislik işi — istenirse ayrıca eklenir.
 
 ### 7.6 Google Play Games
 - [x] Uygulama açılışında otomatik (sessiz) giriş denemesi — `main.dart`
