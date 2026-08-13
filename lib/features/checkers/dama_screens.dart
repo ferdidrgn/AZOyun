@@ -571,7 +571,6 @@ class _DamaGameState extends State<DamaGameScreen> {
         // Tahta
         Expanded(child: LayoutBuilder(builder: (_, constraints) {
           final side = (constraints.maxWidth).clamp(0.0, constraints.maxHeight);
-          final cell = side / 8;
           return Center(child: SizedBox(width: side, height: side,
             child: GridView.builder(
               physics: const NeverScrollableScrollPhysics(),

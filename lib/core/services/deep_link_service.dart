@@ -29,7 +29,7 @@ class DeepLinkService {
   Future<void> initialize({required DeepLinkHandler onLink}) async {
     _handler = onLink;
     try {
-      final initial = await _appLinks.getInitialAppLink();
+      final initial = await _appLinks.getInitialLink();
       if (initial != null) _handler?.call(initial);
     } catch (e) {
       debugPrint('[DeepLinkService] ilk link okunamadı: $e');
