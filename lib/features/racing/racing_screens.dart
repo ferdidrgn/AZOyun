@@ -600,13 +600,16 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
                 final carId = e.value['carId'] as String? ?? 'sport';
                 final c = _cars.firstWhere((cd) => cd.id == carId, orElse: () => _cars[0]);
                 return Positioned(left: ox - 14, top: oy - 14,
-                    child: Transform.rotate(angle: oa,
+                    // Araba emojileri varsayılan olarak sola bakar; hareket
+                    // matematiği açı 0'da sağa gitmeyi varsayıyor — +pi
+                    // düzeltmesi olmadan araba hep ters yöne bakar.
+                    child: Transform.rotate(angle: oa + pi,
                         child: _CarSprite(emoji: c.emoji, color: c.color, size: 28)));
               }),
 
-              // Mein auto
+              // Benim arabam
               Positioned(left: _x * W - 16, top: _y * H - 16,
-                child: Transform.rotate(angle: _angle,
+                child: Transform.rotate(angle: _angle + pi,
                   child: _CarSprite(emoji: widget.car.emoji, color: widget.car.color,
                       size: 32, isMe: true, drift: _drift.abs())),
               ),
