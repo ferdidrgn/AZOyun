@@ -188,8 +188,8 @@ class _QuickGamesTab extends StatelessWidget {
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _sectionHeader('🕵️  BÜYÜK OYUN'),
       AZGameCard(
-        emoji: '🚂', title: 'Gece Ekspresi Cinayeti',
-        subtitle: 'Polisiye · İz Sürme · Şaşırtıcı Final · ~10 dk',
+        emoji: '🕵️', title: 'Dedektif Dosyaları',
+        subtitle: 'Polisiye · Birbirine Bağlı Vakalar · Şok Final',
         gradient: kNoirGradient,
         badge: 'YENİ',
         onTap: () => _push(context, const MysteryLobbyScreen()),

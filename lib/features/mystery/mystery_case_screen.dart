@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/achievement_service.dart';
+import '../../core/services/mystery_campaign_service.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
@@ -12,68 +13,146 @@ const kNoirGradient = LinearGradient(
   colors: [Color(0xFF1A1A2E), Color(0xFF3D0C0C)],
 );
 const _kAccent = Color(0xFF8B0000);
+const _kGoldAccent = Color(0xFFC9A227);
 
 // ═══════════════════════════════════════════════════════════════════════════
-// LOBİ
+// KAMPANYA HUB — vaka listesi, kilit durumu
 // ═══════════════════════════════════════════════════════════════════════════
 
-class MysteryLobbyScreen extends StatelessWidget {
+class MysteryLobbyScreen extends StatefulWidget {
   const MysteryLobbyScreen({super.key});
+
+  @override
+  State<MysteryLobbyScreen> createState() => _MysteryLobbyScreenState();
+}
+
+class _MysteryLobbyScreenState extends State<MysteryLobbyScreen> {
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    MysteryCampaignService.instance.load().then((_) {
+      if (mounted) setState(() => _loading = false);
+    });
+  }
+
+  bool _isUnlocked(int index) {
+    if (index == 0) return true;
+    return MysteryCampaignService.instance.isCompleted(kMysteryCases[index - 1].id);
+  }
+
+  Future<void> _openCase(MysteryCase c) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MysteryCaseScreen(mysteryCase: c)),
+    );
+    if (mounted) setState(() {}); // yeni vaka açılmış olabilir
+  }
 
   @override
   Widget build(BuildContext context) => AZGradientScaffold(
     gradient: kNoirGradient,
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context)),
-        ),
-        const SizedBox(height: 4),
-        const Text('🕵️', style: TextStyle(fontSize: 72)),
-        const SizedBox(height: 10),
-        const Text('GECE EKSPRESİ CİNAYETİ',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1)),
-        const SizedBox(height: 6),
-        const Text('Polisiye · İz Sürme · ~10 dakika',
-            style: TextStyle(color: Colors.white54, fontSize: 12)),
-        const SizedBox(height: 24),
-        AZFrostCard(
-          opacity: 0.08,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text('🚂 Vaka Dosyası',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-              SizedBox(height: 10),
-              Text(
-                'Bir gece ekspresinde esrarengiz bir ölüm. Kanıtları topla, '
-                'şüphelileri sorguya çek, gerçek katili bul — ama dikkat et, '
-                'en olası şüpheli her zaman suçlu olan değildir.\n\n'
-                'Tek başına oynanır ama arkadaşlarınla birlikte tartışarak '
-                'çözmek daha eğlenceli. Kararın kesinleşince geri dönüş yok!',
-                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
+    child: _loading
+        ? const Center(child: CircularProgressIndicator(color: Colors.white))
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => Navigator.pop(context)),
               ),
-            ],
+              const SizedBox(height: 4),
+              const Text('🕵️', style: TextStyle(fontSize: 64)),
+              const SizedBox(height: 10),
+              const Text('DEDEKTİF DOSYALARI',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1)),
+              const SizedBox(height: 6),
+              const Text('Birbirine bağlı vakalar · her biri bir öncekini açar',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 24),
+              for (var i = 0; i < kMysteryCases.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _caseCard(kMysteryCases[i], _isUnlocked(i)),
+                ),
+              const SizedBox(height: 8),
+              AZFrostCard(
+                opacity: 0.08,
+                child: const Text(
+                  '📖 Daha fazla vaka yakında geliyor — hikaye burada bitmiyor.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white54, fontSize: 12, fontStyle: FontStyle.italic),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ]),
           ),
-        ),
-        const SizedBox(height: 28),
-        AZButton(
-          label: 'SORUŞTURMAYA BAŞLA',
-          icon: Icons.search_rounded,
-          color: _kAccent,
-          onPressed: () =>
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const MysteryCaseScreen())),
-        ),
-        const SizedBox(height: 16),
-      ]),
-    ),
   );
+
+  Widget _caseCard(MysteryCase c, bool unlocked) {
+    final done = MysteryCampaignService.instance.isCompleted(c.id);
+    return GestureDetector(
+      onTap: unlocked ? () => _openCase(c) : null,
+      child: AZFrostCard(
+        opacity: unlocked ? (c.isFinale ? 0.16 : 0.1) : 0.05,
+        padding: const EdgeInsets.all(16),
+        child: Row(children: [
+          Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: unlocked ? const Color(0x26FFFFFF) : const Color(0x14FFFFFF),
+              shape: BoxShape.circle,
+              border: c.isFinale ? Border.all(color: _kGoldAccent, width: 2) : null,
+            ),
+            child: Text(unlocked ? c.emoji : '🔒', style: const TextStyle(fontSize: 22)),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Text(
+                      c.isFinale
+                          ? 'BÜYÜK FİNAL'
+                          : 'VAKA ${c.number}',
+                      style: TextStyle(
+                          color: c.isFinale ? _kGoldAccent : Colors.white54,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1)),
+                  if (done) ...[
+                    const SizedBox(width: 6),
+                    const Icon(Icons.check_circle_rounded, color: AZColors.success, size: 13),
+                  ],
+                ]),
+                const SizedBox(height: 2),
+                Text(unlocked ? c.title : '???',
+                    style: TextStyle(
+                        color: unlocked ? Colors.white : Colors.white38,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15)),
+                const SizedBox(height: 2),
+                Text(
+                    unlocked ? c.subtitle : 'Önceki vakayı tamamlayınca açılır',
+                    style: const TextStyle(color: Colors.white54, fontSize: 11.5)),
+              ],
+            ),
+          ),
+          if (unlocked)
+            const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+        ]),
+      ),
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -83,7 +162,9 @@ class MysteryLobbyScreen extends StatelessWidget {
 enum _Phase { intro, hub, ended }
 
 class MysteryCaseScreen extends StatefulWidget {
-  const MysteryCaseScreen({super.key});
+  const MysteryCaseScreen({super.key, required this.mysteryCase});
+
+  final MysteryCase mysteryCase;
 
   @override
   State<MysteryCaseScreen> createState() => _MysteryCaseScreenState();
@@ -95,8 +176,10 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
   final Set<String> _foundClues = {};
   String? _accusedId;
 
+  MysteryCase get _case => widget.mysteryCase;
+
   void _nextIntro() {
-    if (_introIndex < kIntroPages.length - 1) {
+    if (_introIndex < _case.introPages.length - 1) {
       setState(() => _introIndex++);
     } else {
       setState(() => _phase = _Phase.hub);
@@ -108,12 +191,13 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
   Future<void> _openAccusation() async {
     final chosen = await Navigator.push<String>(
       context,
-      MaterialPageRoute(builder: (_) => const _AccusationScreen()),
+      MaterialPageRoute(builder: (_) => _AccusationScreen(suspects: _case.suspects)),
     );
     if (chosen == null || !mounted) return;
-    final correct = chosen == kCulpritId;
+    final correct = chosen == _case.culpritId;
     await ProfileService.instance.reportGameResult(gameId: 'mysterycase1', won: correct);
     await AchievementService.instance.checkAndUnlock();
+    await MysteryCampaignService.instance.markCompleted(_case.id);
     if (!mounted) return;
     setState(() {
       _accusedId = chosen;
@@ -166,9 +250,9 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
               boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 24, offset: Offset(0, 14))],
             ),
             child: Column(children: [
-              const Text('🚂', style: TextStyle(fontSize: 48)),
+              Text(_case.emoji, style: const TextStyle(fontSize: 48)),
               const SizedBox(height: 18),
-              Text(kIntroPages[_introIndex],
+              Text(_case.introPages[_introIndex],
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.7)),
             ]),
@@ -177,7 +261,7 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
         const Spacer(),
         Row(
           children: [
-            for (var i = 0; i < kIntroPages.length; i++)
+            for (var i = 0; i < _case.introPages.length; i++)
               Expanded(
                 child: Container(
                   height: 3,
@@ -191,7 +275,7 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
         ),
         const SizedBox(height: 20),
         AZButton(
-          label: _introIndex < kIntroPages.length - 1 ? 'DEVAM ET' : 'SORUŞTURMAYA BAŞLA',
+          label: _introIndex < _case.introPages.length - 1 ? 'DEVAM ET' : 'SORUŞTURMAYA BAŞLA',
           icon: Icons.arrow_forward_rounded,
           color: _kAccent,
           onPressed: _nextIntro,
@@ -208,10 +292,10 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
           IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.pop(context)),
-          const Expanded(
-            child: Text('GECE EKSPRESİ CİNAYETİ',
+          Expanded(
+            child: Text(_case.title.toUpperCase(),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
           ),
           const SizedBox(width: 48),
         ]),
@@ -225,7 +309,7 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
                 const Icon(Icons.menu_book_rounded, color: Colors.white70),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Not Defterin: ${_foundClues.length}/${kClues.length} ipucu',
+                  child: Text('Not Defterin: ${_foundClues.length}/${_case.clues.length} ipucu',
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ]),
@@ -233,11 +317,11 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
             const SizedBox(height: 22),
             _label('🔍  OLAY YERİ · kanıt aramak için dokun'),
             const SizedBox(height: 10),
-            for (final c in kClues) _clueCard(c),
+            for (final c in _case.clues) _clueCard(c),
             const SizedBox(height: 22),
             _label('🗣️  ŞÜPHELİLER · sorgulamak için dokun'),
             const SizedBox(height: 10),
-            for (final s in kSuspects) _suspectCard(s),
+            for (final s in _case.suspects) _suspectCard(s),
             const SizedBox(height: 26),
             AZButton(label: '⚖️  SUÇLAMAYI YAP', color: _kAccent, onPressed: _openAccusation),
           ]),
@@ -317,13 +401,13 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
   }
 
   Widget _buildEnding() {
-    final correct = _accusedId == kCulpritId;
-    final ending = kEndings[_accusedId]!;
+    final correct = _accusedId == _case.culpritId;
+    final ending = _case.endings[_accusedId]!;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(children: [
         const SizedBox(height: 20),
-        Text(correct ? '🎯' : '❌', style: const TextStyle(fontSize: 56)),
+        Text(correct ? (_case.isFinale ? '🎭' : '🎯') : '❌', style: const TextStyle(fontSize: 56)),
         const SizedBox(height: 16),
         Text(ending.title,
             textAlign: TextAlign.center,
@@ -334,7 +418,7 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
           child: Text(ending.body, style: const TextStyle(color: Colors.white70, height: 1.6, fontSize: 14)),
         ),
         const SizedBox(height: 16),
-        Text('${_foundClues.length}/${kClues.length} ipucu buldun',
+        Text('${_foundClues.length}/${_case.clues.length} ipucu buldun',
             style: const TextStyle(color: Colors.white54, fontSize: 13)),
         const SizedBox(height: 26),
         Row(children: [
@@ -347,7 +431,7 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: AZButton(
-                label: 'ANA MENÜ', color: _kAccent, onPressed: () => Navigator.pop(context)),
+                label: 'DOSYALARA DÖN', color: _kAccent, onPressed: () => Navigator.pop(context)),
           ),
         ]),
         const SizedBox(height: 20),
@@ -451,7 +535,9 @@ class _SuspectDialogueScreenState extends State<_SuspectDialogueScreen> {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _AccusationScreen extends StatefulWidget {
-  const _AccusationScreen();
+  const _AccusationScreen({required this.suspects});
+
+  final List<MysterySuspect> suspects;
 
   @override
   State<_AccusationScreen> createState() => _AccusationScreenState();
@@ -484,7 +570,7 @@ class _AccusationScreenState extends State<_AccusationScreen> {
         Expanded(
           child: ListView(
             children: [
-              for (final s in kSuspects)
+              for (final s in widget.suspects)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: GestureDetector(
