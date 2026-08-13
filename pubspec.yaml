@@ -1,7 +1,7 @@
 name: AZOyun
 description: Çok oyunculu (multiplayer) oyun platformu
 publish_to: 'none'
-version: 1.0.0+4
+version: 1.0.0+6
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -15,12 +15,42 @@ dependencies:
   # Firebase
   firebase_core:     ^3.0.0
   firebase_database: ^11.0.0
+  firebase_messaging: ^15.1.3
+
+  # Bildirim izni + sistem ayarlarına yönlendirme
+  permission_handler: ^11.3.1
+
+  # Uygulama açıkken (foreground) FCM mesajını gerçek bir sistem
+  # bildirimi olarak göstermek için — FCM bunu foreground'dayken
+  # otomatik yapmıyor, sadece background/kapalıyken yapıyor.
+  flutter_local_notifications: ^18.0.1
+
+  # Deep link (azoyun:// özel şema)
+  app_links: ^6.3.2
+
+  # Uygulamayı paylaş / mağaza sayfasını aç / uygulama bilgisi
+  # (share_plus bilinçli olarak 7.x'te sabitlendi — 10.x'te API'nin
+  # Share.share() -> SharePlus.instance.share(ShareParams()) şeklinde
+  # değiştiği biliniyor ve bu ortamda derleme ile doğrulanamıyor)
+  share_plus: ^7.2.2
+  in_app_review: ^2.0.9
+  url_launcher: ^6.3.1
+  package_info_plus: ^8.1.1
 
   # Secure storage
   flutter_secure_storage: ^9.2.2
 
   # Ads
   google_mobile_ads: ^5.1.0
+
+  # Uygulama içi satın alma (reklamsız, coin paketleri, destek ol)
+  in_app_purchase: ^3.2.0
+
+  # Google Play Games Services (giriş, liderlik tablosu, başarımlar, bulut kayıt)
+  games_services: ^4.1.1
+
+  # Hızlı oyunlar için yerel profil/XP/liderlik depolama
+  shared_preferences: ^2.3.3
 
   # Animations
   flutter_animate: ^4.5.0
@@ -38,4 +68,3 @@ flutter:
 
   assets:
     - assets/sounds/
-    - assets/images/

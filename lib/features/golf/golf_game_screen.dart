@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/banner_ad_widget.dart';
@@ -267,6 +269,10 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     final sorted  = players.entries.toList()
       ..sort((a, b) => ((a.value['totalShots'] as int?) ?? 99)
           .compareTo((b.value['totalShots'] as int?) ?? 99));
+    final iWon = sorted.isNotEmpty && sorted.first.key == widget.myKey;
+    ProfileService.instance
+        .reportGameResult(gameId: 'golf', won: iWon)
+        .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈', '🥉', '4.'];
     showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(

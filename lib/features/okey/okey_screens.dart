@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
@@ -243,6 +245,8 @@ class _ORoomState extends State<OkeyRoomScreen> {
   void initState() {
     super.initState();
     _sub = _rooms.watchRoom(gamePath: GamePaths.okey, roomId: widget.roomId).listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.okey, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
   @override void dispose() { _sub?.cancel(); super.dispose(); }
 
@@ -288,7 +292,7 @@ class _ORoomState extends State<OkeyRoomScreen> {
     // Okey göstergesi
     if (remaining.isNotEmpty) {
       final ind = remaining.first;
-      final okN = (ind['n'] as int % 13) + 1;
+      final okN = ((ind['n'] as int) % 13) + 1;
       updates['indicator'] = ind;
       updates['okeyN'] = okN;
       updates['okeyC'] = ind['c'];
@@ -493,6 +497,9 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
     final winner = _room['winner'] as String? ?? '';
     final sorted = _players.entries.toList()
       ..sort((a, b) => ((b.value['score'] as int?) ?? 0).compareTo((a.value['score'] as int?) ?? 0));
+    ProfileService.instance
+        .reportGameResult(gameId: 'okey', won: winner == widget.myKey)
+        .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈', '🥉', '4.'];
     showDialog(context: context, barrierDismissible: false, builder: (_) => AlertDialog(
       title: Text(_mode == '101' ? '🃏 Oyun Bitti!' : '🀄 Oyun Bitti!',

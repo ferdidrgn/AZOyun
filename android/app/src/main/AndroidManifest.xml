@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
+    <!-- Android 13+ (API 33) bildirim gösterebilmek için çalışma zamanı izni gerektirir. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
@@ -23,6 +26,14 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-5779807348211992~2861799229" />
+
+        <!-- Play Games Services v2 (bkz. ROADMAP 8.7). Gerçek proje ID'si
+             Play Console'dan alınıp res/values/strings.xml içindeki
+             game_services_project_id değerine yapıştırılana kadar bu
+             sessizce etkisiz kalır. -->
+        <meta-data
+            android:name="com.google.android.gms.games.APP_ID"
+            android:value="@string/game_services_project_id" />
 
         <activity
             android:name=".MainActivity"
@@ -41,7 +52,26 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- azoyun://join/<oyun>/<kod> özel şema deep link'i (bkz. DeepLinkService).
+                 Gerçek https Universal/App Links için doğrulanmış bir domain
+                 gerekir; henüz yok, bu yüzden sadece özel şema tanımlı
+                 (bkz. ROADMAP 7.3). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="azoyun" />
+            </intent-filter>
         </activity>
+
+        <!-- FCM: uygulama ön planda değilken varsayılan bildirim ikonu/kanalı. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="az_oyun_default_channel" />
 
         <meta-data
             android:name="flutterEmbedding"

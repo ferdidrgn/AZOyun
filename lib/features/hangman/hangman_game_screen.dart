@@ -2,9 +2,10 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
-import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
 const _kWords = [
@@ -259,6 +260,11 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     final headline = p1s > p2s
         ? '🏆 ${_pName("p1")} kazandı!'
         : p2s > p1s ? '🏆 ${_pName("p2")} kazandı!' : '🤝 Berabere!';
+    final myScore = _pScore(widget.myKey);
+    final otherScore = widget.myKey == 'p1' ? p2s : p1s;
+    ProfileService.instance
+        .reportGameResult(gameId: 'hangman', won: myScore > otherScore)
+        .then((_) => AchievementService.instance.checkAndUnlock());
 
     showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
