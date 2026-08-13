@@ -11,6 +11,7 @@ import '../../core/services/notification_service.dart';
 import '../../core/services/play_games_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/theme_service.dart';
+import '../../core/theme/az_theme.dart';
 import 'language_screen.dart';
 import 'legal_screens.dart';
 
@@ -241,42 +242,95 @@ class _SettingsScreenState extends State<SettingsScreen> {
       (AppThemePreference.light, t('settings_theme_light'), Icons.light_mode_rounded),
       (AppThemePreference.dark, t('settings_theme_dark'), Icons.dark_mode_rounded),
     ];
+    final isCustom = ThemeService.instance.preference == AppThemePreference.custom;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            for (final (pref, label, icon) in options)
+        child: Column(children: [
+          Row(
+            children: [
+              for (final (pref, label, icon) in options)
+                Expanded(child: _themeOptionTile(context, pref, label, icon)),
               Expanded(
                 child: InkWell(
-                  onTap: () => ThemeService.instance.setPreference(pref),
+                  onTap: () => _pickCustomColor(context),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Column(
-                      children: [
-                        Icon(icon,
-                            color: ThemeService.instance.preference == pref
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).hintColor),
-                        const SizedBox(height: 6),
-                        Text(label,
-                            style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: ThemeService.instance.preference == pref
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: ThemeService.instance.preference == pref
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).hintColor)),
-                      ],
-                    ),
+                    child: Column(children: [
+                      isCustom
+                          ? CircleAvatar(radius: 12, backgroundColor: ThemeService.instance.customColor)
+                          : Icon(Icons.palette_rounded,
+                              color: Theme.of(context).hintColor),
+                      const SizedBox(height: 6),
+                      Text(t('settings_theme_custom'),
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: isCustom ? FontWeight.bold : FontWeight.normal,
+                              color: isCustom
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).hintColor)),
+                    ]),
                   ),
                 ),
               ),
+            ],
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _themeOptionTile(BuildContext context, AppThemePreference pref, String label, IconData icon) {
+    final selected = ThemeService.instance.preference == pref;
+    return InkWell(
+      onTap: () => ThemeService.instance.setPreference(pref),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          children: [
+            Icon(icon,
+                color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).hintColor),
+            const SizedBox(height: 6),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                    color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).hintColor)),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _pickCustomColor(BuildContext context) async {
+    final chosen = await showDialog<Color>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(t('settings_theme_custom_pick')),
+        content: Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          children: [
+            for (final c in AZTheme.customColorSwatches)
+              GestureDetector(
+                onTap: () => Navigator.pop(context, c),
+                child: CircleAvatar(
+                  radius: 22,
+                  backgroundColor: c,
+                  child: ThemeService.instance.preference == AppThemePreference.custom &&
+                          ThemeService.instance.customColor.value == c.value
+                      ? const Icon(Icons.check_rounded, color: Colors.white)
+                      : null,
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(t('common_cancel'))),
+        ],
+      ),
+    );
+    if (chosen != null) await ThemeService.instance.setCustomColor(chosen);
   }
 
   Widget _tile(

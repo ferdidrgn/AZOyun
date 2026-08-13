@@ -20,6 +20,11 @@ dependencies:
   # Bildirim izni + sistem ayarlarına yönlendirme
   permission_handler: ^11.3.1
 
+  # Uygulama açıkken (foreground) FCM mesajını gerçek bir sistem
+  # bildirimi olarak göstermek için — FCM bunu foreground'dayken
+  # otomatik yapmıyor, sadece background/kapalıyken yapıyor.
+  flutter_local_notifications: ^18.0.1
+
   # Deep link (azoyun:// özel şema)
   app_links: ^6.3.2
 

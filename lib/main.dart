@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import 'core/config/firebase_options.dart';
 import 'core/services/ad_service.dart';
+import 'core/services/app_keys.dart';
 import 'core/services/deep_link_service.dart';
 import 'core/services/language_service.dart';
 import 'core/services/notification_service.dart';
@@ -15,11 +16,6 @@ import 'core/services/profile_service.dart';
 import 'core/services/theme_service.dart';
 import 'core/theme/az_theme.dart';
 import 'features/onboarding/splash_screen.dart';
-
-/// Uygulama genelinde context'e ihtiyaç duymadan (ör. FCM arka plan geri
-/// bildirimi, deep link yönlendirmesi) navigasyon/snackbar yapabilmek için.
-final navigatorKey = GlobalKey<NavigatorState>();
-final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,15 +62,19 @@ class AZOyunApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([ThemeService.instance, LanguageService.instance]),
-    builder: (context, _) => MaterialApp(
-      navigatorKey: navigatorKey,
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      title: 'AZ Oyun',
-      debugShowCheckedModeBanner: false,
-      theme: AZTheme.light,
-      darkTheme: AZTheme.dark,
-      themeMode: ThemeService.instance.themeMode,
-      home: const SplashScreen(),
-    ),
+    builder: (context, _) {
+      final isCustom = ThemeService.instance.preference == AppThemePreference.custom;
+      final customColor = ThemeService.instance.customColor;
+      return MaterialApp(
+        navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
+        title: 'AZ Oyun',
+        debugShowCheckedModeBanner: false,
+        theme: isCustom ? AZTheme.fromSeed(customColor, Brightness.light) : AZTheme.light,
+        darkTheme: isCustom ? AZTheme.fromSeed(customColor, Brightness.dark) : AZTheme.dark,
+        themeMode: ThemeService.instance.themeMode,
+        home: const SplashScreen(),
+      );
+    },
   );
 }
