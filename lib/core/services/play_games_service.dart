@@ -3,17 +3,15 @@ import 'package:games_services/games_services.dart';
 
 /// Google Play Games Services (Android) / Game Center (iOS) köprüsü.
 ///
-/// ÖNEMLİ: Liderlik tablosu ve başarım ID'leri aşağıda placeholder olarak
-/// duruyor. Google Play Console'da:
-///   1. Uygulamanı oluştur → "Play Games Services" özelliğini etkinleştir.
-///   2. Liderlik tablosu ve başarım tanımlarını oluştur (her hızlı oyun için
-///      bir liderlik tablosu önerilir: skorId aşağıdaki [_leaderboardIds]).
-///   3. Oluşan ID'leri aşağıya yapıştır.
-///   4. `android/app/src/main/AndroidManifest.xml` içine Play Games
-///      meta-data'sını ekle (Play Console kurulum sihirbazı adım adım
-///      gösterir).
+/// Play Console tarafında (proje kimliği 517819561284) şu an:
+///   - 1 genel liderlik tablosu ("Skorboard") — bkz. [_defaultLeaderboardId]
+///   - 1 başarım ("İlk" / first_step) — bkz. [_achievementIds]
+///   - 1 etkinlik ("Hoşgeldin") — Events API henüz bu serviste
+///     uygulanmadı, ileride eklenebilir.
+/// Yeni oyuna özel liderlik tablosu/başarım oluşturulunca ilgili ID
+/// [_leaderboardIds]/[_achievementIds] haritalarına eklenmesi yeterli.
 ///
-/// ID girilene kadar bu servis tüm çağrılarda sessizce no-op çalışır —
+/// ID'ler boş/eksikse bu servis tüm çağrılarda sessizce no-op çalışır —
 /// uygulama Play Games olmadan da tamamen sorunsuz çalışmaya devam eder.
 /// Bu dosya `games_services` paketinin API'sine göre yazıldı; paket
 /// sürümü güncellenirse (`flutter pub get` sonrası) derleme hatası
@@ -25,18 +23,26 @@ class PlayGamesService {
   bool _signedIn = false;
   bool get isSignedIn => _signedIn;
 
-  /// Her hızlı oyun için Play Console'da oluşturulacak liderlik tablosu ID'si.
-  /// Boş string = henüz yapılandırılmadı → o oyun için skor gönderilmez.
-  static const Map<String, String> _leaderboardIds = {
-    'snake': '', // TODO: Play Console'dan CgkI... ID'sini yapıştır
-    '2048': '', // TODO
-    'reflex': '', // TODO
-  };
+  /// Play Console'da şimdilik tek bir genel skor tablosu ("Skorboard")
+  /// oluşturuldu — oyuna özel bir ID tanımlanmamış tüm hızlı oyunların
+  /// skoru buraya gider. İleride her oyun için ayrı tablo açılırsa
+  /// [_leaderboardIds]'e o oyunun ID'si eklenmesi yeterli, bu satır
+  /// değişmeden kalabilir.
+  static const String _defaultLeaderboardId = 'CgkIxOrNg4kPEAIQAQ'; // Skorboard
+
+  /// Oyuna özel liderlik tablosu ID'si (varsa [_defaultLeaderboardId]'nin
+  /// önüne geçer).
+  static const Map<String, String> _leaderboardIds = {};
+
+  String _leaderboardIdFor(String gameId) =>
+      _leaderboardIds[gameId]?.isNotEmpty == true
+          ? _leaderboardIds[gameId]!
+          : _defaultLeaderboardId;
 
   /// Başarım ID eşlemesi (AchievementDef.id -> Play Games achievement ID).
+  /// Play Console'da şimdilik sadece "İlk" (first_step) başarımı oluşturuldu.
   static const Map<String, String> _achievementIds = {
-    // TODO: Play Console'da oluşturulan başarım ID'leriyle doldur.
-    // 'first_step': 'CgkI...',
+    'first_step': 'CgkIxOrNg4kPEAIQAw', // "İlk" — ilk maçını oyna
   };
 
   Future<void> signIn() async {
@@ -52,8 +58,7 @@ class PlayGamesService {
 
   Future<void> submitScore({required String gameId, required int score}) async {
     if (!_signedIn) return;
-    final leaderboardId = _leaderboardIds[gameId];
-    if (leaderboardId == null || leaderboardId.isEmpty) return;
+    final leaderboardId = _leaderboardIdFor(gameId);
     try {
       await GamesServices.submitScore(
         score: Score(androidLeaderboardID: leaderboardId, value: score),
@@ -78,8 +83,7 @@ class PlayGamesService {
 
   Future<void> showLeaderboard(String gameId) async {
     if (!_signedIn) return;
-    final leaderboardId = _leaderboardIds[gameId];
-    if (leaderboardId == null || leaderboardId.isEmpty) return;
+    final leaderboardId = _leaderboardIdFor(gameId);
     try {
       await GamesServices.showLeaderboards(androidLeaderboardID: leaderboardId);
     } catch (e) {
