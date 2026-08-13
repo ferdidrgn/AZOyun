@@ -4,5 +4,5 @@
          Console → Oyun hizmetleri (Game services) → Yapılandırma sayfasından
          alınır. Gerçek değer girilene kadar Play Games Services sessizce
          devre dışı kalır — uygulamanın geri kalanı bundan etkilenmez. -->
-    <string translatable="false" name="game_services_project_id">REPLACE_WITH_PLAY_CONSOLE_PROJECT_ID</string>
+    <string translatable="false" name="game_services_project_id">517819561284</string>
 </resources>
