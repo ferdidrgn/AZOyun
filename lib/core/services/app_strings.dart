@@ -83,6 +83,11 @@ class AppStrings {
             'oyun içi avantaj sağlamaz.',
     'donate_button': 'Küçük Bir Bağış Yap',
     'donate_thanks': 'Çok teşekkürler! Desteğin bizim için çok değerli. 💜',
+
+    'settings_premium': 'Premium — 6 Ay Reklamsız',
+    'settings_premium_subtitle_buy': 'Tüm reklamları 6 ay boyunca kaldır',
+    'settings_premium_active': 'Premium aktif',
+    'premium_thanks': 'Premium etkinleştirildi! 6 ay boyunca reklam yok. ✨',
   };
 
   static const _en = <String, String>{
@@ -155,5 +160,10 @@ class AppStrings {
             'grants any in-game advantage.',
     'donate_button': 'Make a Small Donation',
     'donate_thanks': "Thank you so much! Your support means a lot to us. 💜",
+
+    'settings_premium': 'Premium — 6 Months Ad-Free',
+    'settings_premium_subtitle_buy': 'Remove all ads for 6 months',
+    'settings_premium_active': 'Premium active',
+    'premium_thanks': "Premium activated! No ads for 6 months. ✨",
   };
 }

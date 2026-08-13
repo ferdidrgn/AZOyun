@@ -30,6 +30,7 @@ void main() async {
   await ThemeService.instance.load();
   await LanguageService.instance.load();
   await AdService.instance.initialize();
+  await AdService.instance.applyPremiumStateIfActive();
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

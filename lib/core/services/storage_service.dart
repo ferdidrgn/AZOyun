@@ -12,6 +12,7 @@ class StorageService {
 
   static const _kName           = 'player_name';
   static const _kGameEnterCount = 'game_enter_count';
+  static const _kPremiumUntil   = 'premium_until';
 
   // ── Player name ───────────────────────────────────────────────────────────
 
@@ -39,6 +40,31 @@ class StorageService {
 
   Future<void> markRewardedShownForRoom(String roomId) =>
       _storage.write(key: 'rewarded_$roomId', value: 'true');
+
+  // ── Premium (reklamsız süre) ─────────────────────────────────────────────
+
+  Future<DateTime?> getPremiumUntil() async {
+    final v = await _storage.read(key: _kPremiumUntil);
+    if (v == null) return null;
+    return DateTime.tryParse(v);
+  }
+
+  /// Satın alma anında çağrılır. Zaten aktif bir premium süresi varsa
+  /// üzerine eklenir (erken satın alan mağdur olmasın), yoksa şimdiden
+  /// itibaren başlar.
+  Future<void> extendPremium(Duration extra) async {
+    final current = await getPremiumUntil();
+    final base = (current != null && current.isAfter(DateTime.now()))
+        ? current
+        : DateTime.now();
+    await _storage.write(
+        key: _kPremiumUntil, value: base.add(extra).toIso8601String());
+  }
+
+  Future<bool> isPremiumActive() async {
+    final until = await getPremiumUntil();
+    return until != null && until.isAfter(DateTime.now());
+  }
 
   Future<void> clearAll() => _storage.deleteAll();
 }

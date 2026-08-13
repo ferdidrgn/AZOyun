@@ -9,6 +9,7 @@ import '../../core/services/iap_service.dart';
 import '../../core/services/language_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/play_games_service.dart';
+import '../../core/services/storage_service.dart';
 import '../../core/services/theme_service.dart';
 import 'language_screen.dart';
 import 'legal_screens.dart';
@@ -24,11 +25,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _version = '';
   bool _connectingPlayGames = false;
   bool _donating = false;
+  bool _buyingPremium = false;
+  DateTime? _premiumUntil;
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
+    _loadPremiumStatus();
     IAPService.instance.initialize(onPurchase: _onPurchase);
   }
 
@@ -42,9 +46,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _loadPremiumStatus() async {
+    final until = await StorageService.instance.getPremiumUntil();
+    if (!mounted) return;
+    setState(() => _premiumUntil = until);
+  }
+
   void _onPurchase(PurchaseDetails purchase) {
-    if (purchase.productID == IAPService.donationSmallId && mounted) {
+    if (!mounted) return;
+    if (purchase.productID == IAPService.donationSmallId) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('donate_thanks'))));
+    } else if (purchase.productID == IAPService.premium6mId) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('premium_thanks'))));
+      _loadPremiumStatus();
     }
   }
 
@@ -63,6 +77,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!started) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Bağış ürünü şu an kullanılamıyor.')));
+    }
+  }
+
+  bool get _premiumActive =>
+      _premiumUntil != null && _premiumUntil!.isAfter(DateTime.now());
+
+  Future<void> _buyPremium() async {
+    setState(() => _buyingPremium = true);
+    final started = await IAPService.instance.buyPremium6Months();
+    if (!mounted) return;
+    setState(() => _buyingPremium = false);
+    if (!started) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Premium ürünü şu an kullanılamıyor.')));
     }
   }
 
@@ -130,6 +158,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 20),
             _sectionLabel(context, t('settings_support')),
+            _tile(
+              context,
+              icon: Icons.workspace_premium_rounded,
+              title: t('settings_premium'),
+              subtitle: _premiumActive
+                  ? '${t('settings_premium_active')} · ${_premiumUntil!.difference(DateTime.now()).inDays} gün kaldı'
+                  : t('settings_premium_subtitle_buy'),
+              trailing: _buyingPremium
+                  ? const SizedBox(
+                      width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : (_premiumActive ? const Icon(Icons.check_circle_rounded, color: Colors.green) : null),
+              onTap: (_buyingPremium || _premiumActive) ? null : _buyPremium,
+            ),
             _tile(
               context,
               icon: Icons.coffee_rounded,

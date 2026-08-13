@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
+import 'ad_service.dart';
+import 'storage_service.dart';
+
 /// Uygulama içi satın alma iskeleti.
 ///
 /// Felsefe: "az kazan, çok eğlendir" — burada asla oyun içi avantaj
@@ -24,11 +27,18 @@ class IAPService {
   /// `donation_small` (küçük bağış) şeklinde seçildi.
   static const donationSmallId = 'donation_small';
 
+  /// 6 ay boyunca tüm reklamları (banner + geçiş) kaldıran, tek seferlik
+  /// (non-consumable) premium ürün. `removeAdsId` (kalıcı reklamsız) ile
+  /// aynı anda var olabilir — kullanıcı istediğini seçer.
+  static const premium6mId = 'premium_6m_noads';
+  static const _premium6mDuration = Duration(days: 180);
+
   static const Set<String> productIds = {
     removeAdsId,
     coinsSmallId,
     coinsMediumId,
     donationSmallId,
+    premium6mId,
   };
 
   final InAppPurchase _iap = InAppPurchase.instance;
@@ -53,6 +63,8 @@ class IAPService {
         for (final p in purchases) {
           if (p.status == PurchaseStatus.purchased ||
               p.status == PurchaseStatus.restored) {
+            if (p.productID == premium6mId) _activatePremium();
+            if (p.productID == removeAdsId) AdService.instance.disableAds();
             onPurchase(p);
           }
           if (p.pendingCompletePurchase) {
@@ -91,6 +103,26 @@ class IAPService {
     await buyConsumable(product);
     return true;
   }
+
+  /// Play Console'da tüketilebilir OLMAYAN (non-consumable) ürün olarak
+  /// tanımlanmalı — her satın alma süreyi 6 ay uzatır (bkz. [_activatePremium]).
+  Future<bool> buyPremium6Months() async {
+    final product = productById(premium6mId);
+    if (product == null) {
+      debugPrint('[IAPService] $premium6mId ürünü bulunamadı (Play Console\'da oluşturulmamış olabilir)');
+      return false;
+    }
+    await buyNonConsumable(product);
+    return true;
+  }
+
+  Future<void> _activatePremium() async {
+    await StorageService.instance.extendPremium(_premium6mDuration);
+    AdService.instance.disableAds();
+    debugPrint('[IAPService] premium etkinleştirildi (+${_premium6mDuration.inDays} gün)');
+  }
+
+  Future<bool> get isPremiumActive => StorageService.instance.isPremiumActive();
 
   Future<void> buyConsumable(ProductDetails product) =>
       _iap.buyConsumable(purchaseParam: PurchaseParam(productDetails: product));

@@ -255,6 +255,8 @@ class _ImpostorRoomScreenState extends State<ImpostorRoomScreen> {
   void initState() {
     super.initState();
     _sub = _rooms.watchRoom(gamePath: GamePaths.impostor, roomId: widget.roomId).listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.impostor, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
 
   @override

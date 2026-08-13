@@ -274,6 +274,8 @@ class _DamaRoomState extends State<DamaRoomScreen> {
   void initState() {
     super.initState();
     _sub = _rooms.watchRoom(gamePath: GamePaths.dama, roomId: widget.roomId).listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.dama, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
   @override void dispose() { _sub?.cancel(); super.dispose(); }
 

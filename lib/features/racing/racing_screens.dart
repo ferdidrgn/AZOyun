@@ -250,7 +250,10 @@ class _RRoomState extends State<RacingRoomScreen> {
   bool _nav = false;
 
   @override void initState() { super.initState();
-    _sub = _rooms.watchRoom(gamePath: GamePaths.racing, roomId: widget.roomId).listen(_onData);}
+    _sub = _rooms.watchRoom(gamePath: GamePaths.racing, roomId: widget.roomId).listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.racing, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: _isHost);
+  }
   @override void dispose() { _sub?.cancel(); super.dispose(); }
 
   void _onData(Map<String, dynamic>? d) {

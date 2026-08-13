@@ -32,6 +32,8 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
     _sub = _rooms
         .watchRoom(gamePath: GamePaths.hangman, roomId: widget.roomId)
         .listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.hangman, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
 
   @override

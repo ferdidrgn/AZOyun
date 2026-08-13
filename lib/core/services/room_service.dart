@@ -112,6 +112,29 @@ class RoomService {
     required String roomId,
   }) => _ref(gamePath, roomId).remove();
 
+  /// Bağlantı **kontrolsüz** koparsa (uygulama çöker, ağ kesilir, telefon
+  /// kapanır) Firebase sunucusunun kendisinin yapacağı temizliği kaydeder.
+  /// Düzgün "odadan çık" akışı zaten her oyunda ayrı ayrı çalışıyor — bu,
+  /// sadece o akışın hiç çalışamadığı durumu kapatır. Host için tüm odayı,
+  /// diğer oyuncular için sadece kendi koltuklarını siler; bu, mevcut
+  /// manuel "çık" davranışıyla birebir aynı kural.
+  Future<void> registerPresence({
+    required String gamePath,
+    required String roomId,
+    required String playerKey,
+    required bool isHost,
+  }) async {
+    final target = isHost
+        ? _ref(gamePath, roomId)
+        : _ref(gamePath, roomId).child('players/$playerKey');
+    try {
+      await target.onDisconnect().remove();
+    } catch (_) {
+      // onDisconnect kaydı başarısız olsa bile düzgün "çık" akışı çalışmaya
+      // devam eder; bu sadece ekstra bir güvenlik ağı.
+    }
+  }
+
   Stream<Map<String, dynamic>?> watchRoom({
     required String gamePath,
     required String roomId,

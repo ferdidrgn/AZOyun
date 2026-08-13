@@ -243,6 +243,8 @@ class _ORoomState extends State<OkeyRoomScreen> {
   void initState() {
     super.initState();
     _sub = _rooms.watchRoom(gamePath: GamePaths.okey, roomId: widget.roomId).listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.okey, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
   @override void dispose() { _sub?.cancel(); super.dispose(); }
 

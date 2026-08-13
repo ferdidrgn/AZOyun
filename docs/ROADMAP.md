@@ -316,3 +316,117 @@ neyin yapıldığını, neyin hâlâ eksik/manuel adım gerektirdiğini buradan 
 - [x] Deep link için `intent-filter` (custom scheme `azoyun://`)
 - [x] `POST_NOTIFICATIONS` izni (Android 13+)
 - [x] FCM meta-data (varsayılan bildirim ikonu/kanalı)
+
+## 8. İkinci endüstriyel tur — kalıcı liste (ASLA UNUTMA)
+
+Bölüm 7 ile aynı kural geçerli: bir madde tamamlandığında ✅ işaretlenir ama
+satır silinmez. Bu bölüm, kullanıcının 13 Ağustos 2026 turunda istediği,
+"artık gerçek bir oyun mağazası ürünü gibi olsun" kapsamındaki işlerin kaydı.
+
+### 8.1 Dedektif oyunu → çok vakalı kampanya
+- [ ] "Gece Ekspresi Cinayeti" tek vakadan, birbirine bağlı **10 vaka + 1
+      final bonus vaka** zincirine genişletilecek
+- [ ] Final vakada şok twist: oyuncunun çözdüğü tüm vakalar aslında
+      perde arkasındaki tek bir kişinin (büyük kötü) uzun vadeli planının
+      parçalarıymış; o kişi herkesi kullanmış/kandırmış ve planını
+      tamamlayarak büyük bir güç/kontrol elde etmiş olacak
+- [ ] Final, ana karakterin şaşkınlığıyla ve akıbeti belirsiz bırakılarak
+      biter (klasik "to be continued" hissi) — aksiyonlu, nefes nefese temp
+- Not: 10 vakanın hepsini ilk vaka (Gece Ekspresi) kadar uzun/detaylı
+  yazmak tek oturumda bitecek bir iş değil — kampanya **iskeleti**
+  (vaka zinciri state'i, ilerleme kaydı, XP artışı) ve **birden fazla yeni
+  vaka + final** bu turda eklenecek, kalanlar sıradaki turlarda tamamlanacak.
+
+### 8.2 Reklam & Premium
+- [x] Interstitial sıklığı: her oyun sonunda değil, **5 oyunda 1** (önceden
+      3'tü) — kullanıcıyı boğmadan gelir üretmeye devam
+- [x] Banner reklamlar korunuyor (mevcut `AdaptiveBannerAdWidget`)
+- [x] Yeni IAP ürünü: **Premium — 6 Ay Reklamsız** (`premium_6m_noads`,
+      ~50 TL), non-consumable; satın alınınca `StorageService.extendPremium`
+      bitiş tarihini `flutter_secure_storage`'a yazar (zaten aktifse
+      üzerine ekler), `AdService.disableAds()` anında çağrılır, uygulama
+      her açılışta `applyPremiumStateIfActive()` ile süresi dolmamışsa
+      reklamları kapalı başlatır
+- [x] Ayarlar ekranına "Premium — 6 Ay Reklamsız" butonu (aktifken kalan
+      gün sayısını gösterir)
+- Not: Tek bir `AdService._adsEnabled` bayrağı kullanıldığı için premium
+  aktifken ödüllü (rewarded) reklamlar da kapanır — "reklamsız" özelliği
+  basit ve tutarlı tutmak için bilinçli bir tercih.
+- ⚠️ **Kullanıcı tarafında kalan adım:** Yeni IAP ürününün Play
+  Console'da `premium_6m_noads` ID'siyle non-consumable olarak
+  oluşturulması gerekiyor.
+
+### 8.3 Google Play Console — pre-launch report uyarıları
+Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
+- [x] **R8/kaynak küçültme:** `isShrinkResources = true` zaten
+      `build.gradle.kts`'de aktif (önceki turda eklendi) — bu uyarı eski
+      bir build'e ait, bir sonraki yüklemede kendiliğinden düzelecek
+- ⚠️ **AGP 9.0+ yükseltmesi:** Şu an `com.android.application` 8.11.1.
+      Bu ortamda gerçek bir Flutter/Gradle derlemesi çalıştırılamadığından
+      (Flutter SDK yok), AGP sürümünü körlemesine yükseltmek NDK
+      versiyonunda daha önce yaşanan build kırılmasına benzer bir riske
+      yol açabilir. **Kullanıcı tarafında kalan adım:** Android Studio'yu
+      güncelleyip AGP'yi kademeli yükselt, `flutter build appbundle` ile
+      yerel olarak doğrula.
+- [x] **Bit eşlem (Bitmap) alt örnekleme uyarısı — kök neden bulundu ve
+      düzeltildi:** `assets/images/` klasöründe **hiçbir Dart dosyasından
+      referans verilmeyen** 3 unutulmuş görsel duruyordu —
+      `enemy_car.png` (1024×1024, ~1 MB), `road_texture.png`
+      (1024×1024, ~1.6 MB), `player_car.gif` (~925 KB). Araba Yarışı
+      oyunu emoji tabanlı sprite'lara geçtiğinden beri bunlar tamamen
+      ölü ağırlıktı ama `pubspec.yaml` hâlâ `assets/images/` klasörünü
+      bütün olarak bundle'a dahil ediyordu. Silindi, `pubspec.yaml`'dan
+      `assets/images/` satırı kaldırıldı. Play Console'un işaret ettiği
+      obfuscate sınıflar (`D.b.c`, `F1.x.c`) hâlâ bir SDK'nın iç kodu
+      olabilir ama bu APK'yı gereksiz yere büyüten, kullanılmayan
+      yüksek-çözünürlüklü görselleri ortadan kaldırmak zaten doğru adımdı.
+      **Kullanıcı tarafında kalan adım:** Bir sonraki build'i Play
+      Console'a yükleyip uyarının düşüp düşmediğini kontrol et; hâlâ
+      görünüyorsa ProGuard/R8 mapping dosyasını
+      (`build/app/outputs/mapping/release/mapping.txt`) yükleyip hangi
+      SDK olduğunu netleştir.
+- [x] **Uçtan uca (edge-to-edge) ekran uyarısı:** Ekranlarımız zaten
+      `SafeArea` kullanıyor; asıl neden Android 15 hedefleyen uygulamalarda
+      edge-to-edge'in zorunlu hale gelmesi. `MainActivity` standart
+      `FlutterActivity`'yi kullanıyor ve Flutter, güncel embedding'de
+      edge-to-edge'i otomatik destekliyor — ekstra native kod gerekmedi.
+      Play Console uyarısı da eski build'e ait, bir sonraki yüklemede
+      düşmesi bekleniyor.
+
+### 8.4 Firebase oda temizliği (hayalet oda önleme)
+- [ ] `RoomService`'e `onDisconnect()` tabanlı temizlik eklenecek: bir
+      oyuncu/host bağlantısı **crash/ağ kopması gibi kontrolsüz** bir
+      şekilde koparsa (uygulamadan düzgün "çık" ile değil), oda Firebase'de
+      sonsuza kadar kalmasın
+- Not: "Host çıkarsa" / "oyun bitince silinsin" senaryosu zaten TÜM 12
+  online oyunda çalışıyordu (`_leave()` + boş oda kontrolü) — eksik olan
+  sadece **anormal/kontrolsüz kopma** durumuydu, `onDisconnect()` ile
+  kapatılıyor.
+
+### 8.5 Oyun içi hata taraması
+- [x] Araba Yarışı: araba sprite'ları fizik yönüne göre hep **ters**
+      duruyordu (emoji varsayılan olarak sola bakar, hareket matematiği
+      açı 0'ı "sağa" kabul eder) — `+pi` düzeltmesiyle çözüldü
+- [ ] Diğer oyunlarda (özellikle Dövüşçüler, Dama, Okey) benzer görsel/
+      mantık hataları için tarama devam ediyor
+
+### 8.6 Google Play Games Services v2
+- [ ] `developer.android.com/games/pgs/android/android-start` rehberine
+      göre kurulumun güncel olup olmadığı gözden geçirilecek
+- Not: Şu an `games_services` Flutter paketi kullanılıyor (bkz. bölüm 4.5,
+  7.6) — Google'ın native "Play Games Services v2" SDK'sına (Kotlin/Java
+  tarafında doğrudan `com.google.android.gms:play-services-games-v2`)
+  geçmek, paketi tamamen değiştirmek anlamına gelir; bu büyük bir karar,
+  önce mevcut paketin v2 ile uyumlu olup olmadığı doğrulanacak.
+
+### 8.7 Tüm oyunları "çocuksu 2D"den "3D/eğlenceli" hale getirme
+- [ ] Kullanıcı geri bildirimi: mevcut UI'lar güzel ama oyunların çoğu
+      (özellikle strateji/parti oyunları) düz 2D ve "çocuksu" hissettiriyor;
+      Araba Yarışı ve Dövüşçüler'deki gibi daha "3D hissi veren" bir
+      görsel dile geçilmesi isteniyor
+- Not: Bu, **30+ oyunun tamamını** kapsayan çok büyük bir görsel yenileme
+  girişimi — tek oturumda bitmez. Öncelik sırası önerisi: (1) en çok
+  oynanacak/öne çıkan oyunlar (XOX, Vampir Köylü, Yalancılar Kahvesi), (2)
+  arcade oyunları (zaten kısmen pseudo-3D olan Mini Bovling'e benzer
+  gradient/gölge/perspektif teknikleri diğer arcade oyunlara uygulanabilir),
+  (3) masa oyunları (Dama, Okey). İstenirse oyun oyun ilerlenir.
