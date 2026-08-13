@@ -3,10 +3,11 @@ import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
-import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
@@ -350,7 +351,10 @@ class _FRoomState extends State<FighterRoomScreen> {
   bool _nav = false;
 
   @override void initState() { super.initState();
-    _sub = _rooms.watchRoom(gamePath: GamePaths.fighter, roomId: widget.roomId).listen(_onData);}
+    _sub = _rooms.watchRoom(gamePath: GamePaths.fighter, roomId: widget.roomId).listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.fighter, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
+  }
   @override void dispose() { _sub?.cancel(); super.dispose(); }
 
   void _onData(Map<String, dynamic>? d) {
@@ -804,6 +808,9 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
     if (!mounted) return;
     final winner = _room['winner'] as String? ?? '';
     final iWon = winner == widget.myKey;
+    ProfileService.instance
+        .reportGameResult(gameId: 'fighter', won: iWon)
+        .then((_) => AchievementService.instance.checkAndUnlock());
     final oppData = _players[_oppKey];
     final myF = widget.fighter;
     final oppF = getFighter(oppData?['fighterId'] as String? ?? 'warrior');

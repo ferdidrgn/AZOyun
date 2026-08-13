@@ -33,6 +33,8 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
     _sub = _rooms
         .watchRoom(gamePath: GamePaths.soccer, roomId: widget.roomId)
         .listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.soccer, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
 
   @override

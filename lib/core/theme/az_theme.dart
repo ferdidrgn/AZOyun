@@ -94,47 +94,89 @@ abstract class AZRadius {
 // ═══════════════════════════════════════════════════════════════════════════
 
 abstract class AZTheme {
-  static ThemeData get light => ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(seedColor: AZColors.purple),
-    scaffoldBackgroundColor: AZColors.bg,
-    fontFamily: 'Roboto',
-    appBarTheme: const AppBarTheme(
-      elevation: 0,
-      centerTitle: true,
-      systemOverlayStyle: SystemUiOverlayStyle(
-        statusBarColor:            Colors.transparent,
-        statusBarIconBrightness:   Brightness.light,
+  static ThemeData get light => _build(
+      ColorScheme.fromSeed(seedColor: AZColors.purple), Brightness.light);
+
+  static ThemeData get dark => _build(
+      ColorScheme.fromSeed(seedColor: AZColors.purple, brightness: Brightness.dark),
+      Brightness.dark);
+
+  /// Ayarlar'da kullanıcının seçtiği özel bir vurgu rengine göre üretilen
+  /// tema — `light`/`dark` ile aynı yapıyı kullanır, sadece tohum (seed)
+  /// rengi değişir.
+  static ThemeData fromSeed(Color seed, Brightness brightness) =>
+      _build(ColorScheme.fromSeed(seedColor: seed, brightness: brightness), brightness);
+
+  static ThemeData _build(ColorScheme scheme, Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF121218) : AZColors.bg;
+    final surface = isDark ? const Color(0xFF1E1E28) : Colors.white;
+    return ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: bg,
+      fontFamily: 'Roboto',
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: isDark ? bg : null,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor:            Colors.transparent,
+          statusBarIconBrightness:   Brightness.light,
+        ),
       ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AZRadius.lg)),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AZRadius.md)),
+        filled: true,
+        fillColor: surface,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: isDark ? surface : null,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AZRadius.xl)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AZRadius.md)),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 4,
+        color: isDark ? surface : null,
+        shadowColor: isDark ? Colors.black45 : Colors.black12,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AZRadius.lg)),
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
       ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AZRadius.md)),
-      filled: true,
-      fillColor: Colors.white,
-    ),
-    dialogTheme: DialogThemeData(
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AZRadius.xl)),
-    ),
-    snackBarTheme: SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AZRadius.md)),
-    ),
-    cardTheme: CardThemeData(
-      elevation: 4,
-      shadowColor: Colors.black12,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AZRadius.lg)),
-    ),
-  );
+    );
+  }
+
+  /// Ayarlar/Splash/Onboarding gibi "chrome" ekranlarında koyu temada
+  /// kullanılan marka gradyanı.
+  static const darkBrandGradient = AZColors.gradDark;
+
+  /// Ayarlar'daki "Özel Renk" seçicisinde sunulan hazır palet.
+  static const List<Color> customColorSwatches = [
+    AZColors.purple,
+    Color(0xFFE74C3C), // kırmızı
+    Color(0xFFE67E22), // turuncu
+    Color(0xFFF1C40F), // sarı
+    Color(0xFF2ECC71), // yeşil
+    Color(0xFF1ABC9C), // turkuaz
+    Color(0xFF3498DB), // mavi
+    Color(0xFF9B59B6), // mor
+    Color(0xFFE84393), // pembe
+    Color(0xFF2C3E50), // lacivert
+    Color(0xFF16A085), // çam yeşili
+    Color(0xFFD35400), // tarçın
+  ];
 }

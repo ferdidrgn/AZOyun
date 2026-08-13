@@ -81,7 +81,7 @@ class AZFrostCard extends StatelessWidget {
   );
 }
 
-class AZGameCard extends StatelessWidget {
+class AZGameCard extends StatefulWidget {
   const AZGameCard({
     super.key,
     required this.title,
@@ -98,81 +98,107 @@ class AZGameCard extends StatelessWidget {
   final String?      badge;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AZRadius.xl),
-      child: Ink(
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(AZRadius.xl),
-          boxShadow: [
-            BoxShadow(
-              color: (gradient as LinearGradient)
-                  .colors
-                  .first
-                  .withAlpha(100),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(children: [
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                color: const Color(0x33FFFFFF),
-                borderRadius: BorderRadius.circular(AZRadius.lg),
+  State<AZGameCard> createState() => _AZGameCardState();
+}
+
+class _AZGameCardState extends State<AZGameCard> {
+  bool _pressed = false;
+
+  void _setPressed(bool v) {
+    if (_pressed != v) setState(() => _pressed = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.gradient is LinearGradient
+        ? (widget.gradient as LinearGradient).colors.first
+        : AZColors.purple;
+
+    return GestureDetector(
+      onTapDown: (_) => _setPressed(true),
+      onTapUp: (_) => _setPressed(false),
+      onTapCancel: () => _setPressed(false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: widget.gradient,
+            borderRadius: BorderRadius.circular(AZRadius.xl),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withAlpha(_pressed ? 60 : 100),
+                blurRadius: _pressed ? 10 : 20,
+                offset: Offset(0, _pressed ? 4 : 10),
               ),
-              child: Center(
-                  child:
-                      Text(emoji, style: const TextStyle(fontSize: 36))),
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Expanded(
-                        child: Text(title,
-                            style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white)),
-                      ),
-                      if (badge != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                              color: const Color(0x4DFFFFFF),
-                              borderRadius: BorderRadius.circular(8)),
-                          child: Text(badge!,
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0x33FFFFFF),
+                  borderRadius: BorderRadius.circular(AZRadius.lg),
+                  border: Border.all(color: const Color(0x40FFFFFF)),
+                ),
+                child: Center(
+                    child: Text(widget.emoji, style: const TextStyle(fontSize: 32))),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Expanded(
+                          child: Text(widget.title,
                               style: const TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white)),
                         ),
+                        if (widget.badge != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20)),
+                            child: Text(widget.badge!,
+                                style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: accent,
+                                    letterSpacing: 0.3)),
+                          ),
+                        ],
+                      ]),
+                      const SizedBox(height: 5),
+                      Text(widget.subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 12.5, color: Color(0xD9FFFFFF), height: 1.3)),
                     ]),
-                    const SizedBox(height: 4),
-                    Text(subtitle,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xD9FFFFFF))),
-                  ]),
-            ),
-            const Icon(Icons.arrow_forward_ios,
-                color: Color(0x99FFFFFF), size: 20),
-          ]),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: const BoxDecoration(color: Color(0x26FFFFFF), shape: BoxShape.circle),
+                child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
+              ),
+            ]),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

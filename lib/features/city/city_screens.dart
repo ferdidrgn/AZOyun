@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
@@ -206,6 +208,8 @@ class _CityRoomScreenState extends State<CityRoomScreen> {
     super.initState();
     _sub = _rooms.watchRoom(gamePath: GamePaths.cityPuzzle, roomId: widget.roomId)
         .listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.cityPuzzle, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
   @override
   void dispose() { _sub?.cancel(); super.dispose(); }
@@ -405,6 +409,10 @@ class _CityGameScreenState extends State<CityGameScreen> {
     final sorted = _players.entries.toList()
       ..sort((a, b) => ((b.value['score'] as int?) ?? 0)
           .compareTo((a.value['score'] as int?) ?? 0));
+    final iWon = sorted.isNotEmpty && sorted.first.key == widget.myKey;
+    ProfileService.instance
+        .reportGameResult(gameId: 'city', won: iWon)
+        .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈', '🥉', '4.'];
     showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(

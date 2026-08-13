@@ -7,6 +7,15 @@
 .buildlog/
 .history
 
+# IDE / editor
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.DS_Store
+Thumbs.db
+
 
 
 # Flutter repo-specific

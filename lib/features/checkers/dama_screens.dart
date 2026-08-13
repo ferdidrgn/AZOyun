@@ -2,10 +2,11 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
-import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
@@ -275,6 +276,8 @@ class _DamaRoomState extends State<DamaRoomScreen> {
   void initState() {
     super.initState();
     _sub = _rooms.watchRoom(gamePath: GamePaths.dama, roomId: widget.roomId).listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.dama, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
   @override void dispose() { _sub?.cancel(); super.dispose(); }
 
@@ -476,6 +479,9 @@ class _DamaGameState extends State<DamaGameScreen> {
     if (!mounted) return;
     final winner = _room['winner'] as String? ?? '';
     final iWon = winner == widget.myKey;
+    ProfileService.instance
+        .reportGameResult(gameId: 'dama', won: iWon)
+        .then((_) => AchievementService.instance.checkAndUnlock());
     final myColor = _isWhite ? '⚪' : '⚫';
     final oppKey = widget.myKey == 'p1' ? 'p2' : 'p1';
     final oppName = _players[oppKey]?['name'] as String? ?? '?';
@@ -565,7 +571,6 @@ class _DamaGameState extends State<DamaGameScreen> {
         // Tahta
         Expanded(child: LayoutBuilder(builder: (_, constraints) {
           final side = (constraints.maxWidth).clamp(0.0, constraints.maxHeight);
-          final cell = side / 8;
           return Center(child: SizedBox(width: side, height: side,
             child: GridView.builder(
               physics: const NeverScrollableScrollPhysics(),

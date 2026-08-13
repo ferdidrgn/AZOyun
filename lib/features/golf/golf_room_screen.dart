@@ -31,6 +31,8 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
     _sub = _rooms
         .watchRoom(gamePath: GamePaths.golf, roomId: widget.roomId)
         .listen(_onData);
+    _rooms.registerPresence(gamePath: GamePaths.golf, roomId: widget.roomId,
+        playerKey: widget.myKey, isHost: widget.myKey == 'p1');
   }
 
   @override
