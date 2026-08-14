@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'core/config/firebase_options.dart';
 import 'core/services/ad_service.dart';
+import 'core/services/analytics_service.dart';
 import 'core/services/app_keys.dart';
 import 'core/services/deep_link_service.dart';
 import 'core/services/language_service.dart';
@@ -23,6 +26,16 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
+  // Yakalanmayan tüm hataları Crashlytics'e gönder — debug modda konsola da
+  // yazdırılmaya devam eder (kDebugMode kontrolü Crashlytics'in kendi
+  // varsayılan davranışı, burada ayrıca engellemiyoruz ki geliştirme
+  // sırasında da raporlama test edilebilsin).
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
+
   await ProfileService.instance.load();
   await ThemeService.instance.load();
   await LanguageService.instance.load();
@@ -36,6 +49,8 @@ void main() async {
   ));
 
   runApp(const AZOyunApp());
+
+  unawaited(AnalyticsService.instance.logAppOpen());
 
   // Bu servisler ilk kareyi bloklamadan, arka planda başlatılır: Play Games
   // oturumu varsa sessizce bağlanır (yoksa no-op), bildirim/token altyapısı
@@ -90,6 +105,7 @@ class AZOyunApp extends StatelessWidget {
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: ThemeService.instance.themeMode,
+          navigatorObservers: [AnalyticsService.instance.navigatorObserver],
           home: const SplashScreen(),
         );
       },

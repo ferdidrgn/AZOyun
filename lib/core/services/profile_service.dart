@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/player_profile.dart';
+import 'analytics_service.dart';
 
 class GameRewardResult {
   final int earnedXp;
@@ -77,10 +79,18 @@ class ProfileService {
     );
     await _persist();
 
+    // Tek çağrı noktası: 30+ oyunun tamamı reportGameResult üzerinden geçtiği
+    // için her oyuna ayrı analytics kodu eklemeye gerek kalmıyor.
+    unawaited(AnalyticsService.instance.logGameEnd(gameId: gameId, won: won));
+    final leveledUp = _profile.level > prevLevel;
+    if (leveledUp) {
+      unawaited(AnalyticsService.instance.logLevelUp(_profile.level));
+    }
+
     return GameRewardResult(
       earnedXp: earnedXp,
       earnedCoins: earnedCoins,
-      leveledUp: _profile.level > prevLevel,
+      leveledUp: leveledUp,
       newLevel: _profile.level,
     );
   }
@@ -92,6 +102,7 @@ class ProfileService {
       unlockedAchievementIds: {..._profile.unlockedAchievementIds, id},
     );
     await _persist();
+    unawaited(AnalyticsService.instance.logAchievementUnlocked(id));
   }
 
   Future<void> addCoins(int amount) async {

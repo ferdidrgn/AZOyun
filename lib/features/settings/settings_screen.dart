@@ -4,6 +4,7 @@ import 'package:in_app_review/in_app_review.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/services/analytics_service.dart';
 import '../../core/services/app_strings.dart';
 import '../../core/services/iap_service.dart';
 import '../../core/services/language_service.dart';
@@ -100,6 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'AZ Oyun\'u indir, arkadaşlarınla 31 farklı oyun oyna! 🎮',
       subject: 'AZ Oyun',
     );
+    AnalyticsService.instance.logShare('app_invite');
   }
 
   Future<void> _rate() async {

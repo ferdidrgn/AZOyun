@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'analytics_service.dart';
 
 enum AppLanguage { tr, en, de, fr, es, ru }
 
@@ -38,5 +42,6 @@ class LanguageService extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, lang.name);
+    unawaited(AnalyticsService.instance.setLanguage(lang.name));
   }
 }

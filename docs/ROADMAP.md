@@ -350,9 +350,18 @@ neyin yapıldığını, neyin hâlâ eksik/manuel adım gerektirdiğini buradan 
 
 ### 7.8 Firebase (genel güçlendirme)
 - [x] Cloud Messaging entegrasyonu (bkz. 7.2)
-- [ ] Analytics (opsiyonel, gelecek — kullanıcı davranışını anlamak için)
-- [ ] Crashlytics (opsiyonel, gelecek — `firebaseCrashlytics` bloğu
-      `build.gradle.kts`'de zaten yorum satırı olarak duruyor, aktif değil)
+- [x] Analytics — `AnalyticsService` eklendi (`lib/core/services/analytics_service.dart`);
+      `firebase_analytics` bağımlılığı + `MaterialApp.navigatorObservers` ile
+      otomatik ekran görüntüleme takibi; `ProfileService.reportGameResult`
+      (tek çağrı noktası → 30+ oyunun tamamı otomatik kapsanıyor) ve
+      `unlockAchievement` üzerinden oyun/seviye/başarım olayları, IAP satın
+      alma akışından `iap_purchase`, tema/dil değişikliklerinden kullanıcı
+      özellikleri (`app_language`, `theme_preference`) gönderiliyor
+- [x] Crashlytics — `firebaseCrashlytics` bloğu `build.gradle.kts`'de aktif
+      hale getirildi (mapping/native symbol upload açık), `main.dart`'ta
+      `FlutterError.onError` ve `PlatformDispatcher.instance.onError`
+      Crashlytics'e bağlandı — yakalanmayan tüm Flutter/Dart hataları artık
+      raporlanıyor
 
 ### 7.9 Android manifest / platform ayarları
 - [x] Deep link için `intent-filter` (custom scheme `azoyun://`)
