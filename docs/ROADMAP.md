@@ -436,11 +436,11 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
       Play Console uyarısı da eski build'e ait, bir sonraki yüklemede
       düşmesi bekleniyor.
 
-### 8.4 Firebase oda temizliği (hayalet oda önleme)
-- [ ] `RoomService`'e `onDisconnect()` tabanlı temizlik eklenecek: bir
-      oyuncu/host bağlantısı **crash/ağ kopması gibi kontrolsüz** bir
-      şekilde koparsa (uygulamadan düzgün "çık" ile değil), oda Firebase'de
-      sonsuza kadar kalmasın
+### 8.4 Firebase oda temizliği (hayalet oda önleme) — tamamlandı
+- [x] `RoomService.registerPresence()` eklendi ve 12 online oyunun
+      tamamına bağlandı: bir oyuncu/host bağlantısı **crash/ağ kopması
+      gibi kontrolsüz** bir şekilde koparsa (uygulamadan düzgün "çık" ile
+      değil), oda artık Firebase'de sonsuza kadar kalmıyor
 - Not: "Host çıkarsa" / "oyun bitince silinsin" senaryosu zaten TÜM 12
   online oyunda çalışıyordu (`_leave()` + boş oda kontrolü) — eksik olan
   sadece **anormal/kontrolsüz kopma** durumuydu, `onDisconnect()` ile
@@ -458,8 +458,23 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
 - [x] Araba Yarışı: araba sprite'ları fizik yönüne göre hep **ters**
       duruyordu (emoji varsayılan olarak sola bakar, hareket matematiği
       açı 0'ı "sağa" kabul eder) — `+pi` düzeltmesiyle çözüldü
-- [ ] Diğer oyunlarda (özellikle Dövüşçüler, Dama, Okey) benzer görsel/
-      mantık hataları için tarama devam ediyor
+- [x] Dövüşçüler, Dama, Okey tarandı. Dövüşçüler/Okey'de açık bir mantık
+      hatası bulunmadı (Racing'deki `_finish()`'teki şüpheli görünen
+      "kazanan sayısı" hesabı da yakından incelendi — aslında race
+      condition YOK, tek bir yerel `players` anlık görüntüsü kullanıldığı
+      için hesap doğru).
+- ⚠️ **Bulundu, düzeltilmedi — kullanıcı onayı bekliyor:** `checkers/
+  dama_screens.dart`'taki "Türk Dama" olarak etiketlenen oyun, aslında
+  **uluslararası (diyagonal) dama kurallarıyla** çalışıyor —
+  `_normalMoves`/`_captures` çapraz yönlerde hareket ediyor
+  (`[-1,-1],[-1,1],[1,-1],[1,1]`), taşlar koyu karelerde başlıyor. Gerçek
+  Türk Dama'da taşlar **düz/yatay** hareket eder (yukarı-aşağı-sağ-sol,
+  çapraz DEĞİL), tüm karelerde oynanır ve dama (kral) bir kale gibi
+  istediği kadar uzağa gidebilir. Bu, kozmetik bir hata değil — oyunun
+  temel kural setini değiştiriyor, düzeltmek board/hareket/yakalama/terfi
+  mantığının tamamını yeniden yazmak demek. Kullanıcıya soruldu: gerçek
+  Türk Dama kurallarına mı geçilsin, yoksa oyun "Uluslararası Dama"
+  olarak mı yeniden adlandırılsın?
 
 ### 8.7 Google Play Games Services v2 — gözden geçirildi ve tamamlandı
 - [x] Google'ın resmi rehberi (`developer.android.com/games/pgs/android/
