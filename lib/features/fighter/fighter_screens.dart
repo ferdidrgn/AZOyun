@@ -1054,7 +1054,13 @@ class _FightHUD extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: const Color(0xFF0D0000),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xFF1A0000), Color(0xFF0D0000)],
+      ),
+      boxShadow: [BoxShadow(color: Colors.black87, blurRadius: 16, offset: Offset(0, 6))],
+    ),
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     child: Column(children: [
       // Raunt göstergesi
@@ -1087,13 +1093,20 @@ class _FightHUD extends StatelessWidget {
             if (myShield) const Text(' 🛡️', style: TextStyle(fontSize: 11)),
           ]),
           const SizedBox(height: 3),
-          ClipRRect(borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: (myHp / myMaxHp).clamp(0.0, 1.0),
-                backgroundColor: Colors.red.shade900.withAlpha(80),
-                valueColor: AlwaysStoppedAnimation(_hpColor(myHp, myMaxHp)),
-                minHeight: 14,
-              )),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(7),
+              border: Border.all(color: Colors.black87, width: 1.5),
+              boxShadow: [BoxShadow(color: _hpColor(myHp, myMaxHp).withAlpha(90), blurRadius: 6)],
+            ),
+            child: ClipRRect(borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: (myHp / myMaxHp).clamp(0.0, 1.0),
+                  backgroundColor: Colors.red.shade900.withAlpha(80),
+                  valueColor: AlwaysStoppedAnimation(_hpColor(myHp, myMaxHp)),
+                  minHeight: 14,
+                )),
+          ),
           Text('$myHp/$myMaxHp  ★$myScore',
               style: const TextStyle(color: Colors.white54, fontSize: 9)),
         ])),
@@ -1115,13 +1128,20 @@ class _FightHUD extends StatelessWidget {
             Text(oppEmoji, style: const TextStyle(fontSize: 14)),
           ]),
           const SizedBox(height: 3),
-          ClipRRect(borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: (oppHp / oppMaxHp).clamp(0.0, 1.0),
-                backgroundColor: Colors.red.shade900.withAlpha(80),
-                valueColor: AlwaysStoppedAnimation(_hpColor(oppHp, oppMaxHp)),
-                minHeight: 14,
-              )),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(7),
+              border: Border.all(color: Colors.black87, width: 1.5),
+              boxShadow: [BoxShadow(color: _hpColor(oppHp, oppMaxHp).withAlpha(90), blurRadius: 6)],
+            ),
+            child: ClipRRect(borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: (oppHp / oppMaxHp).clamp(0.0, 1.0),
+                  backgroundColor: Colors.red.shade900.withAlpha(80),
+                  valueColor: AlwaysStoppedAnimation(_hpColor(oppHp, oppMaxHp)),
+                  minHeight: 14,
+                )),
+          ),
           Text('$oppHp/$oppMaxHp  ★$oppScore',
               style: const TextStyle(color: Colors.white54, fontSize: 9)),
         ])),

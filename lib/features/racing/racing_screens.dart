@@ -561,7 +561,13 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
       body: SafeArea(child: Column(children: [
         // HUD üst
         Container(
-          color: const Color(0xFF1A1A2E),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [Color(0xFF23233F), Color(0xFF1A1A2E)],
+            ),
+            boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 12, offset: Offset(0, 4))],
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Row(children: [
             Text('Tur: $_myLap/$_laps',
@@ -650,7 +656,13 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
 
         // Kontroller
         Container(
-          color: const Color(0xFF1A1A2E),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [Color(0xFF1A1A2E), Color(0xFF13131F)],
+            ),
+            boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 12, offset: Offset(0, -4))],
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(children: [
             // Sol
@@ -686,20 +698,36 @@ class _CarSprite extends StatelessWidget {
   final bool isMe; final double drift;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: size, height: size,
-    decoration: BoxDecoration(
-        color: color.withAlpha(isMe ? 180 : 120),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-            color: isMe ? (drift > 0.3 ? Colors.orange : Colors.white) : Colors.white30,
-            width: isMe ? 2 : 1),
-        boxShadow: isMe ? [BoxShadow(
-            color: (drift > 0.3 ? Colors.orange : color).withAlpha(150),
-            blurRadius: 8)] : []),
-    child: Center(child: Text(emoji,
-        style: TextStyle(fontSize: size * 0.5))),
-  );
+  Widget build(BuildContext context) => Stack(clipBehavior: Clip.none, children: [
+    // Zemin gölgesi — arabayı pistin üstünde "havada" gibi hissettirir.
+    Positioned(
+      left: size * 0.1, top: size * 0.72,
+      child: Container(
+        width: size * 0.8, height: size * 0.28,
+        decoration: BoxDecoration(
+          color: Colors.black.withAlpha(90),
+          borderRadius: BorderRadius.circular(size),
+        ),
+      ),
+    ),
+    Container(
+      width: size, height: size,
+      decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: const Alignment(-0.3, -0.5),
+            colors: [Color.lerp(color, Colors.white, 0.35)!.withAlpha(isMe ? 220 : 150), color.withAlpha(isMe ? 200 : 130)],
+          ),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+              color: isMe ? (drift > 0.3 ? Colors.orange : Colors.white) : Colors.white30,
+              width: isMe ? 2 : 1),
+          boxShadow: [BoxShadow(
+              color: (isMe && drift > 0.3 ? Colors.orange : Colors.black).withAlpha(isMe ? 160 : 100),
+              blurRadius: isMe ? 10 : 6, offset: const Offset(0, 3))]),
+      child: Center(child: Text(emoji,
+          style: TextStyle(fontSize: size * 0.5))),
+    ),
+  ]);
 }
 
 class _TrackPainter extends CustomPainter {

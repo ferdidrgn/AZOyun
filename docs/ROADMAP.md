@@ -531,7 +531,7 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
   `play_games_service.dart`'a işlendi (bkz. bölüm 7.6 için ayrıntı).
 
 ### 8.8 Tüm oyunları "çocuksu 2D"den "3D/eğlenceli" hale getirme
-- [ ] Kullanıcı geri bildirimi: mevcut UI'lar güzel ama oyunların çoğu
+- [x] Kullanıcı geri bildirimi: mevcut UI'lar güzel ama oyunların çoğu
       (özellikle strateji/parti oyunları) düz 2D ve "çocuksu" hissettiriyor;
       Araba Yarışı ve Dövüşçüler'deki gibi daha "3D hissi veren" bir
       görsel dile geçilmesi isteniyor
@@ -556,11 +556,34 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
       (ölçek + solma) bir tasarıma geçirildi.
 - [x] **Vampir Köylü:** Gün/gece üst bandı ve rol banner'ına gölge derinliği
       eklendi.
+- [x] **Kalan 9 online oyun (Dama, Racing, Okey, Fighter, Golf, Soccer,
+      Hangman, City, Word) — görsel derinlik geçişi:**
+      - **Türk Dama:** Üst bar gradyan + gölge; tahtanın kendisi artık
+        koyu ahşap çerçeveli, gölgeli bir "kutu" içinde (masaya oturmuş
+        gibi); taşlar düz renk yerine radyal gradyanlı (üstten ışık alan
+        küre hissi) + daha belirgin damla gölgesi.
+      - **Araba Yarışı:** Araba sprite'larının altına elips zemin gölgesi
+        eklendi (havada süzülüyor hissi yerine pistin üstünde gerçekten
+        duruyor hissi), araç gövdesi radyal gradyan aldı; üst HUD ve alt
+        kontrol çubuğu gradyan + gölgeyle derinlik kazandı.
+      - **Okey:** Skor çubuğu gradyan + gölge, deste/atık kutuları gölge,
+        durum rozeti `AnimatedContainer` + parlama gölgesi.
+      - **Dövüşçüler:** HUD paneli gradyan + gölge; can barları artık
+        siyah kenarlıklı, renk-uyumlu parlama gölgeli "beveled" kapsüller
+        içinde.
+      - **Mini Golf & Futbol:** Skor çubukları gradyan + gölge, durum
+        şeridi gölge (golf/futbol sahası çizimleri zaten önceden gölge/
+        parlama detaylarıyla pseudo-3D'ydi, dokunulmadı).
+      - **Adam Asmaca:** Üst bar gradyan + gölge, aktif oyuncu rozeti
+        parlama gölgesi.
+      - **Şehir Bul & Kelime Avı:** Skor çubukları gradyan + gölge; Kelime
+        Avı'nda harf karoları artık "kabartma" hissi veren yön değişken
+        gölgeyle (kullanılmamış: dışa gölge = kabarık, kullanılmış: içe
+        doğru daha yumuşak gölge = basılmış) çiziliyor.
 - Not: Bu, **30+ oyunun tamamını** kapsayan çok büyük bir görsel yenileme
-  girişimi — tek oturumda bitmez. Bu turda dört oyuna (Hain Kim?, Vampir
-  Köylü, Yalancılar Kahvesi + ortak bileşen) somut ilerleme yapıldı.
-  Öncelik sırası önerisi (devamı için): (1) diğer sosyal-tahmin/toplu
-  oyunlar, (2) arcade oyunları (zaten kısmen pseudo-3D olan Mini
-  Bovling'e benzer gradient/gölge/perspektif teknikleri diğer arcade
-  oyunlara uygulanabilir), (3) masa oyunları (Okey). İstenirse oyun oyun
-  ilerlenir.
+  girişimiydi. Sosyal-tahmin/parti oyunları (Hain Kim?, Vampir Köylü,
+  Yalancılar Kahvesi) ve şimdi de tüm online oda oyunları (12/12) bu
+  turda tamamlandı. Kalan alan: hızlı-oyunlar sekmesindeki tek-kişilik/
+  yerel arcade oyunları (XOX, 4'lü Bağlantı, Reversi, Yılan, 2048 vb.) —
+  bunlar zaten sade/hızlı oynanış için tasarlandığından düşük öncelikli,
+  istenirse ayrı bir turda ele alınabilir.

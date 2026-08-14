@@ -549,7 +549,13 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
       body: SafeArea(child: Column(children: [
         // Score bar
         Container(
-          color: const Color(0xFF0D3B18),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [Color(0xFF124A20), Color(0xFF0D3B18)],
+            ),
+            boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(children: [
             Text(_mode == '101' ? 'OKEY 101' : 'OKEY',
@@ -613,7 +619,8 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                         color: _isMyTurn && !_mustDiscard ? Colors.white60 : Colors.white24,
-                        width: 2)),
+                        width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(2, 4))]),
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                     const Icon(Icons.style_rounded, color: Colors.white60, size: 18),
                     const SizedBox(height: 4),
@@ -642,12 +649,16 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
         ),
 
         // Durum
-        Container(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
               color: _isMyTurn ? const Color(0xFF2E7D32) : Colors.black26,
-              borderRadius: BorderRadius.circular(12)),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: _isMyTurn
+                  ? [BoxShadow(color: const Color(0xFF2E7D32).withAlpha(120), blurRadius: 10, offset: const Offset(0, 3))]
+                  : const []),
           child: Text(
             _isMyTurn
                 ? (_mustDiscard ? '🗑️ Bir taş at!' : '👆 Demetden veya atıktan çek')
