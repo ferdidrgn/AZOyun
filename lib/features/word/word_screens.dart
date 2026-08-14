@@ -431,7 +431,13 @@ class _WordGameScreenState extends State<WordGameScreen>
 
         // Score bar
         Container(
-          color: _kCyan,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [Color.lerp(_kCyan, Colors.black, 0.12)!, _kCyan],
+            ),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(children: [
             Container(
@@ -503,9 +509,11 @@ class _WordGameScreenState extends State<WordGameScreen>
                     decoration: BoxDecoration(
                       color: isUsed ? _kCyan : Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: isUsed ? [] : const [
-                        BoxShadow(color: Color(0x18000000), blurRadius: 4, offset: Offset(0, 2))
-                      ],
+                      boxShadow: isUsed
+                          ? [BoxShadow(color: _kCyan.withAlpha(140), blurRadius: 6, offset: const Offset(0, 1))]
+                          : const [
+                              BoxShadow(color: Color(0x28000000), blurRadius: 6, offset: Offset(0, 4)),
+                            ],
                     ),
                     child: Center(child: Text(e.value,
                         style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,

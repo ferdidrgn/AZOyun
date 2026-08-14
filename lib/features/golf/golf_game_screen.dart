@@ -331,9 +331,12 @@ class _GolfGameScreenState extends State<GolfGameScreen>
             holeNo: holeNo, maxHole: maxHole),
         AnimatedContainer(
           duration: const Duration(milliseconds: 250),
-          color: _myDone ? const Color(0xFF1B5E20)
-              : _moving  ? const Color(0xFFF57F17)
-              : const Color(0xFF33691E),
+          decoration: BoxDecoration(
+            color: _myDone ? const Color(0xFF1B5E20)
+                : _moving  ? const Color(0xFFF57F17)
+                : const Color(0xFF33691E),
+            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 3))],
+          ),
           padding: const EdgeInsets.symmetric(vertical: 7),
           child: Center(child: Text(
             _myDone   ? '✅ Deliğe girdi! Diğerleri bekleniyor...'
@@ -406,7 +409,13 @@ class _ScoreBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: const Color(0xFF1B5E20),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xFF226B2C), Color(0xFF1B5E20)],
+      ),
+      boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
+    ),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
     child: Row(children: [
       Text('Delik $holeNo/$maxHole',

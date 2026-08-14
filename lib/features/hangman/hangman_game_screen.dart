@@ -680,7 +680,13 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: _kRed,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color.lerp(_kRed, Colors.black, 0.15)!, _kRed],
+      ),
+      boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
+    ),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     child: Row(children: [
       _Pill(name: p1Name, score: p1Score, isMe: isP1Me),
@@ -704,7 +710,10 @@ class _Pill extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     decoration: BoxDecoration(
         color: isMe ? Colors.white : Colors.white24,
-        borderRadius: BorderRadius.circular(20)),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: isMe
+            ? const [BoxShadow(color: Colors.black38, blurRadius: 6, offset: Offset(0, 3))]
+            : null),
     child: Column(children: [
       Text(name, style: TextStyle(fontSize: 11,
           color: isMe ? _kRed : Colors.white70, fontWeight: FontWeight.w600)),

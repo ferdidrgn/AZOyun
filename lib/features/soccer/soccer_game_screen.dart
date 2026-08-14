@@ -482,7 +482,10 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
         // ── Status strip ──────────────────────────────────────────────────
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          color: _isMyTurn ? const Color(0xFF33691E) : const Color(0xFF1B5E20),
+          decoration: BoxDecoration(
+            color: _isMyTurn ? const Color(0xFF33691E) : const Color(0xFF1B5E20),
+            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 3))],
+          ),
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Center(child: Text(
             _celebrating ? '⚽ GOL! Harika vuruş! 🎉'
@@ -616,7 +619,13 @@ class _SoccerScoreBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: const Color(0xFF1B5E20),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [Color(0xFF226B2C), Color(0xFF1B5E20)],
+      ),
+      boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
+    ),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     child: Row(children: [
       Text('Vuruş $round/$maxRound',

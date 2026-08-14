@@ -470,7 +470,13 @@ class _CityGameScreenState extends State<CityGameScreen> {
 
         // Score bar
         Container(
-          color: _kPink,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [Color.lerp(_kPink, Colors.black, 0.12)!, _kPink],
+            ),
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))],
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(children: [
             Text('Tur $_round/$_maxRound',

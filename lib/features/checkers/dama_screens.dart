@@ -567,14 +567,23 @@ class _DamaGameState extends State<DamaGameScreen> {
       body: SafeArea(child: Column(children: [
         // Üst bar
         Container(
-          color: const Color(0xFF1A0A00),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF2A1200), Color(0xFF1A0A00)],
+            ),
+            boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 14, offset: Offset(0, 6))],
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(children: [
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                   color: _turn == 'white' ? Colors.white : const Color(0xFF212121),
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.black.withAlpha(120), blurRadius: 6, offset: const Offset(0, 3))]),
               child: Text('${_turn == 'white' ? '⚪' : '⚫'} Sıra',
                   style: TextStyle(
                       color: _turn == 'white' ? Colors.black87 : Colors.white,
@@ -585,11 +594,13 @@ class _DamaGameState extends State<DamaGameScreen> {
                 style: const TextStyle(color: Colors.white, fontSize: 13,
                     fontWeight: FontWeight.bold)),
             const Spacer(),
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                   color: _isMyTurn ? Colors.green.shade700 : Colors.grey.shade700,
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.black.withAlpha(120), blurRadius: 6, offset: const Offset(0, 3))]),
               child: Text(_isMyTurn ? '✅ Senin sıran' : '⏳ Rakip',
                   style: const TextStyle(color: Colors.white, fontSize: 12,
                       fontWeight: FontWeight.bold)),
@@ -609,8 +620,20 @@ class _DamaGameState extends State<DamaGameScreen> {
 
         // Tahta
         Expanded(child: LayoutBuilder(builder: (_, constraints) {
-          final side = (constraints.maxWidth).clamp(0.0, constraints.maxHeight);
-          return Center(child: SizedBox(width: side, height: side,
+          final side = (constraints.maxWidth).clamp(0.0, constraints.maxHeight) - 16;
+          return Center(child: Container(
+            width: side + 16,
+            height: side + 16,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4E342E),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: const [
+                BoxShadow(color: Colors.black87, blurRadius: 20, spreadRadius: 1, offset: Offset(0, 10)),
+                BoxShadow(color: Color(0x33FFFFFF), blurRadius: 1, spreadRadius: -1, offset: Offset(0, -1)),
+              ],
+            ),
+            child: SizedBox(width: side, height: side,
             child: GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
@@ -637,7 +660,7 @@ class _DamaGameState extends State<DamaGameScreen> {
                 );
               },
             ),
-          ));
+          )));
         })),
 
         // Mesaj
@@ -670,9 +693,17 @@ class _PieceWidget extends StatelessWidget {
       margin: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isWhite ? Colors.white : const Color(0xFF212121),
+        gradient: RadialGradient(
+          center: const Alignment(-0.35, -0.4),
+          radius: 0.9,
+          colors: isWhite
+              ? [Colors.white, Colors.grey.shade300]
+              : [const Color(0xFF484848), const Color(0xFF121212)],
+        ),
         border: Border.all(color: isWhite ? Colors.grey.shade400 : Colors.grey.shade700, width: 2),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(100), blurRadius: 4)],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(140), blurRadius: 5, offset: const Offset(0, 3)),
+        ],
       ),
       child: isKing
           ? Center(child: Text('♛',
