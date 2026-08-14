@@ -53,7 +53,7 @@ class HomeScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         body: Container(
-          decoration: const BoxDecoration(gradient: AZColors.gradPurple),
+          decoration: BoxDecoration(gradient: AZTheme.dynamicGradient(context)),
           child: SafeArea(
             bottom: false,
             child: Column(children: [
@@ -159,7 +159,7 @@ class _HomeTabBar extends StatelessWidget {
       ),
       indicatorSize: TabBarIndicatorSize.tab,
       dividerColor: Colors.transparent,
-      labelColor: AZColors.purple,
+      labelColor: Theme.of(context).colorScheme.primary,
       unselectedLabelColor: Colors.white,
       labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
       unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),

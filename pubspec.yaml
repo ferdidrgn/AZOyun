@@ -52,6 +52,10 @@ dependencies:
   # Hızlı oyunlar için yerel profil/XP/liderlik depolama
   shared_preferences: ^2.3.3
 
+  # Telefonun Material You (duvar kağıdından çıkarılan dinamik renk) temasını
+  # okumak için — Google'ın resmi paketi.
+  dynamic_color: ^1.7.0
+
   # Animations
   flutter_animate: ^4.5.0
 

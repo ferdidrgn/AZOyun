@@ -107,6 +107,25 @@ abstract class AZTheme {
   static ThemeData fromSeed(Color seed, Brightness brightness) =>
       _build(ColorScheme.fromSeed(seedColor: seed, brightness: brightness), brightness);
 
+  /// Telefonun kendi Material You (dinamik renk) şemasından üretilen tema
+  /// — `dynamic_color` paketinin sağladığı gerçek `ColorScheme`'i kullanır.
+  static ThemeData fromScheme(ColorScheme scheme) => _build(scheme, scheme.brightness);
+
+  /// Ana sayfa/Splash/Onboarding gibi "hero" gradyanlarında kullanılan,
+  /// aktif temanın vurgu rengine göre üretilen dinamik gradyan — böylece
+  /// kullanıcı Özel Renk ya da Telefonun Teması seçtiğinde ana sayfa da
+  /// gerçekten o renge boyanır, sabit mor kalmaz.
+  static LinearGradient dynamicGradient(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final hsl = HSLColor.fromColor(primary);
+    final darker = hsl.withLightness((hsl.lightness - 0.20).clamp(0.0, 1.0)).toColor();
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [primary, darker],
+    );
+  }
+
   static ThemeData _build(ColorScheme scheme, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF121218) : AZColors.bg;

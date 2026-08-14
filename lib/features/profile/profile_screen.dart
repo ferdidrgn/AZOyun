@@ -40,9 +40,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const AZGradientScaffold(
-        gradient: AZColors.gradPurple,
-        child: Center(
+      return AZGradientScaffold(
+        gradient: AZTheme.dynamicGradient(context),
+        child: const Center(
             child: CircularProgressIndicator(color: Colors.white)),
       );
     }
@@ -56,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         kAchievements.where((a) => !unlocked.contains(a)).toList();
 
     return AZGradientScaffold(
-      gradient: AZColors.gradPurple,
+      gradient: AZTheme.dynamicGradient(context),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

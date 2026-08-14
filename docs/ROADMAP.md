@@ -265,20 +265,32 @@ neyin yapıldığını, neyin hâlâ eksik/manuel adım gerektirdiğini buradan 
   online oyunun lobi ekranını güncellemeyi gerektirir, kapsam dışı bırakıldı.
 
 ### 7.4 Tema sistemi
-- [x] 4 seçenek: **Sistem** (telefonun temasını takip et), **Açık Tema**
-      (marka renklerimiz, mevcut mor gradyan), **Koyu Tema** (koyu marka
-      rengi) — `AZTheme.light` / `AZTheme.dark` — ve **Özel Renk**
-      (kullanıcı kendi vurgu rengini seçer, 12 renklik hazır bir paletten)
-      — `AZTheme.fromSeed(seed, brightness)`, `Ayarlar → Görünüm`'de renk
-      dairesine dokunarak seçiliyor. Özel renk seçiliyken bile cihazın
-      açık/koyu anahtarına uyulur, sadece vurgu rengi değişir.
+- [x] 4 seçenek: **Açık Tema** (marka renklerimiz), **Koyu Tema** (koyu
+      marka rengi) — `AZTheme.light` / `AZTheme.dark` — **Telefonun Teması**
+      (Android 12+ Material You — telefonun duvar kağıdından çıkardığı
+      gerçek dinamik renk, `dynamic_color` paketi + `AZTheme.fromScheme`)
+      — ve **Özel Renk** (kullanıcı kendi vurgu rengini seçer, 12 renklik
+      hazır bir paletten) — `AZTheme.fromSeed(seed, brightness)`.
+      **"Sistem" seçeneği bilerek kaldırıldı** — belirsizdi (sadece OS'un
+      açık/koyu anahtarını takip ediyordu, kendine özgü bir rengi yoktu);
+      yerine gerçekten telefonun kendi rengini çeken "Telefonun Teması"
+      geldi. Telefon Material You desteklemiyorsa (Android <12 / iOS)
+      sessizce bizim `AZTheme.light`/`dark`'a düşer.
 - [x] `ThemeService` ile tercih (ve seçilen özel renk) `SharedPreferences`'ta
       saklanır, Ayarlar'da 4 seçenekli kart ile değiştirilir
+- [x] **Bug fix — ana sayfa artık gerçekten dinamik:** `HomeScreen`,
+      `SplashScreen`, `OnboardingScreen`, `ProfileScreen` önceden arka
+      plan/vurgu rengini `AZColors.gradPurple`/`AZColors.purple` olarak
+      SABİT kullanıyordu — Ayarlar'dan tema değiştirmenin hiçbir görünür
+      etkisi yoktu. Hepsi artık `AZTheme.dynamicGradient(context)` /
+      `Theme.of(context).colorScheme.primary` kullanıyor, seçilen tema
+      anında her yere yansıyor.
 - Not: Tema sistemi `MaterialApp.themeMode` üzerinden Ayarlar/Profil/Splash/
-  Onboarding gibi "chrome" ekranlarını kapsar. 30+ oyun ekranının her biri
-  kendi özel gradyan temasıyla çalışmaya devam ediyor (Vampir Köylü'nün
-  karanlık teması, Gece Ekspresi'nin noir teması gibi) — bunları da genel
-  tema sistemine bağlamak ayrı, büyük bir iştir; şimdilik kapsam dışı.
+  Onboarding/Ana Sayfa gibi "chrome" ekranlarını kapsar. 30+ oyun ekranının
+  her biri kendi özel gradyan temasıyla çalışmaya devam ediyor (Vampir
+  Köylü'nün karanlık teması, Gece Ekspresi'nin noir teması gibi) — bunları
+  da genel tema sistemine bağlamak ayrı, büyük bir iştir; şimdilik kapsam
+  dışı.
 
 ### 7.5 Dil sistemi
 - [x] `LanguageService` — **6 dil** arası anlık geçiş (Türkçe, İngilizce,

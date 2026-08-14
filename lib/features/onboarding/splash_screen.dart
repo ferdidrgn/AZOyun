@@ -40,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     body: Container(
-      decoration: const BoxDecoration(gradient: AZColors.gradPurple),
+      decoration: BoxDecoration(gradient: AZTheme.dynamicGradient(context)),
       child: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

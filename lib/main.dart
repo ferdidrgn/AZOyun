@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -60,21 +61,38 @@ class AZOyunApp extends StatelessWidget {
   const AZOyunApp({super.key});
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([ThemeService.instance, LanguageService.instance]),
-    builder: (context, _) {
-      final isCustom = ThemeService.instance.preference == AppThemePreference.custom;
-      final customColor = ThemeService.instance.customColor;
-      return MaterialApp(
-        navigatorKey: navigatorKey,
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        title: 'AZ Oyun',
-        debugShowCheckedModeBanner: false,
-        theme: isCustom ? AZTheme.fromSeed(customColor, Brightness.light) : AZTheme.light,
-        darkTheme: isCustom ? AZTheme.fromSeed(customColor, Brightness.dark) : AZTheme.dark,
-        themeMode: ThemeService.instance.themeMode,
-        home: const SplashScreen(),
-      );
-    },
+  Widget build(BuildContext context) => DynamicColorBuilder(
+    builder: (lightDynamic, darkDynamic) => ListenableBuilder(
+      listenable: Listenable.merge([ThemeService.instance, LanguageService.instance]),
+      builder: (context, _) {
+        final pref = ThemeService.instance.preference;
+        final customColor = ThemeService.instance.customColor;
+        // Telefon Material You desteklemiyorsa (Android <12 ya da iOS),
+        // lightDynamic/darkDynamic null gelir — o durumda sessizce bizim
+        // kendi açık/koyu markamıza düşer.
+        final lightTheme = switch (pref) {
+          AppThemePreference.dynamic =>
+            lightDynamic != null ? AZTheme.fromScheme(lightDynamic) : AZTheme.light,
+          AppThemePreference.custom => AZTheme.fromSeed(customColor, Brightness.light),
+          _ => AZTheme.light,
+        };
+        final darkTheme = switch (pref) {
+          AppThemePreference.dynamic =>
+            darkDynamic != null ? AZTheme.fromScheme(darkDynamic) : AZTheme.dark,
+          AppThemePreference.custom => AZTheme.fromSeed(customColor, Brightness.dark),
+          _ => AZTheme.dark,
+        };
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          title: 'AZ Oyun',
+          debugShowCheckedModeBanner: false,
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: ThemeService.instance.themeMode,
+          home: const SplashScreen(),
+        );
+      },
+    ),
   );
 }
