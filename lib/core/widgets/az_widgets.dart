@@ -519,3 +519,114 @@ class AZWaitingCard extends StatelessWidget {
         ]),
   );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ROL AÇILIŞ KARTI — sosyal-tahmin oyunları (Hain Kim?, Vampir Köylü,
+// Yalancılar Kahvesi) için ortak, 3D hissi veren dramatik rol açıklama
+// ekranı. Düz bir showDialog yerine hafif bir "kart açılıyor" animasyonu
+// (perspektif döndürme + geri sekmeli ölçek) kullanır.
+// ═══════════════════════════════════════════════════════════════════════════
+
+Future<void> showRoleRevealCard(
+  BuildContext context, {
+  required String emoji,
+  required String title,
+  required String description,
+  required Color color,
+  String confirmLabel = 'Anladım',
+}) {
+  return showGeneralDialog(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black87,
+    transitionDuration: const Duration(milliseconds: 550),
+    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    transitionBuilder: (context, animation, _, __) {
+      final t = Curves.easeOutBack.transform(animation.value.clamp(0.0, 1.0));
+      final fade = Curves.easeOut.transform(animation.value.clamp(0.0, 1.0));
+      return Opacity(
+        opacity: fade,
+        child: Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.0018)
+            ..rotateX((1 - t) * 0.7)
+            ..scale(0.65 + 0.35 * t),
+          child: Center(
+            child: _RoleRevealContent(
+              emoji: emoji,
+              title: title,
+              description: description,
+              color: color,
+              confirmLabel: confirmLabel,
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _RoleRevealContent extends StatelessWidget {
+  const _RoleRevealContent({
+    required this.emoji,
+    required this.title,
+    required this.description,
+    required this.color,
+    required this.confirmLabel,
+  });
+
+  final String emoji, title, description, confirmLabel;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.symmetric(horizontal: 30),
+    padding: const EdgeInsets.fromLTRB(28, 32, 28, 24),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [color, Color.lerp(color, Colors.black, 0.4)!],
+      ),
+      borderRadius: BorderRadius.circular(AZRadius.xxl),
+      border: Border.all(color: const Color(0x33FFFFFF), width: 1.4),
+      boxShadow: [
+        BoxShadow(color: color.withAlpha(140), blurRadius: 42, spreadRadius: 2),
+        const BoxShadow(color: Colors.black54, blurRadius: 26, offset: Offset(0, 18)),
+      ],
+    ),
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 92,
+        height: 92,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(color: Color(0x26FFFFFF), shape: BoxShape.circle),
+        child: Text(emoji, style: const TextStyle(fontSize: 48)),
+      ),
+      const SizedBox(height: 20),
+      Text(title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 21, letterSpacing: 0.5)),
+      const SizedBox(height: 14),
+      Text(description,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.6)),
+      const SizedBox(height: 26),
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: color,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AZRadius.lg)),
+          ),
+          onPressed: () => Navigator.pop(context),
+          child: Text(confirmLabel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        ),
+      ),
+    ]),
+  );
+}

@@ -395,10 +395,10 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
+  bool _roleRevealShown = false;
   bool _processing = false;
   int? _completingTaskIndex;
   final Set<int> _fakeCompleted = {};
-  DateTime? _killCooldownUntil;
   Timer? _tick;
 
   @override
@@ -421,6 +421,10 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
     if (!mounted || e.snapshot.value == null) return;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     setState(() => _room = d);
+    if (!_roleRevealShown && (d['players']?[widget.myKey]?['role']) != null) {
+      _roleRevealShown = true;
+      Future.delayed(const Duration(milliseconds: 350), _showRoleReveal);
+    }
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
       AdService.instance.onGameEnd();
@@ -429,6 +433,24 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
     if (!_processing && widget.myKey == 'p1' && d['status'] == 'playing' && (d['phase'] as String?) == 'voting') {
       _checkVotes(d);
     }
+  }
+
+  void _showRoleReveal() {
+    if (!mounted) return;
+    final isImpostor = _isImpostor;
+    showRoleRevealCard(
+      context,
+      emoji: isImpostor ? '👽' : '👨‍🚀',
+      title: isImpostor ? 'SEN GİZLİ HAİNSİN' : 'SEN MÜRETTEBATSIN',
+      color: isImpostor ? const Color(0xFF7A0C2E) : const Color(0xFF0D5C63),
+      description: isImpostor
+          ? 'Kimse senin hain olduğunu bilmemeli. Görevleri sahte yaparak '
+              'gizlen, fırsat bulunca mürettebatı tek tek ele. Mürettebat '
+              'sayıca sana eşit ya da az kalırsa kazanırsın.'
+          : 'Görevlerini tamamla, hain(ler)i gözlemle. Şüphelendiğinde '
+              '"Acil Toplantı" çağırıp oylama başlatabilirsin. Tüm '
+              'görevler biter ya da hainler elenirse kazanırsın.',
+    );
   }
 
   Map<String, dynamic> get _players => Map<String, dynamic>.from((_room['players'] as Map?) ?? {});
@@ -472,9 +494,13 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
 
   bool get _canCallMeeting => _isAlive && !_isVoting;
 
+  /// Firebase'de saklanır (players/$myKey/killCooldownUntil, epoch ms) —
+  /// sadece yerel state olsaydı ekran yeniden oluştuğunda ya da başka bir
+  /// ekrana gidip gelindiğinde bekleme süresi sıfırlanırdı.
   Duration? get _killCooldownLeft {
-    if (_killCooldownUntil == null) return null;
-    final left = _killCooldownUntil!.difference(DateTime.now());
+    final until = (_players[widget.myKey]?['killCooldownUntil'] as int?) ?? 0;
+    if (until == 0) return null;
+    final left = DateTime.fromMillisecondsSinceEpoch(until).difference(DateTime.now());
     return left.isNegative ? null : left;
   }
 
@@ -538,8 +564,12 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
 
   Future<void> _kill(String targetKey) async {
     if (!_isAlive || !_isImpostor || _killCooldownLeft != null) return;
-    await _ref.update({'players/$targetKey/alive': false, 'lastKilled': targetKey});
-    setState(() => _killCooldownUntil = DateTime.now().add(const Duration(seconds: 25)));
+    final cooldownUntil = DateTime.now().add(const Duration(seconds: 25)).millisecondsSinceEpoch;
+    await _ref.update({
+      'players/$targetKey/alive': false,
+      'players/${widget.myKey}/killCooldownUntil': cooldownUntil,
+      'lastKilled': targetKey,
+    });
     await _checkWin();
   }
 
@@ -648,14 +678,27 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
         child: Column(children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: const BoxDecoration(gradient: _kSpaceGradient),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              gradient: _kSpaceGradient,
+              boxShadow: [BoxShadow(color: Colors.black.withAlpha(120), blurRadius: 16, offset: const Offset(0, 6))],
+            ),
             child: Column(children: [
               Text(_isImpostor ? '👽 SEN GİZLİ HAİNSİN' : '👨‍🚀 SEN MÜRETTEBATSIN',
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('Görevler: $_tasksDone/$_tasksTotal',
-                  style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      shadows: [Shadow(color: Colors.black.withAlpha(150), blurRadius: 8)])),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                    color: const Color(0x26FFFFFF), borderRadius: BorderRadius.circular(20)),
+                child: Text('🛠️ Görevler: $_tasksDone/$_tasksTotal',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
             ]),
           ),
           if (_lastEjected != null)
@@ -816,12 +859,31 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
         for (var i = 0; i < _kTasksPerPlayer; i++)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: AZFrostCard(
-              opacity: tasks[i] ? 0.06 : 0.14,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Color.fromRGBO(255, 255, 255, tasks[i] ? 0.05 : 0.12),
+                borderRadius: BorderRadius.circular(AZRadius.lg),
+                border: Border.all(
+                    color: tasks[i] ? const Color(0x20FFFFFF) : const Color(0x40FFFFFF)),
+                boxShadow: tasks[i]
+                    ? const []
+                    : [const BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 5))],
+              ),
               child: Row(children: [
-                Text(_kTaskDefs[i].$2, style: const TextStyle(fontSize: 22)),
-                const SizedBox(width: 12),
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: tasks[i] ? const Color(0x14FFFFFF) : const Color(0x26FFFFFF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(_kTaskDefs[i].$2, style: const TextStyle(fontSize: 20)),
+                ),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Text(_kTaskDefs[i].$1,
                       style: TextStyle(
@@ -830,14 +892,19 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
                           decoration: tasks[i] ? TextDecoration.lineThrough : null)),
                 ),
                 if (tasks[i])
-                  const Icon(Icons.check_circle_rounded, color: AZColors.success, size: 20)
+                  const Icon(Icons.check_circle_rounded, color: AZColors.success, size: 22)
                 else if (_completingTaskIndex == i)
                   const SizedBox(
                       width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 else
-                  TextButton(
+                  FilledButton(
                     onPressed: () => _completeTask(i),
-                    child: const Text('YAP', style: TextStyle(color: Colors.cyanAccent)),
+                    style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0x33FFFFFF),
+                        foregroundColor: Colors.cyanAccent,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AZRadius.md))),
+                    child: const Text('YAP', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
               ]),
             ),

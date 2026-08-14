@@ -526,9 +526,32 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
       (özellikle strateji/parti oyunları) düz 2D ve "çocuksu" hissettiriyor;
       Araba Yarışı ve Dövüşçüler'deki gibi daha "3D hissi veren" bir
       görsel dile geçilmesi isteniyor
+- [x] **Paylaşılan "Rol Açılış Kartı" bileşeni eklendi:**
+      `showRoleRevealCard()` (`az_widgets.dart`) — düz `showDialog` yerine
+      perspektif döndürme + geri sekmeli ölçek animasyonuyla açılan,
+      gradyanlı/gölgeli "3D kart" hissi veren ortak bir bileşen. Hain Kim?
+      ve Vampir Köylü'nün rol açıklama ekranları buna geçirildi — aynı
+      bileşen ileride her yeni sosyal-tahmin oyununda (ve isteğe göre
+      diğer oyunlarda) tekrar kullanılabilir.
+- [x] **Hain Kim? (Among Us tarzı) — gerçek hata + görsel geçiş:**
+      Hain'in "tekrar eleme" bekleme süresi (`killCooldownUntil`) sadece
+      yerel state'te tutuluyordu — ekran yeniden oluşunca ya da başka
+      ekrana gidip gelince sıfırlanıyordu; artık Firebase'de
+      (`players/$key/killCooldownUntil`) saklanıyor. Görev kartları
+      `AnimatedContainer` + gölgeli ikon rozetiyle, üst bilgi çubuğu
+      gölge/metin-gölgesiyle derinlik kazandı; rol açılışı artık dramatik
+      bir kart animasyonu ile açılıyor (önceden hiç yoktu, sadece sabit
+      bir üst bant vardı).
+- [x] **Yalancılar Kahvesi:** Tur/rol kartı düz beyaz `Card`'dan,
+      gradyanlı + gölgeli + her tur `AnimatedSwitcher` ile canlanan
+      (ölçek + solma) bir tasarıma geçirildi.
+- [x] **Vampir Köylü:** Gün/gece üst bandı ve rol banner'ına gölge derinliği
+      eklendi.
 - Not: Bu, **30+ oyunun tamamını** kapsayan çok büyük bir görsel yenileme
-  girişimi — tek oturumda bitmez. Öncelik sırası önerisi: (1) en çok
-  oynanacak/öne çıkan oyunlar (XOX, Vampir Köylü, Yalancılar Kahvesi), (2)
-  arcade oyunları (zaten kısmen pseudo-3D olan Mini Bovling'e benzer
-  gradient/gölge/perspektif teknikleri diğer arcade oyunlara uygulanabilir),
-  (3) masa oyunları (Dama, Okey). İstenirse oyun oyun ilerlenir.
+  girişimi — tek oturumda bitmez. Bu turda dört oyuna (Hain Kim?, Vampir
+  Köylü, Yalancılar Kahvesi + ortak bileşen) somut ilerleme yapıldı.
+  Öncelik sırası önerisi (devamı için): (1) diğer sosyal-tahmin/toplu
+  oyunlar, (2) arcade oyunları (zaten kısmen pseudo-3D olan Mini
+  Bovling'e benzer gradient/gölge/perspektif teknikleri diğer arcade
+  oyunlara uygulanabilir), (3) masa oyunları (Okey). İstenirse oyun oyun
+  ilerlenir.
