@@ -238,9 +238,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _themeCard(BuildContext context) {
     final options = [
-      (AppThemePreference.system, t('settings_theme_system'), Icons.brightness_auto_rounded),
       (AppThemePreference.light, t('settings_theme_light'), Icons.light_mode_rounded),
       (AppThemePreference.dark, t('settings_theme_dark'), Icons.dark_mode_rounded),
+      (AppThemePreference.dynamic, t('settings_theme_dynamic'), Icons.wallpaper_rounded),
     ];
     final isCustom = ThemeService.instance.preference == AppThemePreference.custom;
     return Card(

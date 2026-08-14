@@ -3,9 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/az_theme.dart';
 
-/// Kullanıcının tema tercihi: sistemi takip et, uygulamanın kendi açık/koyu
-/// markasını sabitle, ya da kendi seçtiği bir vurgu rengini kullan.
-enum AppThemePreference { system, light, dark, custom }
+/// Kullanıcının tema tercihi: bizim açık/koyu markamız, telefonun kendi
+/// Material You (duvar kağıdından çıkarılan dinamik renk) teması, ya da
+/// kendi seçtiği özel bir vurgu rengi. Belirsiz "Sistem" seçeneği
+/// bilerek yok — onun yerine gerçekten telefonun kendi rengini çeken
+/// "dynamic" seçeneği var.
+enum AppThemePreference { light, dark, dynamic, custom }
 
 /// Ayarlar ekranından değiştirilen, kalıcı (SharedPreferences) tema tercihi.
 /// `ChangeNotifier` olduğu için `MaterialApp` bunu dinleyip anında yeniden
@@ -17,19 +20,19 @@ class ThemeService extends ChangeNotifier {
   static const _key = 'az_theme_preference_v1';
   static const _colorKey = 'az_theme_custom_color_v1';
 
-  AppThemePreference _preference = AppThemePreference.system;
+  AppThemePreference _preference = AppThemePreference.light;
   AppThemePreference get preference => _preference;
 
   Color _customColor = AZColors.purple;
   Color get customColor => _customColor;
 
   ThemeMode get themeMode => switch (_preference) {
-        AppThemePreference.system => ThemeMode.system,
         AppThemePreference.light => ThemeMode.light,
         AppThemePreference.dark => ThemeMode.dark,
-        // Özel renk seçiliyken de cihazın açık/koyu anahtarına uyulur —
-        // sadece iki tarafın da vurgu rengi kullanıcının seçtiği renge göre
-        // üretilir (bkz. AZTheme.fromSeed, main.dart).
+        // Telefonun teması ve özel renk seçiliyken cihazın açık/koyu
+        // anahtarına uyulur — sadece vurgu rengi kaynağı değişir (bkz.
+        // AZTheme.fromScheme / AZTheme.fromSeed, main.dart).
+        AppThemePreference.dynamic => ThemeMode.system,
         AppThemePreference.custom => ThemeMode.system,
       };
 
@@ -38,7 +41,7 @@ class ThemeService extends ChangeNotifier {
     final raw = prefs.getString(_key);
     _preference = AppThemePreference.values.firstWhere(
       (e) => e.name == raw,
-      orElse: () => AppThemePreference.system,
+      orElse: () => AppThemePreference.light,
     );
     final colorValue = prefs.getInt(_colorKey);
     if (colorValue != null) _customColor = Color(colorValue);

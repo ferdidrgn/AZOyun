@@ -53,7 +53,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AZColors.gradPurple),
+        decoration: BoxDecoration(gradient: AZTheme.dynamicGradient(context)),
         child: SafeArea(
           child: Column(children: [
             Align(
@@ -115,7 +115,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: AZButton(
                 label: _page < _pages.length - 1 ? t('onboarding_next') : t('onboarding_start'),
                 icon: Icons.arrow_forward_rounded,
-                color: AZColors.purple,
+                color: Theme.of(context).colorScheme.primary,
                 onPressed: _next,
               ),
             ),
