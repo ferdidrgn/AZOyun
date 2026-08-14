@@ -463,18 +463,21 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
       "kazanan sayısı" hesabı da yakından incelendi — aslında race
       condition YOK, tek bir yerel `players` anlık görüntüsü kullanıldığı
       için hesap doğru).
-- ⚠️ **Bulundu, düzeltilmedi — kullanıcı onayı bekliyor:** `checkers/
-  dama_screens.dart`'taki "Türk Dama" olarak etiketlenen oyun, aslında
-  **uluslararası (diyagonal) dama kurallarıyla** çalışıyor —
-  `_normalMoves`/`_captures` çapraz yönlerde hareket ediyor
-  (`[-1,-1],[-1,1],[1,-1],[1,1]`), taşlar koyu karelerde başlıyor. Gerçek
-  Türk Dama'da taşlar **düz/yatay** hareket eder (yukarı-aşağı-sağ-sol,
-  çapraz DEĞİL), tüm karelerde oynanır ve dama (kral) bir kale gibi
-  istediği kadar uzağa gidebilir. Bu, kozmetik bir hata değil — oyunun
-  temel kural setini değiştiriyor, düzeltmek board/hareket/yakalama/terfi
-  mantığının tamamını yeniden yazmak demek. Kullanıcıya soruldu: gerçek
-  Türk Dama kurallarına mı geçilsin, yoksa oyun "Uluslararası Dama"
-  olarak mı yeniden adlandırılsın?
+- [x] **Dama gerçek Türk Dama kurallarına geçirildi:** Önceden
+  `checkers/dama_screens.dart` "Türk Dama" diye etiketliydi ama aslında
+  uluslararası (diyagonal) dama kurallarıyla çalışıyordu. Kullanıcıya
+  soruldu, gerçek kurallara geçirilmesi istendi:
+  - Diziliş: taşlar en yakın iki sırada (en arka sıra hariç), **tüm
+    sütunlarda** — sadece koyu karelerde değil
+  - Er hareketi: **düz** ileri/sağ/sol bir kare (çapraz DEĞİL, geri gidemez)
+  - Yakalama: er dört yönde de (ileri/geri/sağ/sol) bitişik rakibi atlar
+  - Dama (kral): kale gibi bir yönde istediği kadar ilerler; yakalarken de
+    "uçan dama" gibi mesafeden atlayıp arkasındaki boş karelerden
+    herhangi birine inebilir
+  - Doğrulama: kuralların birebir Python simülasyonu yazılıp çalıştırıldı
+    — başlangıç pozisyonunda her iki tarafta 16 taş doğru sırada, **tam 8
+    açılış hamlesi** var (gerçek Türk Dama'nın bilinen özelliği), er/dama
+    yakalama testleri beklenen sonucu verdi
 
 ### 8.7 Google Play Games Services v2 — gözden geçirildi ve tamamlandı
 - [x] Google'ın resmi rehberi (`developer.android.com/games/pgs/android/
