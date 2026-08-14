@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme/az_theme.dart';
+import 'analytics_service.dart';
 
 /// Kullanıcının tema tercihi: bizim açık/koyu markamız, telefonun kendi
 /// Material You (duvar kağıdından çıkarılan dinamik renk) teması, ya da
@@ -54,6 +57,7 @@ class ThemeService extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, pref.name);
+    unawaited(AnalyticsService.instance.setThemePreference(pref.name));
   }
 
   /// Ayarlar'daki renk paletinden bir renk seçilince çağrılır — hem rengi
@@ -66,5 +70,6 @@ class ThemeService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_colorKey, color.value);
     await prefs.setString(_key, AppThemePreference.custom.name);
+    unawaited(AnalyticsService.instance.setThemePreference(AppThemePreference.custom.name));
   }
 }

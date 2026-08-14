@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'ad_service.dart';
+import 'analytics_service.dart';
 import 'storage_service.dart';
 
 /// Uygulama içi satın alma iskeleti.
@@ -65,6 +66,10 @@ class IAPService {
               p.status == PurchaseStatus.restored) {
             if (p.productID == premium6mId) _activatePremium();
             if (p.productID == removeAdsId) AdService.instance.disableAds();
+            unawaited(AnalyticsService.instance.logPurchase(
+              productId: p.productID,
+              value: productById(p.productID)?.rawPrice,
+            ));
             onPurchase(p);
           }
           if (p.pendingCompletePurchase) {

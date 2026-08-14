@@ -8,6 +8,7 @@ plugins {
 
     // Firebase
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 // 🔐 Keystore properties yükleme (Kotlin DSL)
@@ -57,11 +58,14 @@ android {
                 "proguard-rules.pro"
             )
 
-            // 🔥 Crashlytics mapping
-            /*firebaseCrashlytics {
+            // 🔥 Crashlytics mapping — obfuscate edilmiş (R8) çökme
+            // raporlarının okunabilir hale gelmesi için ProGuard mapping
+            // dosyasını otomatik yükler (bkz. ROADMAP 8.3'teki bitmap
+            // uyarısı notu — bu, o tür sorunları da netleştirir).
+            firebaseCrashlytics {
                 mappingFileUploadEnabled = true
                 nativeSymbolUploadEnabled = true
-            }*/
+            }
         }
     }
 
@@ -83,6 +87,8 @@ dependencies {
     // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-database")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-crashlytics")
 
     // Play Games Services v2 (bkz. ROADMAP 8.7) — games_services Flutter
     // eklentisi 4.x'ten beri bunu transitive olarak getiriyor, ama
