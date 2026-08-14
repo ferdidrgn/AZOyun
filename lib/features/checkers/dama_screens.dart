@@ -20,10 +20,13 @@ class DamaBoard {
   final List<List<int>> cells; // 0=empty,1=white,2=black,3=wKing,4=bKing
   const DamaBoard(this.cells);
 
+  /// Türk Dama dizilişi: taşlar en yakın iki sırada (en arka sıra hariç)
+  /// TÜM sütunlarda durur — uluslararası damadaki gibi sadece koyu
+  /// karelerde değil, çünkü Türk Dama'da her kare oynanabilir.
   factory DamaBoard.initial() {
     final cells = List.generate(8, (r) => List.generate(8, (c) {
-      if (r < 3 && (r + c) % 2 == 1) return 2; // black top
-      if (r > 4 && (r + c) % 2 == 1) return 1; // white bottom
+      if (r == 1 || r == 2) return 2; // siyah (üstten 2. ve 3. sıra)
+      if (r == 5 || r == 6) return 1; // beyaz (alttan 2. ve 3. sıra)
       return 0;
     }));
     return DamaBoard(cells);
@@ -65,29 +68,65 @@ class DamaBoard {
     return captures.isNotEmpty ? captures : normal;
   }
 
+  // Türk Dama'da hareket ÇAPRAZ değil, DÜZ (yukarı/aşağı/sağ/sol) olur —
+  // uluslararası damadan en büyük farkı budur.
+  static const _orthoDirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
   List<_Move> _normalMoves(int r, int c, bool white) {
-    final dirs = isKing(r, c)
-        ? [[-1,-1],[-1,1],[1,-1],[1,1]]
-        : (white ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]]);
     final moves = <_Move>[];
-    for (final d in dirs) {
-      final nr = r + d[0]; final nc = c + d[1];
-      if (inBounds(nr, nc) && cells[nr][nc] == 0) {
-        moves.add(_Move(fr: r, fc: c, tr: nr, tc: nc));
+    if (isKing(r, c)) {
+      // Dama (kral) taşı: kale gibi, önü açık olduğu sürece bir yönde
+      // istediği kadar ilerleyebilir.
+      for (final d in _orthoDirs) {
+        var nr = r + d[0], nc = c + d[1];
+        while (inBounds(nr, nc) && cells[nr][nc] == 0) {
+          moves.add(_Move(fr: r, fc: c, tr: nr, tc: nc));
+          nr += d[0];
+          nc += d[1];
+        }
+      }
+    } else {
+      // Er: ileri ya da yana (sağ/sol) bir kare — geri gidemez.
+      final forward = white ? -1 : 1;
+      for (final d in [[forward, 0], [0, -1], [0, 1]]) {
+        final nr = r + d[0], nc = c + d[1];
+        if (inBounds(nr, nc) && cells[nr][nc] == 0) {
+          moves.add(_Move(fr: r, fc: c, tr: nr, tc: nc));
+        }
       }
     }
     return moves;
   }
 
   List<_Move> _captures(int r, int c, bool white) {
-    final dirs = [[-1,-1],[-1,1],[1,-1],[1,1]];
-    // King olmayan piyonlar sadece ileri gidebilir ama her yönde yakalayabilir
     final moves = <_Move>[];
-    for (final d in dirs) {
-      final mr = r + d[0]; final mc = c + d[1];
-      final lr = r + d[0]*2; final lc = c + d[1]*2;
-      if (inBounds(lr, lc) && isEnemy(mr, mc, white) && cells[lr][lc] == 0) {
-        moves.add(_Move(fr: r, fc: c, tr: lr, tc: lc, capR: mr, capC: mc));
+    if (isKing(r, c)) {
+      // Uçan dama: bir yönde boş karelerden geçip karşılaştığı ilk rakip
+      // taşı atlar, arkasındaki boş karelerden herhangi birine inebilir.
+      for (final d in _orthoDirs) {
+        var nr = r + d[0], nc = c + d[1];
+        while (inBounds(nr, nc) && cells[nr][nc] == 0) {
+          nr += d[0];
+          nc += d[1];
+        }
+        if (!inBounds(nr, nc) || !isEnemy(nr, nc, white)) continue;
+        final capR = nr, capC = nc;
+        var lr = nr + d[0], lc = nc + d[1];
+        while (inBounds(lr, lc) && cells[lr][lc] == 0) {
+          moves.add(_Move(fr: r, fc: c, tr: lr, tc: lc, capR: capR, capC: capC));
+          lr += d[0];
+          lc += d[1];
+        }
+      }
+    } else {
+      // Er: normalde geri gidemese de, YAKALAMA yaparken dört yönde de
+      // (ileri/geri/sağ/sol) bitişik rakibi atlayabilir.
+      for (final d in _orthoDirs) {
+        final mr = r + d[0], mc = c + d[1];
+        final lr = r + d[0] * 2, lc = c + d[1] * 2;
+        if (inBounds(lr, lc) && isEnemy(mr, mc, white) && cells[lr][lc] == 0) {
+          moves.add(_Move(fr: r, fc: c, tr: lr, tc: lc, capR: mr, capC: mc));
+        }
       }
     }
     return moves;
