@@ -448,30 +448,48 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
 
-            // Rol kartı
-            Card(
-              elevation: 6,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
+            // Rol kartı — her tur değiştiğinde canlanan geçiş animasyonu
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              transitionBuilder: (child, anim) => ScaleTransition(
+                scale: Tween(begin: 0.92, end: 1.0)
+                    .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutBack)),
+                child: FadeTransition(opacity: anim, child: child),
+              ),
+              child: Container(
+                key: ValueKey('$_round-$_amLiar'),
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _amLiar
+                        ? [Colors.red.shade400, Colors.red.shade900]
+                        : [_kRose, const Color(0xFF8E3A42)],
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                        color: (_amLiar ? Colors.red : _kRose).withAlpha(90),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12)),
+                  ],
+                ),
                 child: Column(children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                        color: _amLiar ? Colors.red.shade50 : Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(20)),
-                    child: Text(
-                      _amLiar ? '😈 SEN YALANCISIN!' : '🗣️ Konu: $_topic',
-                      style: TextStyle(
-                          color: _amLiar ? Colors.red : Colors.green,
-                          fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
+                  Text(_amLiar ? '😈' : '🗣️', style: const TextStyle(fontSize: 40)),
+                  const SizedBox(height: 10),
+                  Text(
+                    _amLiar ? 'SEN YALANCISIN!' : 'Konu: $_topic',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold, fontSize: 19),
                   ),
                   if (_amLiar) ...[
                     const SizedBox(height: 8),
                     const Text('Konuyu bilmiyorsun ama biliyormuş gibi davran!',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        style: TextStyle(color: Colors.white70, fontSize: 13)),
                   ],
                 ]),
               ),

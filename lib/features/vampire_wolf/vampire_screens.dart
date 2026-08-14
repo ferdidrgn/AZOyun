@@ -715,29 +715,12 @@ class _VGS extends State<VampireGameScreen> {
               'vererek vampirleri bulmaya çalış.'
         ),
     };
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: color,
-        title: Column(children: [
-          Text(emoji, style: const TextStyle(fontSize: 48)),
-          const SizedBox(height: 8),
-          Text(title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
-        ]),
-        content: Text(desc, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, height: 1.5)),
-        actions: [
-          Center(
-            child: FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.white24),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Anladım', style: TextStyle(color: Colors.white)),
-            ),
-          ),
-        ],
-      ),
+    showRoleRevealCard(
+      context,
+      emoji: emoji,
+      title: title,
+      description: desc,
+      color: color,
     );
   }
 
@@ -804,7 +787,8 @@ class _VGS extends State<VampireGameScreen> {
             decoration: BoxDecoration(
                 gradient: LinearGradient(colors: _isNight || isTransition
                     ? [Colors.deepPurple.shade900, Colors.indigo.shade900]
-                    : [Colors.orange.shade700, Colors.yellow.shade600])),
+                    : [Colors.orange.shade700, Colors.yellow.shade600]),
+                boxShadow: [BoxShadow(color: Colors.black.withAlpha(130), blurRadius: 16, offset: const Offset(0, 6))]),
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Text(_isNight ? '🌙' : (isTransition ? '🌅' : '☀️'), style: const TextStyle(fontSize: 22)),
@@ -824,7 +808,8 @@ class _VGS extends State<VampireGameScreen> {
                         : (_isDetective
                             ? [Colors.blue.shade900, Colors.indigo.shade800]
                             : [Colors.green.shade800, Colors.teal.shade800]))),
-                borderRadius: BorderRadius.circular(14)),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [BoxShadow(color: Colors.black.withAlpha(100), blurRadius: 12, offset: const Offset(0, 6))]),
             child: Row(children: [
               Text(_roleEmoji(_myRole), style: const TextStyle(fontSize: 28)),
               const SizedBox(width: 10),
