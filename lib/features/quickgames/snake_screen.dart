@@ -104,7 +104,12 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
       _Dir.right => Point(head.x + 1, head.y),
     };
     final hitWall = newHead.x < 0 || newHead.x >= _gridSize || newHead.y < 0 || newHead.y >= _gridSize;
-    if (hitWall || _snake.contains(newHead)) {
+    // Yem yenmeyecekse kuyruğun son hücresi bu hamlede boşalacak — kafa oraya
+    // girebilir. Kontrolü tam _snake listesine göre yapmak, geçerli bir
+    // hareketi yanlışlıkla "kendine çarpma" sayardı.
+    final willEat = newHead == _food;
+    final body = willEat ? _snake : _snake.sublist(0, _snake.length - 1);
+    if (hitWall || body.contains(newHead)) {
       _endSession();
       return;
     }
