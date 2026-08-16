@@ -720,8 +720,8 @@ const kFinaleCase = MysteryCase(
   title: 'Çember',
   subtitle: 'Üç vaka, tek el. Bu gece her şey ortaya çıkıyor.',
   emoji: '🎭',
-  durationLabel: '~15 dk · BÜYÜK FİNAL',
-  isFinale: true,
+  durationLabel: '~15 dk',
+  isFinale: false,
   introPages: [
     'Üç vaka. Üç farklı şehir, üç farklı kurban. Ama hepsinde aynı iz: '
         'daire içinde bir göz, ve iki harf — V.K.\n\n'
@@ -960,5 +960,286 @@ const kFinaleCase = MysteryCase(
   },
 );
 
+// ═══════════════════════════════════════════════════════════════════════════
+// VAKA 5 — GÖLGENİN YÜZÜ (gerçek büyük final — hikaye burada kapanıyor)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const kEpilogueCase = MysteryCase(
+  id: 'shadows_face',
+  number: 5,
+  title: 'Gölgenin Yüzü',
+  subtitle: 'Son rapor. Bu sefer gerçekten sonuna kadar.',
+  emoji: '🕯️',
+  durationLabel: '~15 dk · BÜYÜK FİNAL',
+  isFinale: true,
+  introPages: [
+    'Balo gecesinden üç hafta geçti. "Merkez Sistem" resmen aktif — ama '
+        'kimse tam olarak ne yaptığını açıklamıyor. Şehirde tuhaf '
+        'kesintiler var: bazı banka hesapları "yeniden düzenleniyor", '
+        'bazı gazeteciler susturuluyor, bazı haberler bir gecede '
+        'kayboluyor.\n\n'
+        'Telefonun çalıyor. Naz Ilgın.',
+    '"Kayıtları çözdüm, dedektif," diyor, sesi hâlâ o gece kadar '
+        'gergin. "\'Merkez Sistem\' şehrin tüm bankacılık, kimlik ve alt '
+        'yapı verisini tek bir noktaya, V.K. Holdings\'in gölge '
+        'sunucularına yönlendiriyor. Bu bir hayır işi değil — bu bir '
+        'kontrol sistemi."\n\n'
+        'Üç vakadan topladığın kanıtlar — Serkan Bulut\'un zimmeti, Deniz '
+        'Aksu\'nun sahte tablosu, Barış Koral\'ın gizli transferleri — '
+        'artık net bir şema çiziyor: hepsi aynı paravan ağına, aynı '
+        'kaynağa bağlanıyor.',
+    'Ama savcılığa gitmek için tek bir şey eksik: Vedat Korkmaz\'ın '
+        'kendisi. Balo gecesinden beri kimse onu görmedi. "V.K. '
+        'Holdings" resmî olarak "kurucumuz seyahatte" diyor.\n\n'
+        'Naz\'ın son ipucu, şehrin dışında terk edilmiş bir tersane '
+        'kompleksine işaret ediyor — resmî kayıtlarda "arşiv deposu" '
+        'yazan bir bina. Ama oraya gitmeden önce, ona en yakın dört '
+        'kişiden biri gerçeği söylemeye ikna edilmeli. Sadece biri, '
+        'onun gerçekte kim olduğunu ve şu an nerede olduğunu biliyor. '
+        'Bu senin son raporun, dedektif. Bitir bunu.',
+  ],
+  clues: [
+    MysteryClue(
+      id: 'blackbox',
+      emoji: '💾',
+      title: 'Kara Kutu Sunucu Kaydı',
+      description:
+          'Naz\'ın kurtardığı bir sunucu kaydında "Archon" kod adlı bir '
+          'hesabın son giriş konumu görünüyor: terk edilmiş tersane '
+          'kompleksinin koordinatları.',
+    ),
+    MysteryClue(
+      id: 'passport',
+      emoji: '🛂',
+      title: 'Sahte Pasaport Fotokopisi',
+      description:
+          'Bir avukatlık bürosunun çöpünden çıkan bir fotokopi: Vedat '
+          'Korkmaz\'ın yüzü, ama üzerinde bambaşka bir isim yazıyor — '
+          '"Kerim Vardar". Ve bu isim, on iki yıl önce bir tekne '
+          'kazasında öldüğü açıklanan bir mühendise ait.',
+    ),
+    MysteryClue(
+      id: 'testimony',
+      emoji: '📡',
+      title: 'Şifreli Muhbir Dosyası',
+      description:
+          '"Kuzgun" kod adlı biri sana şifreli bir dosya gönderdi: '
+          '"Merkez Sistem"in kendisi tarafından yazılmış ilk kod '
+          'satırları. Yazarın dijital imzası, yıllar önce "ölen" o '
+          'mühendisle eşleşiyor.',
+    ),
+    MysteryClue(
+      id: 'blueprint',
+      emoji: '🗺️',
+      title: 'Tersane Krokisi',
+      description:
+          'Eski tersanenin yapı planında, gizlenmiş bir "kontrol odası" '
+          'işaretli — resmî belgelerde hiç yer almıyor.',
+    ),
+    MysteryClue(
+      id: 'transfer',
+      emoji: '💸',
+      title: 'Son Kişisel Transfer',
+      description:
+          'Vedat Korkmaz\'ın kişisel hesabından, balo gecesinin '
+          'sabahında yurt dışına yapılmış büyük bir transfer. Alıcı '
+          'hesap, yıllar önce "Kerim Vardar" adına açılmış.',
+    ),
+    MysteryClue(
+      id: 'ledger_final',
+      emoji: '📋',
+      title: 'Üç Vakanın Bağlantı Şeması',
+      description:
+          'Kendi not defterin: Serkan Bulut, Deniz Aksu ve Barış '
+          'Koral\'ın hepsi, farklı yollardan, aynı paravan şirket '
+          'ağına — V.K. Holdings\'in gölge yapısına — bağlanıyor. Üç '
+          'vaka, tek bir el.',
+    ),
+  ],
+  suspects: [
+    MysterySuspect(
+      id: 'selin',
+      name: 'Selin Kutlu',
+      role: "V.K.'nın Evlatlığı",
+      emoji: '💃',
+      flavor: 'Balo gecesinden beri gözaltında değil ama kendi isteğiyle '
+          'seninle konuşmaya geldi. Sesi titriyor ama gözlerinde yeni '
+          'bir kararlılık var.',
+      questions: [
+        MysteryQA(
+          'O gece balodan sonra ne oldu?',
+          'Beni bir odaya kilitlediler, "kendi iyiliğim için" dediler. '
+              'Ertesi gün her şey normalmiş gibi davrandılar. Ama artık '
+              'hiçbir şey normal değil, dedektif.',
+        ),
+        MysteryQA(
+          "Vedat Korkmaz'ın gerçek kimliğini biliyor musun?",
+          'Bana hep "baban" dedi ama... galiba hiç değildi. Odasında bir '
+              'dosya buldum — benim çocukluğuma ait değil, bambaşka bir '
+              'isme ait. Onu sana getirebilirim, istersen.',
+        ),
+      ],
+    ),
+    MysterySuspect(
+      id: 'cengiz',
+      name: 'Cengiz Örs',
+      role: 'Eski Güvenlik Şefi, Şimdi Kaçak',
+      emoji: '🕶️',
+      flavor: 'İşten ayrılmış, artık korkacak kimsesi kalmamış gibi '
+          'davranıyor ama sürekli arkasına bakıyor.',
+      questions: [
+        MysteryQA(
+          'Neden ayrıldın?',
+          'O gece sunucu odasındaki geri sayımı gördüm. Bu iş '
+              'göründüğünden çok daha büyük, dedektif. Ben sadece hayatta '
+              'kalmak istiyorum artık.',
+        ),
+        MysteryQA(
+          'Patronunu hiç gerçekten gördün mü?',
+          'Bir kere. Balo gecesi, maskesi düşecek gibi oldu bir an. '
+              'Yüzünü tam göremedim ama bir şey tanıdıktı — sanki bir '
+              'yerden hatırlıyordum, çıkaramadım.',
+        ),
+      ],
+    ),
+    MysterySuspect(
+      id: 'aslihan',
+      name: 'Av. Aslıhan Vural',
+      role: 'V.K. Holdings Genel Danışmanı',
+      emoji: '⚖️',
+      flavor: 'Soğukkanlı, her cümlesi hesaplı. Elinde her zaman '
+          'imzalanmayı bekleyen bir evrak var.',
+      questions: [
+        MysteryQA(
+          "Vedat Korkmaz'ın avukatı olarak, onun yerini biliyor musunuz?",
+          'Müvekkil gizliliği, dedektif. Ama şunu söyleyebilirim: '
+              '"Vedat Korkmaz" diye biri hukuken hiçbir zaman var '
+              'olmadı. Bu, bir şirket kaydındaki isim, o kadar.',
+        ),
+        MysteryQA(
+          'O zaman gerçek isim nedir?',
+          'Bunu öğrenmek için doğru soruyu doğru kişiye sormanız '
+              'gerekiyor. Ben sadece kağıtları imzalarım, dedektif — '
+              'hikayeleri değil.',
+        ),
+      ],
+    ),
+    MysterySuspect(
+      id: 'kuzgun',
+      name: '"Kuzgun" (Gökhan Ateş)',
+      role: 'Anonim Muhbir, Sistem Mühendisi',
+      emoji: '🐦‍⬛',
+      flavor: 'Kimliğini gizli tutmaya çalışan ama artık fazla ipucu '
+          'vermiş biri. Sana şifreli bir dosya gönderen oydu.',
+      questions: [
+        MysteryQA(
+          'Neden bunu bana gönderiyorsun?',
+          'Çünkü sistemi ben kurdum, dedektif. Ve gördüğüm şey beni '
+              'korkuttu. Bu, kimsenin durduramayacağı bir şey olacaktı.',
+        ),
+        MysteryQA(
+          "Vedat Korkmaz'ı hiç gördün mü?",
+          'Hiçbir zaman yüz yüze. Ama sunucularda bıraktığı dijital '
+              'izler var — ve bir tanesi seni doğrudan ona götürür, '
+              'eğer doğru kutuyu açarsan.',
+        ),
+      ],
+    ),
+  ],
+  culpritId: 'selin',
+  endings: {
+    'selin': MysteryEnding(
+      title: '🕯️ Dosya Kapandı.',
+      body:
+          'Selin\'e güvendin — ve haklı çıktın. O gece geç saatte, '
+          'üzerinde yıllar önce farklı bir isimle çekilmiş bir '
+          'fotoğrafın olduğu eski bir dosya getiriyor: Vedat Korkmaz, '
+          'gerçekte on iki yıl önce bir tekne kazasında "öldüğü" '
+          'açıklanan mühendis-finansör Kerim Vardar\'dan başkası '
+          'değil. Sahte bir ölüm, yeni bir kimlik, ve yıllarca sabırla '
+          'inşa edilmiş bir gölge imparatorluğu.\n\n'
+          'Naz\'ın kayıtları, Selin\'in dosyası ve üç vakadan topladığın '
+          'kanıtlar birleşince savcılık nihayet harekete geçiyor. Terk '
+          'edilmiş tersanedeki gizli veri merkezine yapılan baskında '
+          '"Merkez Sistem"in ana sunucuları kapatılıyor — şehrin '
+          'bankacılık ve kimlik verileri güvenliğe alınıyor. Cengiz '
+          'ifade veriyor, Aslıhan Vural şirketin belgelerini savcılığa '
+          'teslim ediyor, Kuzgun\'un logları mahkemede en güçlü kanıt '
+          'oluyor.\n\n'
+          'Kerim Vardar o gece orada değil; son anda kaçmış. Ama artık '
+          'bir isim var, bir yüz var, imzalı bir dosya var. Interpol '
+          'kırmızı bülten çıkarıyor — dünyanın neresine giderse gitsin, '
+          'artık bir gölge değil, aranan bir insan.\n\n'
+          'Selin, gerçek adını ilk kez öğreniyor ve hayatını sıfırdan '
+          'kurmaya başlıyor.\n\n'
+          'Masanda üç vakanın dosyalarını kapatırken, hâlâ o daire '
+          'içindeki gözü düşünüyorsun. Belki bir gün, dünyanın bir '
+          'köşesinde, o sembolü taşıyan yeni bir mühür belirir. Ama '
+          'bugün, dedektif, şehir güvende — ve bu, kariyerinin en '
+          'büyük vakası olarak tarihe geçti.\n\n'
+          'DEDEKTİF DOSYALARI — KAPANDI.',
+    ),
+    'cengiz': MysteryEnding(
+      title: '🕯️ Dosya Kapandı — ama eksik bir parçayla.',
+      body:
+          'Cengiz\'i seçtin. Elinden geleni yapıyor, ifadesi mahkemede '
+          'işe yarıyor — ama Vedat Korkmaz\'ın gerçek kimliğini ancak '
+          'Selin\'in bildiğini asla öğrenemiyorsun, o dosya hep '
+          'kilitli kalıyor.\n\n'
+          'Yine de Naz\'ın kayıtları ve üç vakadan toplanan kanıtlar '
+          'birleşince "Merkez Sistem" kamuoyuna ifşa oluyor ve '
+          'kapatılıyor; şehrin verileri güvenliğe alınıyor. V.K. '
+          'Holdings dağılıyor, Aslıhan Vural ve Kuzgun\'un ifadeleri '
+          'davayı güçlendiriyor.\n\n'
+          'Ama Vedat Korkmaz\'ın yüzü hiçbir zaman netleşmiyor. O gece '
+          'sonrasında bir daha hiç görülmüyor — dosyası "aranıyor, '
+          'kimliği belirsiz" olarak kapanıyor, şehrin efsanelerinden '
+          'biri haline geliyor.\n\n'
+          'Şehir güvende, dedektif. Ama bazı sorular cevapsız kalıyor. '
+          'Bu da bir sondur — belki de en gerçekçisi.\n\n'
+          'DEDEKTİF DOSYALARI — KAPANDI.',
+    ),
+    'aslihan': MysteryEnding(
+      title: '🕯️ Dosya Kapandı — ama eksik bir parçayla.',
+      body:
+          'Aslıhan Vural\'ı seçtin. Beklediğin gibi konuşmuyor — '
+          '"müvekkil gizliliği" duvarının arkasına saklanıyor ve '
+          'Selin\'in elindeki asıl dosyaya hiç ulaşamıyorsun.\n\n'
+          'Yine de Naz\'ın kayıtları ve üç vakadan toplanan kanıtlar '
+          'yeterli oluyor: "Merkez Sistem" mahkeme kararıyla '
+          'kapatılıyor, şehrin verileri güvenliğe alınıyor. Aslıhan, '
+          'kendini kurtarmak için elindeki şirket belgelerini son anda '
+          'savcılığa teslim ediyor — dolaylı da olsa yardımcı oluyor.\n\n'
+          'Ama Vedat Korkmaz\'ın gerçek kimliği hiçbir zaman netleşmiyor. '
+          'Bir daha hiç görülmüyor — dosyası "aranıyor, kimliği '
+          'belirsiz" olarak kapanıyor.\n\n'
+          'Şehir güvende, dedektif. Vaka resmen kapandı — ama o daire '
+          'içindeki göz, bir yerlerde, hâlâ bakıyor olabilir. Bu senin '
+          'bilmen gereken bir şey değil artık; bu senin son raporundu, '
+          've onu tamamladın.\n\n'
+          'DEDEKTİF DOSYALARI — KAPANDI.',
+    ),
+    'kuzgun': MysteryEnding(
+      title: '🕯️ Dosya Kapandı — ama eksik bir parçayla.',
+      body:
+          'Kuzgun\'u seçtin. Sistemin teknik iç yüzünü ortaya seriyor — '
+          'kod satırları, sunucu mimarisi, hepsi mahkemeye sunuluyor. '
+          'Ama Vedat Korkmaz\'ı hiç yüz yüze görmediğini itiraf ediyor; '
+          'gerçek kimliği hâlâ Selin\'in dosyasında kilitli kalıyor.\n\n'
+          'Naz\'ın kayıtları, Kuzgun\'un teknik ifşaatı ve üç vakadan '
+          'toplanan kanıtlar birleşince "Merkez Sistem" resmen '
+          'kapatılıyor; şehrin bankacılık ve kimlik verileri '
+          'güvenliğe alınıyor. V.K. Holdings çöküyor.\n\n'
+          'Ama Vedat Korkmaz\'ın yüzü hiçbir zaman netleşmiyor — bir '
+          'daha hiç görülmüyor, dosyası "aranıyor, kimliği belirsiz" '
+          'olarak kapanıyor.\n\n'
+          'Şehir kurtuldu, dedektif. Sistemi durdurdun. Bazı gölgeler '
+          'hep gölge kalır — ama bu sefer, en azından ışığı sen '
+          'yaktın.\n\n'
+          'DEDEKTİF DOSYALARI — KAPANDI.',
+    ),
+  },
+);
+
 /// Kampanya sırası: her vaka bir öncekini tamamlayınca açılır.
-const kMysteryCases = [kCase1, kCase2, kCase3, kFinaleCase];
+const kMysteryCases = [kCase1, kCase2, kCase3, kFinaleCase, kEpilogueCase];

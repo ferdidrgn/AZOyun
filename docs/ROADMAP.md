@@ -380,26 +380,33 @@ satır silinmez. Bu bölüm, kullanıcının 13 Ağustos 2026 turunda istediği,
       `MysteryCampaignService` (SharedPreferences tabanlı ilerleme kaydı —
       bir vaka bitirilince bir sonraki açılır), vaka seçim ekranı
       (`MysteryLobbyScreen` artık kilit durumlarını gösteren bir hub)
-- [x] **4 vaka** yazıldı ve tam oynanabilir: Vaka 1 "Gece Ekspresi
-      Cinayeti" (mevcut), Vaka 2 "Galeri Sirius'taki Sahtekârlık", Vaka 3
-      "Borsa Kulesi'nde Ölüm", ve **Büyük Final "Çember"**. Üçü de aynı
-      görünmez ipucunu taşıyor: daire içinde bir göz mührü ve "V.K." baş
-      harfleri.
-- [x] Final vakada şok twist: oyuncunun çözdüğü tüm vakaların arkasında
-      tek bir kişi var — Vedat Korkmaz (V.K.), balo boyunca dedektife
+- [x] **5 vaka** yazıldı ve tam oynanabilir, kampanya **tamamlandı**: Vaka 1
+      "Gece Ekspresi Cinayeti" (mevcut), Vaka 2 "Galeri Sirius'taki
+      Sahtekârlık", Vaka 3 "Borsa Kulesi'nde Ölüm", Vaka 4 "Çember"
+      (şok twist finali) ve **Vaka 5 "Gölgenin Yüzü" — gerçek büyük
+      final**. Hepsi aynı görünmez ipucunu taşıyor: daire içinde bir göz
+      mührü ve "V.K." baş harfleri.
+- [x] Vaka 4'te şok twist: oyuncunun çözdüğü tüm vakaların arkasında tek
+      bir kişi var — Vedat Korkmaz (V.K.), balo boyunca dedektife
       "yardımcı" olan sıcakkanlı bir tanıdık kılığında dolaşıyor. Onu
       doğru tahmin etsen bile "Merkez Sistem" imzası birkaç dakika önce
-      atılmış olur — çok geçsin.
-- [x] Final, ana karakterin şaşkınlığıyla ve akıbeti belirsiz bırakılarak
-      bitiyor ("İZ SÜRMEYE DEVAM EDECEK...") — aksiyonlu, nefes nefese ton.
-- Not: 10 vakanın **hepsini** ilk vaka kadar uzun/detaylı yazmak tek
-  oturumda bitecek bir iş değildi — bu turda kampanya **iskeleti** (vaka
-  zinciri, ilerleme kaydı, kilit sistemi) TAM olarak kuruldu ve **4 vaka**
-  (1 mevcut + 2 yeni ara vaka + final) uçtan uca yazıldı/oynanabilir.
-  Kalan ~6 ara vaka (kampanyanın "Vaka 5-9" kısmı), aynı `MysteryCase`
-  şablonuna yeni bir sabit eklemek kadar basit bir iş — istenirse
-  sıradaki turlarda vaka vaka eklenir. Vaka seçim ekranında bunu
-  hatırlatan bir not var ("Daha fazla vaka yakında geliyor").
+      atılmış olur — çok geçsin ve hikaye kasıtlı bir cliffhanger'la
+      biter ("İZ SÜRMEYE DEVAM EDECEK...").
+- [x] **Vaka 5 "Gölgenin Yüzü" ile gerçek kapanış eklendi** (kullanıcı
+      isteği: "sonu gelsin, sonunu merak ediyoruz"). Naz Ilgın'ın balo
+      gecesi topladığı kayıtlar + önceki 3 vakanın kanıtları birleşiyor;
+      dedektif, Vedat Korkmaz'a en yakın 4 kişiden birini konuşturarak
+      onun gerçek kimliğini (yıllar önce "ölmüş" ilan edilen mühendis
+      Kerim Vardar) ve "Merkez Sistem"in gerçek amacını (şehrin
+      bankacılık/kimlik verisini tek elde toplayan bir kontrol sistemi)
+      ortaya çıkarıyor. Doğru şüpheliyi (Selin Kutlu) seçmek tam bir
+      zafer sonu veriyor (sistem kapatılıyor, kimlik ifşa oluyor,
+      Interpol kırmızı bülten çıkarıyor); diğer 3 seçim de hikayeyi
+      kapatıyor ama "eksik bir parçayla" (sistem yine kapatılıyor, şehir
+      kurtuluyor, ama V.K.'nın yüzü hiç netleşmiyor) — hiçbir son artık
+      "devam edecek" ile bitmiyor, kampanyanın hepsi net bir final
+      alıyor. Vaka seçim ekranındaki not güncellendi ("hikaye
+      tamamlandı").
 
 ### 8.2 Reklam & Premium
 - [x] Interstitial sıklığı: her oyun sonunda değil, **5 oyunda 1** (önceden

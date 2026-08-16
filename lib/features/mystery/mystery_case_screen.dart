@@ -84,10 +84,12 @@ class _MysteryLobbyScreenState extends State<MysteryLobbyScreen> {
               const SizedBox(height: 8),
               AZFrostCard(
                 opacity: 0.08,
-                child: const Text(
-                  '📖 Daha fazla vaka yakında geliyor — hikaye burada bitmiyor.',
+                child: Text(
+                  MysteryCampaignService.instance.isCompleted(kMysteryCases.last.id)
+                      ? '🕯️ Dedektif Dosyaları — hikaye tamamlandı. Vakaları istediğin zaman tekrar oynayabilirsin.'
+                      : '📖 5 bölümlük tek bir hikaye — sonuna kadar iz sür.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white54, fontSize: 12, fontStyle: FontStyle.italic),
+                  style: const TextStyle(color: Colors.white54, fontSize: 12, fontStyle: FontStyle.italic),
                 ),
               ),
               const SizedBox(height: 16),
