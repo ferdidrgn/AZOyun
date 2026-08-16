@@ -316,7 +316,10 @@ class _WordGameScreenState extends State<WordGameScreen>
 
   void _generateLetters(int seed) {
     final rng = Random(seed);
-    const vowels     = 'AEİOÖUÜ';
+    // Kelime bankasındaki (ASCII normalize) kelimelerin ~15'i düz "I"
+    // (noktasız) harfi içeriyor (KAPI, KEDI, YILDIZ, DENIZ, ...) — bu harf
+    // havuzda hiç yoktu, o kelimeler tahtada asla kurulamıyordu.
+    const vowels     = 'AEİIOÖUÜ';
     const consonants = 'BCÇDFGĞHJKLMNPRSŞTVYZ';
     _letters = [
       ...List.generate(5, (_) => vowels[rng.nextInt(vowels.length)]),

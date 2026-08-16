@@ -28,6 +28,15 @@ const _cityData = {
   'GAZİANTEP':['Baklava ile ünlü', 'Güneydoğu Anadolu\'da', 'Zeugma mozaikleri burada'],
 };
 
+/// Dart'ın `String.toUpperCase()` metodu Türkçe'ye duyarlı değil: küçük
+/// "i" harfini noktasız "I" yapar, noktalı "İ" değil — bu yüzden
+/// `_cityData`'daki "İSTANBUL"/"İZMİR" gibi anahtarlarla normal
+/// `toUpperCase()` çıktısı asla eşleşmiyordu ("istanbul" -> "ISTANBUL" ≠
+/// "İSTANBUL"). Büyütmeden önce küçük harfleri Türkçe kurallarına göre
+/// elle eşleyerek bunu düzeltiyoruz.
+String _trUpper(String s) =>
+    s.replaceAll('i', 'İ').replaceAll('ı', 'I').toUpperCase();
+
 // ══════════════════════════════════════════════════════════════════════════════
 // LOBBY
 // ══════════════════════════════════════════════════════════════════════════════
@@ -332,11 +341,17 @@ class _CityGameScreenState extends State<CityGameScreen> {
   void _onFirebase(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
-    // Yeni tura geçince rewarded hint sıfırla
+    // Yeni tura geçince rewarded hint VE cevaplama kilidini sıfırla — her
+    // Firebase güncellemesinde (ör. başka oyuncunun ipucu istemesi) değil,
+    // sadece tur gerçekten değiştiğinde. Aksi halde doğru cevabı
+    // gönderdikten sonraki kısa gecikme içinde tekrar cevap gönderilirse
+    // puan tekrar tekrar eklenebiliyordu.
     final newRound = (d['currentRound'] as int?) ?? 1;
     final oldRound = (_room['currentRound'] as int?) ?? 1;
-    if (newRound != oldRound) setState(() => _usedRewardedHint = false);
-    setState(() { _room = d; _answered = false; });
+    if (newRound != oldRound) {
+      setState(() { _usedRewardedHint = false; _answered = false; });
+    }
+    setState(() => _room = d);
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
       AdService.instance.onGameEnd(); // interstitial tetikle
@@ -373,8 +388,8 @@ class _CityGameScreenState extends State<CityGameScreen> {
 
   Future<void> _checkAnswer() async {
     if (_answered) return;
-    final answer = _answerCtrl.text.trim().toUpperCase();
-    final correct = _currentCity.toUpperCase();
+    final answer = _trUpper(_answerCtrl.text.trim());
+    final correct = _trUpper(_currentCity);
     if (answer == correct || answer.replaceAll(' ', '') == correct.replaceAll(' ', '')) {
       _answered = true;
       // Rewarded ile açılan ipucu = bonus puan yok, normal puan verilir ama düşük
@@ -535,7 +550,7 @@ class _CityGameScreenState extends State<CityGameScreen> {
                   color: _kPink,
                   onRewarded: (_) async {
                     setState(() => _usedRewardedHint = true);
-                    _snack('🎁 Reklam izledin! Ekstra ipucu: $_currentCity ← İlk 2 harf: ${_currentCity.substring(0, 2)}');
+                    _snack('🎁 Reklam izledin! Ekstra ipucu — İlk 2 harf: ${_currentCity.substring(0, 2)}');
                   },
                 ),
               ],

@@ -279,10 +279,12 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
               Text('⚫ Dama Nasıl?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text('• Oda kuran ⚪ Beyaz, katılan ⚫ Siyah oynar\n'
-                  '• Piyonlar çapraz ileri hareket eder\n'
-                  '• Yakalama zorunludur (geçip atlama)\n'
-                  '• Son sıraya ulaşan taş dame (kral) olur\n'
-                  '• Tüm taşları yiyen veya hamlesi kalmayan kazanır',
+                  '• Gerçek Türk Dama kuralları: piyonlar çapraz DEĞİL, '
+                  'düz (ileri/yan) hareket eder\n'
+                  '• Yakalama zorunludur (üzerinden atlama)\n'
+                  '• Son sıraya ulaşan taş dame (uçan kral) olur\n'
+                  '• Rakibinin tüm taşlarını alan ya da rakibini hamlesiz '
+                  'bırakan oyuncu kazanır',
                   style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6)),
             ],
           )),

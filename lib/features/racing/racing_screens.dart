@@ -385,6 +385,7 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
     super.initState();
     _ref = _db.child('${GamePaths.racing}/${widget.roomId}');
     _sub = _ref.onValue.listen(_onFB);
+    _loadStartPosition();
     _countdownCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 1));
     // Countdown
     Timer.periodic(const Duration(seconds: 1), (t) {
@@ -397,6 +398,19 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
   @override void dispose() {
     _physicsTimer?.cancel(); _syncTimer?.cancel();
     _countdownCtrl.dispose(); _sub?.cancel(); super.dispose();
+  }
+
+  // Lobide her oyuncuya farklı bir başlangıç X'i atanıyor (bkz.
+  // RacingLobbyScreen._create/_join) ama fizik state'i sabit değerlerle
+  // başlıyordu — bu yüzden tüm arabalar görsel olarak aynı noktada üst
+  // üste başlıyordu. Bir kerelik okuma ile gerçek başlangıç X'ini alıyoruz;
+  // Y ve açı, pist yönüne göre doğru olan sabit değerlerde kalıyor.
+  Future<void> _loadStartPosition() async {
+    final snap = await _ref.child('players/${widget.myKey}/x').get();
+    if (!mounted || !snap.exists) return;
+    final startX = (snap.value as num?)?.toDouble();
+    if (startX == null) return;
+    setState(() => _x = startX);
   }
 
   void _onFB(DatabaseEvent e) {
@@ -499,9 +513,12 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
     ProfileService.instance
         .reportGameResult(gameId: 'racing', won: pos == 1)
         .then((_) => AchievementService.instance.checkAndUnlock());
-    // Herkez bitince oyun biter
+    // Herkes bitirince oyun biter — sadece 1. olan kişi bitirdi diye
+    // yarışı tüm oyuncular için erken kesmemeli (önceden "pos == 1" de
+    // bu koşulu tetikliyordu, bu da hâlâ pistte olan diğer oyuncuların
+    // fizik motorunu anında durduruyordu).
     final allFinished = players.length == (players.values.where((p) => p['finished'] == true).length + 1);
-    if (allFinished || pos == 1) {
+    if (allFinished) {
       await _ref.update({'status': 'finished', 'winner': widget.myKey});
     }
   }

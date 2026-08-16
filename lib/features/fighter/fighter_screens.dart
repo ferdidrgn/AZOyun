@@ -28,11 +28,11 @@ class FighterData {
 }
 
 const kFighters = [
-  FighterData(id:'ninja',   name:'Ninja',    emoji:'🥷', maxHp:80,  attack:25, defense:10, speed:500,  color:Color(0xFF37474F), special:'Gizlenme: 1 saldırı kaçır'),
+  FighterData(id:'ninja',   name:'Ninja',    emoji:'🥷', maxHp:80,  attack:25, defense:10, speed:500,  color:Color(0xFF37474F), special:'Gizlenme: 2 sn çok yüksek savunma'),
   FighterData(id:'warrior', name:'Savaşçı',  emoji:'⚔️', maxHp:120, attack:18, defense:20, speed:900,  color:Color(0xFFB71C1C), special:'Kılıç fırtınası: 3× hasar'),
   FighterData(id:'mage',    name:'Büyücü',   emoji:'🧙', maxHp:70,  attack:32, defense:5,  speed:1100, color:Color(0xFF4A148C), special:'Ateş topu: Yanma hasarı'),
-  FighterData(id:'archer',  name:'Okçu',     emoji:'🏹', maxHp:90,  attack:22, defense:8,  speed:650,  color:Color(0xFF1B5E20), special:'Kritik atış: %30 kritik şans'),
-  FighterData(id:'paladin', name:'Paladin',  emoji:'🛡️', maxHp:150, attack:15, defense:30, speed:1000, color:Color(0xFFE65100), special:'Kutsal kalkan: 2 sn hasar yok'),
+  FighterData(id:'archer',  name:'Okçu',     emoji:'🏹', maxHp:90,  attack:22, defense:8,  speed:650,  color:Color(0xFF1B5E20), special:'Kritik atış: garantili 2.2× hasar'),
+  FighterData(id:'paladin', name:'Paladin',  emoji:'🛡️', maxHp:150, attack:15, defense:30, speed:1000, color:Color(0xFFE65100), special:'Kutsal kalkan: 3 sn çok yüksek savunma'),
   FighterData(id:'rogue',   name:'Haydut',   emoji:'🗡️', maxHp:85,  attack:28, defense:6,  speed:480,  color:Color(0xFF263238), special:'Zehir bıçağı: DoT hasarı'),
 ];
 
@@ -751,12 +751,17 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
 
   Future<void> _onKill() async {
     final myScore = ((_players[widget.myKey]?['score'] as int?) ?? 0) + 1;
+    final oppScore = (_players[_oppKey]?['score'] as int?) ?? 0;
     final round = (_room['round'] as int?) ?? 1;
     final maxR = (_room['maxRounds'] as int?) ?? 3;
-    if (myScore >= (maxR / 2).ceil() + 1 || round >= maxR) {
-      // Maç sona erdi
+    // Best-of-N: ilk yarı+1 raundu kazanan maçı kazanır (maxR=3 için 2).
+    final winThreshold = ((maxR + 1) / 2).ceil();
+    if (myScore >= winThreshold || round >= maxR) {
+      // Maç sona erdi — kazanan, o ana kadarki TOPLAM raunt skoruna göre
+      // belirlenir; sadece son raundu kazanan taraf otomatik galip sayılmaz.
+      final winnerKey = myScore >= oppScore ? widget.myKey : _oppKey;
       await _ref.update({
-        'status': 'finished', 'winner': widget.myKey,
+        'status': 'finished', 'winner': winnerKey,
         'players/${widget.myKey}/score': myScore,
       });
     } else {
