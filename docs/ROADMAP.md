@@ -594,3 +594,82 @@ Play Console'un "3 işlem öneriliyor" uyarısı, sürüm 5 (1.0.0) için:
   yerel arcade oyunları (XOX, 4'lü Bağlantı, Reversi, Yılan, 2048 vb.) —
   bunlar zaten sade/hızlı oynanış için tasarlandığından düşük öncelikli,
   istenirse ayrı bir turda ele alınabilir.
+
+### 8.9 Tüm oyunlarda kapsamlı hata taraması ("çalışmayanlar/ters çalışanlar var")
+
+Kullanıcı isteği üzerine 29 oyun dosyasının tamamı (12 online + 17 yerel
+hızlı oyun) satır satır, kod okuyarak taranıp gerçek mantık hataları arandı
+(derleme/çalıştırma yapılamadığından "simülasyon" kod üzerinden zihinsel
+yürütmeyle yapıldı). Bulunan ve **düzeltilen** somut hatalar:
+
+- [x] **Yılan (Snake) — geçerli hamle yanlışlıkla "kendine çarpma"
+      sayılıyordu:** Çarpışma kontrolü, o hamlede boşalacak kuyruk hücresini
+      hesaba katmadan tam yılan gövdesine bakıyordu; yılan yem yemeden kendi
+      kuyruğunun o an çekileceği hücreye girdiğinde (ör. dar bir daire
+      çizerken) oyun "öldün" diyip erken bitiyordu.
+- [x] **Dövüşçüler — maçı kazananı YANLIŞ taraf belirliyordu (KRİTİK):**
+      Kazanma eşiği hesaplaması hatalıydı (`maxRounds=3` için pratikte
+      "3-0 olmadan asla" tetiklenmiyordu), gerçekte maçı SADECE 3. (son)
+      raundu kazanan bitiriyordu — toplam skora bakılmaksızın. Sonuç: 2-0
+      önde olan oyuncu 3. raundu kaybederse, daha AZ raunt kazanan rakip
+      "🏆 ZAFER!" ekranını görüyordu. Artık kazanan, o ana kadarki toplam
+      raunt skoruna göre doğru belirleniyor. Ayrıca Ninja/Paladin özel
+      yeteneklerinin "1 saldırı kaçır" / "hasar yok" açıklamaları gerçek
+      davranışla (yüksek savunma, hasar azaltma — tam blok değil)
+      uyuşmuyordu; metinler gerçeğe uyduruldu.
+- [x] **Araba Yarışı — iki ayrı hata:** (1) Lobide her oyuncuya farklı bir
+      başlangıç X'i atanıyordu ama oyun ekranı bunu hiç okumadan sabit
+      değerlerle başlıyordu — tüm arabalar aynı noktada üst üste
+      başlıyordu; artık gerçek başlangıç X'i Firebase'den okunuyor.
+      (2) Yarışı 1. sırayı alan oyuncu bitirir bitirmez TÜM oyuncular için
+      anında sonlandırıyordu (`pos == 1` koşulu) — pistte hâlâ yarışan 2-3-4.
+      oyuncuların fizik motoru zorla durduruluyordu. Artık yarış sadece
+      herkes bitirince sona eriyor.
+- [x] **Mini Golf — host önce biterse oyun sonsuza kadar kilitleniyordu
+      (KRİTİK):** Bir sonraki deliğe geçiş kontrolü sadece host kendi
+      topunu bitirdiğinde tetikleniyordu. Host diğerlerinden ÖNCE biterse
+      ve daha sonra son oyuncu biterse, bunu tekrar kontrol eden hiçbir
+      mekanizma yoktu — oyun "Diğerleri bekleniyor..." ekranında sonsuza
+      kadar takılı kalıyordu (4 kişilik oyunda ~%75 olasılıkla
+      tetikleniyordu). Artık her Firebase güncellemesinde host tarafında
+      yeniden kontrol ediliyor. Ayrıca hiçbir yerde okunmayan ölü bir
+      Firebase alanı (`shots`) temizlendi.
+- [x] **Şehir Bulmaca — üç ayrı hata:** (1) Türkçe büyütme sorunu: Dart'ın
+      `toUpperCase()` Türkçe'ye duyarlı değil (küçük "i" → noktasız "I"
+      yapıyor, "İ" değil) — "istanbul" yazan oyuncunun cevabı "İSTANBUL"
+      ile eşleşmiyordu (10 şehirden 4'ünü etkiliyordu). Türkçe'ye duyarlı
+      bir büyütme fonksiyonu eklendi. (2) "Ekstra ipucu" reklamı, "ilk 2
+      harf" vermesi gerekirken şehrin TAM adını da mesaja ekliyordu —
+      artık sadece ilk 2 harf gösteriliyor. (3) Cevaplama kilidi
+      (`_answered`) her Firebase güncellemesinde (başka oyuncunun ipucu
+      istemesi gibi alakasız olaylarda dahi) sıfırlanıyordu, bu da doğru
+      cevaptan sonraki kısa gecikme içinde puanın tekrar eklenmesine yol
+      açabiliyordu — artık sadece tur gerçekten değişince sıfırlanıyor.
+- [x] **Kelime Bulmaca — kelime bankasının dörtte biri asla kurulamıyordu:**
+      Harf havuzunda düz "I" (noktasız) hiç yoktu, ama kelime bankasındaki
+      59 kelimeden 15'i ("KAPI", "KEDI", "YILDIZ" vb.) bu harfi içeriyordu.
+      Harf havuzuna "I" eklendi.
+- [x] **Vampir Köylü — yanlış rol grubu sayacı gösteriliyordu:** Doktor/
+      Dedektif kendi (tekil) gece eylemini tamamlayıp beklerken, ekranda
+      "$X/$Y hazır" sayacı — rolüyle hiç alakası olmayan, dolaylı olarak
+      vampir sayısını da ele veren — vampirlerin oy durumunu gösteriyordu.
+      Artık bu sayaç sadece gerçek grup oylamalarında (vampir gece oyu,
+      gündüz genel oylama) gösteriliyor.
+- [x] **Türk Dama — kural metni koddaki gerçek davranışla çelişiyordu:**
+      Lobideki "Nasıl Oynanır" metni "piyonlar çapraz ileri hareket eder"
+      diyordu, ama kod (bilerek) DÜZ hareket kullanıyor — klasik dama bilen
+      biri çapraz hamle bekleyip oyunun "bozuk" olduğunu düşünebilirdi.
+      Metin gerçek (düz hareket) kurala uyduruldu.
+
+**Bilinen sınırlamalar (bug değil, eksik/basitleştirilmiş özellik — bu
+turda düzeltilmedi, kapsamı büyük bir refactor gerektiriyor):**
+- Türk Dama'da zincirleme (çoklu) yakalama desteklenmiyor — bir taş art
+  arda birden fazla taş yiyebilecek durumda olsa bile tek atlamadan sonra
+  sıra rakibe geçiyor.
+- Serbest Vuruş (futbol) maçlarında topun hareketi/fiziği rakibe hiç
+  senkronize edilmiyor — sırası gelmeyen oyuncu sadece "Rakibin vuruyor..."
+  yazısını görüyor, top animasyonunu görmüyor, sonra skor birden değişiyor.
+- Okey'de "AÇTIM" butonu elin gerçekten geçerli bir seri/grup kombinasyonu
+  olup olmadığını kontrol etmiyor — her zaman kabul ediyor. "Okey 101" modu
+  da tanıtım metninde anlatılan çoklu-tur/elenme kurallarını uygulamıyor,
+  tek elde biten basitleştirilmiş bir sürüm.

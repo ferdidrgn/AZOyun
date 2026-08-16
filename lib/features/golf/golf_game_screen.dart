@@ -91,6 +91,17 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 500), _showFinalDialog);
     }
+    // Host kendi topunu diğer oyunculardan ÖNCE bitirmiş olabilir — o an
+    // _onGoal() içindeki _hostAdvance() çağrısı "herkes bitirmedi" deyip
+    // dönmüş olur. Son oyuncu bitirdiğinde bunu host tarafında yeniden
+    // kontrol eden başka bir tetikleyici yoktu; bu da oyunun "Diğerleri
+    // bekleniyor..." ekranında sonsuza kadar takılı kalmasına yol açıyordu.
+    if (widget.myKey == 'p1' && data['status'] != 'finished') {
+      final players = Map<String, dynamic>.from((data['players'] as Map?) ?? {});
+      if (players.isNotEmpty && players.values.every((p) => p['done'] == true)) {
+        _hostAdvance();
+      }
+    }
   }
 
   void _initHole(int holeNo, int seed) {
@@ -260,7 +271,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     });
     _physicsCtrl.repeat();
     HapticFeedback.selectionClick();
-    _ref.child('players/${widget.myKey}/shots').set(_myShots);
   }
 
   void _showFinalDialog() {

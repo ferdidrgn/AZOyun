@@ -898,12 +898,12 @@ class _VGS extends State<VampireGameScreen> {
           color: Colors.deepPurple.shade700,
           targets: _killTargets,
           onTap: _vote);
-      if (_isDoctor) return _hasProtected ? _waitingCard('💉', 'Koruman hazır!') : _actionList(
+      if (_isDoctor) return _hasProtected ? _waitingCard('💉', 'Koruman hazır!', showCount: false) : _actionList(
           title: '💉 Kimi koruyalım?',
           color: Colors.teal.shade700,
           targets: _protectTargets,
           onTap: _protect);
-      if (_isDetective) return _hasInvestigated ? _waitingCard('🔎', 'Soruşturman tamamlandı!') : _actionList(
+      if (_isDetective) return _hasInvestigated ? _waitingCard('🔎', 'Soruşturman tamamlandı!', showCount: false) : _actionList(
           title: '🔎 Kimi soruşturalım?',
           color: Colors.blue.shade700,
           targets: _investigateTargets,
@@ -930,13 +930,19 @@ class _VGS extends State<VampireGameScreen> {
     );
   }
 
-  Widget _waitingCard(String emoji, String message) => Center(
+  // showCount: Doktor/Dedektif tek başına eylem yapan roller — "hazır"
+  // sayacı yalnızca gece vampir oylamasını ve gündüz genel oylamayı
+  // hesaplıyor (bkz. _votedCount/_voterCount), bu yüzden Doktor/Dedektif
+  // beklerken önceden kendileriyle hiç alakası olmayan (ve dolaylı olarak
+  // vampir sayısını ele veren) bir "vampir oy" sayısı gösteriliyordu.
+  Widget _waitingCard(String emoji, String message, {bool showCount = true}) => Center(
         child: AZFrostCard(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(emoji, style: const TextStyle(fontSize: 48)),
             const SizedBox(height: 8),
             Text(message, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            Text('$_votedCount/$_voterCount hazır', style: const TextStyle(color: Colors.white60, fontSize: 13)),
+            if (showCount)
+              Text('$_votedCount/$_voterCount hazır', style: const TextStyle(color: Colors.white60, fontSize: 13)),
             const SizedBox(height: 12),
             const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
           ]),
