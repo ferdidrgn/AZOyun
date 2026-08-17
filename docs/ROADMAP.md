@@ -671,11 +671,20 @@ yürütmeyle yapıldı). Bulunan ve **düzeltilen** somut hatalar:
       gösteriliyor, başka taş seçmeye çalışırsa engelleniyor). Mantık,
       paralel bir Python simülasyonuyla doğrulandı.
 
+- [x] **Serbest Vuruş (futbol) — top fiziği rakibe senkronize edildi:**
+      Daha önce top pozisyonu/hızı tamamen yerel state'ti; sırası gelmeyen
+      oyuncu sadece "Rakibin vuruyor..." yazısı görüyor, top animasyonunu
+      hiç görmüyor, sonra skor birden değişiyordu. Artık vuran taraf
+      (fiziği hesaplayan taraf) topun/kalecinin konumunu saniyede 10 kez
+      Firebase'e yazıyor (`ball: {x,y,vx,vy,spin,gkX,moving}`); izleyen
+      taraf kendi fizik motorunu hiç çalıştırmadan bu değerleri doğrudan
+      görselleştiriyor. Vuruş sonucu (gol/kaleci kurtardı/kaçırdı) da
+      `result`/`resultSeq` alanlarıyla senkronize ediliyor — izleyen taraf
+      artık gerçek zamanlı GOL/kurtarış/kaçırma animasyonunu görüyor,
+      skor "birden" değişmiyor.
+
 **Bilinen sınırlamalar (bug değil, eksik/basitleştirilmiş özellik — bu
 turda düzeltilmedi, kapsamı büyük bir refactor gerektiriyor):**
-- Serbest Vuruş (futbol) maçlarında topun hareketi/fiziği rakibe hiç
-  senkronize edilmiyor — sırası gelmeyen oyuncu sadece "Rakibin vuruyor..."
-  yazısını görüyor, top animasyonunu görmüyor, sonra skor birden değişiyor.
 - Okey'de "AÇTIM" butonu elin gerçekten geçerli bir seri/grup kombinasyonu
   olup olmadığını kontrol etmiyor — her zaman kabul ediyor. "Okey 101" modu
   da tanıtım metninde anlatılan çoklu-tur/elenme kurallarını uygulamıyor,
