@@ -683,9 +683,26 @@ yürütmeyle yapıldı). Bulunan ve **düzeltilen** somut hatalar:
       artık gerçek zamanlı GOL/kurtarış/kaçırma animasyonunu görüyor,
       skor "birden" değişmiyor.
 
+- [x] **Okey — gerçek "AÇTIM" el geçerliliği kontrolü eklendi:** Daha önce
+      buton her zaman kabul ediyordu ("elini gerçekten grupladın mı?"
+      diyaloğu sadece kullanıcının kendi beyanına güveniyordu). Artık
+      `isValidOkeyHand()` (backtracking algoritması, `okey_screens.dart`)
+      eldeki TÜM taşların (jokerler dahil) 3+ taşlık per (aynı sayı farklı
+      renk) ve seri (aynı renk ardışık sayı) gruplarına tam olarak
+      ayrılıp ayrılamadığını gerçekten hesaplıyor. Geçersiz bir elle
+      "AÇTIM" denenirse artık gerçek bir ceza puanı (-20/-30) uygulanıyor
+      — daha önce lobideki "yanlış açarsan puan kaybedersin" uyarısı boş
+      bir tehditti. Algoritma paralel bir Python simülasyonuyla (per,
+      seri, joker-tamamlama, karma gruplar, 21 taşlık büyük/rastgele
+      eller dahil) doğrulandı; performans milisaniyeler seviyesinde.
+      Ayrıca "Okey 101" modunun tanıtım metnindeki gerçek dışı "101
+      puana ulaşan elenir, çoklu tur" iddiası kaldırıldı, gerçek
+      davranışı (küçük/hızlı el, ilk açan kazanır) yansıtacak şekilde
+      düzeltildi.
+
 **Bilinen sınırlamalar (bug değil, eksik/basitleştirilmiş özellik — bu
 turda düzeltilmedi, kapsamı büyük bir refactor gerektiriyor):**
-- Okey'de "AÇTIM" butonu elin gerçekten geçerli bir seri/grup kombinasyonu
-  olup olmadığını kontrol etmiyor — her zaman kabul ediyor. "Okey 101" modu
-  da tanıtım metninde anlatılan çoklu-tur/elenme kurallarını uygulamıyor,
-  tek elde biten basitleştirilmiş bir sürüm.
+- "Okey 101" modu hâlâ tek elde bitiyor — gerçek 101-puan çoklu-tur/
+  elenme sistemi (skor biriktirme, oyuncu elenmesi, oyunun birden fazla
+  el sürmesi) eklenmedi; bu, oyunun round yapısını baştan tasarlamayı
+  gerektiren ayrı ve büyük bir iş.
