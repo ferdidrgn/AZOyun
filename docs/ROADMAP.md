@@ -661,11 +661,18 @@ yürütmeyle yapıldı). Bulunan ve **düzeltilen** somut hatalar:
       biri çapraz hamle bekleyip oyunun "bozuk" olduğunu düşünebilirdi.
       Metin gerçek (düz hareket) kurala uyduruldu.
 
+- [x] **Türk Dama — zorunlu zincirleme (çoklu) yakalama eklendi:** Daha
+      önce bir taş art arda birden fazla taş yiyebilecek durumda olsa bile
+      tek atlamadan sonra sıra rakibe geçiyordu; artık gerçek Türk Dama
+      kuralına uygun olarak, yeni konumdan devam eden bir yakalama
+      mümkünse sıra DEĞİŞMİYOR ve oyuncu aynı taşla zincirlemeye devam
+      etmek zorunda (`chainR`/`chainC` Firebase alanı ile takip ediliyor,
+      UI'da "⚡ Zincirleme yakalama!" uyarısı ve turuncu üst bant ile
+      gösteriliyor, başka taş seçmeye çalışırsa engelleniyor). Mantık,
+      paralel bir Python simülasyonuyla doğrulandı.
+
 **Bilinen sınırlamalar (bug değil, eksik/basitleştirilmiş özellik — bu
 turda düzeltilmedi, kapsamı büyük bir refactor gerektiriyor):**
-- Türk Dama'da zincirleme (çoklu) yakalama desteklenmiyor — bir taş art
-  arda birden fazla taş yiyebilecek durumda olsa bile tek atlamadan sonra
-  sıra rakibe geçiyor.
 - Serbest Vuruş (futbol) maçlarında topun hareketi/fiziği rakibe hiç
   senkronize edilmiyor — sırası gelmeyen oyuncu sadece "Rakibin vuruyor..."
   yazısını görüyor, top animasyonunu görmüyor, sonra skor birden değişiyor.
