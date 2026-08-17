@@ -64,6 +64,14 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
   int  _currentRound = 1;
   int  _totalRounds  = 5;
 
+  // Sırası gelmeyen oyuncunun ekranında topu senkron göstermek için:
+  // vuran taraf periyodik olarak top/kaleci konumunu Firebase'e yazar
+  // (_syncTimer), izleyen taraf kendi fizik motorunu hiç çalıştırmadan
+  // bu değerleri doğrudan gösterir. Vuruş sonucu da aynı şekilde
+  // resultSeq/result üzerinden senkronize edilir.
+  Timer? _syncTimer;
+  int _shownResultSeq = 0;
+
   // ── Drag ────────────────────────────────────────────────────────────────
   Offset? _dragStart;
   Offset? _dragCurrent;
@@ -136,6 +144,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
     _physCtrl.dispose();
     _goalCtrl.dispose();
     _missCtrl.dispose();
+    _syncTimer?.cancel();
     _sub?.cancel();
     super.dispose();
   }
@@ -145,6 +154,8 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
   void _onFirebase(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
+    final prevPlayer = _room['currentPlayer'] as String?;
+    final newPlayer  = d['currentPlayer'] as String?;
     setState(() {
       _room         = d;
       _currentRound = (d['currentRound'] as int?) ?? 1;
@@ -152,6 +163,45 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
       _isMyTurn     = d['currentPlayer'] == widget.myKey;
       _myScore      = (d['players']?[widget.myKey]?['score'] as int?) ?? 0;
     });
+
+    // Sıra yeni bir oyuncuya geçti — top yeni vuruş için resetlenir
+    // (hem vuran hem izleyen tarafta).
+    if (newPlayer != null && newPlayer != prevPlayer) {
+      _resetBall();
+    }
+
+    // İzleyen taraf (sırası gelmeyen oyuncu): vuran tarafın senkronize
+    // ettiği top/kaleci konumunu DOĞRUDAN uygular — kendi fizik motorunu
+    // hiç çalıştırmaz, sadece gelen veriyi görselleştirir.
+    if (!_isMyTurn) {
+      final ball = d['ball'] as Map?;
+      if (ball != null) {
+        final bx = (ball['x'] as num?)?.toDouble();
+        final by = (ball['y'] as num?)?.toDouble();
+        if (bx != null && by != null) {
+          setState(() {
+            _ball    = Offset(bx, by);
+            _ballVel = Offset(
+                (ball['vx'] as num?)?.toDouble() ?? 0,
+                (ball['vy'] as num?)?.toDouble() ?? 0);
+            _spin    = (ball['spin'] as num?)?.toDouble() ?? 0;
+            _gkX     = (ball['gkX'] as num?)?.toDouble() ?? 0.5;
+            _moving  = ball['moving'] == true;
+          });
+        }
+      }
+      // Vuran tarafın bildirdiği sonucu (gol/kaleci kurtardı/kaçırdı) göster.
+      final resultSeq = (d['resultSeq'] as int?) ?? 0;
+      if (resultSeq != 0 && resultSeq != _shownResultSeq) {
+        _shownResultSeq = resultSeq;
+        switch (d['result'] as String?) {
+          case 'goal':    _playGoalFx(); break;
+          case 'blocked': _playBlockedFx(); break;
+          case 'miss':    _playMissFx(); break;
+        }
+      }
+    }
+
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
       AdService.instance.onGameEnd();
@@ -317,11 +367,35 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
 
     _physCtrl.repeat();
     HapticFeedback.mediumImpact();
+
+    // Top hareket etmeye başladı — izleyen tarafın ekranında görünmesi
+    // için hemen bir kez, sonra 10fps'de senkronize et.
+    _syncBallToFirebase();
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(
+        const Duration(milliseconds: 100), (_) => _syncBallToFirebase());
+  }
+
+  Future<void> _syncBallToFirebase() async {
+    if (!_isMyTurn) return;
+    await _ref.update({
+      'ball': {
+        'x': _ball.dx, 'y': _ball.dy,
+        'vx': _ballVel.dx, 'vy': _ballVel.dy,
+        'spin': _spin, 'gkX': _gkX,
+        'moving': _moving,
+      },
+    });
   }
 
   // ── Result check ──────────────────────────────────────────────────────────
 
   Future<void> _checkResult() async {
+    // Top durdu — periyodik senkronu kapat, izleyen tarafa son (durma)
+    // konumunu bir kez daha gönder.
+    _syncTimer?.cancel();
+    unawaited(_syncBallToFirebase());
+
     // Gol bölgesi: x [GoalLeft..GoalRight], y < GoalBottom
     final inGoal = _ball.dx > _kGoalLeft  + 0.01 &&
                    _ball.dx < _kGoalRight - 0.01 &&
@@ -341,36 +415,57 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
     }
   }
 
-  Future<void> _onGoal() async {
+  // _playXFx(): sadece görsel efekt — hem vuran taraf (doğrudan) hem
+  // izleyen taraf (Firebase'den gelen resultSeq üzerinden, bkz.
+  // _onFirebase) tarafından çağrılır. _onX(): SADECE vuran tarafta
+  // çalışır — efekti oynatır, skor/sonucu Firebase'e yazar ve sırayı
+  // ilerletir.
+
+  Future<void> _playGoalFx() async {
     setState(() { _celebrating = true; _inNet = true; });
     _goalCtrl.forward(from: 0);
     HapticFeedback.heavyImpact();
-
-    final newScore = _myScore + 1;
-    await _ref.update({'players/${widget.myKey}/score': newScore});
-
     await Future.delayed(const Duration(milliseconds: 2000));
     if (mounted) setState(() { _celebrating = false; });
-    _resetBall();
-    await _advanceTurn();
   }
 
-  Future<void> _onBlocked() async {
+  Future<void> _playBlockedFx() async {
     setState(() { _blocked = true; });
     HapticFeedback.mediumImpact();
     _missCtrl.forward(from: 0);
     await Future.delayed(const Duration(milliseconds: 1400));
     if (mounted) setState(() { _blocked = false; });
-    _resetBall();
-    await _advanceTurn();
   }
 
-  Future<void> _onMiss() async {
+  Future<void> _playMissFx() async {
     setState(() { _missed = true; });
     HapticFeedback.lightImpact();
     _missCtrl.forward(from: 0);
     await Future.delayed(const Duration(milliseconds: 1400));
     if (mounted) setState(() { _missed = false; });
+  }
+
+  Future<void> _onGoal() async {
+    final newScore = _myScore + 1;
+    await _ref.update({
+      'players/${widget.myKey}/score': newScore,
+      'result': 'goal', 'resultSeq': ServerValue.increment(1),
+    });
+    await _playGoalFx();
+    _resetBall();
+    await _advanceTurn();
+  }
+
+  Future<void> _onBlocked() async {
+    await _ref.update({'result': 'blocked', 'resultSeq': ServerValue.increment(1)});
+    await _playBlockedFx();
+    _resetBall();
+    await _advanceTurn();
+  }
+
+  Future<void> _onMiss() async {
+    await _ref.update({'result': 'miss', 'resultSeq': ServerValue.increment(1)});
+    await _playMissFx();
     _resetBall();
     await _advanceTurn();
   }
