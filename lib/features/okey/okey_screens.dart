@@ -39,6 +39,111 @@ class OTile {
   String get display => joker ? '★' : '$num';
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// EL GEÇERLİLİĞİ — "AÇTIM" kontrolü
+//
+// Elindeki taşların TAMAMI, standart okey kurallarına uygun 3+ taşlık
+// gruplara ayrılabiliyor mu? İki grup tipi var:
+//  - PER: aynı sayı, farklı renk (3 ya da 4 taş — her renkten en fazla 1)
+//  - SERİ: aynı renk, ardışık sayılar (min 3, max 13, 13'ten sonra 1'e
+//    dönmez)
+// Jokerler (gerçek joker taşları + gösterge ile eşleşen "okey" taşı)
+// eksik taşın yerine geçebilir. Backtracking ile çözülür: her adımda
+// henüz kullanılmamış ilk taşı içeren olası grupları dener.
+bool isValidOkeyHand(List<OTile> tiles, {required bool Function(OTile) isOkeyPiece}) {
+  final normals = <OTile>[];
+  var jokerCount = 0;
+  for (final t in tiles) {
+    if (isOkeyPiece(t)) {
+      jokerCount++;
+    } else {
+      normals.add(t);
+    }
+  }
+  return _OkeyHandSolver(normals).solve(jokerCount);
+}
+
+class _OkeyHandSolver {
+  _OkeyHandSolver(this.normals);
+  final List<OTile> normals;
+
+  int _steps = 0;
+  static const _maxSteps = 300000; // combinatorial patlamaya karşı güvenlik sınırı
+
+  bool solve(int jokerCount) => _solve(List.filled(normals.length, false), jokerCount);
+
+  bool _solve(List<bool> used, int jokersLeft) {
+    if (++_steps > _maxSteps) return false;
+    final firstIdx = used.indexOf(false);
+    if (firstIdx == -1) return true; // tüm taşlar bir gruba dahil edildi
+    final first = normals[firstIdx];
+
+    // PER dene: first.color'ı içeren 3'lü ve 4'lü renk kombinasyonları
+    for (final size in [4, 3]) {
+      for (final colors in _colorSubsetsContaining(first.color, size)) {
+        final newUsed = List<bool>.from(used)..[firstIdx] = true;
+        var need = 0;
+        for (final c in colors) {
+          if (c == first.color) continue;
+          final idx = _findUnused(newUsed, (t) => t.num == first.num && t.color == c);
+          if (idx != -1) {
+            newUsed[idx] = true;
+          } else {
+            need++;
+          }
+        }
+        if (need <= jokersLeft && _solve(newUsed, jokersLeft - need)) return true;
+      }
+    }
+
+    // SERİ dene: first.color renginde, first.num'u içeren her uzunluk/konum
+    for (var length = 3; length <= 13; length++) {
+      for (var offset = 0; offset < length; offset++) {
+        final start = first.num - offset;
+        final end = start + length - 1;
+        if (start < 1 || end > 13) continue;
+        final newUsed = List<bool>.from(used)..[firstIdx] = true;
+        var need = 0;
+        for (var n = start; n <= end; n++) {
+          if (n == first.num) continue;
+          final idx = _findUnused(newUsed, (t) => t.num == n && t.color == first.color);
+          if (idx != -1) {
+            newUsed[idx] = true;
+          } else {
+            need++;
+          }
+        }
+        if (need <= jokersLeft && _solve(newUsed, jokersLeft - need)) return true;
+      }
+    }
+
+    return false;
+  }
+
+  int _findUnused(List<bool> used, bool Function(OTile) test) {
+    for (var i = 0; i < normals.length; i++) {
+      if (!used[i] && test(normals[i])) return i;
+    }
+    return -1;
+  }
+
+  List<List<TColor>> _colorSubsetsContaining(TColor must, int size) {
+    final others = TColor.values.where((c) => c != must).toList();
+    final result = <List<TColor>>[];
+    void combo(List<TColor> chosen, int start) {
+      if (chosen.length == size - 1) {
+        result.add([must, ...chosen]);
+        return;
+      }
+      for (var i = start; i < others.length; i++) {
+        combo([...chosen, others[i]], i + 1);
+      }
+    }
+    combo([], 0);
+    return result;
+  }
+}
+
 List<Map<String, dynamic>> buildDeck(int seed) {
   final rng = Random(seed);
   final tiles = <Map<String, dynamic>>[];
@@ -152,7 +257,7 @@ class _OLobbyState extends State<OkeyLobbyScreen> {
           ]),
           const SizedBox(height: 8),
           Text(_mode == '101'
-              ? '2-4 Oyuncu · 101 puana ulaşan elenır'
+              ? '2-4 Oyuncu · Küçük el (7 taş) · Hızlı tur, el aç kazan!'
               : '2-4 Oyuncu · El aç, kazan!',
               style: const TextStyle(color: Colors.white70, fontSize: 13)),
           const SizedBox(height: 20),
@@ -184,14 +289,14 @@ class _OLobbyState extends State<OkeyLobbyScreen> {
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text(_mode == '101'
-                  ? '• Her raunt 7 taş dağıtılır\n'
-                    '• Sırayla demetden çek, at\n'
-                    '• Elindeki puanı düşür\n'
-                    '• 101\'e ulaşan elenır, son kişi kazanır!'
+                  ? '• Her oyuncuya 7 taş dağıtılır (hızlı tur)\n'
+                    '• Sırayla demetten çek, at\n'
+                    '• Elin tam seri/per gruplarına ayrılınca AÇTIM de\n'
+                    '• Yanlış açarsan ceza puanı kaybedersin'
                   : '• 21 taş dağıtılır\n'
                     '• Sırayla çek veya atıktan al\n'
-                    '• Seri + grup yapıp AÇTIM de\n'
-                    '• İlk açan kazanır!',
+                    '• Elin tam seri/per gruplarına ayrılınca AÇTIM de\n'
+                    '• Yanlış açarsan ceza puanı kaybedersin',
                   style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.6)),
             ],
           )),
@@ -466,12 +571,46 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
 
   Future<void> _declareWin() async {
     if (!_isMyTurn || _processing || _wonDialog) return;
+
+    // Gerçek el geçerliliği kontrolü: eldeki TÜM taşlar (jokerler dahil)
+    // 3+ taşlık per/seri gruplarına tam olarak ayrılabiliyor mu?
+    final valid = isValidOkeyHand(_hand, isOkeyPiece: _isOkey);
+
+    if (!valid) {
+      setState(() => _wonDialog = true);
+      final tryIt = await showDialog<bool>(context: context, builder: (_) => AlertDialog(
+        title: const Text('❌ Bu El Açılmıyor'),
+        content: const Text('Elindeki taşlar tam seri/per gruplarına '
+            'ayrılamıyor. Yine de denersen ceza puanı kaybedersin!'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false),
+              child: const Text('Vazgeç')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Yine de Aç (Ceza Al)')),
+        ],
+      ));
+      setState(() => _wonDialog = false);
+      if (tryIt != true) return;
+
+      setState(() => _processing = true);
+      try {
+        final penalty = _mode == '101' ? 20 : 30;
+        await _ref.update({
+          'players/${widget.myKey}/score':
+              ((_players[widget.myKey]?['score'] as int?) ?? 0) - penalty,
+        });
+        _snack('❌ Yanlış açtın! -$penalty puan.');
+      } finally { setState(() => _processing = false); }
+      return;
+    }
+
     setState(() => _wonDialog = true);
-    // Oyuncuya kontrol sor
     final ok = await showDialog<bool>(context: context, builder: (_) => AlertDialog(
       title: const Text('🎉 AÇTIM!'),
-      content: const Text('Elindeki tüm taşları uyumlu grupladın mı?\n'
-          'Yanlış açarsan puan kaybedersin!'),
+      content: const Text('Elindeki tüm taşlar geçerli seri/per '
+          'gruplarına ayrılıyor. Açmak istiyor musun?'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context, false),
             child: const Text('İptal')),
