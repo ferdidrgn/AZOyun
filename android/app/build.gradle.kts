@@ -20,10 +20,6 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.ferdidrgn.azgame"
     compileSdk = flutter.compileSdkVersion
-    // Firebase / AdMob / Games Services gibi native eklentiler flutter.ndkVersion'ın
-    // sağladığından daha yeni bir NDK istiyor; sabit, güncel bir sürüme pinliyoruz.
-    // Android Studio > SDK Manager > SDK Tools > NDK (Side by side) kısmından bu
-    // sürümün kurulu olduğundan emin ol.
     ndkVersion = "27.0.12077973"
 
     defaultConfig {
@@ -56,16 +52,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-
-            // 🔥 Crashlytics mapping
-            /*firebaseCrashlytics {
-                mappingFileUploadEnabled = true
-                nativeSymbolUploadEnabled = true
-            }*/
         }
     }
 
     compileOptions {
+        // 🛠️ FIX 1: Desugaring aktif edildi
+        isCoreLibraryDesugaringEnabled = true
+
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -80,14 +73,13 @@ flutter {
 }
 
 dependencies {
+    // 🛠️ FIX 2: Desugaring kütüphanesi eklendi
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
     // Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-database")
 
-    // Play Games Services v2 (bkz. ROADMAP 8.7) — games_services Flutter
-    // eklentisi 4.x'ten beri bunu transitive olarak getiriyor, ama
-    // MainActivity.kt içinde PlayGamesSdk.initialize() çağırabilmek için
-    // burada da açıkça tanımlanması gerekiyor (Google'ın resmi kurulum
-    // adımı da bu şekilde).
+    // Play Games Services v2
     implementation("com.google.android.gms:play-services-games-v2:+")
 }
