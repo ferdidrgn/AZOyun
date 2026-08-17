@@ -281,7 +281,8 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
               Text('• Oda kuran ⚪ Beyaz, katılan ⚫ Siyah oynar\n'
                   '• Gerçek Türk Dama kuralları: piyonlar çapraz DEĞİL, '
                   'düz (ileri/yan) hareket eder\n'
-                  '• Yakalama zorunludur (üzerinden atlama)\n'
+                  '• Yakalama zorunludur (üzerinden atlama) ve aynı taş '
+                  'devam edebiliyorsa zincirleme yakalamak da zorunludur\n'
                   '• Son sıraya ulaşan taş dame (uçan kral) olur\n'
                   '• Rakibinin tüm taşlarını alan ya da rakibini hamlesiz '
                   'bırakan oyuncu kazanır',
@@ -430,11 +431,32 @@ class _DamaGameState extends State<DamaGameScreen> {
   void _onFB(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
-    setState(() { _room = d; _selR = null; _selC = null; _validForSel = []; });
+    setState(() {
+      _room = d;
+      // Zincirleme (zorunlu çoklu) yakalama devam ediyorsa, seçili taşı
+      // otomatik olarak o taşta tut ve sadece onun yakalama hamlelerini
+      // göster — bkz. _applyMove.
+      final chainR = d['chainR'] as int?;
+      final chainC = d['chainC'] as int?;
+      if (chainR != null && chainC != null && _isMyTurn && _board.isOwn(chainR, chainC, _isWhite)) {
+        _selR = chainR; _selC = chainC;
+        _validForSel = _board._captures(chainR, chainC, _isWhite);
+      } else {
+        _selR = null; _selC = null; _validForSel = [];
+      }
+    });
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true; AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 400), _showFinal);
     }
+  }
+
+  /// Zincirleme yakalama zorunluluğu sürüyor mu? (sıra bende ve Firebase'de
+  /// bekleyen bir chainR/chainC var)
+  bool get _inChain {
+    final cr = _room['chainR'] as int?;
+    final cc = _room['chainC'] as int?;
+    return cr != null && cc != null && _isMyTurn;
   }
 
   Map get _players => (_room['players'] as Map?) ?? {};
@@ -462,6 +484,10 @@ class _DamaGameState extends State<DamaGameScreen> {
       // Hamle yap
       final move = _validForSel.where((m) => m.tr == r && m.tc == c).firstOrNull;
       if (move == null) {
+        if (_inChain) {
+          _snack('Zincirleme yakalama zorunlu! Aynı taşla devam etmelisin.');
+          return;
+        }
         // Farklı taş seç
         if (board.isOwn(r, c, _isWhite)) {
           final allValid = board.validMoves(_isWhite);
@@ -479,27 +505,48 @@ class _DamaGameState extends State<DamaGameScreen> {
   Future<void> _applyMove(_Move move) async {
     if (_processing) return;
     setState(() => _processing = true);
+    var didChain = false;
     try {
       final newBoard = _board.applyMove(move);
-      final nextTurn = _turn == 'white' ? 'black' : 'white';
 
-      // Kazanma kontrolü
+      // Kazanma kontrolü — zincirleme devam etse de her hamleden sonra
+      // kontrol edilir (rakibin son taşı tam bu hamlede silinmiş olabilir).
       final oppCount = newBoard.countPieces(!_isWhite);
       if (oppCount == 0) {
         await _ref.update({
-          'board': newBoard.toList(), 'turn': nextTurn,
+          'board': newBoard.toList(),
           'status': 'finished', 'winner': widget.myKey,
           'players/${widget.myKey}/score':
               ((_players[widget.myKey]?['score'] as int?) ?? 0) + 100,
         });
         return;
       }
+
+      // Zincirleme (zorunlu çoklu) yakalama: bu bir yakalamaydı ve aynı
+      // taş, yeni konumundan başka bir taş daha yakalayabiliyorsa, gerçek
+      // Türk Dama kuralına göre sıra rakibe geçmez — aynı oyuncu aynı
+      // taşla yakalamaya devam etmek ZORUNDADIR.
+      final chainMoves = move.isCapture
+          ? newBoard._captures(move.tr, move.tc, _isWhite)
+          : <_Move>[];
+      if (chainMoves.isNotEmpty) {
+        didChain = true;
+        await _ref.update({
+          'board': newBoard.toList(),
+          'chainR': move.tr, 'chainC': move.tc,
+        });
+        setState(() { _selR = move.tr; _selC = move.tc; _validForSel = chainMoves; });
+        HapticFeedback.selectionClick();
+        return;
+      }
+
+      final nextTurn = _turn == 'white' ? 'black' : 'white';
 
       // Rakip hamle kalıp kalmadı?
       final oppMoves = newBoard.validMoves(!_isWhite);
       if (oppMoves.isEmpty) {
         await _ref.update({
-          'board': newBoard.toList(), 'turn': nextTurn,
+          'board': newBoard.toList(), 'turn': nextTurn, 'chainR': null, 'chainC': null,
           'status': 'finished', 'winner': widget.myKey,
           'players/${widget.myKey}/score':
               ((_players[widget.myKey]?['score'] as int?) ?? 0) + 100,
@@ -507,11 +554,12 @@ class _DamaGameState extends State<DamaGameScreen> {
         return;
       }
 
-      await _ref.update({'board': newBoard.toList(), 'turn': nextTurn});
+      await _ref.update({'board': newBoard.toList(), 'turn': nextTurn, 'chainR': null, 'chainC': null});
       HapticFeedback.selectionClick();
     } finally {
       if (mounted) setState(() {
-        _processing = false; _selR = null; _selC = null; _validForSel = [];
+        _processing = false;
+        if (!didChain) { _selR = null; _selC = null; _validForSel = []; }
       });
     }
   }
@@ -610,13 +658,20 @@ class _DamaGameState extends State<DamaGameScreen> {
           ]),
         ),
 
-        // Renk bilgisi
+        // Renk bilgisi / zincirleme yakalama uyarısı
         Container(
-          color: const Color(0xFF2A1000),
+          color: _inChain ? const Color(0xFFD84315) : const Color(0xFF2A1000),
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text('Sen: ${_isWhite ? '⚪ Beyaz' : '⚫ Siyah'}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(
+              _inChain
+                  ? '⚡ Zincirleme yakalama! Aynı taşla devam et'
+                  : 'Sen: ${_isWhite ? '⚪ Beyaz' : '⚫ Siyah'}',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: _inChain ? FontWeight.bold : FontWeight.normal),
+            ),
           ]),
         ),
 
