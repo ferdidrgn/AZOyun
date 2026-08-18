@@ -706,3 +706,52 @@ turda düzeltilmedi, kapsamı büyük bir refactor gerektiriyor):**
   elenme sistemi (skor biriktirme, oyuncu elenmesi, oyunun birden fazla
   el sürmesi) eklenmedi; bu, oyunun round yapısını baştan tasarlamayı
   gerektiren ayrı ve büyük bir iş.
+
+### 8.10 Profil/İstatistik ekranı — Bento-Grid SaaS dashboard yenilemesi
+
+Kullanıcı isteği: eski profil ekranının UI'ını tamamen atıp, Linear/
+Vercel kalitesinde bir "dashboard" dili ile sıfırdan inşa etmek — veri
+modelleri/servisler (`PlayerProfile`, `ProfileService`,
+`AchievementService`, `PlayGamesService`) korunarak.
+
+- [x] **Yeni tasarım token seti** (`lib/core/theme/dashboard_tokens.dart`):
+      sabit Slate/Zinc koyu palet (canvas `#09090B`, kart `#18181B`,
+      highlight `#27272A`), mikro-kenarlıklar (~%8 beyaz), Elektrik
+      İndigo (`#6366F1`) + Zümrüt Nane (`#10B981`) aksan renkleri,
+      `GoogleFonts.plusJakartaSans` tipografi hiyerarşisi. Bilerek
+      uygulamanın geri kalanındaki `AZTheme`'den ayrı tutuldu — sadece bu
+      dashboard yüzeyine özel, kullanıcının seçtiği tema rengine göre
+      değişmiyor (kasıtlı "kurumsal analytics" hissi).
+- [x] **Modüler Bento-Grid bileşen kütüphanesi**
+      (`lib/features/profile/widgets/`): `BentoCard` (glassmorphism
+      temel yüzey), `KpiMetricCard` (trend rozetli metrik kartı),
+      `ProfileHeroCard` (seviye/XP/coin gradyanlı hero kart),
+      `WinRateDonut` (fl_chart `PieChart` ile galibiyet/mağlubiyet
+      halkası), `GameVarietyChart` (fl_chart `BarChart` ile Hızlı
+      Oyunlar/Online Odalar kapsama grafiği), `AchievementBentoTile`,
+      `PlayGamesBanner`, `ProfileDashboardShimmer` (yükleme iskeleti).
+      Tüm grafikler **gerçek** `PlayerProfile` verisinden türetiliyor
+      (uydurma zaman serisi kullanılmadı — uygulama geçmiş maç
+      tarihçesi tutmuyor, bu yüzden "trend" yerine dürüst birer *özet*
+      grafiği: galibiyet oranı ve oyun çeşitliliği).
+- [x] **Adaptive layout**: `LayoutBuilder` ile 1024px kırılma noktası —
+      altında `_buildMobileDashboard` (`SliverAppBar` + tek sütunlu
+      `CustomScrollView`), üstünde `_buildDesktopDashboard` (sol geniş /
+      sağ dar iki panelli çok sütunlu Bento-Grid, 1240px'de ortalanmış
+      içerik).
+- [x] **Durum yönetimi**: yükleme (shimmer/skeleton, gerçek layout'un
+      kaba bir taklidi), boş durum (`_NewPlayerBanner` — hiç maç
+      oynanmamışsa), hata durumu (Play Games bağlantı hatası SnackBar
+      ile), başarı durumu (dolu dashboard) ayrı ayrı ele alındı.
+      `game_ids.dart`'a `kOnlineGameIds`/`kOnlineGameTitles` eklendi
+      (oyun çeşitliliği grafiğinin veri kaynağı).
+- Not: İkon paketi olarak kullanıcının istediği `iconsax_flutter`/
+  `lucide_icons` yerine Flutter'ın kendi Material Icons (Rounded
+  varyant) seti kullanıldı — bu sandbox'ta `flutter pub get`/derleme
+  çalıştırılamadığı için üçüncü parti paketlerin tam ikon adlarını
+  (WebFetch ile pub.dev/GitHub sorgulandı ama tutarsız sonuçlar geldi)
+  güvenilir şekilde doğrulayamadık; yanlış bir sabit isim derlemeyi
+  kırardı. `google_fonts` ve `fl_chart` paketleri pub.dev'den
+  doğrulanmış sürümleriyle (8.2.1 / 1.2.0) eklendi. **Kullanıcının
+  gerçek cihazda `flutter pub get && flutter run` çalıştırıp
+  doğrulaması gerekiyor** — bu ortamda derleme testi yapılamadı.

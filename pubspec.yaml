@@ -65,6 +65,17 @@ dependencies:
   # Animations
   flutter_animate: ^4.5.0
 
+  # Profil/İstatistik ekranındaki "dashboard" tasarım dili için: profesyonel
+  # tipografi ve trend grafikleri (galibiyet oranı, oyun çeşitliliği).
+  # İkon seti bilerek Material Icons (Flutter SDK'sının kendi seti, ikon
+  # adı garantili derlenir) — bu ortamda flutter pub get/derleme
+  # çalıştırılamadığından üçüncü parti bir ikon paketinin (iconsax/lucide)
+  # tam ikon adlarını doğrulayamadık; yanlış bir sabit isim derlemeyi
+  # kırardı. İstenirse ileride iconsax_flutter/lucide_icons eklenip
+  # Icons.* çağrıları o pakete taşınabilir.
+  google_fonts: ^8.2.1
+  fl_chart: ^1.2.0
+
   # Utils
   collection: ^1.19.1
 
