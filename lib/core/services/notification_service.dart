@@ -143,6 +143,13 @@ class NotificationService {
   }
 
   /// Sistem bildirim ayarları ekranını açar (kullanıcı izni sonradan
-  /// değiştirmek isterse).
-  Future<void> openSystemSettings() => openAppSettings();
+  /// değiştirmek isterse). Web'de "uygulama ayarları" kavramı yok —
+  /// tarayıcı kendi bildirim iznini adres çubuğundan yönetir.
+  Future<void> openSystemSettings() async {
+    try {
+      await openAppSettings();
+    } catch (e) {
+      debugPrint('[NotificationService] sistem ayarları açılamadı: $e');
+    }
+  }
 }

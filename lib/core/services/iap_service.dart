@@ -42,17 +42,22 @@ class IAPService {
     premium6mId,
   };
 
-  final InAppPurchase _iap = InAppPurchase.instance;
+  // `late`: sadece gerçekten kullanıldığında (yani kIsWeb guard'larını
+  // geçtikten sonra) resolve edilir — Web'de hiç dokunulmaz.
+  late final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _sub;
 
   List<ProductDetails> products = [];
   bool available = false;
   bool _initialized = false;
 
+  /// `in_app_purchase` paketi sadece Android/iOS/macOS destekler — Web'de
+  /// native mağaza köprüsü hiç yok. Web'de satın alma tamamen
+  /// devre dışı: `products` boş kalır, tüm satın alma metodları no-op'tur.
   Future<void> initialize({
     required void Function(PurchaseDetails purchase) onPurchase,
   }) async {
-    if (_initialized) return;
+    if (kIsWeb || _initialized) return;
     _initialized = true;
     try {
       available = await _iap.isAvailable();
@@ -129,13 +134,20 @@ class IAPService {
 
   Future<bool> get isPremiumActive => StorageService.instance.isPremiumActive();
 
-  Future<void> buyConsumable(ProductDetails product) =>
-      _iap.buyConsumable(purchaseParam: PurchaseParam(productDetails: product));
+  Future<void> buyConsumable(ProductDetails product) {
+    if (kIsWeb) return Future.value();
+    return _iap.buyConsumable(purchaseParam: PurchaseParam(productDetails: product));
+  }
 
-  Future<void> buyNonConsumable(ProductDetails product) => _iap
-      .buyNonConsumable(purchaseParam: PurchaseParam(productDetails: product));
+  Future<void> buyNonConsumable(ProductDetails product) {
+    if (kIsWeb) return Future.value();
+    return _iap.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: product));
+  }
 
-  Future<void> restorePurchases() => _iap.restorePurchases();
+  Future<void> restorePurchases() {
+    if (kIsWeb) return Future.value();
+    return _iap.restorePurchases();
+  }
 
   void dispose() => _sub?.cancel();
 }

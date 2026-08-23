@@ -24,17 +24,27 @@ import 'features/onboarding/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  // Web'de arka plan bildirimleri ayrı bir service worker mekanizması
+  // gerektirir (bu Dart handler'ın bir karşılığı yoktur) — bu yüzden
+  // sadece native platformlarda kaydediliyor.
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  }
 
   // Yakalanmayan tüm hataları Crashlytics'e gönder — debug modda konsola da
   // yazdırılmaya devam eder (kDebugMode kontrolü Crashlytics'in kendi
   // varsayılan davranışı, burada ayrıca engellemiyoruz ki geliştirme
   // sırasında da raporlama test edilebilsin).
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
+  // `firebase_crashlytics` sadece Android/iOS/macOS destekler — Web'de bu
+  // paket hiç yok, `FirebaseCrashlytics.instance`'a erişmek uygulamanın
+  // en açılışında (runApp'tan önce) patlamasına yol açardı.
+  if (!kIsWeb) {
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  }
 
   await ProfileService.instance.load();
   await ThemeService.instance.load();
