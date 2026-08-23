@@ -15,12 +15,13 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: '***REMOVED***',
-    appId: '1:517819561284:web:28e044933e416b16c01311',
+    appId: '1:517819561284:web:789006e117993517c01311',
     messagingSenderId: '517819561284',
     projectId: 'azoyun-569b2',
     authDomain: 'azoyun-569b2.firebaseapp.com',
     databaseURL: 'https://azoyun-569b2-default-rtdb.firebaseio.com',
     storageBucket: 'azoyun-569b2.firebasestorage.app',
+    measurementId: 'G-SP0BNGN4W7',
   );
 
   static const FirebaseOptions android = FirebaseOptions(

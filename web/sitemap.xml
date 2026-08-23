@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AZ Oyun, tek sayfalık bir Flutter uygulaması (SPA) — tüm oyunlar client-side
+  navigasyonla aynı URL altında açılır, ayrı sayfa URL'leri yoktur. Bu yüzden
+  sitemap bilinçli olarak tek girişli: burada olmayan sahte alt sayfa URL'leri
+  eklemek yanıltıcı olurdu.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://azoyun.web.app/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

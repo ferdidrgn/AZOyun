@@ -755,3 +755,74 @@ modelleri/servisler (`PlayerProfile`, `ProfileService`,
   doğrulanmış sürümleriyle (8.2.1 / 1.2.0) eklendi. **Kullanıcının
   gerçek cihazda `flutter pub get && flutter run` çalıştırıp
   doğrulaması gerekiyor** — bu ortamda derleme testi yapılamadı.
+
+### 8.11 Web platformu desteği + Firebase Hosting + SEO + AdSense
+
+Kullanıcı isteği: AZOyun'u Flutter Web olarak yayınlamak, Firebase
+Hosting'e (`azoyun.web.app`) deploy etmek, Google Search Console'da
+doğrulamak ve Google AdSense başvurusu için siteyi hazırlamak.
+
+- [x] **Kritik web-uyumluluk taraması ve düzeltmeleri** — proje mobil-
+      öncelikli yazıldığı için birkaç native-only paket web'de derlemeyi
+      kıracak ya da açılışta çökertecek durumdaydı; pub.dev'den her
+      paketin platform desteği tek tek doğrulanıp düzeltildi:
+      - `AdService`: `dart:io`'nun `Platform.isAndroid`'i **Web'de hiç
+        derlenmez** (dart:io web'de mevcut değil) — web-güvenli
+        `defaultTargetPlatform`'a geçirildi. `google_mobile_ads` sadece
+        Android/iOS destekliyor; `initialize()`'a `kIsWeb` guard'ı
+        eklendi (diğer tüm metodlar zaten `_initialized` üzerinden
+        güvenliydi).
+      - **`main.dart` — en kritik bulgu:** `firebase_crashlytics` SADECE
+        Android/iOS/macOS destekliyor, Web YOK. `FirebaseCrashlytics
+        .instance`'a `runApp()`'tan ÖNCE, try/catch'siz erişiliyordu —
+        bu Web'de uygulamanın AÇILIŞTA çökmesine (beyaz ekran) yol
+        açardı. `if (!kIsWeb)` ile korumaya alındı; aynı şekilde
+        `FirebaseMessaging.onBackgroundMessage` da (Web'de karşılığı
+        service worker'dır) korundu.
+      - `PlayGamesService` (`games_services` — sadece Android/iOS/
+        macOS) ve `IAPService` (`in_app_purchase` — sadece Android/iOS/
+        macOS): `kIsWeb` guard'ları eklendi, `_iap` alanı `late final`
+        yapılıp Web'de hiç resolve edilmeyecek şekilde güvenceye
+        alındı.
+      - **Web'de sorunsuz çalıştığı doğrulanan** kritik paketler:
+        `firebase_database` (bu sayede 12 online oda-oyunun TAMAMI Web'de
+        de çalışır), `firebase_analytics`, `app_links`, `permission_handler`,
+        `flutter_local_notifications`.
+- [x] **Firebase Hosting yapılandırması**: `firebase.json`'a `hosting`
+      bloğu eklendi (`site: "azoyun"`, `public: "build/web"`, SPA için
+      tüm yolları `index.html`'e yönlendiren `rewrites`, statik
+      varlıklar için `Cache-Control` başlıkları). `.firebaserc`
+      oluşturuldu (proje: `azoyun-569b2`). `firebase_options.dart`'taki
+      `web` bloğu, kullanıcının Firebase Console'da az önce kaydettiği
+      YENİ web app bilgileriyle (apiKey, appId, measurementId)
+      güncellendi.
+- [x] **SEO**: `web/index.html` sıfırdan yazıldı — gerçek başlık/
+      açıklama (placeholder "A new Flutter project." yerine), Open
+      Graph + Twitter Card etiketleri, `canonical` URL, `lang="tr"`,
+      tema rengi. `web/robots.txt` ve `web/sitemap.xml` eklendi (SPA
+      olduğu için sitemap bilinçli olarak tek URL'lik — sahte alt
+      sayfa URL'leri uydurulmadı). `web/manifest.json` marka
+      bilgileriyle (isim, açıklama, `#6C63FF` tema rengi) güncellendi.
+- [x] **Google Search Console doğrulaması**: kullanıcının verdiği
+      doğrulama kodu `<meta name="google-site-verification" ...>`
+      etiketi olarak `index.html`'e eklendi.
+- [x] **Google AdSense**: doğrulama script'i (`ca-pub-5779807348211992`)
+      `index.html`'e eklendi. `web/ads.txt` ve `web/app-ads.txt` zaten
+      doğru yayıncı kimliğiyle mevcuttu, dokunulmadı.
+- **Bilinen sınırlamalar / kullanıcının yapması gereken adımlar** (bu
+  ortamda Flutter SDK yok, gerçek derleme/deploy/OAuth login
+  yapılamadı):
+  - `web/favicon.png` ve `web/icons/*.png` hâlâ varsayılan Flutter
+    logosu — marka logosu yok, görsel varlık üretilemedi. Kullanıcının
+    kendi logosunu sağlaması (ya da bir tasarım aracıyla ürettirmesi)
+    gerekiyor.
+  - Gerçek `flutter build web`, `firebase login`, `firebase deploy
+    --only hosting:azoyun` komutlarının kullanıcının kendi
+    makinesinde/CI'da çalıştırılıp doğrulanması gerekiyor.
+  - Google Search Console'da "Doğrula" butonuna basmak ve AdSense'te
+    "İnceleme iste" butonuna basmak kullanıcı tarafından yapılmalı
+    (bu, Google hesabı yetkilendirmesi gerektirir).
+  - AdSense onaylandıktan sonra gerçek reklam birimlerinin
+    (`<ins class="adsbygoogle">`) sayfaya yerleştirilmesi ayrı bir iş —
+    Flutter Web'de bu genelde `HtmlElementView`/platform view ile
+    yapılır, henüz eklenmedi.

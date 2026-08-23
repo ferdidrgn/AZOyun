@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'storage_service.dart';
@@ -52,21 +51,30 @@ class AdService {
       kDebugMode ? 'ca-app-pub-3940256099942544/1712485313'
                  : 'YOUR_IOS_REWARDED_ID';
 
+  // `dart:io`'nun `Platform.isAndroid`'i WEB'de derlenmez (dart:io web'de
+  // hiç mevcut değil) — bunun yerine her platformda güvenli çalışan
+  // `defaultTargetPlatform` kullanılıyor.
+  static bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
+
   static String get bannerAdUnitId =>
-      Platform.isAndroid ? _bannerAndroid : _bannerIos;
+      _isAndroid ? _bannerAndroid : _bannerIos;
 
   static String get interstitialAdUnitId =>
-      Platform.isAndroid ? _interstitialAndroid : _interstitialIos;
+      _isAndroid ? _interstitialAndroid : _interstitialIos;
 
   static String get rewardedAdUnitId =>
-      Platform.isAndroid ? _rewardedAndroid : _rewardedIos;
+      _isAndroid ? _rewardedAndroid : _rewardedIos;
 
   // ─────────────────────────────────────────────────────────────────────────
   // INIT
   // ─────────────────────────────────────────────────────────────────────────
 
+  /// Google Mobile Ads SDK'sı sadece Android/iOS'ta çalışır — Web'de bu
+  /// paketin native köprüsü hiç yok, çağrılırsa `MissingPluginException`
+  /// fırlatır. Bu yüzden Web'de tüm reklam altyapısı sessizce no-op'tur;
+  /// uygulama reklamsız (ve hatasız) çalışmaya devam eder.
   Future<void> initialize() async {
-    if (_initialized) return;
+    if (kIsWeb || _initialized) return;
     try {
       await MobileAds.instance.initialize();
       _initialized = true;

@@ -1,11 +1,12 @@
 {
-    "name": "a_z_oyun",
-    "short_name": "a_z_oyun",
+    "name": "AZ Oyun — Arkadaşlarınla Oyna",
+    "short_name": "AZ Oyun",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#09090B",
+    "theme_color": "#6C63FF",
+    "description": "30'dan fazla ücretsiz, çok oyunculu ve tek kişilik oyun: Dama, Okey, Araba Yarışı, Hain Kim?, Dedektif Kampanyası ve daha fazlası.",
+    "lang": "tr",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

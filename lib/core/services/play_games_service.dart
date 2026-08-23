@@ -45,8 +45,12 @@ class PlayGamesService {
     'first_step': 'CgkIxOrNg4kPEAIQAw', // "İlk" — ilk maçını oyna
   };
 
+  /// `games_services` paketi sadece Android/iOS/macOS destekler — Web'de
+  /// köprüsü yok. Web'de bu yüzden en baştan no-op: [_signedIn] hep
+  /// `false` kalır ve aşağıdaki tüm diğer metodlar zaten `if
+  /// (!_signedIn) return;` ile sessizce atlanır.
   Future<void> signIn() async {
-    if (_signedIn) return;
+    if (kIsWeb || _signedIn) return;
     try {
       await GamesServices.signIn();
       _signedIn = await GamesServices.isSignedIn;
