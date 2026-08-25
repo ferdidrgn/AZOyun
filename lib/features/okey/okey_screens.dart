@@ -517,6 +517,9 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
     return t.num == _okeyN && t.color.index == _okeyC;
   }
 
+  void _snack(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+
   Future<void> _drawDeck() async {
     if (!_isMyTurn || _mustDiscard || _processing || _deck.isEmpty) return;
     setState(() => _processing = true);
