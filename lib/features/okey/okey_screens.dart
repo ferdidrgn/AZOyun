@@ -385,15 +385,21 @@ class _ORoomState extends State<OkeyRoomScreen> {
     final seed = (_room['seed'] as int?) ?? Random().nextInt(999999);
     final deck = buildDeck(seed);
     final keys = _players.keys.toList();
-    final handSz = _mode == '101' ? 7 : 21;
+    // Gerçek Okey kuralı: her oyuncuya 14 taş, başlayan oyuncuya (turu açan)
+    // ekstra 1 taş (15) verilir — böylece ilk hamlesinde çekmeden doğrudan
+    // taş atar. Bu kural hem klasik Okey hem 101 Okey'de aynıdır.
+    const baseSz = 14;
     final updates = <String, dynamic>{
       'status': 'playing', 'turn': keys.first,
       'round': 1,
     };
+    var cursor = 0;
     for (var i = 0; i < keys.length; i++) {
-      updates['players/${keys[i]}/hand'] = deck.sublist(i * handSz, (i + 1) * handSz);
+      final sz = i == 0 ? baseSz + 1 : baseSz;
+      updates['players/${keys[i]}/hand'] = deck.sublist(cursor, cursor + sz);
+      cursor += sz;
     }
-    final remaining = deck.sublist(keys.length * handSz);
+    final remaining = deck.sublist(cursor);
     // Okey göstergesi
     if (remaining.isNotEmpty) {
       final ind = remaining.first;
@@ -471,9 +477,15 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false, _processing = false;
-  bool _mustDiscard = false;
   int? _selIdx;
   bool _wonDialog = false;
+
+  // İstakadaki (elimdeki) taşların kullanıcının kendi sürükleyerek/sıralayarak
+  // ayarladığı görüntü sırası — sadece bu cihazda tutulur; sunucudaki 'hand'
+  // listesi taş kimliklerini (id) taşımaya devam eder, biz sadece görüntü
+  // sırasını yönetiyoruz. Bir taş atıldığında bu sıra sunucuya da yazılır ki
+  // yeniden bağlanınca düzen korunsun.
+  final List<String> _order = [];
 
   late AnimationController _winCtrl;
 
@@ -489,11 +501,49 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
   void _onFB(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
-    setState(() => _room = d);
+    setState(() {
+      _room = d;
+      _syncOrder(_hand);
+    });
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true; AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 400), _showFinal);
     }
+  }
+
+  void _syncOrder(List<OTile> hand) {
+    final ids = hand.map((t) => t.id).toSet();
+    _order.removeWhere((id) => !ids.contains(id));
+    final placed = _order.toSet();
+    for (final t in hand) {
+      if (!placed.contains(t.id)) _order.add(t.id);
+    }
+  }
+
+  List<OTile> get _orderedHand {
+    final byId = {for (final t in _hand) t.id: t};
+    return _order.where(byId.containsKey).map((id) => byId[id]!).toList();
+  }
+
+  void _sortHand({required bool byColor}) {
+    setState(() {
+      final ordered = List<OTile>.from(_orderedHand);
+      ordered.sort((a, b) {
+        if (a.joker != b.joker) return a.joker ? 1 : -1;
+        if (byColor) {
+          if (a.color != b.color) return a.color.index.compareTo(b.color.index);
+          return a.num.compareTo(b.num);
+        } else {
+          if (a.num != b.num) return a.num.compareTo(b.num);
+          return a.color.index.compareTo(b.color.index);
+        }
+      });
+      _order
+        ..clear()
+        ..addAll(ordered.map((t) => t.id));
+      _selIdx = null;
+    });
+    HapticFeedback.selectionClick();
   }
 
   Map get _players => (_room['players'] as Map?) ?? {};
@@ -510,6 +560,13 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
     final raw = (_players[widget.myKey]?['hand'] as List?) ?? [];
     return raw.map((t) => OTile.fromMap(Map<String, dynamic>.from(t as Map))).toList();
   }
+
+  // Gerçek Okey kuralı: elde 15 taş varsa (tur açan oyuncunun ilk turu ya da
+  // demetten/atıktan az önce çekildiyse) taş ATMAK zorunludur; 14 taş varsa
+  // ÇEKMEK zorunludur. Bu, sunucudan gelen el uzunluğundan türetilir — ayrı
+  // bir yerel bayrak tutmaya gerek yok, bu yüzden yeniden bağlanma/tazeleme
+  // durumunda asla yanlış senkronize olmaz.
+  bool get _mustDiscard => _isMyTurn && _hand.length.isOdd;
 
   bool _isOkey(OTile t) {
     if (t.joker) return true;
@@ -531,7 +588,6 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
         'deck': newDeck,
         'players/${widget.myKey}/hand': [...hand.map((t) => t.toMap()), drawn],
       });
-      setState(() { _mustDiscard = true; });
       HapticFeedback.selectionClick();
     } finally { setState(() => _processing = false); }
   }
@@ -547,7 +603,6 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
         'discard': newDiscard,
         'players/${widget.myKey}/hand': [...hand.map((t) => t.toMap()), drawn],
       });
-      setState(() { _mustDiscard = true; });
       HapticFeedback.selectionClick();
     } finally { setState(() => _processing = false); }
   }
@@ -556,18 +611,22 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
     if (!_isMyTurn || !_mustDiscard || _processing) return;
     setState(() => _processing = true);
     try {
-      final hand = List.from(_hand.map((t) => t.toMap()));
-      final tile = hand.removeAt(idx);
-      final newDiscard = [..._discard, tile];
+      // İstakadaki (kullanıcının düzenlediği) sırayı temel al, atılan taşı
+      // çıkar ve kalan sırayı da sunucuya yaz — böylece düzen korunur.
+      final ordered = List<OTile>.from(_orderedHand);
+      final tile = ordered.removeAt(idx);
+      _order.remove(tile.id);
+      final newHand = ordered.map((t) => t.toMap()).toList();
+      final newDiscard = [..._discard, tile.toMap()];
       // Sıradaki oyuncu
       final keys = _players.keys.toList();
       final next = keys[(keys.indexOf(widget.myKey) + 1) % keys.length];
       await _ref.update({
-        'players/${widget.myKey}/hand': hand,
+        'players/${widget.myKey}/hand': newHand,
         'discard': newDiscard,
         'turn': next,
       });
-      setState(() { _mustDiscard = false; _selIdx = null; });
+      setState(() { _selIdx = null; });
       HapticFeedback.lightImpact();
     } finally { setState(() => _processing = false); }
   }
@@ -577,7 +636,7 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
 
     // Gerçek el geçerliliği kontrolü: eldeki TÜM taşlar (jokerler dahil)
     // 3+ taşlık per/seri gruplarına tam olarak ayrılabiliyor mu?
-    final valid = isValidOkeyHand(_hand, isOkeyPiece: _isOkey);
+    final valid = isValidOkeyHand(_orderedHand, isOkeyPiece: _isOkey);
 
     if (!valid) {
       setState(() => _wonDialog = true);
@@ -682,13 +741,22 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
   @override
   Widget build(BuildContext context) {
     if (_room.isEmpty) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    final hand = _hand;
+    final hand = _orderedHand;
     final topDiscard = _discard.isNotEmpty
         ? OTile.fromMap(Map<String, dynamic>.from(_discard.last as Map)) : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1B5E20),
-      body: SafeArea(child: Column(children: [
+      backgroundColor: const Color(0xFF0D3B18),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topCenter,
+            radius: 1.4,
+            colors: [Color(0xFF276B33), Color(0xFF163F1F), Color(0xFF0A2812)],
+            stops: [0.0, 0.6, 1.0],
+          ),
+        ),
+        child: SafeArea(child: Column(children: [
         // Score bar
         Container(
           decoration: const BoxDecoration(
@@ -810,31 +878,82 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
           ),
         ),
 
-        // El
-        Expanded(child: Column(children: [
-          const Padding(padding: EdgeInsets.only(left: 12, top: 4),
-              child: Align(alignment: Alignment.centerLeft,
-                  child: Text('ELİM', style: TextStyle(color: Colors.white54, fontSize: 10,
-                      fontWeight: FontWeight.w600, letterSpacing: 1)))),
-          Expanded(child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(children: hand.asMap().entries.map((e) {
-              final sel = _selIdx == e.key;
-              return GestureDetector(
-                onTap: () {
-                  if (_isMyTurn && _mustDiscard) {
-                    _discardTile(e.key);
-                  } else {
-                    setState(() => _selIdx = sel ? null : e.key);
-                  }
-                },
-                child: _TileW(tile: e.value, isOkey: _isOkey(e.value),
-                    selected: sel, mustDiscard: _isMyTurn && _mustDiscard),
-              );
-            }).toList()),
-          )),
-        ])),
+        // El — ahşap istaka
+        Expanded(child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
+          child: Column(children: [
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Row(children: [
+              const Text('İSTAKAM', style: TextStyle(color: Colors.white54, fontSize: 10,
+                  fontWeight: FontWeight.w600, letterSpacing: 1)),
+              const Spacer(),
+              _SortBtn(icon: Icons.palette_rounded, label: 'Renk',
+                  onTap: () => _sortHand(byColor: true)),
+              const SizedBox(width: 6),
+              _SortBtn(icon: Icons.filter_9_plus_rounded, label: 'Sayı',
+                  onTap: () => _sortHand(byColor: false)),
+            ])),
+            Expanded(child: Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [Color(0xFF8D6E4A), Color(0xFF5D4128), Color(0xFF432D18)],
+                  stops: [0.0, 0.55, 1.0],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF2E1D10), width: 1.5),
+                boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 12, offset: Offset(0, 6))],
+              ),
+              padding: const EdgeInsets.fromLTRB(4, 14, 4, 6),
+              child: Stack(children: [
+                // İstaka oyuğu (taşların üstüne oturduğu ince ışık çizgisi)
+                Positioned(left: 10, right: 10, top: 10,
+                    child: Container(height: 3, decoration: BoxDecoration(
+                        color: Colors.black26,
+                        borderRadius: BorderRadius.circular(2),
+                        boxShadow: [BoxShadow(color: Colors.white.withAlpha(30),
+                            offset: const Offset(0, 1))]))),
+                hand.isEmpty
+                    ? const SizedBox()
+                    : ReorderableListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        buildDefaultDragHandles: false,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        proxyDecorator: (child, index, animation) => Material(
+                            color: Colors.transparent, elevation: 6, child: child),
+                        itemCount: hand.length,
+                        itemBuilder: (context, i) {
+                          final tile = hand[i];
+                          final sel = _selIdx == i;
+                          return ReorderableDelayedDragStartListener(
+                            key: ValueKey(tile.id),
+                            index: i,
+                            child: GestureDetector(
+                              onTap: () {
+                                if (_isMyTurn && _mustDiscard) {
+                                  _discardTile(i);
+                                } else {
+                                  setState(() => _selIdx = sel ? null : i);
+                                }
+                              },
+                              child: _TileW(tile: tile, isOkey: _isOkey(tile),
+                                  selected: sel, mustDiscard: _isMyTurn && _mustDiscard),
+                            ),
+                          );
+                        },
+                        onReorder: (oldIndex, newIndex) {
+                          setState(() {
+                            if (oldIndex < newIndex) newIndex -= 1;
+                            final id = _order.removeAt(oldIndex);
+                            _order.insert(newIndex, id);
+                            _selIdx = null;
+                          });
+                        },
+                      ),
+              ]),
+            )),
+          ]),
+        )),
 
         // Buton
         if (_isMyTurn && _mustDiscard)
@@ -855,8 +974,39 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
 
         const BannerAdWidget(),
       ])),
+      ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SIRALA BUTONU
+// ═══════════════════════════════════════════════════════════════════
+
+class _SortBtn extends StatelessWidget {
+  const _SortBtn({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(8),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+          color: Colors.white12,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white24)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, color: Colors.white70, size: 13),
+        const SizedBox(width: 3),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10,
+            fontWeight: FontWeight.w600)),
+      ]),
+    ),
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -872,36 +1022,60 @@ class _TileW extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isOkey ? Colors.amber.shade200 : Colors.grey.shade100;
     final numColor = tile.joker ? Colors.deepPurple : OTile.uiColor(tile.color);
+    final topShade = isOkey ? const Color(0xFFFFF3C4) : const Color(0xFFFFFDF7);
+    final botShade = isOkey ? const Color(0xFFFFE082) : const Color(0xFFEAE3D2);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
       margin: EdgeInsets.symmetric(horizontal: 3, vertical: selected ? 0 : 8),
+      transform: selected
+          ? (Matrix4.identity()..translate(0.0, -6.0))
+          : Matrix4.identity(),
       width: size * 0.85, height: size,
       decoration: BoxDecoration(
-        color: selected ? Colors.yellow.shade100 : bg,
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+            colors: [topShade, botShade]),
+        borderRadius: BorderRadius.circular(9),
         border: Border.all(
-            color: isOkey ? Colors.amber.shade600
+            color: isOkey ? Colors.amber.shade700
                 : selected ? Colors.orange.shade400
                 : highlighted ? Colors.greenAccent
-                : mustDiscard ? Colors.red.withAlpha(100)
-                : Colors.grey.shade400,
-            width: selected || isOkey ? 2.5 : 1.5),
+                : mustDiscard ? Colors.red.withAlpha(130)
+                : Colors.grey.shade500,
+            width: selected || isOkey ? 2.5 : 1.3),
         boxShadow: [BoxShadow(
-            color: Colors.black.withAlpha(selected ? 80 : 30),
-            blurRadius: selected ? 8 : 3, offset: const Offset(0, 2))],
+            color: Colors.black.withAlpha(selected ? 110 : 55),
+            blurRadius: selected ? 10 : 4,
+            offset: Offset(0, selected ? 4 : 2))],
       ),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Text(tile.display,
-            style: TextStyle(fontSize: size * 0.36,
-                fontWeight: FontWeight.bold, color: numColor)),
-        if (isOkey && !tile.joker)
-          Text('OK', style: TextStyle(fontSize: size * 0.14,
-              color: Colors.amber.shade700, fontWeight: FontWeight.bold)),
-        if (tile.joker)
-          Text('JKR', style: TextStyle(fontSize: size * 0.14,
-              color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(children: [
+        // Cilalı yüzey hissi — üst kenarda ince parlaklık şeridi
+        Positioned(top: 2, left: 4, right: 4,
+            child: Container(height: size * 0.16,
+                decoration: BoxDecoration(color: Colors.white.withAlpha(110),
+                    borderRadius: BorderRadius.circular(6)))),
+        // Taban oyuğu — gerçek okey taşının alt kenarındaki iz
+        Positioned(left: 0, right: 0, bottom: size * 0.14,
+            child: Container(height: 1.4, color: Colors.black.withAlpha(45))),
+        Center(child: Padding(
+          padding: EdgeInsets.only(bottom: size * 0.08),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Text(tile.display,
+                style: TextStyle(fontSize: size * 0.38,
+                    fontWeight: FontWeight.w800, color: numColor,
+                    shadows: const [Shadow(color: Colors.black26,
+                        offset: Offset(0, 1), blurRadius: 1)])),
+            if (isOkey && !tile.joker)
+              Text('OK', style: TextStyle(fontSize: size * 0.13,
+                  color: Colors.amber.shade800, fontWeight: FontWeight.bold)),
+            if (tile.joker)
+              Text('JKR', style: TextStyle(fontSize: size * 0.13,
+                  color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+          ]),
+        )),
       ]),
     );
   }

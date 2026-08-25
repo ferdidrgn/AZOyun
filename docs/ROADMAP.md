@@ -826,3 +826,59 @@ doğrulamak ve Google AdSense başvurusu için siteyi hazırlamak.
     (`<ins class="adsbygoogle">`) sayfaya yerleştirilmesi ayrı bir iş —
     Flutter Web'de bu genelde `HtmlElementView`/platform view ile
     yapılır, henüz eklenmedi.
+
+### 8.12 Web derleme hatası düzeltme + Okey tam yenileme
+
+- [x] **Kritik derleme hatası düzeltildi**: kullanıcının gerçek
+      `flutter build web` denemesinde `dart2js` şu hatayla
+      duruyordu: `okey_screens.dart:604:9: The method '_snack' isn't
+      defined for the type '_OGameState'`. `_snack` yardımcı metodu
+      sadece kardeş State sınıflarında (`_OLobbyState`, `_ORoomState`)
+      tanımlıydı; `_OGameState`'e kendi `_snack` metodu eklendi. Bu
+      hata Web'e özgü değildi — tüm platformlarda derlemeyi
+      bozuyordu. (Build log'daki uzun "Wasm dry run findings" listesi
+      ise gerçek hata DEĞİL — sadece `--wasm` hedefiyle ilgili
+      bilgilendirme uyarıları, normal `flutter build web` derlemesini
+      etkilemiyor.)
+- [x] **Okey oyunu — kullanıcı geri bildirimiyle uçtan uca yenileme**:
+      kullanıcı oyunu "tasarım yok, istaka yok, taşlar rastgele,
+      kurallar eksik, 3D his yok" diye tarif etti. Yapılanlar:
+  - **Gerçek dağıtım kuralı düzeltildi**: önceden `_mode == '101'`
+    için 7, diğer modda 21 taş dağıtılıyordu — ikisi de gerçek Okey
+    kuralı değil. Artık her oyuncuya 14 taş, turu açan (ilk sıradaki)
+    oyuncuya ekstra 1 taş (15) veriliyor — klasik Okey ve 101 Okey'de
+    ortak olan gerçek kural.
+  - **`_mustDiscard` artık türetilen bir getter**: önceden elle
+    tutulan yerel bir `bool` bayraktı (yeniden bağlanmada/sayfa
+    tazelemede yanlış senkronize olabilirdi, örn. turu açan oyuncu
+    zaten 15 taşla başladığı halde tekrar çekebilirdi). Artık
+    `_isMyTurn && _hand.length.isOdd` olarak sunucudaki el
+    uzunluğünden türetiliyor — asla yanlış senkronize olmaz.
+  - **İstaka (rack) eklendi**: el artık düz bir kaydırmalı satır değil,
+    ahşap gradyanlı, gölgeli, oyuklu bir istaka görselinin üzerinde
+    duruyor.
+  - **Taşları sürükleyerek yeniden sıralama**: `ReorderableListView`
+    ile taşlar uzun basıp sürüklenerek istekediğiniz sıraya
+    dizilebiliyor (gerçek Okey'de oyuncuların gruplarını görsel olarak
+    düzenlemesi gibi). Sıra, taş atıldığında sunucuya da yazılıyor ki
+    düzen korunsun.
+  - **Otomatik sıralama butonları**: "Renk" (renge sonra sayıya göre —
+    seri/per gruplarını yan yana getirir) ve "Sayı" (sayıya sonra
+    renge göre — perleri yan yana getirir) butonları eklendi.
+  - **3D/kabartmalı taş tasarımı**: taşlar artık düz renkli kutular
+    değil — fildişi/krem gradyanlı, üstte cam parlaklık şeridi, altta
+    gerçek okey taşının tabanındaki oyuğu andıran ince bir çizgi,
+    seçiliyken yukarı kalkan (transform) ve daha güçlü gölgeli bir
+    görünüme kavuştu.
+  - **Masa arka planı zenginleştirildi**: düz yeşil yerine, üstten
+    aydınlık merkezli radyal keçe gradyanı eklendi.
+  - El geçerliliği kontrolü ("AÇTIM") daha önce (bkz. 8.x, görev #67)
+    gerçek bir backtracking çözücüyle doğrulanıyordu — bu oturumda
+    algoritma incelendi, hatasız bulundu; sorun algoritmada değil,
+    yukarıdaki eksik dağıtım kuralı ve görsel/etkileşim eksiklerindeydi.
+- **Bilinen sınırlamalar**: Bu ortamda Flutter SDK yok — kullanıcının
+  kendi cihazında `flutter build web` / `flutter run` ile test edip
+  onaylaması gerekiyor. Gerçek 3D render (WebGL/OpenGL taş modelleri)
+  yapılmadı — Flutter'da tam 3D motor entegrasyonu ayrı, çok daha
+  büyük bir iş; bunun yerine güçlü kabartma/gölge/gradyan teknikleriyle
+  "3D his" hedeflendi.
