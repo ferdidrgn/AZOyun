@@ -1024,3 +1024,42 @@ bulundu:
 - **Not**: Serbest Vuruş'un top senkronizasyonu (task #66'da
   `ServerValue.increment` ile düzeltilmişti) zaten sağlamdı, bu oturumda
   sadece yukarıdaki iki eksik bulundu.
+
+### 8.17 Kelime tabanlı oyunlar — Kelime Bulmaca, Şehir Bulmaca, Adam Asmaca
+
+Kullanıcının seçtiği son oyun grubu. Her üçünde de null-snapshot donma
+hatası bulundu; Kelime Bulmaca ve Adam Asmaca'da ayrıca çok daha ciddi,
+oyunu doğrudan bozan hatalar vardı:
+
+- [x] **Kelime Bulmaca — senkron olmayan süre erken kesiyordu**: her
+      oyuncu KENDİ ekranı açıldığı anda bağımsız bir 60 saniyelik yerel
+      sayaç başlatıyordu. Süresi ilk dolan oyuncu KAYITSIZ ŞARTSIZ
+      `status:'finished'` yazıyordu — bu, ağ/navigasyon gecikmesi
+      yüzünden henüz kendi süresi dolmamış diğer oyuncuların oyununu
+      ERKEN KESİYORDU. Çözüm: geri sayım artık odanın paylaşılan
+      `startTime` sunucu zaman damgasından hesaplanıyor (Araba
+      Yarışı'ndaki gibi), bitiş de sadece "herkes bitirdi mi" kontrolüyle
+      gerçekleşiyor (Golf'teki gibi) — artık kimse erken kesilmiyor.
+      Ayrıca "Süren doldu, diğerleri bekleniyor..." bandı eklendi.
+- [x] **Adam Asmaca — "Sonraki Tur" butonu misafir oyuncuda çalışmıyordu**:
+      `_advanceRound()` eskiden `if (!_isHost) return;` ile SADECE p1'de
+      işlev görüyordu. Ama buton HER İKİ oyuncuya da gösteriliyordu —
+      p2 (tahminci) kendi "Sonraki Tur" butonuna bassa bile sessizce
+      hiçbir şey olmuyordu, oyun sonuç ekranının arkasında sonsuza dek
+      donuk kalıyordu (host kendi butonuna basana kadar). Bu, 2 kişilik
+      bu oyunda HER TUR GEÇİŞİNDE karşılaşılan, her zaman tekrar eden bir
+      hataydı. Çözüm: host kısıtlaması kaldırıldı, artık HERKES
+      ilerletebiliyor — tazeden okunan round numarası dialogun
+      gösterdiğinden farklıysa (başka oyuncu zaten ilerletmişse) hiçbir
+      şey yapmadan çıkıyor, bu da çifte ilerlemeyi önlüyor.
+- [x] **Üçünde de oda-silinme donması**: `_onFirebase`, null snapshot'ta
+      sessizce dönüyordu; artık ana menüye yönlendiriyor.
+- [x] **Üçünde de aktif oyunda çıkış yolu yoktu**: `PopScope` + onaylı
+      çıkış eklendi. Adam Asmaca tam 2 kişilik olduğu için (sabit p1/p2
+      rolleri), biri ayrılınca oda tamamen siliniyor; diğer ikisinde
+      kalan oyuncularla devam ediliyor.
+- **Kapsam dışı bırakılan düşük öncelikli not**: Şehir Bulmaca'da iki
+  oyuncu aynı anda doğru cevap gönderirse çok dar bir zaman penceresinde
+  bir raundun atlanması teorik olarak mümkün — ama bu oyunun "ilk doğru
+  cevap turu kazanır" tasarımının doğal, nadir bir kenar durumu, ayrı bir
+  transaction katmanı gerektirmeyecek kadar düşük etkili.

@@ -268,10 +268,12 @@ class WordGameScreen extends StatefulWidget {
 class _WordGameScreenState extends State<WordGameScreen>
     with TickerProviderStateMixin {
   final _db   = FirebaseDatabase.instance.ref();
+  final _rooms = RoomService.instance;
   late  DatabaseReference _ref;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
+  bool _roomGone = false;
 
   List<String> _letters  = [];
   List<int>    _selected = [];
@@ -280,6 +282,8 @@ class _WordGameScreenState extends State<WordGameScreen>
   int          _timeLeft = 60;
   Timer?       _timer;
   bool         _gameOver = false;
+  int?         _startTimeMs;
+  int          _gameDurationSec = 60;
 
   late AnimationController _successCtrl;
   late Animation<double>   _successScale;
@@ -298,13 +302,38 @@ class _WordGameScreenState extends State<WordGameScreen>
   void dispose() { _timer?.cancel(); _successCtrl.dispose(); _sub?.cancel(); super.dispose(); }
 
   void _onFirebase(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (host ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve diğer oyuncuların ekranı sonsuza dek
+      // donuk kalırdı. Artık herkesi ana menüye döndürüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
-    final wasEmpty = _room.isEmpty;
     setState(() => _room = d);
-    if (wasEmpty && _letters.isEmpty) {
-      _generateLetters((d['seed'] as int?) ?? 42);
-      _startTimer();
+    if (_startTimeMs == null) {
+      final st = d['startTime'];
+      if (st is int) {
+        _startTimeMs = st;
+        _gameDurationSec = (d['gameDuration'] as int?) ?? 60;
+        _generateLetters((d['seed'] as int?) ?? 42);
+        _startTimer();
+      }
+    }
+    // Bir oyuncu, süresi henüz DOLMAMIŞ başka oyuncular varken erken
+    // bitirmiş olabilir (bkz. _endGame). Eskiden herkes kendi süresi
+    // dolduğunda KAYITSIZ ŞARTSIZ 'status':'finished' yazıyordu — bu,
+    // ağ/navigasyon gecikmesi yüzünden geç başlayan oyuncuların oyununu
+    // erken kesiyordu. Artık sadece HERKES bitirdiğinde sonlanır.
+    if (d['status'] != 'finished') {
+      final players = Map<String, dynamic>.from((d['players'] as Map?) ?? {});
+      if (players.isNotEmpty && players.values.every((p) => p['done'] == true)) {
+        _ref.update({'status': 'finished'});
+      }
     }
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
@@ -327,23 +356,38 @@ class _WordGameScreenState extends State<WordGameScreen>
     ]..shuffle(rng);
   }
 
+  // Geri sayım artık odanın paylaşılan 'startTime' sunucu zaman damgasından
+  // hesaplanıyor — önceden her oyuncu KENDİ ekranı açıldığı anda bağımsız
+  // bir 60 saniyelik sayaç başlatıyordu, bu yüzden ağ/navigasyon gecikmesi
+  // farkına göre bazı oyuncuların süresi diğerlerinden önce/sonra bitiyordu.
   void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) { t.cancel(); return; }
-      if (_timeLeft <= 0) { t.cancel(); _endGame(); return; }
-      setState(() => _timeLeft--);
-    });
+    void tick() {
+      if (!mounted) return;
+      final elapsed = DateTime.now().millisecondsSinceEpoch - _startTimeMs!;
+      final remaining = _gameDurationSec - (elapsed / 1000).floor();
+      if (remaining <= 0) {
+        _timer?.cancel();
+        setState(() => _timeLeft = 0);
+        _endGame();
+      } else {
+        setState(() => _timeLeft = remaining);
+      }
+    }
+    tick();
+    _timer = Timer.periodic(const Duration(milliseconds: 250), (_) => tick());
   }
 
   Future<void> _endGame() async {
     if (_gameOver) return;
     setState(() => _gameOver = true);
+    // Sadece kendi skorumu/bitişimi yazıyorum — oyunu kayıtsız şartsız
+    // 'finished' yapmıyorum. Süresi henüz dolmamış başka oyuncular varsa
+    // onların oyununu erken kesmemek için, bitiş SADECE herkes bitirdiğinde
+    // gerçekleşir (bkz. _onFirebase'deki "hepsi done mı" kontrolü).
     await _ref.update({
       'players/${widget.myKey}/score': _myScore,
       'players/${widget.myKey}/done':  true,
     });
-    await Future.delayed(const Duration(seconds: 3));
-    await _ref.update({'status': 'finished'});
   }
 
   void _tapLetter(int idx) {
@@ -420,6 +464,41 @@ class _WordGameScreenState extends State<WordGameScreen>
   void _snack(String m) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(m), duration: const Duration(seconds: 1)));
 
+  /// Aktif oyunda önceden HİÇBİR çıkış yolu yoktu — biri süresi bitmeden
+  /// ayrılırsa, kalanlar "hepsi bitirsin" kontrolünde sonsuza dek beklerdi.
+  Future<void> _leaveGame() async {
+    final players = Map<String, dynamic>.from((_room['players'] as Map?) ?? {});
+    final remaining = Map<String, dynamic>.from(players)..remove(widget.myKey);
+    if (remaining.isEmpty) {
+      await _rooms.deleteRoom(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(
+          gamePath: GamePaths.wordPuzzle, roomId: widget.roomId, playerKey: widget.myKey);
+      if (remaining.values.every((p) => (p as Map)['done'] == true)) {
+        await _ref.update({'status': 'finished'});
+      }
+    }
+    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  Future<void> _confirmLeave() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Oyundan çık?'),
+        content: const Text('Aktif bir oyunun ortasındasın. Çıkarsan bu geri alınamaz.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Çık')),
+        ],
+      ),
+    );
+    if (ok == true) await _leaveGame();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_room.isEmpty || _letters.isEmpty) {
@@ -428,7 +507,10 @@ class _WordGameScreenState extends State<WordGameScreen>
     final players = (_room['players'] as Map?) ?? {};
     final current = _selected.map((i) => _letters[i]).join();
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (_) => _confirmLeave(),
+      child: Scaffold(
       backgroundColor: const Color(0xFFE0F7FA),
       body: SafeArea(child: Column(children: [
 
@@ -443,6 +525,12 @@ class _WordGameScreenState extends State<WordGameScreen>
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(children: [
+            IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: _confirmLeave),
+            const SizedBox(width: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -470,6 +558,16 @@ class _WordGameScreenState extends State<WordGameScreen>
             )),
           ]),
         ),
+
+        if (_gameOver)
+          Container(
+            width: double.infinity,
+            color: const Color(0xFF00838F),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: const Text('⏳ Süren doldu! Diğer oyuncular bekleniyor...',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+          ),
 
         Expanded(child: Padding(
           padding: const EdgeInsets.all(16),
@@ -562,6 +660,7 @@ class _WordGameScreenState extends State<WordGameScreen>
         // Banner reklam
         const BannerAdWidget(),
       ])),
+      ),
     );
   }
 }
