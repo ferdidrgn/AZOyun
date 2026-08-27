@@ -409,12 +409,14 @@ class VampireGameScreen extends StatefulWidget {
 
 class _VGS extends State<VampireGameScreen> {
   final _db = FirebaseDatabase.instance.ref();
+  final _rooms = RoomService.instance;
   late final DatabaseReference _ref = _db.child('${GamePaths.vampire}/${widget.roomId}');
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
   bool _processing = false;
   bool _revealShown = false;
+  bool _roomGone = false;
 
   @override
   void initState() {
@@ -429,7 +431,17 @@ class _VGS extends State<VampireGameScreen> {
   }
 
   void _onFB(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (host ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve diğer oyuncuların ekranı sonsuza dek
+      // donuk kalırdı. Artık herkesi ana menüye döndürüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final wasEmpty = _room.isEmpty;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     setState(() => _room = d);
@@ -444,10 +456,21 @@ class _VGS extends State<VampireGameScreen> {
       AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 300), _showFinal);
     }
-    // Sadece p1 (host) gece/gündüz sonuçlarını çözer.
-    if (!_processing && widget.myKey == 'p1' && d['status'] == 'playing') {
+    // Gece/gündüz sonuçlarını SADECE sabit 'p1' değil, o an CANLI olan en
+    // düşük anahtarlı oyuncu çözer. Eskiden p1'e sabitlenmişti — p1 oyundan
+    // ayrılır ya da bağlantısı koparsa çözümleme hiçbir zaman olmuyordu.
+    if (!_processing && widget.myKey == _resolveLeaderKey && d['status'] == 'playing') {
       _checkVotes(d);
     }
+  }
+
+  String? get _resolveLeaderKey {
+    final aliveKeys = _players.entries
+        .where((e) => (e.value['alive'] as bool?) == true)
+        .map((e) => e.key)
+        .toList()
+      ..sort();
+    return aliveKeys.isEmpty ? null : aliveKeys.first;
   }
 
   // ── Gece/gündüz çözümleme (host-only) ─────────────────────────────────
@@ -769,6 +792,42 @@ class _VGS extends State<VampireGameScreen> {
     );
   }
 
+  /// Aktif oyun ekranında önceden HİÇBİR çıkış yolu yoktu — bir oyuncu geri
+  /// tuşuna basıp uygulamayı arka plana alsa bile Firebase'deki kaydı
+  /// silinmiyordu, bu da "herkes hazır olsun" bekleyen gece/gündüz
+  /// çözümlemesini sonsuza dek kilitleyebiliyordu. Artık kendini players'tan
+  /// tamamen kaldırıyoruz — bu, oy/hazır sayımını anında düzeltir.
+  Future<void> _leaveGame() async {
+    final remaining = Map<String, dynamic>.from(_players)..remove(widget.myKey);
+    if (remaining.isEmpty) {
+      await _rooms.deleteRoom(gamePath: GamePaths.vampire, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(
+          gamePath: GamePaths.vampire, roomId: widget.roomId, playerKey: widget.myKey);
+      await _checkWin();
+    }
+    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  Future<void> _confirmLeave() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Oyundan çık?'),
+        content: const Text('Aktif bir oyunun ortasındasın. Çıkarsan köyün bir '
+            'oyuncu eksik kalır ve bu geri alınamaz.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Çık')),
+        ],
+      ),
+    );
+    if (ok == true) await _leaveGame();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_room.isEmpty) {
@@ -778,7 +837,10 @@ class _VGS extends State<VampireGameScreen> {
       );
     }
     final isTransition = _phase == 'dawn' || _phase == 'dusk';
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (_) => _confirmLeave(),
+      child: Scaffold(
       backgroundColor: _isNight ? const Color(0xFF0D0D1F) : const Color(0xFFFFF9C4),
       body: SafeArea(
         child: Column(children: [
@@ -790,11 +852,17 @@ class _VGS extends State<VampireGameScreen> {
                     : [Colors.orange.shade700, Colors.yellow.shade600]),
                 boxShadow: [BoxShadow(color: Colors.black.withAlpha(130), blurRadius: 16, offset: const Offset(0, 6))]),
             padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            child: Stack(alignment: Alignment.center, children: [
+              Positioned(left: 4, top: -8,
+                  child: IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                      onPressed: _confirmLeave)),
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               Text(_isNight ? '🌙' : (isTransition ? '🌅' : '☀️'), style: const TextStyle(fontSize: 22)),
               const SizedBox(width: 10),
               Text('${_isNight ? "GECE" : (isTransition ? "GEÇİŞ" : "GÜNDÜZ")}${_day > 1 ? " — Gün $_day" : ""}',
                   style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              ]),
             ]),
           ),
           Container(
@@ -853,6 +921,7 @@ class _VGS extends State<VampireGameScreen> {
           Expanded(child: _buildBody(isTransition)),
           const BannerAdWidget(),
         ]),
+      ),
       ),
     );
   }
