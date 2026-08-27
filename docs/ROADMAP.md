@@ -998,3 +998,29 @@ hatalar:
       kalan oyuncuların ekranı donuyor ya da "herkes bitirsin" kontrolü
       hiç tetiklenmiyordu. Aynı `PopScope` + onaylı çıkış deseni ve
       null-snapshot → ana menüye dönüş düzeltmesi buraya da eklendi.
+
+### 8.16 Mini Golf + Serbest Vuruş — aynı sınıf güvenilirlik düzeltmeleri
+
+Kullanıcının seçtiği fizik tabanlı spor oyunları. Beklendiği gibi, diğer
+gerçek zamanlı oyunlarla aynı mimari kalıptan gelen tanıdık hatalar
+bulundu:
+
+- [x] **Golf — oda silinince donma**: `_onFirebase`, null snapshot'ta
+      sessizce dönüyordu; artık ana menüye yönlendiriyor.
+- [x] **Golf — delik ilerletme sadece `'p1'`e (host) bağlıydı**: host
+      kendi deliğini bitirip ayrılırsa, kalan oyuncular bitirse bile
+      hiç kimse "sıradaki deliğe geç" kontrolünü tetiklemiyor, oyun
+      "Diğerleri bekleniyor..." ekranında sonsuza dek takılı kalıyordu.
+      `_hostAdvance()` zaten canlı veriyi tazeden okuyup kendi kendini
+      koruduğu (hepsi bitmemişse hiçbir şey yapmaz) için, host kısıtlaması
+      tamamen kaldırıldı — artık HERKES tetikleyebilir, güvenli ve
+      idempotent.
+- [x] **Golf + Serbest Vuruş — aktif oyunda hiç çıkış yolu yoktu**: aynı
+      `PopScope` + onaylı çıkış deseni her ikisine de eklendi. Serbest
+      Vuruş'ta ekstra bir incelik var: bu oyun tur-tabanlı olduğu için
+      (sırası gelen oyuncunun fiziği tek otorite), sırası kendinde olan
+      oyuncu ayrılmadan önce sırayı açıkça rakibe devrediyor — yoksa
+      rakip "Rakibin vuruyor..." ekranında sonsuza dek beklerdi.
+- **Not**: Serbest Vuruş'un top senkronizasyonu (task #66'da
+  `ServerValue.increment` ile düzeltilmişti) zaten sağlamdı, bu oturumda
+  sadece yukarıdaki iki eksik bulundu.
