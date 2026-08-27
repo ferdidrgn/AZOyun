@@ -965,3 +965,36 @@ aynı şekilde bulundu ve düzeltildi:
   özel sunucu tarafı yetkilendirme (Cloud Functions) gerektiren ayrı,
   büyük bir altyapı projesi — bu oturumun kapsamının dışında bırakıldı;
   mevcut mimaride TÜM 30+ oyun aynı deseni paylaşıyor.
+
+### 8.15 Araba Yarışı — senkron başlangıç, foto-finiş ve akıcı rakip hareketi
+
+Kullanıcının önceliklendirdiği 3. oyun. Bulunan ve düzeltilen gerçek
+hatalar:
+
+- [x] **"3-2-1-GO" geri sayımı senkronize değildi**: her oyuncu, KENDİ
+      ekranı ne zaman açılırsa açılsın bağımsız bir geri sayım
+      başlatıyordu — ağ/navigasyon gecikmesi farkı yüzünden oyuncular
+      gerçekte aynı anda başlamıyordu (biri diğerinden yüzlerce ms önce
+      gaza basabiliyordu). Bu, tam olarak "rekabetsiz" hissinin bir
+      kaynağıydı. Artık geri sayım, host'un yarışı başlattığı ANA
+      (odaya yazılan `ServerValue.timestamp`) göre hesaplanıyor — TÜM
+      oyuncuların "GO!" anı cihaz/ağ farkından bağımsız olarak aynı.
+- [x] **Foto-finişte sıralama bozulabiliyordu**: yarışı bitiren oyuncu,
+      sırasını KENDİ (potansiyel olarak eski) yerel `_room` verisinden
+      okuyup hesaplıyor ve doğrudan `position`/`score` yazıyordu. İki
+      oyuncu neredeyse aynı anda bitirirse, ikisi de birbirinin bitişini
+      henüz görmemiş olabileceğinden AYNI ANDA "1. sıra" yazabiliyordu.
+      Artık her oyuncu sadece sunucu zaman damgalı `finishedAt` yazıyor;
+      gerçek sıralama, yarış bittiğinde TÜM zaman damgalarına göre
+      türetiliyor — bu asla çakışmaz.
+- [x] **Rakip arabalar ışınlanıyordu**: rakip pozisyonu doğrudan 10fps'lik
+      Firebase senkron verisinden çiziliyordu, bu da arabaların her
+      ~100ms'de bir yerinde "zıplaması"na yol açıyordu (yerel oyuncunun
+      arabası 60fps'te akıcı hareket ederken). Artık rakip pozisyonları
+      her fizik tikinde hedefe doğru üstel yumuşatmayla (lerp)
+      render ediliyor — çok daha akıcı bir arcade hissi.
+- [x] **Aktif yarışta hiç çıkış yolu yoktu**: diğer iki oyunla aynı sınıf
+      hata — biri bitirmeden ayrılırsa (host odayı silerse de dahil),
+      kalan oyuncuların ekranı donuyor ya da "herkes bitirsin" kontrolü
+      hiç tetiklenmiyordu. Aynı `PopScope` + onaylı çıkış deseni ve
+      null-snapshot → ana menüye dönüş düzeltmesi buraya da eklendi.

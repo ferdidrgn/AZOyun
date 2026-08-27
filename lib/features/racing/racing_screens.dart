@@ -359,10 +359,12 @@ class RacingGameScreen extends StatefulWidget {
 
 class _RGameState extends State<RacingGameScreen> with SingleTickerProviderStateMixin {
   final _db = FirebaseDatabase.instance.ref();
+  final _rooms = RoomService.instance;
   late DatabaseReference _ref;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
+  bool _roomGone = false;
 
   // Fizik state
   double _x = 0.5, _y = 0.75, _angle = -pi / 2;
@@ -374,11 +376,14 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
 
   Timer? _physicsTimer;
   Timer? _syncTimer;
+  Timer? _countdownTimer;
   late AnimationController _countdownCtrl;
   int _countdown = 3;
   bool _started = false;
+  int? _startTimeMs;
 
   static const _laps = 3;
+  static const _countdownMs = 3000;
 
   @override
   void initState() {
@@ -387,17 +392,38 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
     _sub = _ref.onValue.listen(_onFB);
     _loadStartPosition();
     _countdownCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 1));
-    // Countdown
-    Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) { t.cancel(); return; }
-      setState(() => _countdown--);
-      if (_countdown <= 0) { t.cancel(); _startRace(); }
-    });
+    // Geri sayım artık _onFB'de, odanın paylaşılan 'startTime' sunucu zaman
+    // damgasından tetikleniyor (bkz. _scheduleCountdown) — burada BAĞIMSIZ
+    // bir zamanlayıcı başlatmıyoruz.
   }
 
   @override void dispose() {
-    _physicsTimer?.cancel(); _syncTimer?.cancel();
+    _physicsTimer?.cancel(); _syncTimer?.cancel(); _countdownTimer?.cancel();
     _countdownCtrl.dispose(); _sub?.cancel(); super.dispose();
+  }
+
+  // Eskiden her oyuncu, KENDİ ekranı ne zaman açılırsa açılsın bağımsız bir
+  // "3-2-1-GO" sayacı başlatıyordu — ağ/navigasyon gecikmesi farkı yüzünden
+  // oyuncular gerçekte aynı anda başlamıyordu (biri diğerinden yüzlerce ms
+  // önce gaza basabiliyordu). Artık host'un yarışı başlattığı ANI (odaya
+  // yazılan ServerValue.timestamp) ortak referans alıyoruz — TÜM oyuncuların
+  // "GO!" anı, cihaz/ağ farkından bağımsız olarak gerçek zamanda aynı.
+  void _scheduleCountdown() {
+    if (_startTimeMs == null || _started) return;
+    void tick() {
+      if (!mounted) return;
+      final elapsed = DateTime.now().millisecondsSinceEpoch - _startTimeMs!;
+      final remaining = ((_countdownMs - elapsed) / 1000).ceil();
+      if (remaining <= 0) {
+        _countdownTimer?.cancel();
+        if (mounted) setState(() => _countdown = 0);
+        _startRace();
+      } else if (mounted) {
+        setState(() => _countdown = remaining);
+      }
+    }
+    tick();
+    _countdownTimer = Timer.periodic(const Duration(milliseconds: 150), (_) => tick());
   }
 
   // Lobide her oyuncuya farklı bir başlangıç X'i atanıyor (bkz.
@@ -414,12 +440,29 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
   }
 
   void _onFB(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (host ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve diğer oyuncuların ekranı sonsuza dek
+      // donuk kalırdı. Artık herkesi ana menüye döndürüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     setState(() => _room = d);
+    if (_startTimeMs == null) {
+      final st = d['startTime'];
+      if (st is int) {
+        _startTimeMs = st;
+        _scheduleCountdown();
+      }
+    }
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true; AdService.instance.onGameEnd();
-      _physicsTimer?.cancel(); _syncTimer?.cancel();
+      _physicsTimer?.cancel(); _syncTimer?.cancel(); _countdownTimer?.cancel();
       Future.delayed(const Duration(milliseconds: 500), _showFinal);
     }
   }
@@ -433,9 +476,45 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
     _syncTimer = Timer.periodic(const Duration(milliseconds: 100), (_) => _syncToFirebase());
   }
 
+  // Rakip arabaların en son bilinen Firebase konumu/açısı (10fps'te
+  // güncellenir) doğrudan çizilirse araba her ~100ms'de bir yerinde
+  // "ışınlanıyormuş" gibi görünür. Bunun yerine, 60fps'lik bu fizik
+  // döngüsünde her tikte hedefe doğru küçük bir adım atarak (üstel
+  // yumuşatma) akıcı bir hareket hissi veriyoruz.
+  final Map<String, Offset> _oppRenderPos = {};
+  final Map<String, double> _oppRenderAngle = {};
+
+  void _smoothOpponentsInPlace() {
+    final players = (_room['players'] as Map?) ?? {};
+    for (final entry in players.entries) {
+      final key = entry.key as String;
+      if (key == widget.myKey) continue;
+      final data = entry.value as Map;
+      final targetX = (data['x'] as num?)?.toDouble() ?? 0.5;
+      final targetY = (data['y'] as num?)?.toDouble() ?? 0.5;
+      final targetAngle = (data['angle'] as num?)?.toDouble() ?? 0.0;
+      final curX = _oppRenderPos[key]?.dx ?? targetX;
+      final curY = _oppRenderPos[key]?.dy ?? targetY;
+      final curAngle = _oppRenderAngle[key] ?? targetAngle;
+      const smooth = 0.22;
+      // Açı farkını en kısa yoldan al (ör. -π'den +π'ye sıçramayı önler).
+      var da = targetAngle - curAngle;
+      while (da > pi) da -= 2 * pi;
+      while (da < -pi) da += 2 * pi;
+      _oppRenderPos[key] = Offset(
+          curX + (targetX - curX) * smooth, curY + (targetY - curY) * smooth);
+      _oppRenderAngle[key] = curAngle + da * smooth;
+    }
+  }
+
   void _physicsTick() {
-    if (!mounted || !_started || _finished) return;
+    if (!mounted || !_started) return;
     setState(() {
+      // Rakip yumuşatması, ben bitirsem bile (ekranda hâlâ diğerlerini
+      // izlerken) çalışmaya devam etmeli — bu yüzden erken dönüşten önce.
+      _smoothOpponentsInPlace();
+      if (_finished) return;
+
       final car = widget.car;
       const dt = 0.016;
       const maxSpd = 0.006;
@@ -502,17 +581,16 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
     setState(() { _finished = true; _speed = 0; });
     _physicsTimer?.cancel();
     final players = (_room['players'] as Map?) ?? {};
-    final finishedCount = players.values.where((p) => p['finished'] == true).length;
-    final pos = finishedCount + 1;
-    final score = [100, 75, 50, 25][min(pos - 1, 3)];
+    // Sıralama artık burada YEREL (potansiyel olarak eski) veriden tahmin
+    // edilip yazılmıyor — foto-finişte iki oyuncu, birbirinin bitişini henüz
+    // görmemiş olabileceğinden aynı anda "1. sıra" yazabiliyordu. Bunun
+    // yerine sadece sunucu zaman damgalı 'finishedAt' yazılıyor; gerçek
+    // sıralama, TÜM bitiş zamanları toplandıktan sonra _showFinal()'da bu
+    // damgalara göre türetiliyor — bu asla çakışmaz.
     await _ref.update({
       'players/${widget.myKey}/finished': true,
-      'players/${widget.myKey}/position': pos,
-      'players/${widget.myKey}/score': score,
+      'players/${widget.myKey}/finishedAt': ServerValue.timestamp,
     });
-    ProfileService.instance
-        .reportGameResult(gameId: 'racing', won: pos == 1)
-        .then((_) => AchievementService.instance.checkAndUnlock());
     // Herkes bitirince oyun biter — sadece 1. olan kişi bitirdi diye
     // yarışı tüm oyuncular için erken kesmemeli (önceden "pos == 1" de
     // bu koşulu tetikliyordu, bu da hâlâ pistte olan diğer oyuncuların
@@ -523,20 +601,76 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
     }
   }
 
+  /// Aktif yarış ekranında önceden HİÇBİR çıkış yolu yoktu. Bu sadece
+  /// rahatsız edici değildi — biri bitirmeden ayrılırsa (geri tuşu/uygulamayı
+  /// kapatma), kalan herkes bitirmiş olsa bile "herkes bitirsin" kontrolü
+  /// hiç tetiklenmiyor ve bitiş ekranı sonsuza dek gelmiyordu.
+  Future<void> _leaveGame() async {
+    final remaining = Map<String, dynamic>.from((_room['players'] as Map?) ?? {})
+      ..remove(widget.myKey);
+    if (remaining.isEmpty) {
+      await _rooms.deleteRoom(gamePath: GamePaths.racing, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(
+          gamePath: GamePaths.racing, roomId: widget.roomId, playerKey: widget.myKey);
+      final allDone = remaining.values.every((p) => (p as Map)['finished'] == true);
+      if (allDone) {
+        await _ref.update({'status': 'finished', 'winner': remaining.keys.first});
+      }
+    }
+    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  Future<void> _confirmLeave() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Yarıştan çık?'),
+        content: const Text('Aktif bir yarışın ortasındasın. Çıkarsan bu geri alınamaz.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Çık')),
+        ],
+      ),
+    );
+    if (ok == true) await _leaveGame();
+  }
+
   void _showFinal() {
     if (!mounted) return;
     final players = (_room['players'] as Map?) ?? {};
+    // Sıralama, her oyuncunun 'finishedAt' SUNUCU zaman damgasına göre
+    // türetiliyor — bitmemiş (finishedAt'ı olmayan, örn. yarışı hiç
+    // bitiremeden odadan atılan) oyuncular en sona atılır.
     final sorted = players.entries.toList()
-      ..sort((a, b) => ((a.value['position'] as int?) ?? 99)
-          .compareTo((b.value['position'] as int?) ?? 99));
+      ..sort((a, b) {
+        final fa = a.value['finishedAt'] as int?;
+        final fb = b.value['finishedAt'] as int?;
+        if (fa == null && fb == null) return 0;
+        if (fa == null) return 1;
+        if (fb == null) return -1;
+        return fa.compareTo(fb);
+      });
     const medals = ['🥇', '🥈', '🥉', '4.'];
+    const scores = [100, 75, 50, 25];
+
+    final myIndex = sorted.indexWhere((e) => e.key == widget.myKey);
+    if (myIndex != -1) {
+      ProfileService.instance
+          .reportGameResult(gameId: 'racing', won: myIndex == 0)
+          .then((_) => AchievementService.instance.checkAndUnlock());
+    }
+
     showDialog(context: context, barrierDismissible: false, builder: (_) => AlertDialog(
       title: const Text('🏁 Yarış Bitti!', textAlign: TextAlign.center),
       content: Column(mainAxisSize: MainAxisSize.min,
         children: sorted.asMap().entries.map((e) {
           final isMe = e.value.key == widget.myKey;
-          final pos = (e.value.value['position'] as int?) ?? e.key + 1;
-          final score = (e.value.value['score'] as int?) ?? 0;
+          final pos = e.key + 1;
+          final score = scores[min(pos - 1, scores.length - 1)];
           final carId = e.value.value['carId'] as String? ?? 'sport';
           final c = _cars.firstWhere((c) => c.id == carId, orElse: () => _cars[0]);
           return Container(
@@ -573,7 +707,10 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
   Widget build(BuildContext context) {
     final players = (_room['players'] as Map?) ?? {};
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (_) => _confirmLeave(),
+      child: Scaffold(
       backgroundColor: const Color(0xFF2C2C2C),
       body: SafeArea(child: Column(children: [
         // HUD üst
@@ -587,6 +724,12 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           child: Row(children: [
+            IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: _confirmLeave),
+            const SizedBox(width: 4),
             Text('Tur: $_myLap/$_laps',
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(width: 16),
@@ -623,11 +766,14 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
                   painter: _TrackPainter(checkpoints: _checkpoints,
                       myCheckpoint: _myCheckpoint % _checkpoints.length)),
 
-              // Rakip arabalar
+              // Rakip arabalar — 10fps ağ verisi yerine yumuşatılmış
+              // (_smoothOpponentsInPlace) konum kullanılır, böylece araba
+              // her senkronizasyonda ışınlanmak yerine akıcı kayar.
               ...players.entries.where((e) => e.key != widget.myKey).map((e) {
-                final ox = (e.value['x'] as double? ?? 0.5) * W;
-                final oy = (e.value['y'] as double? ?? 0.5) * H;
-                final oa = (e.value['angle'] as double? ?? 0.0);
+                final smoothed = _oppRenderPos[e.key];
+                final ox = (smoothed?.dx ?? (e.value['x'] as num?)?.toDouble() ?? 0.5) * W;
+                final oy = (smoothed?.dy ?? (e.value['y'] as num?)?.toDouble() ?? 0.5) * H;
+                final oa = _oppRenderAngle[e.key] ?? (e.value['angle'] as num?)?.toDouble() ?? 0.0;
                 final carId = e.value['carId'] as String? ?? 'sport';
                 final c = _cars.firstWhere((cd) => cd.id == carId, orElse: () => _cars[0]);
                 return Positioned(left: ox - 14, top: oy - 14,
@@ -704,6 +850,7 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
 
         const BannerAdWidget(),
       ])),
+      ),
     );
   }
 }
