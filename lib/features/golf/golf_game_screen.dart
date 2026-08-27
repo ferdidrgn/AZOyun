@@ -31,10 +31,12 @@ class GolfGameScreen extends StatefulWidget {
 class _GolfGameScreenState extends State<GolfGameScreen>
     with TickerProviderStateMixin {
   final _db  = FirebaseDatabase.instance.ref();
+  final _rooms = RoomService.instance;
   late DatabaseReference _ref;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
+  bool _roomGone = false;
 
   int    _lastSeed = -1;
   int    _lastHole = 0;
@@ -80,7 +82,17 @@ class _GolfGameScreenState extends State<GolfGameScreen>
   }
 
   void _onFirebase(DatabaseEvent event) {
-    if (!mounted || event.snapshot.value == null) return;
+    if (!mounted) return;
+    if (event.snapshot.value == null) {
+      // Oda silindi (host ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve diğer oyuncuların ekranı sonsuza dek
+      // donuk kalırdı. Artık herkesi ana menüye döndürüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final data = Map<String, dynamic>.from(event.snapshot.value as Map);
     setState(() => _room = data);
     final holeNo = (data['currentHole'] as int?) ?? 1;
@@ -91,12 +103,16 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 500), _showFinalDialog);
     }
-    // Host kendi topunu diğer oyunculardan ÖNCE bitirmiş olabilir — o an
+    // Bir oyuncu kendi topunu diğerlerinden ÖNCE bitirmiş olabilir — o an
     // _onGoal() içindeki _hostAdvance() çağrısı "herkes bitirmedi" deyip
-    // dönmüş olur. Son oyuncu bitirdiğinde bunu host tarafında yeniden
-    // kontrol eden başka bir tetikleyici yoktu; bu da oyunun "Diğerleri
-    // bekleniyor..." ekranında sonsuza kadar takılı kalmasına yol açıyordu.
-    if (widget.myKey == 'p1' && data['status'] != 'finished') {
+    // dönmüş olur. Son oyuncu bitirdiğinde bunu yeniden kontrol eden başka
+    // bir tetikleyici yoktu; bu da oyunun "Diğerleri bekleniyor..."
+    // ekranında sonsuza kadar takılı kalmasına yol açıyordu. Eskiden bu
+    // kontrol SADECE 'p1' (host) tarafından yapılıyordu — host ayrılır ya
+    // da bağlantısı koparsa hiç kimse ilerlemeyi tetiklemiyordu.
+    // _hostAdvance() canlı veriyi tekrar okuyup kendi kendini koruduğu için
+    // (hepsi bitmemişse hiçbir şey yapmaz) artık HERKESİN tetiklemesi güvenli.
+    if (data['status'] != 'finished') {
       final players = Map<String, dynamic>.from((data['players'] as Map?) ?? {});
       if (players.isNotEmpty && players.values.every((p) => p['done'] == true)) {
         _hostAdvance();
@@ -222,9 +238,12 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       'players/${widget.myKey}/holeShots/$holeNo': _myShots,
       'players/${widget.myKey}/totalShots':        prevTot + _myShots,
     });
-    if (widget.myKey == 'p1') await _hostAdvance();
+    await _hostAdvance();
   }
 
+  // Artık "host" değil, "kendi kendini koruyan ilerletici" — canlı players
+  // verisini tazeden okur ve hepsi bitmemişse hiçbir şey yapmaz, bu yüzden
+  // herhangi bir oyuncunun (sadece p1'in değil) çağırması güvenlidir.
   Future<void> _hostAdvance() async {
     final snap = await _ref.child('players').get();
     if (!snap.exists) return;
@@ -324,6 +343,39 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     );
   }
 
+  /// Aktif oyunda önceden HİÇBİR çıkış yolu yoktu. Kendini players'tan
+  /// tamamen kaldırıyoruz — bu, "herkes bitirsin" sayımını anında düzeltir.
+  Future<void> _leaveGame() async {
+    final players = Map<String, dynamic>.from((_room['players'] as Map?) ?? {});
+    final remaining = Map<String, dynamic>.from(players)..remove(widget.myKey);
+    if (remaining.isEmpty) {
+      await _rooms.deleteRoom(gamePath: GamePaths.golf, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(
+          gamePath: GamePaths.golf, roomId: widget.roomId, playerKey: widget.myKey);
+      await _hostAdvance();
+    }
+    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  Future<void> _confirmLeave() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Oyundan çık?'),
+        content: const Text('Aktif bir oyunun ortasındasın. Çıkarsan bu geri alınamaz.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Çık')),
+        ],
+      ),
+    );
+    if (ok == true) await _leaveGame();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_room.isEmpty) {
@@ -334,11 +386,14 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     final maxHole = (_room['holeCount']   as int?) ?? 5;
     final players = (_room['players'] as Map?) ?? {};
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (_) => _confirmLeave(),
+      child: Scaffold(
       backgroundColor: const Color(0xFF2E7D32),
       body: SafeArea(child: Column(children: [
         _ScoreBar(players: players, myKey: widget.myKey,
-            holeNo: holeNo, maxHole: maxHole),
+            holeNo: holeNo, maxHole: maxHole, onLeave: _confirmLeave),
         AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           decoration: BoxDecoration(
@@ -408,14 +463,16 @@ class _GolfGameScreenState extends State<GolfGameScreen>
         // Banner reklam
         const BannerAdWidget(),
       ])),
+      ),
     );
   }
 }
 
 class _ScoreBar extends StatelessWidget {
   const _ScoreBar({required this.players, required this.myKey,
-      required this.holeNo, required this.maxHole});
+      required this.holeNo, required this.maxHole, required this.onLeave});
   final Map players; final String myKey; final int holeNo, maxHole;
+  final VoidCallback onLeave;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -428,6 +485,12 @@ class _ScoreBar extends StatelessWidget {
     ),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
     child: Row(children: [
+      IconButton(
+          icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          onPressed: onLeave),
+      const SizedBox(width: 4),
       Text('Delik $holeNo/$maxHole',
           style: const TextStyle(color: Color(0xB3FFFFFF),
               fontSize: 12, fontWeight: FontWeight.w600)),
