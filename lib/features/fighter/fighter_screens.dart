@@ -524,8 +524,14 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
   int _combo = 0;
   Timer? _comboReset;
 
-  // DoT (zehir/yanma) durumu
-  bool _poisoned = false, _burning = false;
+  // Bu raunt için ölüm/geçiş işleniyor mu? Ölüm, senkronize edilen HP
+  // verisinden algılanır (bkz. _onFB) — hem ben hem rakip aynı anda aynı
+  // ölümü görebiliriz, bu bayrak raundun sadece BİR kez ilerletilmesini
+  // garanti eder. Yeni raunt başladığında sıfırlanır.
+  bool _roundEnding = false;
+
+  // DoT (zehir/yanma) tik sayacı — asıl poisoned/burning durumu Firebase'de
+  // (players/*/poisoned, players/*/burning) tutulur, HUD oradan okur.
   int _dotTick = 0;
 
   // Hit animasyonları
@@ -539,7 +545,6 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
 
   // Swipe için
   Offset? _swipeStart;
-  DateTime? _swipeSt;
 
   @override
   void initState() {
@@ -551,7 +556,10 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
       ..addStatusListener((s) {
         if (s == AnimationStatus.completed) setState(() => _showHit = false);
       });
-    _myHitCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
+    // Değer 1.0'da dinlenir (kırmızı vinyet flaşı söner); forward(from: 0)
+    // her vuruş yediğimde 0'dan 1'e koşar — flaş parlar ve söner.
+    _myHitCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400))
+      ..value = 1.0;
 
     _hitFlash = Tween(begin: 1.0, end: 0.0).animate(
         CurvedAnimation(parent: _hitCtrl, curve: Curves.easeOut));
@@ -573,13 +581,45 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
   void _onFB(DatabaseEvent e) {
     if (!mounted || e.snapshot.value == null) return;
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
-    final prevOppHp = (_room['players']?[_oppKey]?['hp'] as int?) ?? 999;
-    setState(() => _room = d);
-    final newOppHp = (d['players']?[_oppKey]?['hp'] as int?) ?? 999;
-    // Biz vuruş aldıysak animasyon
-    final myHp = (d['players']?[widget.myKey]?['hp'] as int?) ?? 999;
+    // ÖNEMLİ: prevMyHp, _room DEĞİŞTİRİLMEDEN ÖNCE okunmalı — aksi halde
+    // "önceki" ve "yeni" değer aynı olur ve vuruş-yedim sarsıntısı hiç
+    // tetiklenmez (önceki haliyle tam olarak bu hata vardı).
     final prevMyHp = (_room['players']?[widget.myKey]?['hp'] as int?) ?? 999;
+    final prevRound = _room['round'] as int?;
+    setState(() => _room = d);
+
+    final myHp = (d['players']?[widget.myKey]?['hp'] as int?) ?? 999;
     if (myHp < prevMyHp) { _myHitCtrl.forward(from: 0); HapticFeedback.mediumImpact(); }
+
+    final newRound = d['round'] as int?;
+    if (newRound != null && newRound != prevRound) {
+      // Yeni raunt başladı — bu cihazda hâlâ çalışan eski DoT/kalkan
+      // zamanlayıcılarını iptal et. Aksi halde önceki rauntan kalan bir
+      // zehir/yanma tiki, yeni rauntun taze canından sinsice hasar keser.
+      _dotTimer?.cancel(); _dotTimer = null;
+      _shieldTimer?.cancel(); _shieldTimer = null;
+      _roundEnding = false;
+      if (_shieldOn) setState(() => _shieldOn = false);
+    }
+
+    if (d['status'] == 'fighting' && !_roundEnding) {
+      final oppHpNow = (d['players']?[_oppKey]?['hp'] as int?) ?? 999;
+      final oppDead = oppHpNow <= 0;
+      final meDead = myHp <= 0;
+      if (oppDead || meDead) {
+        // Ölüm anı, her iki cihazın da gördüğü AYNI senkron veriden
+        // algılanır — çifte yazmayı önlemek için raundu sadece kazanan
+        // taraf ilerletir (ikisi aynı anda ölürse belirleyici olarak p1).
+        final iAdvance = meDead && !oppDead
+            ? false
+            : (oppDead && meDead ? widget.myKey == 'p1' : true);
+        if (iAdvance) {
+          _roundEnding = true;
+          _onRoundEnd(oppDead: oppDead, meDead: meDead);
+        }
+      }
+    }
+
     if (d['status'] == 'finished' && !_finalShown) {
       _finalShown = true; AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 600), _showFinal);
@@ -590,9 +630,13 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
 
   Map get _players => (_room['players'] as Map?) ?? {};
   String get _oppKey => widget.myKey == 'p1' ? 'p2' : 'p1';
-  int get _myHp => (_players[widget.myKey]?['hp'] as int?) ?? 0;
+  // Hasar artık ServerValue.increment ile atomik uygulanıyor (bkz.
+  // _dealDamage) — bu, ölçülü bir alt sınır koymaz, bu yüzden depolanan
+  // değer kısa süreliğine negatif olabilir. Gösterim ve canlılık kontrolü
+  // için 0'a kırpıyoruz.
+  int get _myHp => ((_players[widget.myKey]?['hp'] as int?) ?? 0).clamp(0, _myMaxHp);
   int get _myMaxHp => (_players[widget.myKey]?['maxHp'] as int?) ?? widget.fighter.maxHp;
-  int get _oppHp => (_players[_oppKey]?['hp'] as int?) ?? 0;
+  int get _oppHp => ((_players[_oppKey]?['hp'] as int?) ?? 0).clamp(0, _oppMaxHp);
   int get _oppMaxHp => (_players[_oppKey]?['maxHp'] as int?) ?? 100;
   bool get _alive => _myHp > 0;
 
@@ -615,13 +659,12 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
     final oppDef = (_players[_oppKey]?['defense'] as int?) ?? 10;
     final oppShield = (_players[_oppKey]?['shield'] as bool?) ?? false;
     final finalDmg = (dmg - (oppShield ? oppDef * 2 : oppDef ~/ 3)).clamp(1, 999);
-    final newHp = ((_players[_oppKey]?['hp'] as int?) ?? _oppMaxHp) - finalDmg;
 
     _addLog(crit ? '💥 Kritik! $finalDmg hasar × $_combo kombo!'
         : '⚔️ $_combo kombo · $finalDmg hasar');
     _showHitFx();
 
-    await _dealDamage(_oppKey, finalDmg, newHp);
+    await _dealDamage(_oppKey, finalDmg);
 
     Future.delayed(Duration(milliseconds: widget.fighter.speed), () {
       if (mounted) setState(() => _atkCd = false);
@@ -656,38 +699,33 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
       case 'warrior':
         // 3× hasar
         final dmg = (widget.fighter.attack * 3.0).round();
-        final newHp = ((_players[_oppKey]?['hp'] as int?) ?? _oppMaxHp) - dmg;
         _addLog('⚔️ Kılıç Fırtınası! $dmg hasar!');
         _showHitFx();
-        await _dealDamage(_oppKey, dmg, newHp);
+        await _dealDamage(_oppKey, dmg);
         break;
       case 'mage':
         // Yanma DoT
         final dmg = widget.fighter.attack;
-        final newHp = ((_players[_oppKey]?['hp'] as int?) ?? _oppMaxHp) - dmg;
         await _ref.update({'players/$_oppKey/burning': true});
         _addLog('🔥 Ateş Topu! $dmg + yanma!');
         _showHitFx();
-        await _dealDamage(_oppKey, dmg, newHp);
+        await _dealDamage(_oppKey, dmg);
         // 3 tik yanma (her sn 5 hasar)
         _dotTimer?.cancel(); _dotTick = 3;
         _dotTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
-          if (!mounted || _dotTick <= 0) { t.cancel(); return; }
+          if (!mounted || _dotTick <= 0 || _roundEnding) { t.cancel(); return; }
           _dotTick--;
-          final cur = (_players[_oppKey]?['hp'] as int?) ?? 0;
-          final h = (cur - 5).clamp(0, _oppMaxHp);
           _addLog('🔥 Yanma 5 hasar');
-          await _dealDamage(_oppKey, 5, h);
+          await _dealDamage(_oppKey, 5);
           if (_dotTick == 0) await _ref.update({'players/$_oppKey/burning': false});
         });
         break;
       case 'archer':
         // Kritik atış
         final dmg = (widget.fighter.attack * 2.2).round();
-        final newHp = ((_players[_oppKey]?['hp'] as int?) ?? _oppMaxHp) - dmg;
         _addLog('🏹 Kritik Atış! $dmg hasar!');
         _showHitFx();
-        await _dealDamage(_oppKey, dmg, newHp);
+        await _dealDamage(_oppKey, dmg);
         break;
       case 'paladin':
         // Kutsal kalkan — 2 sn hasar yok
@@ -704,19 +742,16 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
       case 'rogue':
         // Zehir DoT
         final dmg = widget.fighter.attack;
-        final newHp = ((_players[_oppKey]?['hp'] as int?) ?? _oppMaxHp) - dmg;
         await _ref.update({'players/$_oppKey/poisoned': true});
         _addLog('🗡️ Zehir Bıçağı! $dmg + zehir!');
         _showHitFx();
-        await _dealDamage(_oppKey, dmg, newHp);
+        await _dealDamage(_oppKey, dmg);
         _dotTimer?.cancel(); _dotTick = 4;
         _dotTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
-          if (!mounted || _dotTick <= 0) { t.cancel(); return; }
+          if (!mounted || _dotTick <= 0 || _roundEnding) { t.cancel(); return; }
           _dotTick--;
-          final cur = (_players[_oppKey]?['hp'] as int?) ?? 0;
-          final h = (cur - 7).clamp(0, _oppMaxHp);
           _addLog('☠️ Zehir 7 hasar');
-          await _dealDamage(_oppKey, 7, h);
+          await _dealDamage(_oppKey, 7);
           if (_dotTick == 0) await _ref.update({'players/$_oppKey/poisoned': false});
         });
         break;
@@ -737,47 +772,70 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
     });
   }
 
-  Future<void> _dealDamage(String key, int dmg, int newHp) async {
+  // Hasar artık MUTLAK bir "yeni can" değeri hesaplayıp yazmak yerine
+  // ServerValue.increment ile ATOMIK olarak uygulanıyor. Böylece aynı
+  // oyuncunun art arda gelen aksiyonları (normal saldırı + DoT tiki gibi)
+  // birbirinin üzerine yazıp hasarı "kaybetmesi" mümkün değil — sunucu,
+  // ne olursa olsun geçerli değerden doğru şekilde düşer. Ölüm/raunt
+  // geçişi artık burada DEĞİL, senkronize veriden _onFB'de algılanıyor.
+  Future<void> _dealDamage(String key, int dmg) async {
     setState(() => _processing = true);
     try {
-      final clamped = newHp.clamp(0, _oppMaxHp);
-      await _ref.update({'players/$key/hp': clamped});
+      await _ref.update({'players/$key/hp': ServerValue.increment(-dmg)});
       HapticFeedback.mediumImpact();
-      if (clamped <= 0) await _onKill();
     } finally {
       if (mounted) setState(() => _processing = false);
     }
   }
 
-  Future<void> _onKill() async {
-    final myScore = ((_players[widget.myKey]?['score'] as int?) ?? 0) + 1;
-    final oppScore = (_players[_oppKey]?['score'] as int?) ?? 0;
+  // _onFB, senkronize HP verisinden bir ölüm algıladığında (ve raundu
+  // ilerletecek taraf ben isem) çağrılır. Bu yüzden burada TEKRAR yerel
+  // bir "kim öldü" hesaplaması yapmak yerine, çağıranın belirlediği
+  // sonucu kullanıyoruz — tek doğruluk kaynağı senkronize veridir.
+  Future<void> _onRoundEnd({required bool oppDead, required bool meDead}) async {
+    final myScoreNow = (_players[widget.myKey]?['score'] as int?) ?? 0;
+    final oppScoreNow = (_players[_oppKey]?['score'] as int?) ?? 0;
     final round = (_room['round'] as int?) ?? 1;
     final maxR = (_room['maxRounds'] as int?) ?? 3;
+
+    // İkisi aynı anda ölürse (double KO) raunt berabere sayılır — hiç
+    // kimseye puan yazılmaz, ama raunt yine de ilerler.
+    final draw = oppDead && meDead;
+    final myScore = draw ? myScoreNow : (oppDead ? myScoreNow + 1 : myScoreNow);
+    final oppScore = draw ? oppScoreNow : (meDead ? oppScoreNow + 1 : oppScoreNow);
+
     // Best-of-N: ilk yarı+1 raundu kazanan maçı kazanır (maxR=3 için 2).
     final winThreshold = ((maxR + 1) / 2).ceil();
-    if (myScore >= winThreshold || round >= maxR) {
+    if (myScore >= winThreshold || oppScore >= winThreshold || round >= maxR) {
       // Maç sona erdi — kazanan, o ana kadarki TOPLAM raunt skoruna göre
-      // belirlenir; sadece son raundu kazanan taraf otomatik galip sayılmaz.
-      final winnerKey = myScore >= oppScore ? widget.myKey : _oppKey;
+      // belirlenir. Tam berabere biterse (nadir) kazanan belirtilmez.
+      final winnerKey = myScore == oppScore ? null
+          : (myScore > oppScore ? widget.myKey : _oppKey);
       await _ref.update({
-        'status': 'finished', 'winner': winnerKey,
+        'status': 'finished',
+        if (winnerKey != null) 'winner': winnerKey,
         'players/${widget.myKey}/score': myScore,
+        'players/$_oppKey/score': oppScore,
       });
     } else {
-      // Yeni raunt — HP sıfırla
+      // Yeni raunt — her iki taraf için can ve durum etkilerini sıfırla.
       final oppFid = _players[_oppKey]?['fighterId'] as String? ?? 'warrior';
       final oppF = getFighter(oppFid);
       await _ref.update({
         'round': round + 1,
         'players/${widget.myKey}/hp': widget.fighter.maxHp,
         'players/${widget.myKey}/score': myScore,
+        'players/${widget.myKey}/shield': false,
+        'players/${widget.myKey}/poisoned': false,
+        'players/${widget.myKey}/burning': false,
         'players/$_oppKey/hp': oppF.maxHp,
+        'players/$_oppKey/score': oppScore,
         'players/$_oppKey/shield': false,
         'players/$_oppKey/poisoned': false,
         'players/$_oppKey/burning': false,
       });
-      _addLog('🏆 Raunt $round kazandın!');
+      _addLog(draw ? '🤝 Raunt $round berabere!'
+          : oppDead ? '🏆 Raunt $round kazandın!' : '💀 Raunt $round kaybettin!');
     }
   }
 
@@ -913,6 +971,22 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
                 ),
               ),
             ),
+
+            // Vuruş yedim kırmızı vinyet parlaması — hasar aldığımda ekranın
+            // kenarlarından hızlıca kırmızı bir flaş geçer, sonra söner.
+            IgnorePointer(child: AnimatedBuilder(
+              animation: _myHitCtrl,
+              builder: (_, __) => Opacity(
+                opacity: (1 - _myHitCtrl.value).clamp(0.0, 1.0) * 0.35,
+                child: DecoratedBox(decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.center, radius: 1.1,
+                    colors: [Colors.transparent, Colors.red.shade900.withAlpha(220)],
+                    stops: const [0.55, 1.0],
+                  ),
+                )),
+              ),
+            )),
 
             // Zemin çizgisi
             Positioned(bottom: 120, left: 0, right: 0,
@@ -1105,11 +1179,16 @@ class _FightHUD extends StatelessWidget {
               boxShadow: [BoxShadow(color: _hpColor(myHp, myMaxHp).withAlpha(90), blurRadius: 6)],
             ),
             child: ClipRRect(borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: (myHp / myMaxHp).clamp(0.0, 1.0),
-                  backgroundColor: Colors.red.shade900.withAlpha(80),
-                  valueColor: AlwaysStoppedAnimation(_hpColor(myHp, myMaxHp)),
-                  minHeight: 14,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(end: (myHp / myMaxHp).clamp(0.0, 1.0)),
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOut,
+                  builder: (_, v, __) => LinearProgressIndicator(
+                    value: v,
+                    backgroundColor: Colors.red.shade900.withAlpha(80),
+                    valueColor: AlwaysStoppedAnimation(_hpColor(myHp, myMaxHp)),
+                    minHeight: 14,
+                  ),
                 )),
           ),
           Text('$myHp/$myMaxHp  ★$myScore',
@@ -1140,11 +1219,16 @@ class _FightHUD extends StatelessWidget {
               boxShadow: [BoxShadow(color: _hpColor(oppHp, oppMaxHp).withAlpha(90), blurRadius: 6)],
             ),
             child: ClipRRect(borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: (oppHp / oppMaxHp).clamp(0.0, 1.0),
-                  backgroundColor: Colors.red.shade900.withAlpha(80),
-                  valueColor: AlwaysStoppedAnimation(_hpColor(oppHp, oppMaxHp)),
-                  minHeight: 14,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(end: (oppHp / oppMaxHp).clamp(0.0, 1.0)),
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOut,
+                  builder: (_, v, __) => LinearProgressIndicator(
+                    value: v,
+                    backgroundColor: Colors.red.shade900.withAlpha(80),
+                    valueColor: AlwaysStoppedAnimation(_hpColor(oppHp, oppMaxHp)),
+                    minHeight: 14,
+                  ),
                 )),
           ),
           Text('$oppHp/$oppMaxHp  ★$oppScore',

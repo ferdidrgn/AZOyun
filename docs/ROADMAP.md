@@ -882,3 +882,46 @@ doğrulamak ve Google AdSense başvurusu için siteyi hazırlamak.
   yapılmadı — Flutter'da tam 3D motor entegrasyonu ayrı, çok daha
   büyük bir iş; bunun yerine güçlü kabartma/gölge/gradyan teknikleriyle
   "3D his" hedeflendi.
+
+### 8.13 Dövüşçüler — hasar yarış durumu ve ölüm algılama düzeltmesi
+
+Kullanıcı "oyunlar hatalarla dolu, rekabetsiz, eğlencesiz" geri
+bildirimi verdi; Dövüşçüler (1v1 gerçek zamanlı dövüş) önceliklendirilen
+3 oyundan biri seçildi. İnceleme sonucu üç gerçek, ciddi hata bulundu:
+
+- [x] **Hasar "kaybolma" yarış durumu**: hasar, "mevcut canı oku → yeni
+      değeri hesapla → yaz" şeklinde uygulanıyordu. Aynı oyuncunun normal
+      saldırısı ile DoT (zehir/yanma) tiki neredeyse aynı anda tetiklenirse,
+      ikinci yazma birincinin üzerine YAZIYOR ve hasarın bir kısmı sessizce
+      kayboluyordu — rakip vurulduğunu görüyor ama can barı beklenenden az
+      düşüyordu. Çözüm: `ServerValue.increment()` ile ATOMİK, göreli hasar
+      uygulaması — artık hangi sırayla gelirse gelsin sunucu doğru toplar.
+- [x] **DoT zamanlayıcıları raunt bittiğinde iptal edilmiyordu**: bir
+      oyuncu zehir/yanma etkisiyle öldüğünde, geri kalan DoT tikleri
+      (`Timer.periodic`) durdurulmuyordu — bu tikler bir SONRAKİ raundun
+      taze can havuzuna sinsice hasar veriyor, hatta `_onKill()`'i tekrar
+      tetikleyip raundu birden fazla ilerletebiliyordu. Çözüm: yeni raunt
+      algılandığında (`_onFB`'de round numarası değişimi) tüm yerel
+      zamanlayıcılar iptal ediliyor; ayrıca `_roundEnding` bayrağı ölüm
+      işlemenin sadece bir kez olmasını garanti ediyor.
+- [x] **Vuruş-yedim animasyonu hiç çalışmıyordu**: `_onFB` içinde
+      `prevMyHp`, `_room` zaten YENİ veriyle değiştirildikten SONRA
+      okunuyordu — yani "önceki" ve "yeni" değer her zaman aynıydı, bu da
+      `myHp < prevMyHp` kontrolünün asla true olmamasına ve ekran
+      sarsıntısı/haptic geri bildiriminin asla tetiklenmemesine yol
+      açıyordu. `prevMyHp` artık `setState`'ten ÖNCE okunuyor.
+- [x] **Kazanan/raunt belirleme artık senkron veriden**: ölüm algılama,
+      saldıranın yerel (potansiyel olarak eski) tahmininden değil, her
+      iki cihazın da gördüğü SENKRON HP verisinden yapılıyor; çifte
+      yazmayı önlemek için raundu sadece kazanan taraf ilerletir (iki
+      taraf aynı anda ölürse — double KO — deterministik olarak `p1`
+      ilerletir ve raunt berabere sayılır, kimseye puan yazılmaz).
+- [x] **Görsel "juice"**: HP barları artık `TweenAnimationBuilder` ile
+      350ms'de yumuşak akıyor (önceden anında zıplıyordu); vuruş
+      yediğimde ekranda kısa süreli kırmızı bir vinyet flaşı beliriyor.
+- **Kapsam dışı bırakılanlar**: gerçek zamanlı 1v1'de teorik olarak
+  mümkün ama son derece nadir bir "double KO" kenar durumu dışında,
+  round/status geçişleri için ayrı bir Firebase transaction katmanı
+  kurulmadı (mevcut deterministik "kazanan ilerletir" kuralı günlük
+  oyunda yeterli); bu ortamda Flutter SDK yok, gerçek cihazda test
+  edilemedi.
