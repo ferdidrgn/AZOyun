@@ -46,6 +46,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   late DatabaseReference _ref;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
+  bool _roomGone = false;
   final _handled = <String>{};
 
   late final AnimationController _shakeCtrl;
@@ -83,7 +84,6 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   int    get _maxRound  => (_room['maxRounds'] as int?)  ?? 6;
   String get _chooser   => (_room['chooser'] as String?) ?? 'p1';
   String get _guesser   => _chooser == 'p1' ? 'p2' : 'p1';
-  bool   get _isHost    => widget.myKey == 'p1';
   bool   get _amChooser => widget.myKey == _chooser;
   bool   get _amGuesser => widget.myKey == _guesser;
 
@@ -101,7 +101,17 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   // ── Firebase ────────────────────────────────────────────────────────────
 
   void _onFirebase(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (rakip ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve ekran sonsuza dek donuk kalırdı. Artık
+      // ana menüye dönüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
 
     final nw = (d['game']?['wrong'] as int?) ?? 0;
@@ -187,11 +197,25 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     });
   }
 
-  Future<void> _advanceRound() async {
-    if (!_isHost) return;
-    final nextChooser = _chooser == 'p1' ? 'p2' : 'p1';
+  // ÖNEMLİ DÜZELTME: bu metod eskiden "if (!_isHost) return;" ile SADECE
+  // p1'de çalışıyordu. Ama "Sonraki Tur" butonu HER İKİ oyuncuya da
+  // gösteriliyor — p2 (misafir/tahminci) kendi butonuna bassa bile hiçbir
+  // şey olmuyordu (sessiz no-op), oyun sonuç ekranında sonsuza dek takılı
+  // kalıyordu çünkü sadece host'un kendi butonuna basması bir işe
+  // yarıyordu. Artık HERKES ilerletebiliyor — tazeden okunan round
+  // numarası, dialogun gösterdiği rounddan farklıysa (başka oyuncu zaten
+  // ilerletmişse) hiçbir şey yapmadan çıkıyor, bu da çifte ilerlemeyi
+  // (bir raundun atlanmasını) önlüyor.
+  Future<void> _advanceRound(int fromRound) async {
+    final snap = await _ref.get();
+    if (!snap.exists) return;
+    final live = Map<String, dynamic>.from(snap.value as Map);
+    final liveRound = (live['round'] as int?) ?? 1;
+    if (liveRound != fromRound) return; // başka oyuncu zaten ilerletti
+    final liveChooser = (live['chooser'] as String?) ?? 'p1';
+    final nextChooser = liveChooser == 'p1' ? 'p2' : 'p1';
     await _ref.update({
-      'round':   _round + 1,
+      'round':   fromRound + 1,
       'chooser': nextChooser,
       'phase':   'choose',
       'game':    null,
@@ -201,6 +225,32 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
 
   Future<void> _deleteRoom() =>
       _db.child('${GamePaths.hangman}/${widget.roomId}').remove();
+
+  /// Aktif oyunda önceden HİÇBİR çıkış yolu yoktu. Adam Asmaca tam olarak
+  /// 2 kişilik (sabit p1/p2 rolleriyle) olduğu için, biri ayrılınca oyun
+  /// zaten anlamlı şekilde devam edemez — oda tamamen siliniyor.
+  Future<void> _leaveGame() async {
+    await _deleteRoom();
+    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  Future<void> _confirmLeave() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Oyundan çık?'),
+        content: const Text('Aktif bir oyunun ortasındasın. Çıkarsan bu geri alınamaz.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: _kRed),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Çık')),
+        ],
+      ),
+    );
+    if (ok == true) await _leaveGame();
+  }
 
   // ── Dialogs ──────────────────────────────────────────────────────────────
 
@@ -246,7 +296,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
           style: FilledButton.styleFrom(backgroundColor: _kRed),
           onPressed: () {
             Navigator.pop(context);
-            if (!isLast) _advanceRound();
+            if (!isLast) _advanceRound(round);
           },
           child: Text(isLast ? 'Sonuçlara Git' : 'Sonraki Tur →'),
         )],
@@ -303,7 +353,10 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
           body: Center(child: CircularProgressIndicator(color: _kRed)));
     }
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (_) => _confirmLeave(),
+      child: Scaffold(
       backgroundColor: _kBg,
       body: SafeArea(child: Column(children: [
         _TopBar(
@@ -311,6 +364,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
           p1Name: _pName('p1'), p1Score: _pScore('p1'),
           isP1Me: widget.myKey == 'p1',
           p2Name: _pName('p2'), p2Score: _pScore('p2'),
+          onLeave: _confirmLeave,
         ),
         Expanded(
           child: _phase == 'choose' ? _buildChoosePhase() : _buildPlayPhase(),
@@ -318,6 +372,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
         // Banner reklam — oyun altında
         const BannerAdWidget(),
       ])),
+      ),
     );
   }
 
@@ -672,11 +727,13 @@ class _TopBar extends StatelessWidget {
     required this.round, required this.maxRounds,
     required this.p1Name, required this.p1Score, required this.isP1Me,
     required this.p2Name, required this.p2Score,
+    required this.onLeave,
   });
   final int round, maxRounds;
   final String p1Name, p2Name;
   final int p1Score, p2Score;
   final bool isP1Me;
+  final VoidCallback onLeave;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -687,8 +744,13 @@ class _TopBar extends StatelessWidget {
       ),
       boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
     ),
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    padding: const EdgeInsets.fromLTRB(4, 10, 14, 10),
     child: Row(children: [
+      IconButton(
+          icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          onPressed: onLeave),
       _Pill(name: p1Name, score: p1Score, isMe: isP1Me),
       Expanded(child: Column(children: [
         Text('Tur $round/$maxRounds',
