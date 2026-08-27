@@ -391,12 +391,14 @@ class ImpostorGameScreen extends StatefulWidget {
 
 class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
   final _db = FirebaseDatabase.instance.ref();
+  final _rooms = RoomService.instance;
   late final DatabaseReference _ref = _db.child('${GamePaths.impostor}/${widget.roomId}');
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
   bool _roleRevealShown = false;
   bool _processing = false;
+  bool _roomGone = false;
   int? _completingTaskIndex;
   final Set<int> _fakeCompleted = {};
   Timer? _tick;
@@ -418,7 +420,17 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
   }
 
   void _onFB(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (host oyundan ayrıldı ya da bağlantısı koptu) —
+      // eskiden burada sessizce return edilirdi ve diğer oyuncuların ekranı
+      // sonsuza dek donuk kalırdı. Artık herkesi ana menüye döndürüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     setState(() => _room = d);
     if (!_roleRevealShown && (d['players']?[widget.myKey]?['role']) != null) {
@@ -430,9 +442,24 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
       AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 300), _showFinal);
     }
-    if (!_processing && widget.myKey == 'p1' && d['status'] == 'playing' && (d['phase'] as String?) == 'voting') {
+    // Oy sayımını SADECE sabit 'p1' değil, o an CANLI olan en düşük anahtarlı
+    // oyuncu yapar. Eskiden p1'e sabitlenmişti — p1 oyundan ayrılır ya da
+    // bağlantısı koparsa oylama hiçbir zaman sonuçlanmıyordu (kalıcı kilit).
+    if (!_processing &&
+        widget.myKey == _voteTallyLeaderKey &&
+        d['status'] == 'playing' &&
+        (d['phase'] as String?) == 'voting') {
       _checkVotes(d);
     }
+  }
+
+  String? get _voteTallyLeaderKey {
+    final aliveKeys = _players.entries
+        .where((e) => (e.value['alive'] as bool?) == true)
+        .map((e) => e.key)
+        .toList()
+      ..sort();
+    return aliveKeys.isEmpty ? null : aliveKeys.first;
   }
 
   void _showRoleReveal() {
@@ -562,6 +589,23 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
     }
   }
 
+  /// Aktif oyun ekranında önceden HİÇBİR çıkış yolu yoktu — bir oyuncu geri
+  /// tuşuna basıp uygulamayı arka plana alsa bile Firebase'deki kaydı
+  /// silinmiyordu, bu da "herkes oy versin" bekleyen oylamayı sonsuza dek
+  /// kilitleyebiliyordu. Artık kendini players'tan tamamen kaldırıyoruz —
+  /// bu, oy sayımını ve mürettebat/hain oranını anında düzeltir.
+  Future<void> _leaveGame() async {
+    final remaining = Map<String, dynamic>.from(_players)..remove(widget.myKey);
+    if (remaining.isEmpty) {
+      await _rooms.deleteRoom(gamePath: GamePaths.impostor, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(
+          gamePath: GamePaths.impostor, roomId: widget.roomId, playerKey: widget.myKey);
+      await _checkWin();
+    }
+    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
   Future<void> _kill(String targetKey) async {
     if (!_isAlive || !_isImpostor || _killCooldownLeft != null) return;
     final cooldownUntil = DateTime.now().add(const Duration(seconds: 25)).millisecondsSinceEpoch;
@@ -664,6 +708,25 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
     );
   }
 
+  Future<void> _confirmLeave() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Oyundan çık?'),
+        content: const Text('Aktif bir oyunun ortasındasın. Çıkarsan takımın bir '
+            'oyuncu eksik kalır ve bu geri alınamaz.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Çık')),
+        ],
+      ),
+    );
+    if (ok == true) await _leaveGame();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_room.isEmpty) {
@@ -672,7 +735,10 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
         body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
       );
     }
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (_) => _confirmLeave(),
+      child: Scaffold(
       backgroundColor: const Color(0xFF0F2027),
       body: SafeArea(
         child: Column(children: [
@@ -683,7 +749,12 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
               gradient: _kSpaceGradient,
               boxShadow: [BoxShadow(color: Colors.black.withAlpha(120), blurRadius: 16, offset: const Offset(0, 6))],
             ),
-            child: Column(children: [
+            child: Stack(alignment: Alignment.topLeft, children: [
+              Positioned(left: 4, top: -4,
+                  child: IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                      onPressed: _confirmLeave)),
+              Column(children: [
               Text(_isImpostor ? '👽 SEN GİZLİ HAİNSİN' : '👨‍🚀 SEN MÜRETTEBATSIN',
                   style: TextStyle(
                       color: Colors.white,
@@ -699,6 +770,7 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
                 child: Text('🛠️ Görevler: $_tasksDone/$_tasksTotal',
                     style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
               ),
+              ]),
             ]),
           ),
           if (_lastEjected != null)
@@ -734,6 +806,7 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
           Expanded(child: _buildBody()),
           const BannerAdWidget(),
         ]),
+      ),
       ),
     );
   }

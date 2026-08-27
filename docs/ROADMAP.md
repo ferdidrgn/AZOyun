@@ -925,3 +925,43 @@ bildirimi verdi; Dövüşçüler (1v1 gerçek zamanlı dövüş) önceliklendiri
   kurulmadı (mevcut deterministik "kazanan ilerletir" kuralı günlük
   oyunda yeterli); bu ortamda Flutter SDK yok, gerçek cihazda test
   edilemedi.
+
+### 8.14 Hain Kim? + Vampir Köylü — parti oyunu güvenilirlik düzeltmeleri
+
+Kullanıcının önceliklendirdiği 3. ve son oyun grubu: sosyal-tahmin parti
+oyunları. İkisi de AYNI Firebase oda altyapısını paylaştığı için (kodun
+kendi yorumunda da belirtildiği gibi) üç hata her ikisinde de birebir
+aynı şekilde bulundu ve düzeltildi:
+
+- [x] **Oda silinince ekran sonsuza dek donuyordu**: aktif oyun
+      ekranındaki `_onFB`, gelen Firebase anlık görüntüsü `null` ise
+      (host oyundan ayrılıp odayı sildiğinde, ya da bağlantısı
+      koptuğunda) sessizce `return` ediyordu — diğer tüm oyuncular
+      hiçbir geri bildirim almadan donmuş bir ekranda kalıyordu. Artık
+      bu durumda herkes otomatik olarak ana menüye dönüyor.
+- [x] **Oy/gece sayımı tek bir oyuncuya (`'p1'`) sabitlenmişti**: hem
+      Hain Kim?'in oylama sonuçlanmasını hem Vampir Köylü'nün gece/gündüz
+      çözümlemesini SADECE `myKey == 'p1'` olan cihaz yapıyordu. p1
+      (genelde oda kurucusu) oyundan ayrılır ya da bağlantısı koparsa,
+      oylama/gece asla sonuçlanmıyor, oyun kalıcı olarak kilitleniyordu.
+      Artık bu sorumluluk, o an CANLI olan oyuncular arasından
+      deterministik olarak en düşük anahtarlıya kayıyor — biri ayrılırsa
+      görev otomatik olarak bir sonrakine geçiyor.
+- [x] **Aktif oyun ekranında HİÇ çıkış yolu yoktu**: `PopScope` yok, geri
+      butonu yok — bir oyuncu Android geri tuşuna basıp uygulamayı arka
+      plana alsa bile Firebase kaydı silinmiyordu. Bu, "herkes oy versin/
+      hazır olsun" bekleyen mantığı, uygulamayı arka planda bırakan TEK
+      bir oyuncu yüzünden sonsuza dek kilitleyebiliyordu. Her iki oyuna da
+      onay diyaloglu gerçek bir çıkış eklendi (kendini `players`'tan
+      TAMAMEN kaldırır — bu, oy/hazır sayımını ve mürettebat/vampir
+      oranını anında düzeltir, ayrıca çıkış anında kazanma koşulu da
+      tekrar kontrol edilir).
+- **Kapsam dışı bırakılan bilinen mimari sınırlama**: tüm oyuncuların
+  rolü (`players/*/role`), Firebase Realtime Database'de TÜM istemcilerin
+  aboneliğinde tuttuğu paylaşımlı oda düğümünde saklanıyor — yani
+  teorik olarak, tarayıcı geliştirici araçları (özellikle şimdi eklenen
+  Web sürümünde) veya ağ trafiği incelemesiyle bir oyuncu diğerlerinin
+  gizli rolünü erken görebilir. Bunu tam olarak kapatmak, Firebase Auth +
+  özel sunucu tarafı yetkilendirme (Cloud Functions) gerektiren ayrı,
+  büyük bir altyapı projesi — bu oturumun kapsamının dışında bırakıldı;
+  mevcut mimaride TÜM 30+ oyun aynı deseni paylaşıyor.
