@@ -113,6 +113,9 @@ unlinked_spec.ds
 **/linux/flutter/generated_plugin_registrant.h
 **/linux/flutter/generated_plugins.cmake
 
+# Firebase CLI local cache (makineye özel, kaynak değil)
+.firebase/
+
 # Coverage
 coverage/
 

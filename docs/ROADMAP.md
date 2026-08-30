@@ -1091,3 +1091,45 @@ oyun çeşitliliği grafiği hep aynı mor kalıyordu.
   doğrulanmış renk-tutarsızlığı hatası düzeltildi; kapsamlı bir yeniden
   tasarım (layout/bilgi mimarisi) ayrı, daha büyük bir görev olarak
   bekliyor.
+
+### 8.19 Gerçek AZOyun logosu: uygulama ikonu + Play Games başarım ikonu
+
+Kullanıcı GitHub üzerinden gerçek AZOyun logosunu (`web/icon.jpg`, 512x512,
+koyu mor-mavi-camgöbeği gradyan üzerinde beyaz "A"/kanat şekli) yükledi ve
+"iconu da AZ oyun ikonu yap, uygulamamızın ikonunu da buna çevir" dedi.
+
+- [x] Android launcher ikonları (5 yoğunluk: mdpi 48, hdpi 72, xhdpi 96,
+      xxhdpi 144, xxxhdpi 192) gerçek logodan yeniden üretildi. Proje düz
+      PNG kullanıyor (adaptive-icon XML/arka plan rengi yok), o yüzden tek
+      katman yeterli.
+- [x] iOS `AppIcon.appiconset` içindeki 15 boyutun tamamı (20pt'ten
+      1024pt marketing ikonuna kadar, @1x/@2x/@3x) `Contents.json`'daki
+      tam dosya adı eşlemesiyle yeniden üretildi.
+- [x] Web ikonları yenilendi: `favicon.png` (16x16), `icons/Icon-192.png`,
+      `icons/Icon-512.png`, `icons/Icon-maskable-192.png`,
+      `icons/Icon-maskable-512.png` — dosya adları aynı kaldığı için
+      `index.html`/`manifest.json` referanslarında değişiklik gerekmedi.
+- [x] Play Games başarım içe aktarma zip'indeki `icon.png` (7 başarımın
+      hepsi için ortak ikon) eski varsayılan Flutter logosu yerine gerçek
+      AZOyun logosuyla değiştirildi, zip yeniden oluşturuldu.
+- Üretim: bu ortamda Flutter SDK olmadığından (`flutter_launcher_icons`
+  çalıştırılamıyor) Python/Pillow ile kaynak JPEG'den doğrudan
+  `Image.resize(..., LANCZOS)` kullanılarak üretildi.
+- **Not**: Bu sandbox'ta ikonları görsel olarak render edip doğrulayacak
+  bir Flutter runtime yok — kullanıcının gerçek bir `flutter build`/
+  `flutter run` ile veya deploy edilmiş web uygulamasında görsel kontrol
+  yapması gerekiyor.
+
+### 8.20 Kalan repo temizliği: `assets/sounds/` silinmesi + `.firebase/` cache
+
+Kullanıcı GitHub üzerinden `assets/` klasörünü (kullanılmayan 8 ses
+dosyası) sildi. Kontrol edildi: bu dosyalara `lib/` içinde hiçbir yerden
+referans yoktu (grep ile doğrulandı), silme güvenliydi — ama
+`pubspec.yaml` hâlâ var olmayan `assets/sounds/` klasörünü bildiriyordu,
+bu da her `flutter build`/`flutter run`'ı kırardı.
+
+- [x] `pubspec.yaml`'daki artık geçersiz `assets:` bloğu kaldırıldı.
+- [x] Aynı GitHub yükleme commit'iyle yanlışlıkla repoya eklenen
+      `.firebase/hosting.*.cache` (Firebase CLI'nin makineye özel yerel
+      önbelleği, kaynak kod değil) `.gitignore`'a eklendi ve
+      `git rm --cached` ile takipten çıkarıldı.
