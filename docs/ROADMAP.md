@@ -1063,3 +1063,31 @@ oyunu doğrudan bozan hatalar vardı:
   bir raundun atlanması teorik olarak mümkün — ama bu oyunun "ilk doğru
   cevap turu kazanır" tasarımının doğal, nadir bir kenar durumu, ayrı bir
   transaction katmanı gerektirmeyecek kadar düşük etkili.
+
+### 8.18 Profil "dashboard"u artık kullanıcının seçtiği rengi kullanıyor
+
+Kullanıcı "Home ile Settings'teki renk aynı değil, bağımsız" diye şikayet
+etti. İnceleme sonucu gerçek kaynağı bulundu: Home ekranı zaten
+`Theme.of(context).colorScheme.primary` üzerinden Ayarlar'daki özel rengi
+doğru kullanıyordu — ama Profil ekranının Bento-Grid "dashboard" tasarımı
+(task #68) BİLEREK sabit bir indigo/mor palet kullanıyordu
+(`DashTokens.indigo`), kullanıcının seçtiği renkten tamamen bağımsız.
+Yani kullanıcı Ayarlar'dan turuncu/yeşil/her ne seçerse seçsin, Profil'in
+seviye rozeti, XP çubuğu, "kilit açıldı" vurgusu, Play Games banner'ı ve
+oyun çeşitliliği grafiği hep aynı mor kalıyordu.
+
+- [x] `DashTokens`'a `accent(BuildContext)`/`accentSoft(BuildContext)`
+      eklendi — `Theme.of(context).colorScheme.primary`'den türetiliyor.
+      Semantik renkler (`emerald`=başarı, `amber`=uyarı/coin,
+      `rose`=mağlubiyet) kasıtlı olarak SABİT bırakıldı — bunlar marka
+      rengi değil, anlam taşıyor.
+- [x] 6 dosyadaki 18 kullanım yeri (`profile_hero_card.dart`,
+      `achievement_bento_tile.dart`, `play_games_banner.dart`,
+      `game_variety_chart.dart`, `bento_card.dart`, `profile_screen.dart`)
+      sabit `indigo`/`indigoSoft`'tan `accent`/`accentSoft`'a geçirildi.
+      Eski sabitler, context'in olmadığı yerler için yedek olarak kaldı.
+- **Not**: "Dahbors [dashboard] tasarımları berbat" için kullanıcı
+  "hepsini" dedi (Profil, Home, Ayarlar, Liderlik) — bu oturumda somut,
+  doğrulanmış renk-tutarsızlığı hatası düzeltildi; kapsamlı bir yeniden
+  tasarım (layout/bilgi mimarisi) ayrı, daha büyük bir görev olarak
+  bekliyor.

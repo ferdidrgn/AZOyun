@@ -25,12 +25,35 @@ abstract class DashTokens {
   static const textTertiary  = Color(0xFF71717A);
 
   // ── Aksan renkleri ──────────────────────────────────────────────────────
-  static const indigo      = Color(0xFF6366F1); // Elektrik İndigo — birincil aksan
+  // `indigo`/`indigoSoft` sabitleri SADECE context'in olmadığı yerler için
+  // (ör. bir CustomPainter) yedek olarak kalır. Görünür tüm marka aksanı
+  // artık [accent]/[accentSoft] ile kullanıcının Ayarlar'da seçtiği renge
+  // göre boyanıyor — önceden bu dashboard sabit indigo kullanıyordu, bu da
+  // kullanıcı Ayarlar'dan başka bir renk seçse bile Profil ekranının hep
+  // aynı mor/indigo kalmasına yol açıyordu ("Home/Settings'teki renkle
+  // uyuşmuyor" şikayetinin kaynağı).
+  static const indigo      = Color(0xFF6366F1); // Elektrik İndigo — varsayılan/yedek
   static const indigoSoft  = Color(0xFF818CF8);
-  static const emerald     = Color(0xFF10B981); // Zümrüt Nane — başarı/galibiyet
+  static const emerald     = Color(0xFF10B981); // Zümrüt Nane — başarı/galibiyet (sabit, semantik)
   static const emeraldSoft = Color(0xFF34D399);
-  static const amber       = Color(0xFFF59E0B); // uyarı/coin
-  static const rose        = Color(0xFFF43F5E); // mağlubiyet/negatif
+  static const amber       = Color(0xFFF59E0B); // uyarı/coin (sabit, semantik)
+  static const rose        = Color(0xFFF43F5E); // mağlubiyet/negatif (sabit, semantik)
+
+  /// Kullanıcının o an aktif temasının birincil rengi — Ayarlar'da "Özel
+  /// Renk" ya da "Telefonun Teması" seçiliyse gerçekten o renk, aksi halde
+  /// uygulamanın varsayılan mor/indigo'su. Dashboard'un marka aksanı
+  /// (seviye rozeti, XP çubuğu, vurgulanan kartlar) buradan gelir.
+  static Color accent(BuildContext context) => Theme.of(context).colorScheme.primary;
+
+  /// [accent]'in daha açık/parlak varyantı — gradyanların ikinci durağı,
+  /// "bağlı/aktif" ikon rengi gibi yerlerde kullanılır.
+  static Color accentSoft(BuildContext context) {
+    final hsl = HSLColor.fromColor(accent(context));
+    return hsl
+        .withLightness((hsl.lightness + 0.16).clamp(0.0, 1.0))
+        .withSaturation((hsl.saturation - 0.05).clamp(0.0, 1.0))
+        .toColor();
+  }
 
   static const cardRadius = 20.0;
   static const chipRadius = 12.0;

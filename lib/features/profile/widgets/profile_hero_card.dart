@@ -22,19 +22,21 @@ class ProfileHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = (xpIntoLevel / xpPerLevel).clamp(0.0, 1.0);
+    final accent = DashTokens.accent(context);
+    final accentSoft = DashTokens.accentSoft(context);
 
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DashTokens.cardRadius),
-        border: Border.all(color: DashTokens.indigo.withAlpha(60)),
+        border: Border.all(color: accent.withAlpha(60)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [DashTokens.indigo.withAlpha(46), DashTokens.surface],
+          colors: [accent.withAlpha(46), DashTokens.surface],
         ),
         boxShadow: [
-          BoxShadow(color: DashTokens.indigo.withAlpha(30), blurRadius: 32, offset: const Offset(0, 16)),
+          BoxShadow(color: accent.withAlpha(30), blurRadius: 32, offset: const Offset(0, 16)),
         ],
       ),
       child: Row(
@@ -46,12 +48,12 @@ class ProfileHeroCard extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft, end: Alignment.bottomRight,
-                colors: [DashTokens.indigo, DashTokens.indigoSoft],
+                colors: [accent, accentSoft],
               ),
               boxShadow: [
-                BoxShadow(color: DashTokens.indigo.withAlpha(90), blurRadius: 18, offset: const Offset(0, 8)),
+                BoxShadow(color: accent.withAlpha(90), blurRadius: 18, offset: const Offset(0, 8)),
               ],
             ),
             child: Text('$level',
@@ -96,9 +98,8 @@ class ProfileHeroCard extends StatelessWidget {
                       widthFactor: progress,
                       child: Container(
                         height: 8,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                              colors: [DashTokens.indigo, DashTokens.indigoSoft]),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [accent, accentSoft]),
                         ),
                       ),
                     ),
