@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ferdidrgn.azgame",
+      "sha256_cert_fingerprints": [
+        "CC:CD:84:F0:5F:15:1A:E4:63:9F:FD:13:4D:C6:CF:0C:3A:2F:AA:4B:62:46:EF:70:ED:29:0F:F0:AF:D5:84:1E"
+      ]
+    }
+  }
+]
