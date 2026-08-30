@@ -86,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                    colors: [DashTokens.indigo.withAlpha(24), DashTokens.canvas],
+                    colors: [DashTokens.accent(context).withAlpha(24), DashTokens.canvas],
                   ),
                 ),
               ),
@@ -197,7 +197,7 @@ class _MobileContent extends StatelessWidget {
             icon: Icons.sports_esports_rounded,
             value: '${p.gamesPlayed}',
             label: 'Oynanan Maç',
-            accent: DashTokens.indigo,
+            accent: DashTokens.accent(context),
           ),
         ),
         const SizedBox(width: 12),
@@ -278,7 +278,7 @@ class _DesktopContent extends StatelessWidget {
                     icon: Icons.sports_esports_rounded,
                     value: '${p.gamesPlayed}',
                     label: 'Oynanan Maç',
-                    accent: DashTokens.indigo,
+                    accent: DashTokens.accent(context),
                   ),
                 ),
                 const SizedBox(width: 16),
