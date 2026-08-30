@@ -22,6 +22,7 @@ class GameVarietyChart extends StatelessWidget {
     final quickTotal = kQuickGameIds.length;
     final onlineTotal = kOnlineGameIds.length;
     final maxTotal = [quickTotal, onlineTotal].reduce((a, b) => a > b ? a : b);
+    final accent = DashTokens.accent(context);
 
     return BentoCard(
       child: Column(
@@ -60,7 +61,7 @@ class GameVarietyChart extends StatelessWidget {
                   BarChartGroupData(x: 0, barRods: [
                     BarChartRodData(
                       toY: quickPlayed.toDouble(),
-                      color: DashTokens.indigo,
+                      color: accent,
                       width: 34,
                       borderRadius: BorderRadius.circular(8),
                       backDrawRodData: BackgroundBarChartRodData(
@@ -87,7 +88,7 @@ class GameVarietyChart extends StatelessWidget {
           const SizedBox(height: 16),
           Row(children: [
             _CoverageChip(
-                color: DashTokens.indigo, played: quickPlayed, total: quickTotal, label: 'Hızlı'),
+                color: accent, played: quickPlayed, total: quickTotal, label: 'Hızlı'),
             const SizedBox(width: 16),
             _CoverageChip(
                 color: DashTokens.emerald, played: onlinePlayed, total: onlineTotal, label: 'Online'),

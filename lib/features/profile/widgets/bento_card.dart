@@ -38,8 +38,8 @@ class BentoCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(DashTokens.cardRadius),
-        splashColor: DashTokens.indigo.withAlpha(30),
-        highlightColor: DashTokens.indigo.withAlpha(15),
+        splashColor: DashTokens.accent(context).withAlpha(30),
+        highlightColor: DashTokens.accent(context).withAlpha(15),
         child: content,
       ),
     );

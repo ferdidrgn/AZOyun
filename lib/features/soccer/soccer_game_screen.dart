@@ -54,11 +54,13 @@ class SoccerGameScreen extends StatefulWidget {
 class _SoccerGameScreenState extends State<SoccerGameScreen>
     with TickerProviderStateMixin {
   final _db = FirebaseDatabase.instance.ref();
+  final _rooms = RoomService.instance;
   late DatabaseReference _ref;
   StreamSubscription? _sub;
 
   Map<String, dynamic> _room = {};
   bool _finalShown  = false;
+  bool _roomGone    = false;
   bool _isMyTurn    = false;
   int  _myScore     = 0;
   int  _currentRound = 1;
@@ -152,7 +154,17 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
   // ── Firebase ─────────────────────────────────────────────────────────────
 
   void _onFirebase(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (rakip ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve ekran sonsuza dek donuk kalırdı. Artık
+      // ana menüye dönüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     final prevPlayer = _room['currentPlayer'] as String?;
     final newPlayer  = d['currentPlayer'] as String?;
@@ -552,6 +564,43 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
     );
   }
 
+  /// Aktif maçta önceden HİÇBİR çıkış yolu yoktu — sırası gelen oyuncu
+  /// ayrılırsa (geri tuşu/uygulamayı kapatma), rakip "Rakibin vuruyor..."
+  /// ekranında sonsuza dek beklerdi çünkü sırayı sadece o oyuncunun kendi
+  /// vuruşu ilerletir. Ayrılmadan önce sırası bendeyse rakibe devrediyoruz.
+  Future<void> _leaveGame() async {
+    final players = Map<String, dynamic>.from((_room['players'] as Map?) ?? {});
+    final remaining = Map<String, dynamic>.from(players)..remove(widget.myKey);
+    if (remaining.isEmpty) {
+      await _rooms.deleteRoom(gamePath: GamePaths.soccer, roomId: widget.roomId);
+    } else {
+      if (_isMyTurn) {
+        await _ref.update({'currentPlayer': remaining.keys.first});
+      }
+      await _rooms.removePlayer(
+          gamePath: GamePaths.soccer, roomId: widget.roomId, playerKey: widget.myKey);
+    }
+    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  Future<void> _confirmLeave() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Maçtan çık?'),
+        content: const Text('Aktif bir maçın ortasındasın. Çıkarsan bu geri alınamaz.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Çık')),
+        ],
+      ),
+    );
+    if (ok == true) await _leaveGame();
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
@@ -562,7 +611,10 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
           body: Center(child: CircularProgressIndicator(color: Colors.white)));
     }
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (_) => _confirmLeave(),
+      child: Scaffold(
       backgroundColor: const Color(0xFF2E7D32),
       body: SafeArea(child: Column(children: [
 
@@ -572,6 +624,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
           myKey:    widget.myKey,
           round:    _currentRound,
           maxRound: _totalRounds,
+          onLeave:  _confirmLeave,
         ),
 
         // ── Status strip ──────────────────────────────────────────────────
@@ -697,6 +750,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
         // ── Banner reklam ────────────────────────────────────────────────
         const BannerAdWidget(),
       ])),
+      ),
     );
   }
 }
@@ -709,8 +763,10 @@ class _SoccerScoreBar extends StatelessWidget {
   const _SoccerScoreBar({
     required this.players, required this.myKey,
     required this.round,   required this.maxRound,
+    required this.onLeave,
   });
   final Map players; final String myKey; final int round, maxRound;
+  final VoidCallback onLeave;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -723,6 +779,12 @@ class _SoccerScoreBar extends StatelessWidget {
     ),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     child: Row(children: [
+      IconButton(
+          icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          onPressed: onLeave),
+      const SizedBox(width: 4),
       Text('Vuruş $round/$maxRound',
           style: const TextStyle(color: Color(0xB3FFFFFF),
               fontSize: 12, fontWeight: FontWeight.w600)),
