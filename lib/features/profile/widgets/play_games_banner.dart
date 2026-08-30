@@ -26,12 +26,12 @@ class PlayGamesBanner extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: (connected ? DashTokens.emerald : DashTokens.indigo).withAlpha(28),
+              color: (connected ? DashTokens.emerald : DashTokens.accent(context)).withAlpha(28),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               connected ? Icons.cloud_done_rounded : Icons.videogame_asset_rounded,
-              color: connected ? DashTokens.emeraldSoft : DashTokens.indigoSoft,
+              color: connected ? DashTokens.emeraldSoft : DashTokens.accentSoft(context),
               size: 20,
             ),
           ),
@@ -58,7 +58,7 @@ class PlayGamesBanner extends StatelessWidget {
           if (connecting)
             SizedBox(
                 width: 18, height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: DashTokens.indigoSoft))
+                child: CircularProgressIndicator(strokeWidth: 2, color: DashTokens.accentSoft(context)))
           else if (!connected)
             Icon(Icons.chevron_right_rounded, color: DashTokens.textTertiary),
         ]),

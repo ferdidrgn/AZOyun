@@ -319,10 +319,12 @@ class CityGameScreen extends StatefulWidget {
 
 class _CityGameScreenState extends State<CityGameScreen> {
   final _db   = FirebaseDatabase.instance.ref();
+  final _rooms = RoomService.instance;
   late  DatabaseReference _ref;
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
+  bool _roomGone = false;
   final _answerCtrl = TextEditingController();
   bool _answered    = false;
   bool _usedRewardedHint = false; // bu tur rewarded ipucu kullandı mı
@@ -339,7 +341,17 @@ class _CityGameScreenState extends State<CityGameScreen> {
   void dispose() { _answerCtrl.dispose(); _sub?.cancel(); super.dispose(); }
 
   void _onFirebase(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (host ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve diğer oyuncuların ekranı sonsuza dek
+      // donuk kalırdı. Artık herkesi ana menüye döndürüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     // Yeni tura geçince rewarded hint VE cevaplama kilidini sıfırla — her
     // Firebase güncellemesinde (ör. başka oyuncunun ipucu istemesi) değil,
@@ -468,6 +480,36 @@ class _CityGameScreenState extends State<CityGameScreen> {
   void _snack(String msg) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
 
+  /// Aktif oyunda önceden HİÇBİR çıkış yolu yoktu.
+  Future<void> _leaveGame() async {
+    final remaining = Map<String, dynamic>.from(_players)..remove(widget.myKey);
+    if (remaining.isEmpty) {
+      await _rooms.deleteRoom(gamePath: GamePaths.cityPuzzle, roomId: widget.roomId);
+    } else {
+      await _rooms.removePlayer(
+          gamePath: GamePaths.cityPuzzle, roomId: widget.roomId, playerKey: widget.myKey);
+    }
+    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  Future<void> _confirmLeave() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Oyundan çık?'),
+        content: const Text('Aktif bir oyunun ortasındasın. Çıkarsan bu geri alınamaz.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+          FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Çık')),
+        ],
+      ),
+    );
+    if (ok == true) await _leaveGame();
+  }
+
   // Rewarded buton gösterilsin mi?
   bool get _canShowRewardedBtn =>
       _hintIndex >= 2 && !_answered && !_usedRewardedHint;
@@ -479,7 +521,10 @@ class _CityGameScreenState extends State<CityGameScreen> {
     final hints     = _hints;
     final shownHint = _hintIndex < hints.length ? hints[_hintIndex] : '';
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (_) => _confirmLeave(),
+      child: Scaffold(
       backgroundColor: const Color(0xFFFCE4EC),
       body: SafeArea(child: Column(children: [
 
@@ -494,6 +539,12 @@ class _CityGameScreenState extends State<CityGameScreen> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(children: [
+            IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: _confirmLeave),
+            const SizedBox(width: 4),
             Text('Tur $_round/$_maxRound',
                 style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
             Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.end,
@@ -587,6 +638,7 @@ class _CityGameScreenState extends State<CityGameScreen> {
         // Banner reklam — oyun altında
         const BannerAdWidget(),
       ])),
+      ),
     );
   }
 }

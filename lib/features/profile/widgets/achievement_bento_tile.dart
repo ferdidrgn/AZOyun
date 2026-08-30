@@ -22,10 +22,11 @@ class AchievementBentoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = DashTokens.accent(context);
     final tile = BentoCard(
       padding: const EdgeInsets.all(14),
       color: unlocked ? DashTokens.surfaceHi : DashTokens.surface,
-      borderColor: unlocked ? DashTokens.indigo.withAlpha(60) : DashTokens.border,
+      borderColor: unlocked ? accent.withAlpha(60) : DashTokens.border,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -35,7 +36,7 @@ class AchievementBentoTile extends StatelessWidget {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: unlocked ? DashTokens.indigo.withAlpha(30) : DashTokens.highlight,
+                color: unlocked ? accent.withAlpha(30) : DashTokens.highlight,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Opacity(

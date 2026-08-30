@@ -998,3 +998,96 @@ hatalar:
       kalan oyuncuların ekranı donuyor ya da "herkes bitirsin" kontrolü
       hiç tetiklenmiyordu. Aynı `PopScope` + onaylı çıkış deseni ve
       null-snapshot → ana menüye dönüş düzeltmesi buraya da eklendi.
+
+### 8.16 Mini Golf + Serbest Vuruş — aynı sınıf güvenilirlik düzeltmeleri
+
+Kullanıcının seçtiği fizik tabanlı spor oyunları. Beklendiği gibi, diğer
+gerçek zamanlı oyunlarla aynı mimari kalıptan gelen tanıdık hatalar
+bulundu:
+
+- [x] **Golf — oda silinince donma**: `_onFirebase`, null snapshot'ta
+      sessizce dönüyordu; artık ana menüye yönlendiriyor.
+- [x] **Golf — delik ilerletme sadece `'p1'`e (host) bağlıydı**: host
+      kendi deliğini bitirip ayrılırsa, kalan oyuncular bitirse bile
+      hiç kimse "sıradaki deliğe geç" kontrolünü tetiklemiyor, oyun
+      "Diğerleri bekleniyor..." ekranında sonsuza dek takılı kalıyordu.
+      `_hostAdvance()` zaten canlı veriyi tazeden okuyup kendi kendini
+      koruduğu (hepsi bitmemişse hiçbir şey yapmaz) için, host kısıtlaması
+      tamamen kaldırıldı — artık HERKES tetikleyebilir, güvenli ve
+      idempotent.
+- [x] **Golf + Serbest Vuruş — aktif oyunda hiç çıkış yolu yoktu**: aynı
+      `PopScope` + onaylı çıkış deseni her ikisine de eklendi. Serbest
+      Vuruş'ta ekstra bir incelik var: bu oyun tur-tabanlı olduğu için
+      (sırası gelen oyuncunun fiziği tek otorite), sırası kendinde olan
+      oyuncu ayrılmadan önce sırayı açıkça rakibe devrediyor — yoksa
+      rakip "Rakibin vuruyor..." ekranında sonsuza dek beklerdi.
+- **Not**: Serbest Vuruş'un top senkronizasyonu (task #66'da
+  `ServerValue.increment` ile düzeltilmişti) zaten sağlamdı, bu oturumda
+  sadece yukarıdaki iki eksik bulundu.
+
+### 8.17 Kelime tabanlı oyunlar — Kelime Bulmaca, Şehir Bulmaca, Adam Asmaca
+
+Kullanıcının seçtiği son oyun grubu. Her üçünde de null-snapshot donma
+hatası bulundu; Kelime Bulmaca ve Adam Asmaca'da ayrıca çok daha ciddi,
+oyunu doğrudan bozan hatalar vardı:
+
+- [x] **Kelime Bulmaca — senkron olmayan süre erken kesiyordu**: her
+      oyuncu KENDİ ekranı açıldığı anda bağımsız bir 60 saniyelik yerel
+      sayaç başlatıyordu. Süresi ilk dolan oyuncu KAYITSIZ ŞARTSIZ
+      `status:'finished'` yazıyordu — bu, ağ/navigasyon gecikmesi
+      yüzünden henüz kendi süresi dolmamış diğer oyuncuların oyununu
+      ERKEN KESİYORDU. Çözüm: geri sayım artık odanın paylaşılan
+      `startTime` sunucu zaman damgasından hesaplanıyor (Araba
+      Yarışı'ndaki gibi), bitiş de sadece "herkes bitirdi mi" kontrolüyle
+      gerçekleşiyor (Golf'teki gibi) — artık kimse erken kesilmiyor.
+      Ayrıca "Süren doldu, diğerleri bekleniyor..." bandı eklendi.
+- [x] **Adam Asmaca — "Sonraki Tur" butonu misafir oyuncuda çalışmıyordu**:
+      `_advanceRound()` eskiden `if (!_isHost) return;` ile SADECE p1'de
+      işlev görüyordu. Ama buton HER İKİ oyuncuya da gösteriliyordu —
+      p2 (tahminci) kendi "Sonraki Tur" butonuna bassa bile sessizce
+      hiçbir şey olmuyordu, oyun sonuç ekranının arkasında sonsuza dek
+      donuk kalıyordu (host kendi butonuna basana kadar). Bu, 2 kişilik
+      bu oyunda HER TUR GEÇİŞİNDE karşılaşılan, her zaman tekrar eden bir
+      hataydı. Çözüm: host kısıtlaması kaldırıldı, artık HERKES
+      ilerletebiliyor — tazeden okunan round numarası dialogun
+      gösterdiğinden farklıysa (başka oyuncu zaten ilerletmişse) hiçbir
+      şey yapmadan çıkıyor, bu da çifte ilerlemeyi önlüyor.
+- [x] **Üçünde de oda-silinme donması**: `_onFirebase`, null snapshot'ta
+      sessizce dönüyordu; artık ana menüye yönlendiriyor.
+- [x] **Üçünde de aktif oyunda çıkış yolu yoktu**: `PopScope` + onaylı
+      çıkış eklendi. Adam Asmaca tam 2 kişilik olduğu için (sabit p1/p2
+      rolleri), biri ayrılınca oda tamamen siliniyor; diğer ikisinde
+      kalan oyuncularla devam ediliyor.
+- **Kapsam dışı bırakılan düşük öncelikli not**: Şehir Bulmaca'da iki
+  oyuncu aynı anda doğru cevap gönderirse çok dar bir zaman penceresinde
+  bir raundun atlanması teorik olarak mümkün — ama bu oyunun "ilk doğru
+  cevap turu kazanır" tasarımının doğal, nadir bir kenar durumu, ayrı bir
+  transaction katmanı gerektirmeyecek kadar düşük etkili.
+
+### 8.18 Profil "dashboard"u artık kullanıcının seçtiği rengi kullanıyor
+
+Kullanıcı "Home ile Settings'teki renk aynı değil, bağımsız" diye şikayet
+etti. İnceleme sonucu gerçek kaynağı bulundu: Home ekranı zaten
+`Theme.of(context).colorScheme.primary` üzerinden Ayarlar'daki özel rengi
+doğru kullanıyordu — ama Profil ekranının Bento-Grid "dashboard" tasarımı
+(task #68) BİLEREK sabit bir indigo/mor palet kullanıyordu
+(`DashTokens.indigo`), kullanıcının seçtiği renkten tamamen bağımsız.
+Yani kullanıcı Ayarlar'dan turuncu/yeşil/her ne seçerse seçsin, Profil'in
+seviye rozeti, XP çubuğu, "kilit açıldı" vurgusu, Play Games banner'ı ve
+oyun çeşitliliği grafiği hep aynı mor kalıyordu.
+
+- [x] `DashTokens`'a `accent(BuildContext)`/`accentSoft(BuildContext)`
+      eklendi — `Theme.of(context).colorScheme.primary`'den türetiliyor.
+      Semantik renkler (`emerald`=başarı, `amber`=uyarı/coin,
+      `rose`=mağlubiyet) kasıtlı olarak SABİT bırakıldı — bunlar marka
+      rengi değil, anlam taşıyor.
+- [x] 6 dosyadaki 18 kullanım yeri (`profile_hero_card.dart`,
+      `achievement_bento_tile.dart`, `play_games_banner.dart`,
+      `game_variety_chart.dart`, `bento_card.dart`, `profile_screen.dart`)
+      sabit `indigo`/`indigoSoft`'tan `accent`/`accentSoft`'a geçirildi.
+      Eski sabitler, context'in olmadığı yerler için yedek olarak kaldı.
+- **Not**: "Dahbors [dashboard] tasarımları berbat" için kullanıcı
+  "hepsini" dedi (Profil, Home, Ayarlar, Liderlik) — bu oturumda somut,
+  doğrulanmış renk-tutarsızlığı hatası düzeltildi; kapsamlı bir yeniden
+  tasarım (layout/bilgi mimarisi) ayrı, daha büyük bir görev olarak
+  bekliyor.
