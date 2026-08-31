@@ -10,10 +10,10 @@ import 'mystery_case_data.dart';
 const kNoirGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFF1A1A2E), Color(0xFF3D0C0C)],
+  colors: [Color(0xFF2A2A3A), Color(0xFF4A2222)],
 );
-const _kAccent = Color(0xFF8B0000);
-const _kGoldAccent = Color(0xFFC9A227);
+const _kAccent = Color(0xFFA85C5C);
+const _kGoldAccent = Color(0xFFD9A25C);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // KAMPANYA HUB — vaka listesi, kilit durumu
