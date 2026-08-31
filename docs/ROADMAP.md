@@ -1133,3 +1133,25 @@ bu da her `flutter build`/`flutter run`'ı kırardı.
       `.firebase/hosting.*.cache` (Firebase CLI'nin makineye özel yerel
       önbelleği, kaynak kod değil) `.gitignore`'a eklendi ve
       `git rm --cached` ile takipten çıkarıldı.
+
+### 8.21 `bundleRelease` derleme hatası: google-services eklenti sürümü eski
+
+Kullanıcı Windows'ta `flutter build appbundle` (Gradle `bundleRelease`)
+çalıştırdı, şu hatayla düştü:
+
+```
+Could not create task ':app:uploadCrashlyticsMappingFileRelease'.
+> The Crashlytics Gradle plugin 3 requires Google-Services 4.4.1 and above.
+```
+
+- **Kök neden**: `android/settings.gradle.kts` içinde
+  `com.google.firebase.crashlytics` eklentisi `3.0.2` (plugin 3 ailesi)
+  sabitliyken, `com.google.gms.google-services` hâlâ eski `4.3.15`
+  sürümüne sabitti — plugin 3, en az `4.4.1` istiyor.
+- [x] `com.google.gms.google-services` sürümü `4.4.2`'ye yükseltildi
+      (`android/settings.gradle.kts:24`). Projede bu sürüm tek bir yerde
+      tanımlı (Gradle plugins DSL üzerinden), başka bir dosyada
+      tekrarlanan/çakışan bir sürüm yoktu.
+- **Doğrulama**: Bu sandbox'ta Android SDK/Gradle yok, gerçek bir
+  `bundleRelease` çalıştırılamıyor — kullanıcının kendi makinesinde
+  tekrar denemesi gerekiyor.
