@@ -205,32 +205,29 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           DamaRoomScreen(roomId: id, myKey: 'p1', myName: _name!)));
-    } catch (e) { _snack('Hata: $e'); }
+    } catch (e) { context.snack('Hata: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _join() async {
     if (_name == null) { await _ask(); if (_name == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.dama, code: code);
-      if (r == null) { _snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      if (r == null) { context.snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { context.snack('Oyun başlamış'); return; }
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 2) { _snack('Oda dolu'); return; }
+      if (players.length >= 2) { context.snack('Oda dolu'); return; }
       await _rooms.updateRoom(gamePath: GamePaths.dama, roomId: r.id,
           updates: {'players/p2': {'name': _name, 'isHost': false, 'color': 'black', 'score': 0}});
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           DamaRoomScreen(roomId: r.id, myKey: 'p2', myName: _name!)));
-    } catch (e) { _snack('Katılınamadı: $e'); }
+    } catch (e) { context.snack('Katılınamadı: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) => AZGradientScaffold(
@@ -345,7 +342,7 @@ class _DamaRoomState extends State<DamaRoomScreen> {
   bool get _canStart => _players.length >= 2;
 
   Future<void> _start() async {
-    if (!_canStart) { _snack('Rakip bekleniyor'); return; }
+    if (!_canStart) { context.snack('Rakip bekleniyor'); return; }
     await _rooms.updateRoom(gamePath: GamePaths.dama, roomId: widget.roomId,
         updates: {'status': 'playing'});
   }
@@ -359,9 +356,6 @@ class _DamaRoomState extends State<DamaRoomScreen> {
     }
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) => PopScope(canPop: false, onPopInvoked: (_) => _leave(),
@@ -489,14 +483,14 @@ class _DamaGameState extends State<DamaGameScreen> {
       if (!board.isOwn(r, c, _isWhite)) return;
       final allValid = board.validMoves(_isWhite);
       final forSel = allValid.where((m) => m.fr == r && m.fc == c).toList();
-      if (forSel.isEmpty) { _snack('Bu taş için geçerli hamle yok'); return; }
+      if (forSel.isEmpty) { context.snack('Bu taş için geçerli hamle yok'); return; }
       setState(() { _selR = r; _selC = c; _validForSel = forSel; });
     } else {
       // Hamle yap
       final move = _validForSel.where((m) => m.tr == r && m.tc == c).firstOrNull;
       if (move == null) {
         if (_inChain) {
-          _snack('Zincirleme yakalama zorunlu! Aynı taşla devam etmelisin.');
+          context.snack('Zincirleme yakalama zorunlu! Aynı taşla devam etmelisin.');
           return;
         }
         // Farklı taş seç
@@ -609,10 +603,6 @@ class _DamaGameState extends State<DamaGameScreen> {
       )],
     ));
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m),
-          duration: const Duration(seconds: 1)));
 
   @override
   Widget build(BuildContext context) {

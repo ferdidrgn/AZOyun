@@ -102,7 +102,7 @@ class _ImpostorLobbyScreenState extends State<ImpostorLobbyScreen> {
       Navigator.push(context,
           MaterialPageRoute(builder: (_) => ImpostorRoomScreen(roomId: id, myKey: 'p1', myName: _name!)));
     } catch (e) {
-      _snack('Hata: $e');
+      context.snack('Hata: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -115,23 +115,23 @@ class _ImpostorLobbyScreenState extends State<ImpostorLobbyScreen> {
     }
     final code = _codeCtrl.text.trim().toUpperCase();
     if (code.length != 6) {
-      _snack('6 haneli kodu girin');
+      context.snack('6 haneli kodu girin');
       return;
     }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.impostor, code: code);
       if (r == null) {
-        _snack('Oda bulunamadı');
+        context.snack('Oda bulunamadı');
         return;
       }
       if (r.data['status'] != 'waiting') {
-        _snack('Oyun başlamış');
+        context.snack('Oyun başlamış');
         return;
       }
       final players = Map.from((r.data['players'] as Map?) ?? {});
       if (players.length >= _kMaxPlayers) {
-        _snack('Oda dolu');
+        context.snack('Oda dolu');
         return;
       }
       final myKey = 'p${players.length + 1}';
@@ -146,13 +146,11 @@ class _ImpostorLobbyScreenState extends State<ImpostorLobbyScreen> {
       Navigator.push(context,
           MaterialPageRoute(builder: (_) => ImpostorRoomScreen(roomId: r.id, myKey: myKey, myName: _name!)));
     } catch (e) {
-      _snack('Katılınamadı: $e');
+      context.snack('Katılınamadı: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
-
-  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) => AZGradientScaffold(
@@ -291,7 +289,7 @@ class _ImpostorRoomScreenState extends State<ImpostorRoomScreen> {
 
   Future<void> _start() async {
     if (!_canStart) {
-      _snack('En az $_kMinPlayers oyuncu');
+      context.snack('En az $_kMinPlayers oyuncu');
       return;
     }
     final keys = _players.keys.toList()..shuffle(Random.secure());
@@ -318,8 +316,6 @@ class _ImpostorRoomScreenState extends State<ImpostorRoomScreen> {
     }
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) => PopScope(

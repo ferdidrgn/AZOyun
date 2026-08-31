@@ -1321,16 +1321,27 @@ uygulandı.
       `_kGoalPostH` sabiti silindi (tek bir tanım, hiçbir kullanım yoktu).
 - [x] Katman ihlali taraması: `core/` içinde `features/` import eden
       TEK bir dosya bulunamadı — bu yönde temiz, ekstra iş gerekmedi.
+- [x] **`_snack()` yardımcı metodu konsolide edildi:** 16 dosyada 29 kez
+      hemen hemen birebir tekrarlanan
+      `void _snack(String m) => ScaffoldMessenger.of(context).
+      showSnackBar(SnackBar(content: Text(m)));` kaldırıldı, yerine
+      `lib/core/widgets/az_widgets.dart`'a tek bir
+      `extension AZSnack on BuildContext { void snack(String message,
+      {Duration duration = ...}) }` eklendi. 98 çağrı noktası
+      `_snack(x)` → `context.snack(x)` olarak güncellendi (3 tanesi
+      özel `duration` parametresi taşıyordu, extension bunu da
+      destekliyor). Migrasyondan önce her çağrı noktasının, `context`'i
+      gölgeleyen iç içe bir closure (`builder: (context, ...)` gibi)
+      içinde olup olmadığı tek tek kontrol edildi — hiçbiri değildi,
+      hepsi düz `State` metodu gövdesinde, güvenli bir mekanik
+      değişiklik. Her dosya için parantez/süslü parantez dengesi ayrıca
+      doğrulandı.
 - **Tespit edildi, henüz konsolide EDİLMEDİ** (sonraki adım): "oyundan
-  çık" ailesi — `_leaveGame()`/`_leave()`, `_confirmLeave()` dialog'u,
-  `PopScope(canPop:false, onPopInvoked:...)` sarmalayıcısı ve `_snack()`
-  yardımcı metodu — ~12 online oyun dosyasında neredeyse birebir aynı
-  kodla tekrarlanıyor (bazı yerlerde açıklayıcı Türkçe yorumlar dahi
-  kelimesi kelimesine kopyalanmış). Bunun tam olarak BU tekrar yüzünden
-  4 oyunun oda-silinme düzeltmesini kaçırdığı doğrulandı (yukarıdaki
-  bulgu). Paylaşılan bir `lib/core/widgets/az_widgets.dart` yardımcı
-  seti (`context.snack()`, `confirmLeaveGame()`, ortak bir "oda gitti"
-  guard'ı) hem tekrarı kaldırır hem bu sınıf hataların bir daha
-  yaşanmasını yapısal olarak engeller — ayrı bir işlem olarak
-  planlanıyor (bu kadar çok dosyayı derleyicisiz tek seferde değiştirmek
-  yerine kademeli, doğrulanabilir adımlarla yapılacak).
+  çık" ailesinin geri kalanı — `_leaveGame()`/`_leave()`,
+  `_confirmLeave()` dialog'u, `PopScope(canPop:false,
+  onPopInvoked:...)` sarmalayıcısı — hâlâ ~12 online oyun dosyasında
+  neredeyse birebir aynı kodla tekrarlanıyor. `_snack()`'ten farklı
+  olarak bunlar arasında Firebase yazma/oda silme gibi oyun mantığına
+  dokunan kısımlar var, bu yüzden tek seferde toplu bir mekanik
+  değişiklik yerine oyun oyun, doğrulanarak ilerlenmesi gerekiyor —
+  ayrı bir iş olarak planlı.

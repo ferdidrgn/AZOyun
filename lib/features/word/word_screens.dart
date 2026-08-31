@@ -69,31 +69,29 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           WordRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!)));
-    } catch (e) { _snack('Hata: $e'); }
+    } catch (e) { context.snack('Hata: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
   Future<void> _joinRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.wordPuzzle, code: code);
-      if (r == null)                     { _snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      if (r == null)                     { context.snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { context.snack('Oyun başlamış'); return; }
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 4)           { _snack('Oda dolu'); return; }
+      if (players.length >= 4)           { context.snack('Oda dolu'); return; }
       final myKey = 'p${players.length + 1}';
       await _rooms.updateRoom(gamePath: GamePaths.wordPuzzle, roomId: r.id,
           updates: {'players/$myKey': {'name': _playerName, 'isHost': false, 'score': 0}});
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           WordRoomScreen(roomId: r.id, myKey: myKey, myName: _playerName!)));
-    } catch (e) { _snack('Katılınamadı: $e'); }
+    } catch (e) { context.snack('Katılınamadı: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +199,7 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
   bool   get _canStart => _players.length >= 2;
 
   Future<void> _start() async {
-    if (!_canStart) { _snack('En az 2 oyuncu'); return; }
+    if (!_canStart) { context.snack('En az 2 oyuncu'); return; }
     await _rooms.updateRoom(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId,
         updates: {'status': 'playing', 'startTime': ServerValue.timestamp});
   }
@@ -210,8 +208,6 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
     else await _rooms.removePlayer(gamePath: GamePaths.wordPuzzle, roomId: widget.roomId, playerKey: widget.myKey);
     if (mounted) Navigator.pop(context);
   }
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -406,9 +402,9 @@ class _WordGameScreenState extends State<WordGameScreen>
       setState(() { _foundWords.add(word); _myScore += pts; _selected = []; });
       _successCtrl.forward(from: 0);
       HapticFeedback.mediumImpact();
-      _snack('✅ $word  +$pts puan!');
+      context.snack('✅ $word  +$pts puan!');
     } else {
-      _snack('❌ ${_wordBank.contains(word) ? "Zaten bulundu!" : "Geçersiz kelime"}');
+      context.snack('❌ ${_wordBank.contains(word) ? "Zaten bulundu!" : "Geçersiz kelime"}');
       _clearSelection();
     }
   }
@@ -460,9 +456,6 @@ class _WordGameScreenState extends State<WordGameScreen>
       ),
     );
   }
-
-  void _snack(String m) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(m), duration: const Duration(seconds: 1)));
 
   /// Aktif oyunda önceden HİÇBİR çıkış yolu yoktu — biri süresi bitmeden
   /// ayrılırsa, kalanlar "hepsi bitirsin" kontrolünde sonsuza dek beklerdi.

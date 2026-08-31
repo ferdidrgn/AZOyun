@@ -75,36 +75,33 @@ class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
       );
       if (!mounted) return;
       _navigate(SoccerRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!));
-    } catch (e) { _snack('Oda oluşturulamadı: $e'); }
+    } catch (e) { context.snack('Oda oluşturulamadı: $e'); }
     finally     { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _joinRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.soccer, code: code);
-      if (r == null)                     { _snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      if (r == null)                     { context.snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { context.snack('Oyun başlamış'); return; }
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 2)           { _snack('Oda dolu (max 2)'); return; }
+      if (players.length >= 2)           { context.snack('Oda dolu (max 2)'); return; }
       await _rooms.updateRoom(
         gamePath: GamePaths.soccer, roomId: r.id,
         updates: {'players/p2': {'name': _playerName, 'isHost': false, 'score': 0}},
       );
       if (!mounted) return;
       _navigate(SoccerRoomScreen(roomId: r.id, myKey: 'p2', myName: _playerName!));
-    } catch (e) { _snack('Katılınamadı: $e'); }
+    } catch (e) { context.snack('Katılınamadı: $e'); }
     finally     { if (mounted) setState(() => _loading = false); }
   }
 
   void _navigate(Widget s) =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => s));
-
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {

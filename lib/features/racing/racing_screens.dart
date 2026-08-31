@@ -78,21 +78,21 @@ class _RacingLobbyState extends State<RacingLobbyScreen> {
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           RacingRoomScreen(roomId: id, myKey: 'p1', myName: _name!, car: _car)));
-    } catch (e) { _snack('Hata: $e'); }
+    } catch (e) { context.snack('Hata: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _join() async {
     if (_name == null) { await _ask(); if (_name == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.racing, code: code);
-      if (r == null) { _snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { _snack('Yarış başlamış'); return; }
+      if (r == null) { context.snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { context.snack('Yarış başlamış'); return; }
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 4) { _snack('Oda dolu (max 4)'); return; }
+      if (players.length >= 4) { context.snack('Oda dolu (max 4)'); return; }
       final myKey = 'p${players.length + 1}';
       final startX = 0.3 + players.length * 0.1;
       await _rooms.updateRoom(gamePath: GamePaths.racing, roomId: r.id,
@@ -104,12 +104,9 @@ class _RacingLobbyState extends State<RacingLobbyScreen> {
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           RacingRoomScreen(roomId: r.id, myKey: myKey, myName: _name!, car: _car)));
-    } catch (e) { _snack('Katılınamadı: $e'); }
+    } catch (e) { context.snack('Katılınamadı: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) => AZGradientScaffold(
@@ -280,7 +277,7 @@ class _RRoomState extends State<RacingRoomScreen> {
   bool get _canStart => _players.length >= 2;
 
   Future<void> _start() async {
-    if (!_canStart) { _snack('En az 2 oyuncu'); return; }
+    if (!_canStart) { context.snack('En az 2 oyuncu'); return; }
     await _rooms.updateRoom(gamePath: GamePaths.racing, roomId: widget.roomId,
         updates: {'status': 'racing', 'startTime': ServerValue.timestamp});
   }
@@ -294,9 +291,6 @@ class _RRoomState extends State<RacingRoomScreen> {
     }
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) => PopScope(canPop: false, onPopInvoked: (_) => _leave(),

@@ -630,3 +630,16 @@ class _RoleRevealContent extends StatelessWidget {
     ]),
   );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SNACKBAR — her online oyun ekranında ayrı ayrı tanımlanan `_snack()`
+// yardımcı metodunun (29 kopyası vardı) ortak, tek noktadan hali.
+// ═══════════════════════════════════════════════════════════════════════════
+
+extension AZSnack on BuildContext {
+  /// Varsayılan süre, `SnackBar`'ın kendi varsayılanıyla (4 saniye) aynı —
+  /// mevcut çağrı yerlerinin çoğu süre belirtmiyordu, davranış değişmiyor.
+  void snack(String message, {Duration duration = const Duration(milliseconds: 4000)}) {
+    ScaffoldMessenger.of(this).showSnackBar(SnackBar(content: Text(message), duration: duration));
+  }
+}
