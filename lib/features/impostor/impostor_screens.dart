@@ -308,33 +308,24 @@ class _ImpostorRoomScreenState extends State<ImpostorRoomScreen> {
   }
 
   Future<void> _leave() async {
-    final pl = Map.from(_players)..remove(widget.myKey);
-    if (pl.isEmpty || _isHost) {
-      await _rooms.deleteRoom(gamePath: GamePaths.impostor, roomId: widget.roomId);
-    } else {
-      await _rooms.removePlayer(gamePath: GamePaths.impostor, roomId: widget.roomId, playerKey: widget.myKey);
-    }
+    await _rooms.leaveRoomClosingIfLast(
+        gamePath:  GamePaths.impostor,
+        roomId:    widget.roomId,
+        playerKey: widget.myKey,
+        isHost:    _isHost,
+        players:   _players);
     if (mounted) Navigator.pop(context);
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-        canPop: false,
-        onPopInvoked: (_) => _leave(),
+  Widget build(BuildContext context) => AZLeaveGuard(
+        onLeave: _leave,
         child: AZGradientScaffold(
           gradient: _kSpaceGradient,
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(children: [
-              Row(children: [
-                IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leave),
-                const Expanded(
-                  child: Text('HAİN KİM?',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(width: 48),
-              ]),
+              AZRoomHeader(title: 'HAİN KİM?', onClose: _leave),
               const SizedBox(height: 20),
               AZRoomCode(code: _code, accentColor: const Color(0xFF4FC3F7)),
               const SizedBox(height: 20),
@@ -705,22 +696,13 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
   }
 
   Future<void> _confirmLeave() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Oyundan çık?'),
-        content: const Text('Aktif bir oyunun ortasındasın. Çıkarsan takımın bir '
-            'oyuncu eksik kalır ve bu geri alınamaz.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
-          FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Çık')),
-        ],
-      ),
+    final ok = await confirmLeaveGame(
+      context,
+      title:   'Oyundan çık?',
+      message: 'Aktif bir oyunun ortasındasın. Çıkarsan takımın bir '
+          'oyuncu eksik kalır ve bu geri alınamaz.',
     );
-    if (ok == true) await _leaveGame();
+    if (ok) await _leaveGame();
   }
 
   @override
@@ -731,9 +713,8 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
         body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
       );
     }
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (_) => _confirmLeave(),
+    return AZLeaveGuard(
+      onLeave: _confirmLeave,
       child: Scaffold(
       backgroundColor: const Color(0xFF0F2027),
       body: SafeArea(

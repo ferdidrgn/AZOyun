@@ -283,26 +283,21 @@ class _RRoomState extends State<RacingRoomScreen> {
   }
 
   Future<void> _leave() async {
-    final pl = Map.from(_players)..remove(widget.myKey);
-    if (pl.isEmpty || _isHost) {
-      await _rooms.deleteRoom(gamePath: GamePaths.racing, roomId: widget.roomId);
-    } else {
-      await _rooms.removePlayer(gamePath: GamePaths.racing, roomId: widget.roomId, playerKey: widget.myKey);
-    }
+    await _rooms.leaveRoomClosingIfLast(
+        gamePath:  GamePaths.racing,
+        roomId:    widget.roomId,
+        playerKey: widget.myKey,
+        isHost:    _isHost,
+        players:   _players);
     if (mounted) Navigator.pop(context);
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(canPop: false, onPopInvoked: (_) => _leave(),
+  Widget build(BuildContext context) => AZLeaveGuard(onLeave: _leave,
     child: AZGradientScaffold(
       gradient: const LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)]),
       child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-        Row(children: [
-          IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leave),
-          const Expanded(child: Text('🏁 ARABA YARIŞI', textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-          const SizedBox(width: 48),
-        ]),
+        AZRoomHeader(title: '🏁 ARABA YARIŞI', onClose: _leave),
         const SizedBox(height: 20),
         AZRoomCode(code: _code, accentColor: const Color(0xFFE53935)),
         const SizedBox(height: 20),
@@ -616,21 +611,12 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
   }
 
   Future<void> _confirmLeave() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Yarıştan çık?'),
-        content: const Text('Aktif bir yarışın ortasındasın. Çıkarsan bu geri alınamaz.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
-          FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Çık')),
-        ],
-      ),
+    final ok = await confirmLeaveGame(
+      context,
+      title:   'Yarıştan çık?',
+      message: 'Aktif bir yarışın ortasındasın. Çıkarsan bu geri alınamaz.',
     );
-    if (ok == true) await _leaveGame();
+    if (ok) await _leaveGame();
   }
 
   void _showFinal() {
@@ -701,9 +687,8 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
   Widget build(BuildContext context) {
     final players = (_room['players'] as Map?) ?? {};
 
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (_) => _confirmLeave(),
+    return AZLeaveGuard(
+      onLeave: _confirmLeave,
       child: Scaffold(
       backgroundColor: const Color(0xFF2C2C2C),
       body: SafeArea(child: Column(children: [

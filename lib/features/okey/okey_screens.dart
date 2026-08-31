@@ -411,26 +411,20 @@ class _ORoomState extends State<OkeyRoomScreen> {
   }
 
   Future<void> _leave() async {
-    final pl = Map.from(_players)..remove(widget.myKey);
-    if (pl.isEmpty || _isHost) {
-      await _rooms.deleteRoom(gamePath: GamePaths.okey, roomId: widget.roomId);
-    } else {
-      await _rooms.removePlayer(gamePath: GamePaths.okey, roomId: widget.roomId, playerKey: widget.myKey);
-    }
+    await _rooms.leaveRoomClosingIfLast(
+        gamePath:  GamePaths.okey,
+        roomId:    widget.roomId,
+        playerKey: widget.myKey,
+        isHost:    _isHost,
+        players:   _players);
     if (mounted) Navigator.pop(context);
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(canPop: false, onPopInvoked: (_) => _leave(),
+  Widget build(BuildContext context) => AZLeaveGuard(onLeave: _leave,
     child: AZGradientScaffold(gradient: _grad,
       child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-        Row(children: [
-          IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leave),
-          Expanded(child: Text(_mode == '101' ? 'OKEY 101' : 'OKEY',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-          const SizedBox(width: 48),
-        ]),
+        AZRoomHeader(title: _mode == '101' ? 'OKEY 101' : 'OKEY', onClose: _leave),
         const SizedBox(height: 20),
         AZRoomCode(code: _code, accentColor: _accent),
         const SizedBox(height: 20),

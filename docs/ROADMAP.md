@@ -1345,3 +1345,86 @@ uygulandı.
   dokunan kısımlar var, bu yüzden tek seferde toplu bir mekanik
   değişiklik yerine oyun oyun, doğrulanarak ilerlenmesi gerekiyor —
   ayrı bir iş olarak planlı.
+
+### 8.28 "Oyundan çık" ailesinin konsolidasyonu (8.27'de planlanan sonraki adım)
+
+8.27'nin sonunda "tespit edildi, henüz konsolide edilmedi" diye bırakılan
+iş tamamlandı. Bu ortamda hâlâ derleyici yok; her dosya tek tek elle
+okundu, migrasyondan sonra dosya başına parantez/süslü parantez/köşeli
+parantez dengesi commit öncesi hâliyle karşılaştırılarak doğrulandı ve
+eski özel metotlara kalan referans olmadığı grep ile kontrol edildi.
+
+**Yeni ortak kod (`lib/core/`):**
+
+- [x] `room_service.dart` → **iki ayrı** "odadan çık" metodu. Kasıtlı
+      olarak tek metot değil: oyunların bugünkü davranışı gerçekten iki
+      farklı kural kullanıyor ve bu bir *saf refactor*, davranış
+      değişikliği değil.
+      - `leaveRoom({gamePath, roomId, playerKey, isHost})` — **host
+        odayı kapatır**: host ayrılırsa oda silinir, değilse sadece o
+        oyuncunun kaydı silinir. 6 çağrı noktası: Mini Golf / Serbest
+        Vuruş / Adam Asmaca oda ekranları + Şehir Bulmaca / Kelime
+        Bulmaca / Yalancılar Kahvesi lobileri.
+      - `leaveRoomClosingIfLast({..., isHost, players})` — **host ya da
+        geriye kimse kalmıyorsa oda kapanır** (eski satır içi hâli:
+        `if (pl.isEmpty || _isHost)`). 6 çağrı noktası: Araba Yarışı,
+        Dövüşçüler, Hain Kim?, Okey, Dama, Vampir Köylü lobileri.
+- [x] `az_widgets.dart` → `AZLeaveGuard({onLeave, child})`: 20 kez
+      tekrarlanan `PopScope(canPop: false, onPopInvoked: (_) => ...)`
+      sarmalayıcısı. Asıl kazanç ileriye dönük: `onPopInvoked` Flutter
+      tarafından `onPopInvokedWithResult` ile değiştirildiğinde 20 dosya
+      değil tek bir dosya güncellenecek. (Kod tabanında hiçbir yerde
+      `onPopInvokedWithResult` geçmiyor; bu yüzden API kuşağı belirsiz
+      kabul edilip mevcut çağrıların hepsiyle **birebir aynı**
+      `onPopInvoked` korundu, tahminle yükseltilmedi.)
+- [x] `az_widgets.dart` → `confirmLeaveGame(context, {title, message,
+      confirmColor})`: 8 aktif oyun ekranındaki `_confirmLeave()`
+      AlertDialog'u. Sekizinin de butonları ('Vazgeç' / kırmızı 'Çık')
+      birebir aynıydı, sadece başlık/gövde cümlesi değişiyordu.
+      `Future<bool>` döndürüyor — pencere dışına dokunup kapatmak
+      (`null`) eski `if (ok == true)` kontrolüyle aynı şekilde 'Vazgeç'
+      sayılıyor. Adam Asmaca'nın kendi `_kRed` sabiti (`#D32F2F`,
+      `Colors.red.shade700` ile aynı değer) `confirmColor` ile aynen
+      korundu.
+
+**Bilerek DEĞİŞTİRİLMEYENLER (bu bir eksik değil, karar):**
+
+- Her oyunun `_leaveGame()` metodunun Firebase kısmı ortak bir metoda
+  taşınmadı. Görünürde aynılar ama "son oyuncu değilsem" dalında
+  yapılan iş oyundan oyuna gerçekten farklı: Serbest Vuruş sırayı
+  ayrılmadan **önce** rakibe devrediyor, Mini Golf `_hostAdvance()`,
+  Vampir Köylü ve Hain Kim? `_checkWin()`, Araba Yarışı ve Kelime
+  Bulmaca "herkes bitirdi mi" kontrolünü çağırıyor, Şehir Bulmaca hiçbir
+  şey yapmıyor, Adam Asmaca (kesin 2 kişilik) odayı zaten koşulsuz
+  siliyor. Ortak kısım 3 satır; bunu tek metoda zorlamak yazma sırasını
+  değiştirme riski taşırdı, kazanç ise yok denecek kadar azdı.
+- Okey'in "bu el açılmıyor / açtım!" onay pencereleri
+  `confirmLeaveGame`'e taşınmadı — bunlar oyun kuralı diyalogları,
+  butonları ve anlamı farklı.
+
+**Aynı turda yapılan iki ek (saf görsel) sadeleştirme:**
+
+- [x] `az_widgets.dart` → `AZRoomHeader({title, onClose, titleSize,
+      closeColor})`: 12 oda/lobi ekranının en üstündeki `[X] BAŞLIK`
+      `Row`'u birebir aynıydı (solda kapat düğmesi, ortada `Expanded`
+      içinde ortalanmış başlık, sağda dengeleyici `SizedBox(width: 48)`).
+      Sadece iki gerçek fark parametreye çevrildi: Yalancılar Kahvesi'nin
+      17'lik başlığı (`titleSize`) ve Dövüşçüler'in `Colors.white54`
+      kapat ikonu (`closeColor`).
+- [x] `az_widgets.dart` → `AZNameChip({name, onTap})`: lobilerdeki
+      "👤 Adın ✎" rozeti. **12 kopyanın sadece 6'sı** taşındı (Adam
+      Asmaca, Mini Golf, Serbest Vuruş, Şehir Bulmaca, Kelime Bulmaca,
+      Yalancılar Kahvesi) — bu altısı birebir aynı. Diğer altısı (Okey,
+      Dama, Araba Yarışı, Dövüşçüler, Hain Kim?, Vampir Köylü) bilerek
+      olduğu gibi bırakıldı: oralarda dolgu/ikon/yazı ölçüleri farklı ya
+      da kalem ikonu hiç yok; hepsini 5 parametreli tek bir widget'a
+      zorlamak görsel değişiklik riski taşır, üstelik ortaya çıkan
+      soyutlama tekrarın kendisinden daha kötü olurdu.
+- Mystery/Dedektif ekranındaki 3 benzer başlık satırı `AZRoomHeader`'a
+  taşınmadı: onlar `Icons.arrow_back` ile geri gidiyor (odadan çıkmıyor),
+  yazı boyutları da 14/15/16 ile farklı.
+
+**Sonuç:** oyun dosyalarında 384 satır silindi, 165 satır eklendi;
+karşılığında `core/` içine 195 satır (büyük kısmı doküman yorumu) ortak
+kod girdi. Hiçbir oyunun kuralı, puanlaması, zamanlaması veya Firebase
+veri şekli değişmedi.

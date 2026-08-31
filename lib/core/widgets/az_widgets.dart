@@ -290,6 +290,43 @@ class AZJoinButton extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// ROOM HEADER — oda/lobi ekranlarının en üstündeki "[X]  BAŞLIK" satırı.
+// 12 lobi ekranında birebir aynı `Row`'du: solda kapat düğmesi, ortada
+// `Expanded` içinde ortalanmış başlık, sağda düğmeyi dengeleyen 48'lik boşluk.
+// ═══════════════════════════════════════════════════════════════════════════
+
+class AZRoomHeader extends StatelessWidget {
+  const AZRoomHeader({
+    super.key,
+    required this.title,
+    required this.onClose,
+    this.titleSize  = 18,
+    this.closeColor = Colors.white,
+  });
+
+  final String       title;
+  final VoidCallback onClose;
+
+  /// Yalnızca uzun başlıklar için küçültülür (Yalancılar Kahvesi: 17).
+  final double titleSize;
+
+  /// Yalnızca koyu temalı Dövüşçüler ekranı bunu `Colors.white54` yapıyor.
+  final Color closeColor;
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+    IconButton(icon: Icon(Icons.close, color: closeColor), onPressed: onClose),
+    Expanded(
+      child: Text(title,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              color: Colors.white, fontSize: titleSize, fontWeight: FontWeight.bold)),
+    ),
+    const SizedBox(width: 48),
+  ]);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // ROOM CODE
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -411,6 +448,42 @@ class _Badge extends StatelessWidget {
             fontSize: 10,
             fontWeight: FontWeight.bold,
             color: fg)),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NAME CHIP — lobi ekranlarında "👤 Adın ✎" rozeti; dokununca
+// [showNameDialog] açılır. Altı lobide (Adam Asmaca, Mini Golf, Serbest
+// Vuruş, Şehir Bulmaca, Kelime Bulmaca, Yalancılar Kahvesi) birebir aynıydı.
+//
+// NOT: Diğer altı lobide (Okey, Dama, Araba Yarışı, Dövüşçüler, Hain Kim?,
+// Vampir Köylü) bu rozet bilerek DEĞİŞTİRİLMEDİ — oralarda ölçüler farklı
+// (daha küçük dolgu/yazı) ya da kalem ikonu hiç yok. Hepsini tek bir
+// parametreli widget'a zorlamak görsel değişiklik riski taşırdı.
+// ═══════════════════════════════════════════════════════════════════════════
+
+class AZNameChip extends StatelessWidget {
+  const AZNameChip({super.key, required this.name, required this.onTap});
+
+  /// `null` ise 'Ad seç' yazar.
+  final String?      name;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: AZFrostCard(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.person_rounded, color: Colors.white, size: 20),
+        const SizedBox(width: 8),
+        Text(name ?? 'Ad seç',
+            style: const TextStyle(
+                color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(width: 6),
+        const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
+      ]),
+    ),
   );
 }
 
@@ -642,4 +715,71 @@ extension AZSnack on BuildContext {
   void snack(String message, {Duration duration = const Duration(milliseconds: 4000)}) {
     ScaffoldMessenger.of(this).showSnackBar(SnackBar(content: Text(message), duration: duration));
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ODADAN / OYUNDAN ÇIKIŞ — her online oyun ekranında ayrı ayrı yazılan geri
+// tuşu koruması ve "çıkmak istediğine emin misin?" penceresinin ortak hali.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Geri tuşunu (ve iOS kaydırma jestini) yakalayıp otomatik `pop` yerine
+/// oyunun kendi çıkış akışını çalıştıran sarmalayıcı.
+///
+/// Her online oyun/oda ekranı Scaffold'unu `PopScope(canPop: false,
+/// onPopInvoked: (_) => _leave())` ile sarıyordu — 20 kopya. Sarmalayıcının
+/// tek nüshaya inmesinin asıl faydası: `onPopInvoked` ileride Flutter
+/// tarafından `onPopInvokedWithResult` ile değiştirildiğinde 20 dosya değil
+/// sadece burası güncellenecek.
+///
+/// [onLeave] `Future<void> Function()` de olabilir (`void` Dart'ta üst tip);
+/// mevcut çağrı yerlerinin hepsi zaten `async` bir `_leave()` veriyordu ve
+/// dönüş değeri hiçbir zaman beklenmiyordu — davranış birebir aynı.
+class AZLeaveGuard extends StatelessWidget {
+  const AZLeaveGuard({super.key, required this.onLeave, required this.child});
+
+  final VoidCallback onLeave;
+  final Widget       child;
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    onPopInvoked: (_) => onLeave(),
+    child: child,
+  );
+}
+
+/// Aktif oyunun ortasında çıkışı onaylatan pencere.
+///
+/// 8 aktif oyun ekranındaki `_confirmLeave()` metotlarının AlertDialog'u
+/// birebir aynıydı; sadece başlık ve gövde cümlesi oyundan oyuna değişiyordu.
+/// Butonlar ('Vazgeç' / kırmızı 'Çık') bilerek parametre değil — sekiz ekranın
+/// hepsinde aynıydı.
+///
+/// Dönüş: kullanıcı 'Çık' dediyse `true`. Pencere dışına dokunup kapatmak
+/// (`null`) de 'Vazgeç' sayılır — eski çağrı yerlerindeki `if (ok == true)`
+/// kontrolüyle aynı sonuç.
+///
+/// [confirmColor] varsayılanı `Colors.red.shade700`; sadece kendi kırmızı
+/// sabiti olan ekranlar (Adam Asmaca) bunu geçiyor.
+Future<bool> confirmLeaveGame(
+  BuildContext context, {
+  required String title,
+  required String message,
+  Color?          confirmColor,
+}) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
+        FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: confirmColor ?? Colors.red.shade700),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Çık')),
+      ],
+    ),
+  );
+  return ok == true;
 }

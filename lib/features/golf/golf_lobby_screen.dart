@@ -144,21 +144,7 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen>
                 style: TextStyle(color: Colors.white70, fontSize: 13)),
             const SizedBox(height: 28),
 
-            GestureDetector(
-              onTap: _askName,
-              child: AZFrostCard(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.person_rounded, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(_playerName ?? 'Ad seç',
-                      style: const TextStyle(color: Colors.white,
-                          fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 6),
-                  const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
-                ]),
-              ),
-            ),
+            AZNameChip(name: _playerName, onTap: _askName),
             const SizedBox(height: 36),
 
             AZButton(

@@ -8,6 +8,7 @@ import '../../core/services/ad_service.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/theme/az_theme.dart';
+import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -583,21 +584,12 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
   }
 
   Future<void> _confirmLeave() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Maçtan çık?'),
-        content: const Text('Aktif bir maçın ortasındasın. Çıkarsan bu geri alınamaz.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
-          FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Çık')),
-        ],
-      ),
+    final ok = await confirmLeaveGame(
+      context,
+      title:   'Maçtan çık?',
+      message: 'Aktif bir maçın ortasındasın. Çıkarsan bu geri alınamaz.',
     );
-    if (ok == true) await _leaveGame();
+    if (ok) await _leaveGame();
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -610,9 +602,8 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
           body: Center(child: CircularProgressIndicator(color: Colors.white)));
     }
 
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (_) => _confirmLeave(),
+    return AZLeaveGuard(
+      onLeave: _confirmLeave,
       child: Scaffold(
       backgroundColor: const Color(0xFF2E7D32),
       body: SafeArea(child: Column(children: [
