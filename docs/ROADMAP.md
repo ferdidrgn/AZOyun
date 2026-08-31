@@ -1155,3 +1155,29 @@ Could not create task ':app:uploadCrashlyticsMappingFileRelease'.
 - **Doğrulama**: Bu sandbox'ta Android SDK/Gradle yok, gerçek bir
   `bundleRelease` çalıştırılamıyor — kullanıcının kendi makinesinde
   tekrar denemesi gerekiyor.
+
+### 8.22 `assembleDebug` derleme hatası: core library desugaring eksik
+
+Bir önceki düzeltmeden sonra kullanıcı bu sefer `assembleDebug` çalıştırdı,
+farklı bir hatayla düştü:
+
+```
+Dependency ':flutter_local_notifications' requires core library
+desugaring to be enabled for :app.
+```
+
+- **Kök neden**: `flutter_local_notifications` paketi, eski Android
+  sürümlerinde Java 8+ API'lerini (ör. `java.time`) kullanabilmek için
+  Gradle'ın "core library desugaring" özelliğinin açık olmasını
+  zorunlu kılıyor; `android/app/build.gradle.kts`'te bu hiç
+  ayarlanmamıştı.
+- [x] `compileOptions` bloğuna `isCoreLibraryDesugaringEnabled = true`
+      eklendi.
+- [x] `dependencies` bloğuna `coreLibraryDesugaring("com.android.tools:
+      desugar_jdk_libs:2.1.4")` eklendi (Google'ın resmi rehberinin
+      istediği bağımlılık).
+- **Doğrulama**: Yine bu sandbox'ta gerçek bir Gradle derlemesi
+  çalıştırılamıyor — kullanıcının kendi makinesinde tekrar denemesi
+  gerekiyor. İki hata da art arda ilk denemede çıktı; aynı derlemede
+  üçüncü bir bağımlılık/sürüm uyuşmazlığı çıkma ihtimaline karşı
+  kullanıcıya hatayı olduğu gibi yapıştırması söylenmeli.
