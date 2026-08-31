@@ -1,28 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'az_theme.dart';
+
 /// "Dashboard" tasarım dili — Profil/İstatistik ekranı gibi veri-yoğun,
 /// SaaS-tarzı yüzeyler için kullanılan token seti. Uygulamanın geri
 /// kalanındaki oyun ekranları [AZTheme]/[AZColors]'ı kullanmaya devam
 /// eder; bu dosya sadece Bento-Grid dashboard yüzeylerine özeldir ve
-/// bilerek sabit (kullanıcının seçtiği tema rengine göre değişmeyen)
-/// koyu bir Slate/Zinc paleti kullanır — Linear/Vercel referanslı bir
-/// "kurumsal analytics" hissi hedefler.
+/// bilerek sabit (kullanıcının seçtiği tema rengine göre değişmeyen) koyu
+/// bir palet kullanır. Palet, uygulama genelindeki "soft UI" yenilemesiyle
+/// (bkz. `az_theme.dart`) aynı lacivert/sıcak-altın "token sheet" ailesine
+/// taşındı — eskiden saf siyah/Zinc + parlak Tailwind neon (indigo/emerald/
+/// rose) renkleri kullanıyordu, artık aynı mat/pastel dil burada da geçerli.
 abstract class DashTokens {
   // ── Yüzeyler ────────────────────────────────────────────────────────────
-  static const canvas    = Color(0xFF09090B); // en arka plan
-  static const surface   = Color(0xFF18181B); // kart yüzeyi
-  static const surfaceHi = Color(0xFF1F1F23); // hafif yükseltilmiş kart
-  static const highlight = Color(0xFF27272A); // hover/aktif katman
+  static const canvas    = Color(0xFF161C29); // en arka plan (AZColors.bgDark ile aynı aile)
+  static const surface   = Color(0xFF212A3B); // kart yüzeyi
+  static const surfaceHi = Color(0xFF2A3447); // hafif yükseltilmiş kart
+  static const highlight = Color(0xFF323D53); // hover/aktif katman
 
   // ── Kenarlıklar ─────────────────────────────────────────────────────────
-  static const border       = Color(0x14FFFFFF); // ~%8 beyaz
-  static const borderStrong = Color(0x24FFFFFF); // ~%14 beyaz
+  static const border       = Color(0x1EFFFFFF); // ~%12 beyaz
+  static const borderStrong = Color(0x30FFFFFF); // ~%19 beyaz
 
   // ── Metin ───────────────────────────────────────────────────────────────
-  static const textPrimary   = Color(0xFFFAFAFA);
-  static const textSecondary = Color(0xFFA1A1AA);
-  static const textTertiary  = Color(0xFF71717A);
+  static const textPrimary   = Color(0xFFEDE7DD);
+  static const textSecondary = Color(0xFFA8AEBB);
+  static const textTertiary  = Color(0xFF7D8494);
 
   // ── Aksan renkleri ──────────────────────────────────────────────────────
   // `indigo`/`indigoSoft` sabitleri SADECE context'in olmadığı yerler için
@@ -31,13 +35,14 @@ abstract class DashTokens {
   // göre boyanıyor — önceden bu dashboard sabit indigo kullanıyordu, bu da
   // kullanıcı Ayarlar'dan başka bir renk seçse bile Profil ekranının hep
   // aynı mor/indigo kalmasına yol açıyordu ("Home/Settings'teki renkle
-  // uyuşmuyor" şikayetinin kaynağı).
-  static const indigo      = Color(0xFF6366F1); // Elektrik İndigo — varsayılan/yedek
-  static const indigoSoft  = Color(0xFF818CF8);
-  static const emerald     = Color(0xFF10B981); // Zümrüt Nane — başarı/galibiyet (sabit, semantik)
-  static const emeraldSoft = Color(0xFF34D399);
-  static const amber       = Color(0xFFF59E0B); // uyarı/coin (sabit, semantik)
-  static const rose        = Color(0xFFF43F5E); // mağlubiyet/negatif (sabit, semantik)
+  // uyuşmuyor" şikayetinin kaynağı). Yedek değer artık uygulamanın yeni
+  // koyu tema vurgusuyla (sıcak altın) aynı.
+  static const indigo      = AZColors.accentGold; // varsayılan/yedek
+  static const indigoSoft  = AZColors.accentGoldSoft;
+  static const emerald     = AZColors.green; // başarı/galibiyet (sabit, semantik)
+  static const emeraldSoft = Color(0xFFA8C3A0);
+  static const amber       = AZColors.orange; // uyarı/coin (sabit, semantik)
+  static const rose        = AZColors.red; // mağlubiyet/negatif (sabit, semantik)
 
   /// Kullanıcının o an aktif temasının birincil rengi — Ayarlar'da "Özel
   /// Renk" ya da "Telefonun Teması" seçiliyse gerçekten o renk, aksi halde

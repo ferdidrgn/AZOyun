@@ -1529,3 +1529,81 @@ kontrol edildi.
   sayıldı (`grep -oE` ile isim başına geçiş sayısı) — bir kez bile
   geçmeyen (yani tanımlanıp hiç kullanılmayan) tek bir isim bile
   bulunamadı; bu klasörde ölü kod yok.
+
+### 8.30 Uygulama geneli "soft UI" görsel dili — kullanıcının paylaştığı referans görsellere göre
+
+Kullanıcı 3 referans görsel paylaştı (2'si açık, pastel/mat "clay UI"
+moodboard'u; 1'i koyu lacivert + sıcak altın vurgulu, buton/toggle/input/
+dialog durumlarını gösteren bir "component/token sheet") ve "tüm proje
+UI'larını bunlarla aynı yap, tüm renkleri kaldır, her sayfayı yap" dedi.
+
+**Yaklaşım**: Bu ölçekte bir görsel değişikliği (30+ oyun ekranı dahil
+"her şey") 100'den fazla dosyayı tek tek elle boyayarak yapmak yerine,
+uygulamanın ZATEN merkezi olan tema/token mimarisi (`AZTheme`/`AZColors`,
+`DashTokens`, paylaşılan `az_widgets.dart` bileşenleri — bunların çoğu bu
+oturumun önceki turlarında tam olarak bu amaçla merkezileştirilmişti)
+üzerinden yapıldı: **isimler korundu, DEĞERLER değişti**. Böylece
+`AZColors.orange`/`AZColors.gradGreen` gibi 100'den fazla çağrı yerini
+tek tek değiştirmeden, üç dosyayı güncelleyerek görsel dilin tamamı
+otomatik olarak her ekrana yayıldı.
+
+**Yeni palet** (görsellerden çıkarılan): açık temada sıcak krem/toprak
+tonları (`#F6F1E9` zemin, mat terracotta/adaçayı/toz mavi vurgular), koyu
+temada lacivert "token sheet" zemini (`#161C29`/`#212A3B`) + sıcak altın
+vurgu (`#D9A25C`, referans görseldeki buton/focus rengiyle aynı aile).
+Eski parlak/doygun mor-kırmızı-turuncu-camgöbeği paleti tamamen kaldırıldı.
+
+- [x] `lib/core/theme/az_theme.dart`: `AZColors`'ın TÜM renk ve gradyan
+      sabitleri (purple, red, green, orange, blue + gradXxx) yeni mat
+      palete göre yeniden tanımlandı; yeni `AZShadow` (soft/medium/deep 3
+      kademeli, referans görseldeki "Shadow Levels" bölümüne karşılık
+      gelen) ve genişletilmiş koyu tema tonları (`bgDark`, `surfaceDark`,
+      `surfaceDarkHi`, `accentGold`) eklendi. `AZTheme._build()`
+      önemli ölçüde genişletildi: artık `cardTheme`, `elevatedButtonTheme`,
+      `filledButtonTheme`, `outlinedButtonTheme`, `textButtonTheme`,
+      `inputDecorationTheme` (odaklanma halkası vurgu renginde),
+      `dialogTheme`, `snackBarTheme`, `switchTheme`, `sliderTheme`,
+      `progressIndicatorTheme`, `listTileTheme`, `dividerTheme` — referans
+      görseldeki component sheet'in (Buttons: Default/Hover/Pressed/
+      Disabled/Loading, Toggle, Input, Slider, Modal, Toast, Table Row)
+      hemen hepsi artık `ThemeData` üzerinden merkezi olarak stilleniyor.
+      Bu, Flutter'ın standart `ElevatedButton`/`TextField`/`AlertDialog`/
+      `SnackBar`/`Switch` kullanan HER ekranı (confirmLeaveGame dialog'u,
+      context.snack() ile açılan 98 SnackBar çağrısı, Ayarlar'daki
+      switch'ler dahil) otomatik olarak yeni görsele kavuşturuyor.
+      `AZRadius` değerleri de referans görsellerin daha yuvarlak
+      köşelerine göre büyütüldü (lg 16→18, xl 20→24, xxl 28→32).
+- [x] `lib/core/theme/dashboard_tokens.dart`: Profil ekranının ayrı, sabit
+      koyu Slate/Zinc + parlak Tailwind-neon (indigo/emerald/rose) paleti,
+      aynı lacivert/altın aileye taşındı (`canvas`/`surface`/`surfaceHi`
+      artık `AZColors.bgDark` ailesiyle aynı; `indigo`/`emerald`/`amber`/
+      `rose` yedek değerleri artık `AZColors`'tan türetiliyor).
+- [x] `lib/core/widgets/az_widgets.dart`: `AZCard`'ın sabit siyah gölgesi
+      yeni `AZShadow.soft()` ile değiştirildi; `AZPlayerTile`'daki HOST
+      rozetinin parlak sarı/kahve rengi (`Colors.yellow`/`Colors.brown`)
+      ve `confirmLeaveGame`'in sabit `Colors.red.shade700`'ü yeni mat
+      palete taşındı.
+- [x] `lib/features/home/home_screen.dart`: `AZColors.gradXxx` sabitlerini
+      KULLANMAYIP kendi ham `LinearGradient`'ini tanımlayan 4 oyun kartı
+      (Araba Yarışı, Dama, Dövüşçüler, Hain Kim?) bulundu ve aynı mat
+      aileye taşındı — bunlar merkezi token sisteminin dışında kaldığı
+      için otomatik güncellenmemişlerdi.
+- [x] `lib/features/mystery/mystery_case_screen.dart`: Dedektif
+      kampanyasının kendi "noir" gradyanı ve kırmızı/altın vurguları da
+      aynı mat aileye yumuşatıldı (altın vurgu zaten yeni `accentGold`'a
+      çok yakındı).
+- **Kapsam/devam eden iş**: Splash/Onboarding ekranları zaten
+  `AZTheme.dynamicGradient(context)` üzerinden çalıştığı için (önceki bir
+  turda düzeltilmiş bug), bu merkezi değişiklikle otomatik olarak yeni
+  paleti aldılar — ek dosya değişikliği gerekmedi. Ayarlar ve Profil
+  ekranları da tamamen tema/`DashTokens` üzerinden çalıştığından aynı
+  şekilde otomatik güncellendi. **Henüz yapılmayan**: (1) Splash'ın "daha
+  anlamlı" olması için içerik/animasyon zenginleştirmesi (şu an sadece
+  renk güncellendi, yapı aynı) — bu bir tasarım/içerik işi, renk
+  değişikliğinden ayrı; (2) 30+ oyunun kendi OYUN ALANI çizimleri (Okey
+  taşları, Dama tahtası, Araba Yarışı pisti gibi bizzat oyunun kendi
+  sanatı) — bunlar bilinçli olarak dokunulmadı, çünkü bunlar jenerik "UI"
+  değil oyuna özgü görsel kimlik; kullanıcı ayrıca istemedikçe
+  değiştirilmedi. Kalan 5 dosyada (`grep` ile tespit edildi) hâlâ
+  `Colors.deepPurple`/`Colors.indigo`/`Colors.cyan`/`Colors.pink` gibi
+  eski palet dışı sabit renkler var — bir sonraki turda taranacak.

@@ -46,12 +46,9 @@ class AZCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: padding,
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AZColors.surface,
       borderRadius: BorderRadius.circular(AZRadius.xl),
-      boxShadow: const [
-        BoxShadow(
-            color: Color(0x18000000), blurRadius: 16, offset: Offset(0, 6))
-      ],
+      boxShadow: AZShadow.soft(AZShadow.lightTint),
     ),
     child: child,
   );
@@ -418,8 +415,8 @@ class AZPlayerTile extends StatelessWidget {
       if (isHost)
         _Badge(
             label: 'HOST',
-            bg: Colors.yellow,
-            fg: Colors.brown),
+            bg: AZColors.accentGoldSoft,
+            fg: AZColors.textPrimary),
       if (isMe)
         _Badge(
             label: 'SEN',
@@ -759,7 +756,7 @@ class AZLeaveGuard extends StatelessWidget {
 /// (`null`) de 'Vazgeç' sayılır — eski çağrı yerlerindeki `if (ok == true)`
 /// kontrolüyle aynı sonuç.
 ///
-/// [confirmColor] varsayılanı `Colors.red.shade700`; sadece kendi kırmızı
+/// [confirmColor] varsayılanı [AZColors.redDk]; sadece kendi kırmızı
 /// sabiti olan ekranlar (Adam Asmaca) bunu geçiyor.
 Future<bool> confirmLeaveGame(
   BuildContext context, {
@@ -775,7 +772,7 @@ Future<bool> confirmLeaveGame(
       actions: [
         TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
         FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: confirmColor ?? Colors.red.shade700),
+            style: FilledButton.styleFrom(backgroundColor: confirmColor ?? AZColors.redDk),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Çık')),
       ],
