@@ -1203,3 +1203,36 @@ found in one of the enclosing lambdas" uyarısı gösterdi.
 - **Doğrulama**: Import yolu ve `configure<T>` söz dizimi, Firebase'in
   resmi "Get readable crash reports" dokümantasyonundaki örnekle birebir
   doğrulandı (websearch ile).
+
+### 8.24 KRİTİK: Uygulama splash ekranında sonsuza kadar takılı kalıyordu
+
+Kullanıcı: "splash de kaldı app anasayfaya falan girmiyor... app takılı
+kaldı." İncelemede kök neden bulundu.
+
+- **Kök neden**: `main()` içinde `await AdService.instance.initialize()`
+  (→ `MobileAds.instance.initialize()`) **`runApp()`'tan ÖNCE**
+  çağrılıyordu. Google Mobile Ads SDK'sının native `initialize()`
+  çağrısı; emülatörde, zayıf/yok ağ bağlantısında ya da Google Play
+  Services eksik/güncel değilken **süresiz asılı kalabilen**, bilinen bir
+  davranış. Bu Future hiç tamamlanmayınca `runApp()` de hiç
+  çağrılmıyordu — yani kullanıcı Flutter'ın kendi "AZ OYUN" splash
+  ekranını bile görmüyor, sadece native (Android) launch ekranında
+  sonsuza kadar kalıyordu; bu da "splash'ta takılı kaldı" olarak
+  görünüyordu.
+- [x] `AdService.instance.initialize()` (+ ardından
+      `applyPremiumStateIfActive()`) `main.dart`'ta `runApp()`'tan SONRAYA,
+      `unawaited(...)` ile taşındı — tıpkı zaten aynı şekilde ele alınan
+      `PlayGamesService.signIn()`/`NotificationService.initialize()`/
+      `DeepLinkService.initialize()` gibi. Artık reklam SDK'sının
+      başlaması ne kadar sürerse sürsün (hatta hiç bitmese bile) uygulama
+      arayüzü anında açılıyor.
+- [x] `AdService.initialize()`'ın kendi içine de savunma amaçlı bir
+      `.timeout(Duration(seconds: 10))` eklendi — böylece ileride bu
+      metod başka bir yerden `await` edilirse bile artık hiçbir çağrı
+      noktası süresiz asılı kalamaz; zaman aşımında `catch` bloğu
+      yakalayıp `debugPrint` ile loglayıp sessizce devam ediyor (reklamlar
+      o oturumda kapalı kalır, uygulama çökmez).
+- **Doğrulama**: Bu sandbox'ta gerçek bir cihaz/emülatör yok, gerçek
+  koşullarda tekrar test edilmesi gerekiyor — ama kod, artık ne
+  `Firebase.initializeApp()` ne de `AdService` başka bir yerde
+  `runApp()`'ı bloklayan tek `await` olarak kalmıyor.
