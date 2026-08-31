@@ -516,6 +516,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false, _processing = false;
+  bool _roomGone = false;
 
   // Cooldown
   bool _atkCd = false, _specCd = false;
@@ -579,7 +580,17 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
   }
 
   void _onFB(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (rakip ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve diğer oyuncunun ekranı sonsuza dek
+      // donuk kalırdı. Artık herkesi ana menüye döndürüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     // ÖNEMLİ: prevMyHp, _room DEĞİŞTİRİLMEDEN ÖNCE okunmalı — aksi halde
     // "önceki" ve "yeni" değer aynı olur ve vuruş-yedim sarsıntısı hiç

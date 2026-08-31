@@ -477,6 +477,7 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown = false, _processing = false;
+  bool _roomGone = false;
   int? _selIdx;
   bool _wonDialog = false;
 
@@ -499,7 +500,17 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
   @override void dispose() { _winCtrl.dispose(); _sub?.cancel(); super.dispose(); }
 
   void _onFB(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (host ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve diğer oyuncuların ekranı sonsuza dek
+      // donuk kalırdı. Artık herkesi ana menüye döndürüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     setState(() {
       _room = d;
