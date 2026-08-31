@@ -112,6 +112,61 @@ class RoomService {
     required String roomId,
   }) => _ref(gamePath, roomId).remove();
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // ODADAN ÇIKIŞ — oda/lobi ekranlarının "çık" akışındaki Firebase kısmı.
+  //
+  // Bu blok, 12 oyun ekranında ayrı ayrı elle yazılmış olan aynı iki-dallı
+  // kararın ortak hali. Kasıtlı olarak TEK bir metot değil, İKİ metot:
+  // oyunların bugünkü davranışı gerçekten iki farklı kural kullanıyor ve
+  // bu refactor hiçbir oyunun davranışını değiştirmiyor.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Kural 1 — **host odayı kapatır**.
+  ///
+  /// Host ayrılırsa oda tamamen silinir; host değilse sadece o oyuncunun
+  /// koltuğu boşaltılır ve oda ayakta kalır.
+  ///
+  /// Kullananlar: Mini Golf, Serbest Vuruş, Adam Asmaca oda ekranları ve
+  /// Şehir Bulmaca / Kelime Bulmaca / Yalancılar Kahvesi lobileri.
+  Future<void> leaveRoom({
+    required String gamePath,
+    required String roomId,
+    required String playerKey,
+    required bool isHost,
+  }) async {
+    if (isHost) {
+      await deleteRoom(gamePath: gamePath, roomId: roomId);
+    } else {
+      await removePlayer(
+          gamePath: gamePath, roomId: roomId, playerKey: playerKey);
+    }
+  }
+
+  /// Kural 2 — **host ya da geriye kimse kalmıyorsa oda kapanır**.
+  ///
+  /// [leaveRoom]'dan tek farkı: host olmayan bir oyuncu ayrılırken odada
+  /// başka hiç kimse kalmıyorsa oda boş bırakılmaz, silinir. [players]
+  /// çağıranın elindeki güncel `players` haritasıdır (ayrılan oyuncu dahil);
+  /// "son oyuncu muyum" kararı buradan türetilir.
+  ///
+  /// Kullananlar: Araba Yarışı, Dövüşçüler, Hain Kim?, Okey, Dama ve
+  /// Vampir Köylü lobileri.
+  Future<void> leaveRoomClosingIfLast({
+    required String gamePath,
+    required String roomId,
+    required String playerKey,
+    required bool isHost,
+    required Map<dynamic, dynamic> players,
+  }) {
+    final remaining = Map<dynamic, dynamic>.from(players)..remove(playerKey);
+    return leaveRoom(
+      gamePath:  gamePath,
+      roomId:    roomId,
+      playerKey: playerKey,
+      isHost:    remaining.isEmpty || isHost,
+    );
+  }
+
   /// Bağlantı **kontrolsüz** koparsa (uygulama çöker, ağ kesilir, telefon
   /// kapanır) Firebase sunucusunun kendisinin yapacağı temizliği kaydeder.
   /// Düzgün "odadan çık" akışı zaten her oyunda ayrı ayrı çalışıyor — bu,

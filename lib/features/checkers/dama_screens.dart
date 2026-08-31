@@ -348,26 +348,21 @@ class _DamaRoomState extends State<DamaRoomScreen> {
   }
 
   Future<void> _leave() async {
-    final pl = Map.from(_players)..remove(widget.myKey);
-    if (pl.isEmpty || _isHost) {
-      await _rooms.deleteRoom(gamePath: GamePaths.dama, roomId: widget.roomId);
-    } else {
-      await _rooms.removePlayer(gamePath: GamePaths.dama, roomId: widget.roomId, playerKey: widget.myKey);
-    }
+    await _rooms.leaveRoomClosingIfLast(
+        gamePath:  GamePaths.dama,
+        roomId:    widget.roomId,
+        playerKey: widget.myKey,
+        isHost:    _isHost,
+        players:   _players);
     if (mounted) Navigator.pop(context);
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(canPop: false, onPopInvoked: (_) => _leave(),
+  Widget build(BuildContext context) => AZLeaveGuard(onLeave: _leave,
     child: AZGradientScaffold(
       gradient: const LinearGradient(colors: [Color(0xFF4E342E), Color(0xFF1A0A00)]),
       child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-        Row(children: [
-          IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leave),
-          const Expanded(child: Text('DAMA', textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-          const SizedBox(width: 48),
-        ]),
+        AZRoomHeader(title: 'DAMA', onClose: _leave),
         const SizedBox(height: 20),
         AZRoomCode(code: _code, accentColor: const Color(0xFF8D6E63)),
         const SizedBox(height: 20),

@@ -140,19 +140,7 @@ class _CityLobbyScreenState extends State<CityLobbyScreen> {
               const Text('2-4 Oyuncu · 5 Tur · İpuçlarla şehri bul',
                   style: TextStyle(color: Colors.white70, fontSize: 13)),
               const SizedBox(height: 28),
-              GestureDetector(onTap: _askName,
-                child: AZFrostCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.person_rounded, color: Colors.white, size: 20),
-                    const SizedBox(width: 8),
-                    Text(_playerName ?? 'Ad seç',
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 6),
-                    const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
-                  ]),
-                ),
-              ),
+              AZNameChip(name: _playerName, onTap: _askName),
               const SizedBox(height: 36),
               AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
                   onPressed: _createRoom, color: _kPink, loading: _loading, width: 300),
@@ -249,23 +237,21 @@ class _CityRoomScreenState extends State<CityRoomScreen> {
   }
 
   Future<void> _leave() async {
-    if (_isHost) await _rooms.deleteRoom(gamePath: GamePaths.cityPuzzle, roomId: widget.roomId);
-    else await _rooms.removePlayer(gamePath: GamePaths.cityPuzzle, roomId: widget.roomId, playerKey: widget.myKey);
+    await _rooms.leaveRoom(
+        gamePath:  GamePaths.cityPuzzle,
+        roomId:    widget.roomId,
+        playerKey: widget.myKey,
+        isHost:    _isHost);
     if (mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(canPop: false, onPopInvoked: (_) => _leave(),
+    return AZLeaveGuard(onLeave: _leave,
       child: AZGradientScaffold(
         gradient: AZColors.gradPink,
         child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-          Row(children: [
-            IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leave),
-            const Expanded(child: Text('ŞEHİR BULMACA', textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-            const SizedBox(width: 48),
-          ]),
+          AZRoomHeader(title: 'ŞEHİR BULMACA', onClose: _leave),
           const SizedBox(height: 20),
           AZRoomCode(code: _code, accentColor: _kPink),
           const SizedBox(height: 20),
@@ -485,21 +471,12 @@ class _CityGameScreenState extends State<CityGameScreen> {
   }
 
   Future<void> _confirmLeave() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Oyundan çık?'),
-        content: const Text('Aktif bir oyunun ortasındasın. Çıkarsan bu geri alınamaz.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
-          FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Çık')),
-        ],
-      ),
+    final ok = await confirmLeaveGame(
+      context,
+      title:   'Oyundan çık?',
+      message: 'Aktif bir oyunun ortasındasın. Çıkarsan bu geri alınamaz.',
     );
-    if (ok == true) await _leaveGame();
+    if (ok) await _leaveGame();
   }
 
   // Rewarded buton gösterilsin mi?
@@ -513,9 +490,8 @@ class _CityGameScreenState extends State<CityGameScreen> {
     final hints     = _hints;
     final shownHint = _hintIndex < hints.length ? hints[_hintIndex] : '';
 
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (_) => _confirmLeave(),
+    return AZLeaveGuard(
+      onLeave: _confirmLeave,
       child: Scaffold(
       backgroundColor: const Color(0xFFFCE4EC),
       body: SafeArea(child: Column(children: [

@@ -74,20 +74,18 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
   }
 
   Future<void> _leaveRoom() async {
-    if (_isHost) {
-      await _rooms.deleteRoom(gamePath: GamePaths.hangman, roomId: widget.roomId);
-    } else {
-      await _rooms.removePlayer(
-          gamePath: GamePaths.hangman, roomId: widget.roomId, playerKey: widget.myKey);
-    }
+    await _rooms.leaveRoom(
+        gamePath:  GamePaths.hangman,
+        roomId:    widget.roomId,
+        playerKey: widget.myKey,
+        isHost:    _isHost);
     if (mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (_) => _leaveRoom(),
+    return AZLeaveGuard(
+      onLeave: _leaveRoom,
       child: AZGradientScaffold(
         gradient: const LinearGradient(
           begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -96,13 +94,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(children: [
-            Row(children: [
-              IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leaveRoom),
-              const Expanded(child: Text('ADAM ASMACA',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-              const SizedBox(width: 48),
-            ]),
+            AZRoomHeader(title: 'ADAM ASMACA', onClose: _leaveRoom),
             const SizedBox(height: 20),
 
             AZRoomCode(code: _code, accentColor: _kRed),

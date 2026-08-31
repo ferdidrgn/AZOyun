@@ -111,18 +111,7 @@ class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
             const Text('3-6 Oyuncu · 3 Tur · Yalanı yakala!',
                 style: TextStyle(color: Colors.white70, fontSize: 13)),
             const SizedBox(height: 28),
-            GestureDetector(onTap: _askName, child: AZFrostCard(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.person_rounded, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Text(_playerName ?? 'Ad seç',
-                    style: const TextStyle(color: Colors.white,
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(width: 6),
-                const Icon(Icons.edit_rounded, color: Colors.white60, size: 14),
-              ]),
-            )),
+            AZNameChip(name: _playerName, onTap: _askName),
             const SizedBox(height: 36),
             AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
                 onPressed: _createRoom, color: _kRose, loading: _loading, width: 300),
@@ -216,22 +205,20 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
   }
 
   Future<void> _leave() async {
-    if (_isHost) await _rooms.deleteRoom(gamePath: GamePaths.liarCafe, roomId: widget.roomId);
-    else await _rooms.removePlayer(gamePath: GamePaths.liarCafe, roomId: widget.roomId, playerKey: widget.myKey);
+    await _rooms.leaveRoom(
+        gamePath:  GamePaths.liarCafe,
+        roomId:    widget.roomId,
+        playerKey: widget.myKey,
+        isHost:    _isHost);
     if (mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(canPop: false, onPopInvoked: (_) => _leave(),
+    return AZLeaveGuard(onLeave: _leave,
       child: AZGradientScaffold(gradient: AZColors.gradRose,
         child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-          Row(children: [
-            IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: _leave),
-            const Expanded(child: Text('YALANCILAR KAHVESİ', textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold))),
-            const SizedBox(width: 48),
-          ]),
+          AZRoomHeader(title: 'YALANCILAR KAHVESİ', onClose: _leave, titleSize: 17),
           const SizedBox(height: 20),
           AZRoomCode(code: _code, accentColor: _kRose),
           const SizedBox(height: 20),

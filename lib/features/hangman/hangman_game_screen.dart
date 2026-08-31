@@ -236,21 +236,15 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   }
 
   Future<void> _confirmLeave() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Oyundan çık?'),
-        content: const Text('Aktif bir oyunun ortasındasın. Çıkarsan bu geri alınamaz.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Vazgeç')),
-          FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: _kRed),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Çık')),
-        ],
-      ),
+    final ok = await confirmLeaveGame(
+      context,
+      title:        'Oyundan çık?',
+      message:      'Aktif bir oyunun ortasındasın. Çıkarsan bu geri alınamaz.',
+      // Bu ekranın kendi kırmızı sabiti; değeri zaten `Colors.red.shade700`
+      // ile aynı (#D32F2F) ama sabit burada bilerek korunuyor.
+      confirmColor: _kRed,
     );
-    if (ok == true) await _leaveGame();
+    if (ok) await _leaveGame();
   }
 
   // ── Dialogs ──────────────────────────────────────────────────────────────
@@ -351,9 +345,8 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
           body: Center(child: CircularProgressIndicator(color: _kRed)));
     }
 
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (_) => _confirmLeave(),
+    return AZLeaveGuard(
+      onLeave: _confirmLeave,
       child: Scaffold(
       backgroundColor: _kBg,
       body: SafeArea(child: Column(children: [

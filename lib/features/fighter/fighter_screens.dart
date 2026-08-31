@@ -382,31 +382,27 @@ class _FRoomState extends State<FighterRoomScreen> {
   }
 
   Future<void> _leave() async {
-    final pl = Map.from(_players)..remove(widget.myKey);
-    if (pl.isEmpty || _isHost) {
-      await _rooms.deleteRoom(gamePath: GamePaths.fighter, roomId: widget.roomId);
-    } else {
-      await _rooms.removePlayer(gamePath: GamePaths.fighter, roomId: widget.roomId, playerKey: widget.myKey);
-    }
+    await _rooms.leaveRoomClosingIfLast(
+        gamePath:  GamePaths.fighter,
+        roomId:    widget.roomId,
+        playerKey: widget.myKey,
+        isHost:    _isHost,
+        players:   _players);
     if (mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final p1d = _players['p1']; final p2d = _players['p2'];
-    return PopScope(canPop: false, onPopInvoked: (_) => _leave(),
+    return AZLeaveGuard(onLeave: _leave,
       child: Scaffold(
         body: Container(
           decoration: const BoxDecoration(gradient: LinearGradient(
               colors: [Color(0xFF1A0000), Color(0xFF0A0010)],
               begin: Alignment.topLeft, end: Alignment.bottomRight)),
           child: SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
-            Row(children: [
-              IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: _leave),
-              const Expanded(child: Text('⚔️ DÖVÜŞÇÜLER', textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-              const SizedBox(width: 48),
-            ]),
+            AZRoomHeader(
+                title: '⚔️ DÖVÜŞÇÜLER', onClose: _leave, closeColor: Colors.white54),
             const SizedBox(height: 16),
             AZRoomCode(code: _code, accentColor: const Color(0xFFEF5350)),
             const SizedBox(height: 24),
