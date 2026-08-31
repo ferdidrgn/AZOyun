@@ -90,21 +90,21 @@ class _CityLobbyScreenState extends State<CityLobbyScreen> {
       );
       if (!mounted) return;
       _nav(CityRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!));
-    } catch (e) { _snack('Hata: $e'); }
+    } catch (e) { context.snack('Hata: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _joinRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.cityPuzzle, code: code);
-      if (r == null)                     { _snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      if (r == null)                     { context.snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { context.snack('Oyun başlamış'); return; }
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 4)           { _snack('Oda dolu'); return; }
+      if (players.length >= 4)           { context.snack('Oda dolu'); return; }
       final myKey = 'p${players.length + 1}';
       await _rooms.updateRoom(
         gamePath: GamePaths.cityPuzzle, roomId: r.id,
@@ -112,13 +112,11 @@ class _CityLobbyScreenState extends State<CityLobbyScreen> {
       );
       if (!mounted) return;
       _nav(CityRoomScreen(roomId: r.id, myKey: myKey, myName: _playerName!));
-    } catch (e) { _snack('Katılınamadı: $e'); }
+    } catch (e) { context.snack('Katılınamadı: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
 
   void _nav(Widget s) => Navigator.push(context, MaterialPageRoute(builder: (_) => s));
-  void _snack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {
@@ -239,7 +237,7 @@ class _CityRoomScreenState extends State<CityRoomScreen> {
   bool   get _canStart => _players.length >= 2;
 
   Future<void> _start() async {
-    if (!_canStart) { _snack('En az 2 oyuncu'); return; }
+    if (!_canStart) { context.snack('En az 2 oyuncu'); return; }
     final cities = _cityData.keys.toList()..shuffle(Random.secure());
     await _rooms.updateRoom(
       gamePath: GamePaths.cityPuzzle, roomId: widget.roomId,
@@ -255,9 +253,6 @@ class _CityRoomScreenState extends State<CityRoomScreen> {
     else await _rooms.removePlayer(gamePath: GamePaths.cityPuzzle, roomId: widget.roomId, playerKey: widget.myKey);
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {
@@ -391,10 +386,10 @@ class _CityGameScreenState extends State<CityGameScreen> {
         setState(() => _usedRewardedHint = true);
         if (_hintIndex < 2) {
           await _ref.update({'hintIndex': _hintIndex + 1});
-          _snack('🎁 Ekstra ipucu kazandın!');
+          context.snack('🎁 Ekstra ipucu kazandın!');
         }
       },
-      onNotReady: () => _snack('Reklam henüz hazır değil, biraz bekleyin.'),
+      onNotReady: () => context.snack('Reklam henüz hazır değil, biraz bekleyin.'),
     );
   }
 
@@ -408,12 +403,12 @@ class _CityGameScreenState extends State<CityGameScreen> {
       final pts = _usedRewardedHint ? 3 : (_hintIndex == 0 ? 10 : _hintIndex == 1 ? 7 : 4);
       final prev = (_players[widget.myKey]?['score'] as int?) ?? 0;
       await _ref.update({'players/${widget.myKey}/score': prev + pts});
-      _snack('✅ Doğru! +$pts puan');
+      context.snack('✅ Doğru! +$pts puan');
       _answerCtrl.clear();
       await Future.delayed(const Duration(seconds: 1));
       _nextRound();
     } else {
-      _snack('❌ Yanlış, tekrar dene!');
+      context.snack('❌ Yanlış, tekrar dene!');
       _answerCtrl.clear();
     }
   }
@@ -476,9 +471,6 @@ class _CityGameScreenState extends State<CityGameScreen> {
       ),
     );
   }
-
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
 
   /// Aktif oyunda önceden HİÇBİR çıkış yolu yoktu.
   Future<void> _leaveGame() async {
@@ -601,7 +593,7 @@ class _CityGameScreenState extends State<CityGameScreen> {
                   color: _kPink,
                   onRewarded: (_) async {
                     setState(() => _usedRewardedHint = true);
-                    _snack('🎁 Reklam izledin! Ekstra ipucu — İlk 2 harf: ${_currentCity.substring(0, 2)}');
+                    context.snack('🎁 Reklam izledin! Ekstra ipucu — İlk 2 harf: ${_currentCity.substring(0, 2)}');
                   },
                 ),
               ],

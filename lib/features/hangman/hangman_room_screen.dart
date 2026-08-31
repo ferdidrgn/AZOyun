@@ -61,7 +61,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
   bool   get _canStart => _players.length >= 2;
 
   Future<void> _startGame() async {
-    if (!_canStart) { _snack('Rakip bekleniyor...'); return; }
+    if (!_canStart) { context.snack('Rakip bekleniyor...'); return; }
     await _rooms.updateRoom(
       gamePath: GamePaths.hangman,
       roomId:   widget.roomId,
@@ -82,9 +82,6 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
     }
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {

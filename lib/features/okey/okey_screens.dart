@@ -208,21 +208,21 @@ class _OLobbyState extends State<OkeyLobbyScreen> {
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           OkeyRoomScreen(roomId: id, myKey: 'p1', myName: _name!, mode: _mode)));
-    } catch (e) { _snack('Hata: $e'); }
+    } catch (e) { context.snack('Hata: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _join() async {
     if (_name == null) { await _ask(); if (_name == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.okey, code: code);
-      if (r == null) { _snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      if (r == null) { context.snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { context.snack('Oyun başlamış'); return; }
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 4) { _snack('Oda dolu'); return; }
+      if (players.length >= 4) { context.snack('Oda dolu'); return; }
       final myKey = 'p${players.length + 1}';
       final roomMode = r.data['mode'] as String? ?? 'okey';
       await _rooms.updateRoom(gamePath: GamePaths.okey, roomId: r.id,
@@ -230,12 +230,9 @@ class _OLobbyState extends State<OkeyLobbyScreen> {
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           OkeyRoomScreen(roomId: r.id, myKey: myKey, myName: _name!, mode: roomMode)));
-    } catch (e) { _snack('Katılınamadı: $e'); }
+    } catch (e) { context.snack('Katılınamadı: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) => AZGradientScaffold(
@@ -381,7 +378,7 @@ class _ORoomState extends State<OkeyRoomScreen> {
   Gradient get _grad => _mode == '101' ? AZColors.gradOrange : AZColors.gradGreen;
 
   Future<void> _start() async {
-    if (!_canStart) { _snack('En az 2 oyuncu'); return; }
+    if (!_canStart) { context.snack('En az 2 oyuncu'); return; }
     final seed = (_room['seed'] as int?) ?? Random().nextInt(999999);
     final deck = buildDeck(seed);
     final keys = _players.keys.toList();
@@ -422,9 +419,6 @@ class _ORoomState extends State<OkeyRoomScreen> {
     }
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) => PopScope(canPop: false, onPopInvoked: (_) => _leave(),
@@ -585,9 +579,6 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
     return t.num == _okeyN && t.color.index == _okeyC;
   }
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
-
   Future<void> _drawDeck() async {
     if (!_isMyTurn || _mustDiscard || _processing || _deck.isEmpty) return;
     setState(() => _processing = true);
@@ -674,7 +665,7 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
           'players/${widget.myKey}/score':
               ((_players[widget.myKey]?['score'] as int?) ?? 0) - penalty,
         });
-        _snack('❌ Yanlış açtın! -$penalty puan.');
+        context.snack('❌ Yanlış açtın! -$penalty puan.');
       } finally { setState(() => _processing = false); }
       return;
     }

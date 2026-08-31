@@ -64,20 +64,20 @@ class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           LiarRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!)));
-    } catch (e) { _snack('Hata: $e'); }
+    } catch (e) { context.snack('Hata: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
   Future<void> _joinRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.liarCafe, code: code);
-      if (r == null)                     { _snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      if (r == null)                     { context.snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { context.snack('Oyun başlamış'); return; }
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 6)           { _snack('Oda dolu (max 6)'); return; }
+      if (players.length >= 6)           { context.snack('Oda dolu (max 6)'); return; }
       final myKey = 'p${players.length + 1}';
       await _rooms.updateRoom(
         gamePath: GamePaths.liarCafe, roomId: r.id,
@@ -86,11 +86,9 @@ class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           LiarRoomScreen(roomId: r.id, myKey: myKey, myName: _playerName!)));
-    } catch (e) { _snack('Katılınamadı: $e'); }
+    } catch (e) { context.snack('Katılınamadı: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +203,7 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
   bool   get _canStart => _players.length >= 3;
 
   Future<void> _start() async {
-    if (!_canStart) { _snack('En az 3 oyuncu gerekli'); return; }
+    if (!_canStart) { context.snack('En az 3 oyuncu gerekli'); return; }
     final topic   = _liarTopics[Random().nextInt(_liarTopics.length)];
     final keys    = _players.keys.toList()..shuffle(Random.secure());
     final liarKey = keys.first;
@@ -222,8 +220,6 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
     else await _rooms.removePlayer(gamePath: GamePaths.liarCafe, roomId: widget.roomId, playerKey: widget.myKey);
     if (mounted) Navigator.pop(context);
   }
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {

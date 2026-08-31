@@ -78,23 +78,23 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen>
       );
       if (!mounted) return;
       _navigate(GolfRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!));
-    } catch (e) { _snack('Oda oluşturulamadı: $e'); }
+    } catch (e) { context.snack('Oda oluşturulamadı: $e'); }
     finally     { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _joinRoom() async {
     if (_playerName == null) { await _askName(); if (_playerName == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
 
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.golf, code: code);
-      if (r == null)                     { _snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { _snack('Oyun başlamış'); return; }
+      if (r == null)                     { context.snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { context.snack('Oyun başlamış'); return; }
 
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 4) { _snack('Oda dolu (max 4)'); return; }
+      if (players.length >= 4) { context.snack('Oda dolu (max 4)'); return; }
 
       final myKey = 'p${players.length + 1}';
       await _rooms.updateRoom(
@@ -109,15 +109,12 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen>
       );
       if (!mounted) return;
       _navigate(GolfRoomScreen(roomId: r.id, myKey: myKey, myName: _playerName!));
-    } catch (e) { _snack('Katılınamadı: $e'); }
+    } catch (e) { context.snack('Katılınamadı: $e'); }
     finally     { if (mounted) setState(() => _loading = false); }
   }
 
   void _navigate(Widget s) =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => s));
-
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {

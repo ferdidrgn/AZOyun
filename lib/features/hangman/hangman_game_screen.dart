@@ -6,6 +6,7 @@ import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
+import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
 const _kWords = [
@@ -143,7 +144,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
 
   Future<void> _submitWord(String raw) async {
     final word = raw.toUpperCase().replaceAll(RegExp(r'[^A-ZÇĞİÖŞÜ]'), '');
-    if (word.length < 3) { _snack('En az 3 harf olmalı'); return; }
+    if (word.length < 3) { context.snack('En az 3 harf olmalı'); return; }
     await _ref.update({
       'game':  {'word': word, 'guessed': [], 'wrong': 0},
       'phase': 'play',
@@ -173,9 +174,9 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
         if (!mounted) return;
         setState(() => _usedRevive = true);
         await _ref.child('game').update({'wrong': _wrong - 1});
-        _snack('🎁 Reklam izledin! 1 can kazandın.');
+        context.snack('🎁 Reklam izledin! 1 can kazandın.');
       },
-      onNotReady: () => _snack('Reklam henüz hazır değil.'),
+      onNotReady: () => context.snack('Reklam henüz hazır değil.'),
     );
   }
 
@@ -340,9 +341,6 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     );
   }
 
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg)));
-
   // ── Build ────────────────────────────────────────────────────────────────
 
   @override
@@ -431,7 +429,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
               if (!mounted) return;
               setState(() => _usedRevive = true);
               await _ref.child('game').update({'wrong': _wrong - 1});
-              _snack('🎁 1 can kazandın!');
+              context.snack('🎁 1 can kazandın!');
             },
           ),
         ),

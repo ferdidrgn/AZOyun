@@ -103,32 +103,29 @@ class _FLobbyState extends State<FighterLobbyScreen>
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           FighterRoomScreen(roomId: id, myKey: 'p1', myName: _name!, fighter: _sel)));
-    } catch (e) { _snack('Hata: $e'); }
+    } catch (e) { context.snack('Hata: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
 
   Future<void> _join() async {
     if (_name == null) { await _ask(); if (_name == null) return; }
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { _snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.fighter, code: code);
-      if (r == null) { _snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { _snack('Maç başlamış'); return; }
+      if (r == null) { context.snack('Oda bulunamadı'); return; }
+      if (r.data['status'] != 'waiting') { context.snack('Maç başlamış'); return; }
       final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 2) { _snack('Oda dolu'); return; }
+      if (players.length >= 2) { context.snack('Oda dolu'); return; }
       await _rooms.updateRoom(gamePath: GamePaths.fighter, roomId: r.id,
           updates: {'players/p2': _playerData('p2')});
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) =>
           FighterRoomScreen(roomId: r.id, myKey: 'p2', myName: _name!, fighter: _sel)));
-    } catch (e) { _snack('Katılınamadı: $e'); }
+    } catch (e) { context.snack('Katılınamadı: $e'); }
     finally { if (mounted) setState(() => _loading = false); }
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {
@@ -379,7 +376,7 @@ class _FRoomState extends State<FighterRoomScreen> {
   bool get _canStart => _players.length >= 2;
 
   Future<void> _start() async {
-    if (!_canStart) { _snack('Rakip bekleniyor'); return; }
+    if (!_canStart) { context.snack('Rakip bekleniyor'); return; }
     await _rooms.updateRoom(gamePath: GamePaths.fighter, roomId: widget.roomId,
         updates: {'status': 'fighting', 'startTime': ServerValue.timestamp});
   }
@@ -393,9 +390,6 @@ class _FRoomState extends State<FighterRoomScreen> {
     }
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
   @override
   Widget build(BuildContext context) {

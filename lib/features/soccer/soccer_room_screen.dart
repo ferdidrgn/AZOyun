@@ -74,7 +74,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
   bool   get _canStart => _players.length >= 2;
 
   Future<void> _startGame() async {
-    if (!_canStart) { _snack('En az 2 oyuncu gerekli'); return; }
+    if (!_canStart) { context.snack('En az 2 oyuncu gerekli'); return; }
     await _rooms.setStatus(
         gamePath: GamePaths.soccer, roomId: widget.roomId, status: 'playing');
   }
@@ -88,9 +88,6 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
     }
     if (mounted) Navigator.pop(context);
   }
-
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {
