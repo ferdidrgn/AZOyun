@@ -413,6 +413,55 @@ class _ResultDialog extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SIRA ROZETİ SATIRI — "Ad: skor" rozetleri; sırası gelen oyuncu beyaz,
+// diğerleri soluk renkli. Çizgi Doldurma ve Hafıza Kartları ekranlarında
+// birebir aynıydı; tek fark aktif oyuncunun yazı rengiydi.
+// ═══════════════════════════════════════════════════════════════════════════
+
+class QPTurnBadgeRow extends StatelessWidget {
+  const QPTurnBadgeRow({
+    super.key,
+    required this.players,
+    required this.scores,
+    required this.turn,
+    required this.activeTextColor,
+  });
+
+  final List<QPPlayer> players;
+  final List<int> scores;
+  final int turn;
+
+  /// Sırası gelen oyuncunun rozeti beyaz zeminli olduğundan yazısı da
+  /// oyuna göre değişen bir vurgu rengi alır (ör. Dama'da mavi, Hafıza
+  /// Kartları'nda mor).
+  final Color activeTextColor;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    alignment: WrapAlignment.center,
+    children: [
+      for (var i = 0; i < players.length; i++)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: i == turn
+                ? Colors.white
+                : kPlayerColors[i % kPlayerColors.length].withAlpha(80),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text('${players[i].name}: ${scores[i]}',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: i == turn ? activeTextColor : Colors.white)),
+        ),
+    ],
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // SIRAYLA OYNA — ORTAK İSKELET
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -479,24 +528,33 @@ class _TurnBasedChaseState extends State<TurnBasedChase> {
   }
 
   Future<void> _finishAll() async {
-    var bestIdx = 0;
+    var bestScore = _scores[0];
     for (var i = 1; i < _scores.length; i++) {
       final better =
-          widget.higherIsBetter ? _scores[i] > _scores[bestIdx] : _scores[i] < _scores[bestIdx];
-      if (better) bestIdx = i;
+          widget.higherIsBetter ? _scores[i] > bestScore : _scores[i] < bestScore;
+      if (better) bestScore = _scores[i];
     }
-    final winner = widget.players[bestIdx];
-    final winnerScore = _scores[bestIdx];
-    final display = widget.formatScore?.call(winnerScore) ?? '$winnerScore puan';
+    // Skoru en iyi olan TÜM oyuncular — birden fazlaysa gerçek bir berabere,
+    // ilk sıradaki oyuncuyu "kazandı" ilan etmek yanlış olurdu (bkz. diğer
+    // hızlı oyunların hepsindeki "Berabere" dalı: TicTacToe, Connect4,
+    // Reversi, Memory, DotsBoxes...).
+    final bestIdxs = [
+      for (var i = 0; i < _scores.length; i++) if (_scores[i] == bestScore) i
+    ];
+    final draw = bestIdxs.length > 1;
+    final winner = draw ? null : widget.players[bestIdxs.first];
+    final display = widget.formatScore?.call(bestScore) ?? '$bestScore puan';
     if (!mounted) return;
     await QuickPlayResult.show(
       context,
       gameId: widget.gameId,
-      resultTitle: '${winner.name} kazandı! 🏆',
-      resultMessage: '${winner.name}: $display',
+      resultTitle: draw ? 'Berabere! 🤝' : '${winner!.name} kazandı! 🏆',
+      resultMessage: draw
+          ? 'Birden fazla oyuncu $display ile eşit skor yaptı.'
+          : '${winner!.name}: $display',
       humanWon: true,
-      score: winnerScore,
-      scorerName: winner.name,
+      score: bestScore,
+      scorerName: winner?.name,
       onRematch: () {
         setState(() {
           _playerIndex = 0;

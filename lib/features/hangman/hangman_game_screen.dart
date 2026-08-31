@@ -31,6 +31,19 @@ const _kGrey  = Color(0xFF9E9E9E);
 const _kRedLt = Color(0xFFFFEBEE);
 const _kBg    = Color(0xFFFAFAFA);
 
+/// Dart'ın `String.toUpperCase()` metodu Türkçe'ye duyarlı değil: küçük
+/// "i" harfini noktasız "I" yapar, noktalı "İ" değil (bkz. aynı düzeltme
+/// `city_screens.dart` içinde). Burada bunun etkisi çok daha ciddi: serbest
+/// metin kelime kutusuna "kelime" gibi noktalı "i" içeren bir sözcük
+/// yazıldığında `_submitWord` bunu yanlışlıkla "KELIME" (noktasız I) olarak
+/// saklıyordu. Tahmin edenin klavyesinde noktalı "İ" ve noktasız "I" ayrı
+/// tuşlar olduğundan, doğal olarak "İ"ye basan oyuncu o harfi ASLA
+/// bulamıyor ve her denemede boşuna bir hak kaybediyordu. Sabit kelime
+/// listesi (`_kWords`) bilerek yalnızca ASCII harfler içeriyor, bu yüzden
+/// bu hata sadece "kendi kelimenizi yazın" kutusunu etkiliyordu.
+String _trUpper(String s) =>
+    s.replaceAll('i', 'İ').replaceAll('ı', 'I').toUpperCase();
+
 class HangmanGameScreen extends StatefulWidget {
   const HangmanGameScreen({
     super.key, required this.roomId,
@@ -143,7 +156,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
   // ── Actions ─────────────────────────────────────────────────────────────
 
   Future<void> _submitWord(String raw) async {
-    final word = raw.toUpperCase().replaceAll(RegExp(r'[^A-ZÇĞİÖŞÜ]'), '');
+    final word = _trUpper(raw).replaceAll(RegExp(r'[^A-ZÇĞİÖŞÜ]'), '');
     if (word.length < 3) { context.snack('En az 3 harf olmalı'); return; }
     await _ref.update({
       'game':  {'word': word, 'guessed': [], 'wrong': 0},

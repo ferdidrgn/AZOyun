@@ -1428,3 +1428,104 @@ eski özel metotlara kalan referans olmadığı grep ile kontrol edildi.
 karşılığında `core/` içine 195 satır (büyük kısmı doküman yorumu) ortak
 kod girdi. Hiçbir oyunun kuralı, puanlaması, zamanlaması veya Firebase
 veri şekli değişmedi.
+
+### 8.29 Hızlı oyunlar (tek cihaz) hata taraması + Adam Asmaca'da gizli bir "İ/I" hatası
+
+8.27/8.28'de tüm mesai online (Firebase odalı) oyunlara gitmişti; bu
+turda `lib/core/quickplay/` ile onun üzerine kurulu 18 "sırayla oyna"
+oyunu (`lib/features/quickgames/`) satır satır okundu — bu ekranlar bu
+oturumda ilk kez bu derece didik didik incelendi. Yine derleyici yok;
+her değişiklikten sonra dosya başına parantez/süslü parantez/köşeli
+parantez dengesi Python ile doğrulandı ve değişen değişken adlarına
+(`bestIdx` → `bestScore`/`bestIdxs`) eski referans kalmadığı grep ile
+kontrol edildi.
+
+**Bulunan ve düzeltilen gerçek hatalar:**
+
+- [x] **Adam Asmaca (`hangman_game_screen.dart`) — "kendi kelimenizi
+      yazın" kutusundaki kelime bir daha asla tam tahmin edilemiyordu.**
+      Şehir Bulmaca'da 8.x'te bir yerde zaten düzeltilmiş olan aynı hata
+      (`String.toUpperCase()` Türkçe'ye duyarlı değil, küçük "i"yi
+      noktalı "İ" değil noktasız "I" yapıyor) burada gözden kaçmıştı.
+      Somut senaryo: kelimeyi seçen oyuncu serbest metin kutusuna
+      "kelime" yazıp gönderiyor → `_submitWord` bunu `raw.toUpperCase()`
+      ile "KELIME" (noktasız I) olarak Firebase'e yazıyordu. Tahmin eden
+      oyuncunun ekran klavyesinde gerçek Türkçe klavye gibi noktalı "İ"
+      ve noktasız "I" **ayrı iki tuş** var; doğal olarak "İ"ye basan
+      oyuncu `_word!.contains('İ')` hep `false` döndüğü için o harfi
+      **hiçbir zaman** bulamıyor, üstelik her denemede boşuna bir "can"
+      (yanlış hakkı) kaybediyordu — kelimede "i" geçen her round'da
+      oluşan, sessizce oyunu bozan bir hataydı. Sabit kelime listesi
+      (`_kWords`) bilerek yalnızca ASCII harfler içerdiğinden ("ISTANBUL",
+      "IZMIR" gibi) bu hata sadece serbest metin kutusunu etkiliyordu —
+      muhtemelen bu yüzden fark edilmemişti. Düzeltme: Şehir Bulmaca'daki
+      `_trUpper()` yardımcı fonksiyonunun birebir aynısı buraya da
+      eklendi (`s.replaceAll('i','İ').replaceAll('ı','I').toUpperCase()`)
+      ve `_submitWord` bunu kullanacak şekilde değiştirildi. Aynı deseni
+      taşıyan başka bir çağrı yeri kalmadığından emin olmak için tüm
+      online oyunlardaki `toUpperCase()`/`toLowerCase()` çağrıları tek
+      tek tarandı — geri kalanların hepsi 6 haneli oda kodları üzerinde
+      (kod alfabesi zaten yalnızca `A-Z0-9`, İ/I belirsizliği yok).
+- [x] **`TurnBasedChase._finishAll()` (ve onu kopyalayan Yılan/2048
+      ekranlarının kendi `_finishAll()`'ları) beraberlikte yanlış
+      oyuncuyu "kazandı" ilan ediyordu.** Bu iskelet Zıpla Geç, Balon
+      Patlatma, Parti Zarı, Kayan Yapboz, Mini Bovling, Renk Hafızası,
+      Kim Bilir? ve Sayı Tahmin Düellosu'nu besliyor; Yılan ve 2048 aynı
+      mantığı (framework'ü kullanmadan) kendi dosyalarında elle
+      kopyalamış. Üçünde de en yüksek (veya en düşük, `higherIsBetter:
+      false` olan oyunlarda) skoru arıyor ama sadece **ilk bulduğu**
+      indeksi tutuyordu — iki veya daha fazla oyuncu tam olarak aynı
+      skoru yaptığında (Kim Bilir?'de 100 puan, Sayı Tahmin Düellosu'nda
+      aynı deneme sayısı, Parti Zarı'nda aynı zar toplamı gibi pratikte
+      sık rastlanan durumlar) gerçek bir berabereyi, sırf listede önce
+      geldiği için ilk oyuncuya "🏆 kazandı!" diyerek yanlış duyuruyordu.
+      Bu, bu oturumun daha önce online oyunlarda bulduğu "kazananı
+      yanlış belirliyordu" hata sınıfının aynısı. Uygulamanın geri kalan
+      tüm hızlı oyunları (XOX, 4'lü Bağlantı, Reversi, Hafıza Kartları,
+      Çizgi Doldurma) beraberliği zaten doğru "Berabere! 🤝" ile
+      gösteriyordu; TurnBasedChase ve onun iki kopyası bu tutarlı
+      davranışın dışında kalmıştı. Düzeltme: en iyi skora sahip **tüm**
+      indeksler toplanıyor, birden fazlaysa `draw = true` olup sonuç
+      diyaloğu "Berabere! 🤝" + "Birden fazla oyuncu N puan ile eşit
+      skor yaptı." gösteriyor; tek kazanan varsa davranış birebir eskisi
+      gibi. Ödül/XP akışı etkilenmedi (`humanWon: true` bu oyunların
+      hepsinde zaten sabitti, çünkü hiçbiri bilgisayar rakibi
+      desteklemiyor) — sadece hangi ismin "kazandı" diye gösterildiği
+      ve liderlik tablosuna hangi adla yazıldığı (`scorerName`, berabere
+      durumunda `null` → varsayılan 'Oyuncu') düzeltildi.
+
+**Ayrıca yapılan, saf görsel bir sadeleştirme:**
+
+- [x] `core/quickplay/quickplay.dart` → `QPTurnBadgeRow({players, scores,
+      turn, activeTextColor})`: Çizgi Doldurma ve Hafıza Kartları
+      ekranlarındaki "Ad: skor" rozet satırı `Wrap` widget'ı **birebir
+      aynıydı**, tek fark aktif oyuncunun rozet yazı rengiydi (Dama'da
+      `AZColors.blueDk`, Hafıza Kartları'nda `AZColors.purple`) — bu tek
+      fark parametreye çevrildi, 8.28'deki `AZRoomHeader`/`AZNameChip`
+      ile aynı desen.
+
+**Bulunan ama bilerek DOKUNULMAYANLAR:**
+
+- Yılan ve 2048 ekranları, oyuncu değişimi/skor/"tekrar oyna" akışını
+  `TurnBasedChase`'i kullanmak yerine kendi dosyalarında yeniden
+  yazmış (yukarıdaki beraberlik hatası da bu yüzden iki kez tekrar
+  etmişti). Zıpla Geç zaten kendi `Timer`'ını çalıştıran bir
+  `sessionBuilder` widget'ı olarak `TurnBasedChase`'e bağlanabiliyor;
+  Yılan/2048'in de aynı şekilde sarmalanması *mümkün* görünüyor ama
+  D-pad + ızgara + zamanlayıcı durumunu ayrı bir `_Session` widget'ına
+  taşımak gerektiren, derleyicisiz doğrulanması riskli, gerçek bir
+  yeniden yapılandırma. Bu oturumda yalnızca somut hatayı (beraberlik)
+  düzeltmekle yetinildi; yapısal birleştirme bilerek yapılmadı.
+- Gizli-rol oyunlarındaki (`impostor`, `vampire_wolf`, `liar`) ve diğer
+  tüm online oyunlardaki serbest metin/karşılaştırma noktaları aynı
+  "İ/I" hatası için tek tek tarandı, başka örnek bulunamadı.
+- Mystery/Dedektif ekranındaki ve `QuickPlaySetup`'taki başlık
+  `.toUpperCase()` çağrıları (`_case.title.toUpperCase()`,
+  `widget.gameTitle.toUpperCase()`) sadece görsel bir başlık stilinde
+  kullanılıyor, hiçbir karşılaştırmaya girmiyor — kozmetik bir "İ yerine
+  I" görünüm kusuru olabilir ama fonksiyonel bir hata değil; kapsam dışı
+  bırakıldı.
+- 18 hızlı oyunun tamamında özel metot/alan/sınıf adları tek tek
+  sayıldı (`grep -oE` ile isim başına geçiş sayısı) — bir kez bile
+  geçmeyen (yani tanımlanıp hiç kullanılmayan) tek bir isim bile
+  bulunamadı; bu klasörde ölü kod yok.

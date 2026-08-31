@@ -137,27 +137,11 @@ class _DotsBoxesGameScreenState extends State<DotsBoxesGameScreen> {
         child: Column(children: [
           const QuickPlayTopBar(title: 'Çizgi Doldurma'),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              for (var i = 0; i < widget.players.length; i++)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: i == _turn
-                        ? Colors.white
-                        : kPlayerColors[i % kPlayerColors.length].withAlpha(80),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text('${widget.players[i].name}: ${_scores[i]}',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: i == _turn ? AZColors.blueDk : Colors.white)),
-                ),
-            ],
+          QPTurnBadgeRow(
+            players: widget.players,
+            scores: _scores,
+            turn: _turn,
+            activeTextColor: AZColors.blueDk,
           ),
           const SizedBox(height: 20),
           Expanded(child: Center(child: _buildGrid())),
