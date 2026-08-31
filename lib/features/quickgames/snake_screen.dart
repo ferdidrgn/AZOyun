@@ -142,20 +142,28 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
   }
 
   Future<void> _finishAll() async {
-    var bestIdx = 0;
+    var bestScore = _scores[0];
     for (var i = 1; i < _scores.length; i++) {
-      if (_scores[i] > _scores[bestIdx]) bestIdx = i;
+      if (_scores[i] > bestScore) bestScore = _scores[i];
     }
-    final winner = widget.players[bestIdx];
+    // Skoru en iyi olan TÜM oyuncular — birden fazlaysa gerçek bir berabere,
+    // ilk sıradaki oyuncuyu "kazandı" ilan etmek yanlış olurdu.
+    final bestIdxs = [
+      for (var i = 0; i < _scores.length; i++) if (_scores[i] == bestScore) i
+    ];
+    final draw = bestIdxs.length > 1;
+    final winner = draw ? null : widget.players[bestIdxs.first];
     if (!mounted) return;
     await QuickPlayResult.show(
       context,
       gameId: 'snake',
-      resultTitle: '${winner.name} kazandı! 🏆',
-      resultMessage: '${winner.name}: ${_scores[bestIdx]} puan',
+      resultTitle: draw ? 'Berabere! 🤝' : '${winner!.name} kazandı! 🏆',
+      resultMessage: draw
+          ? 'Birden fazla oyuncu $bestScore puan ile eşit skor yaptı.'
+          : '${winner!.name}: $bestScore puan',
       humanWon: true,
-      score: _scores[bestIdx],
-      scorerName: winner.name,
+      score: bestScore,
+      scorerName: winner?.name,
       onRematch: () {
         setState(() {
           _playerIndex = 0;
