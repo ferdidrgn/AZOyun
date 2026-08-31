@@ -26,7 +26,6 @@ const double _kDt          = 0.016; // fizik adımı (60fps)
 const double _kGoalLeft   = 0.20;
 const double _kGoalRight  = 0.80;
 const double _kGoalBottom = 0.18; // bu Y'nin altında = gol bölgesi
-const double _kGoalPostH  = 0.14; // direk yüksekliği
 const double _kNetDepth   = 0.06; // ağ derinliği
 
 // Kaleci

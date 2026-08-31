@@ -281,6 +281,7 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _finalShown  = false;
+  bool _roomGone = false;
   final _answerCtrl = TextEditingController();
   static const _kRose = Color(0xFFd66d75);
 
@@ -293,7 +294,17 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
   @override void dispose() { _answerCtrl.dispose(); _sub?.cancel(); super.dispose(); }
 
   void _onFirebase(DatabaseEvent e) {
-    if (!mounted || e.snapshot.value == null) return;
+    if (!mounted) return;
+    if (e.snapshot.value == null) {
+      // Oda silindi (host ayrıldı ya da bağlantısı koptu) — eskiden burada
+      // sessizce return edilirdi ve diğer oyuncuların ekranı sonsuza dek
+      // donuk kalırdı. Artık herkesi ana menüye döndürüyoruz.
+      if (!_roomGone) {
+        _roomGone = true;
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
+      return;
+    }
     final d = Map<String, dynamic>.from(e.snapshot.value as Map);
     setState(() => _room = d);
     if (d['status'] == 'finished' && !_finalShown) {

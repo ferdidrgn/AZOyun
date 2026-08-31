@@ -1294,3 +1294,43 @@ sil." Somut, doğrulanmış bulgular:
   (bkz. 8.20) — bu turda ayrıca büyük binary dosya bulunamadı (en
   büyükler App Store'un zorunlu kıldığı 500 KB'lık iOS 1024×1024 ikon ve
   standart 208 KB'lık web maskable ikon, ikisi de gerekli/kaçınılmaz).
+
+### 8.27 Kod tekrarı / temiz mimari denetimi (kullanıcı isteği: "tüm kodları kontrol et")
+
+Kullanıcı isteği üzerine `lib/` ağacının tamamı, kod tekrarı ve temiz
+mimari ihlali için bir agent'a taratıldı (30+ oyun dosyasını tek tek
+elle okumak yerine — bu ortamda derleyici olmadığından, bulunan her
+öneri commit'ten önce ben tarafımdan tek tek doğrulandı).
+
+**En değerli, KRİTİK bulgu — sadece stil değil, gerçek bir hataydı:**
+"Oda silindiğinde (host ayrıldı/çöktü) diğer oyuncunun ekranı sonsuza
+dek donuyor" hatası (bkz. 8.9/8.5 dönemlerinde 8 oyunda düzeltilmişti)
+**4 oyunda hâlâ düzeltilmemiş** çıktı — bu oyunlarda host ayrılırsa
+diğer oyuncu(lar) kalıcı olarak donuyordu:
+- [x] `lib/features/checkers/dama_screens.dart` — `_DamaGameState._onFB`
+- [x] `lib/features/fighter/fighter_screens.dart` — `_FGameState._onFB`
+- [x] `lib/features/okey/okey_screens.dart` — `_OGameState._onFB`
+- [x] `lib/features/liar/liar_screens.dart` — `_LiarGameScreenState._onFirebase`
+
+Hepsine, zaten 8 kardeş dosyada kanıtlanmış aynı `_roomGone` flag +
+`Navigator.popUntil(context, (r) => r.isFirst)` deseni birebir
+uygulandı.
+
+**Diğer bulgular:**
+- [x] `lib/features/soccer/soccer_game_screen.dart`: kullanılmayan
+      `_kGoalPostH` sabiti silindi (tek bir tanım, hiçbir kullanım yoktu).
+- [x] Katman ihlali taraması: `core/` içinde `features/` import eden
+      TEK bir dosya bulunamadı — bu yönde temiz, ekstra iş gerekmedi.
+- **Tespit edildi, henüz konsolide EDİLMEDİ** (sonraki adım): "oyundan
+  çık" ailesi — `_leaveGame()`/`_leave()`, `_confirmLeave()` dialog'u,
+  `PopScope(canPop:false, onPopInvoked:...)` sarmalayıcısı ve `_snack()`
+  yardımcı metodu — ~12 online oyun dosyasında neredeyse birebir aynı
+  kodla tekrarlanıyor (bazı yerlerde açıklayıcı Türkçe yorumlar dahi
+  kelimesi kelimesine kopyalanmış). Bunun tam olarak BU tekrar yüzünden
+  4 oyunun oda-silinme düzeltmesini kaçırdığı doğrulandı (yukarıdaki
+  bulgu). Paylaşılan bir `lib/core/widgets/az_widgets.dart` yardımcı
+  seti (`context.snack()`, `confirmLeaveGame()`, ortak bir "oda gitti"
+  guard'ı) hem tekrarı kaldırır hem bu sınıf hataların bir daha
+  yaşanmasını yapısal olarak engeller — ayrı bir işlem olarak
+  planlanıyor (bu kadar çok dosyayı derleyicisiz tek seferde değiştirmek
+  yerine kademeli, doğrulanabilir adımlarla yapılacak).
