@@ -76,7 +76,10 @@ class AdService {
   Future<void> initialize() async {
     if (kIsWeb || _initialized) return;
     try {
-      await MobileAds.instance.initialize();
+      // MobileAds SDK'sının native initialize() çağrısı emülatörde/zayıf
+      // ağda/Play Services eksikken süresiz asılı kalabiliyor — bir zaman
+      // aşımı olmadan bu Future hiç tamamlanmayabilir.
+      await MobileAds.instance.initialize().timeout(const Duration(seconds: 10));
       _initialized = true;
       debugPrint('[AdService] ✅ initialized');
       _loadInterstitial();

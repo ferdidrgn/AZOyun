@@ -49,8 +49,6 @@ void main() async {
   await ProfileService.instance.load();
   await ThemeService.instance.load();
   await LanguageService.instance.load();
-  await AdService.instance.initialize();
-  await AdService.instance.applyPremiumStateIfActive();
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -65,6 +63,15 @@ void main() async {
   // Bu servisler ilk kareyi bloklamadan, arka planda başlatılır: Play Games
   // oturumu varsa sessizce bağlanır (yoksa no-op), bildirim/token altyapısı
   // hazırlanır, deep link dinleyicisi kurulur.
+  //
+  // AdService.initialize() de bilerek burada, unawaited: MobileAds SDK'sının
+  // native initialize() çağrısı emülatörde/zayıf ağda/Play Services eksikken
+  // süresiz asılı kalabiliyor — main()'de await edilirse runApp() hiç
+  // çağrılmıyor, yani splash ekranı bile hiç görünmeden uygulama "takılı"
+  // kalıyordu.
+  unawaited(
+    AdService.instance.initialize().then((_) => AdService.instance.applyPremiumStateIfActive()),
+  );
   unawaited(PlayGamesService.instance.signIn());
   unawaited(NotificationService.instance.initialize());
   unawaited(DeepLinkService.instance.initialize(onLink: _handleDeepLink));
