@@ -1236,3 +1236,61 @@ kaldı." İncelemede kök neden bulundu.
   koşullarda tekrar test edilmesi gerekiyor — ama kod, artık ne
   `Firebase.initializeApp()` ne de `AdService` başka bir yerde
   `runApp()`'ı bloklayan tek `await` olarak kalmıyor.
+
+### 8.25 `main.dart` sadeleştirme: `AppInitializer` sınıfı
+
+Kullanıcı isteği: "app intialize diye bir dosya yapsak intializeleri
+sırayla o class da yapsak mainde o class ı çağırsak kod okumayı
+rahatlatmaz mı?"
+
+- [x] `lib/core/app_initializer.dart` eklendi — tüm açılış sırası
+      (Firebase, Crashlytics kablolaması, profil/tema/dil yükleme,
+      `runApp()` sonrası arka planda başlatılan Ads/Play Games/
+      bildirim/deep link) `AppInitializer.runBlocking()` ve
+      `AppInitializer.runAfterFirstFrame()` olarak iki net aşamaya
+      ayrıldı.
+- [x] `main.dart` artık sadece bu iki metodu çağırıp widget ağacını
+      kuruyor — 132 satırdan ~65 satıra indi, "hangi servis ne zaman
+      başlıyor" mantığı artık tek dosyada, isimlendirilmiş ve
+      yorumlanmış (bkz. 8.24'teki kritik hatanın bir daha yaşanmaması
+      için buraya bilerek not düşüldü).
+
+### 8.26 Uygulama boyutu / gereksiz kod taraması
+
+Kullanıcı isteği: "app boyut küçültmeye git kontrol et. gereksiz şeyleri
+sil." Somut, doğrulanmış bulgular:
+
+- [x] **3 tamamen kullanılmayan bağımlılık** `pubspec.yaml`'dan
+      kaldırıldı — kod tabanında (`lib/`) hiçbir yerden import
+      edilmediği grep ile doğrulandı: `cupertino_icons` (uygulama
+      sadece Material ikonları kullanıyor), `url_launcher` (hiç
+      `launchUrl`/`canLaunchUrl` çağrısı yok), `collection` (hiç
+      `firstWhereOrNull`/`groupBy` gibi bir kullanım yok). Not: bu
+      paketlerden bazıları `share_plus`/`in_app_review` gibi diğer
+      bağımlılıklar üzerinden **transitive** olarak zaten gelebilir —
+      yani ikili (APK) boyutunda garanti bir küçülme değil, ama
+      `pubspec.yaml`'daki gereksiz doğrudan bağımlılık beyanları
+      temizlendi.
+- [x] **Tamamen ölü bir dosya silindi**: `lib/core/services/
+      firebase_service.dart` — içeriği harfiyen "Bu dosya artık
+      kullanılmıyor... Bu dosyayı silebilirsiniz" yazan, hiçbir yerden
+      import edilmeyen bir kalıntıydı (tüm Firebase işlemleri zaten
+      `room_service.dart` üzerinden yapılıyor).
+- [x] **3 gereksiz/aşırı geniş Android izni kaldırıldı**
+      (`AndroidManifest.xml`): `READ_EXTERNAL_STORAGE` /
+      `WRITE_EXTERNAL_STORAGE` — kod tabanında `dart:io`/`path_provider`
+      ile dosya sistemine erişen hiçbir yer yok (tüm kalıcı veri
+      `SharedPreferences`/`flutter_secure_storage` ile, bunlar bu
+      izinleri gerektirmiyor); `VIBRATE` — kod sadece Flutter'ın kendi
+      `HapticFeedback.*` API'lerini kullanıyor
+      (`fighter_screens.dart`, `okey_screens.dart`,
+      `dama_screens.dart`, `word_screens.dart` vb.), bu API Android'in
+      `performHapticFeedback()`'ini çağırır ve `VIBRATE` izni
+      gerektirmez (ham `Vibrator.vibrate()` API'si hiç kullanılmıyor).
+      Daha az/daha az "hassas" izin = Play Console incelemesinde daha
+      az sürtünme + kullanıcıya daha az izin istemi.
+- **Not**: "3D" görsellerin/görüntülerin yer kapladığı `assets/`
+  klasörü zaten bu oturumdan önce kullanıcı tarafından silinmişti
+  (bkz. 8.20) — bu turda ayrıca büyük binary dosya bulunamadı (en
+  büyükler App Store'un zorunlu kıldığı 500 KB'lık iOS 1024×1024 ikon ve
+  standart 208 KB'lık web maskable ikon, ikisi de gerekli/kaçınılmaz).
