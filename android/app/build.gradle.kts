@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 
 plugins {
     id("com.android.application")
@@ -62,7 +63,11 @@ android {
             // raporlarının okunabilir hale gelmesi için ProGuard mapping
             // dosyasını otomatik yükler (bkz. ROADMAP 8.3'teki bitmap
             // uyarısı notu — bu, o tür sorunları da netleştirir).
-            firebaseCrashlytics {
+            // Not: build type lambda'sı içinde bare "firebaseCrashlytics {}"
+            // çağrısı yanlış receiver'a (android bloğunun kendisine) bağlanır
+            // — Firebase'in Kotlin DSL için resmi kurulumu, build type'a özel
+            // ayar için configure<CrashlyticsExtension> kullanılmasını ister.
+            configure<CrashlyticsExtension> {
                 mappingFileUploadEnabled = true
                 nativeSymbolUploadEnabled = true
             }

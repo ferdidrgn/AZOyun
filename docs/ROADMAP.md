@@ -1181,3 +1181,25 @@ desugaring to be enabled for :app.
   gerekiyor. İki hata da art arda ilk denemede çıktı; aynı derlemede
   üçüncü bir bağımlılık/sürüm uyuşmazlığı çıkma ihtimaline karşı
   kullanıcıya hatayı olduğu gibi yapıştırması söylenmeli.
+
+### 8.23 Android Studio uyarısı: `firebaseCrashlytics {}` yanlış receiver'a bağlanıyordu
+
+Kullanıcı Android Studio'da `app/build.gradle.kts`'i açtığında IDE,
+`buildTypes.getByName("release") { firebaseCrashlytics { ... } }`
+satırında "Suspicious receiver type; this does not apply to build types...
+found in one of the enclosing lambdas" uyarısı gösterdi.
+
+- **Kök neden**: Kotlin DSL'de bare `firebaseCrashlytics { }` çağrısı,
+  build type lambda'sının içinde yazılmış olsa da aslında dıştaki
+  `android { }` bloğunun (`BaseAppModuleExtension`) üzerindeki genel
+  extension fonksiyonuna bağlanıyordu — "release" build type'ına özel bir
+  ayar OLARAK çalışmıyordu. Firebase'in resmi kurulum dokümantasyonu, bir
+  build type'a özel Crashlytics ayarı için açıkça
+  `configure<CrashlyticsExtension> { ... }` kullanılmasını istiyor.
+- [x] `import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension`
+      eklendi, `firebaseCrashlytics { ... }` çağrısı
+      `configure<CrashlyticsExtension> { ... }`'a çevrildi
+      (`android/app/build.gradle.kts`).
+- **Doğrulama**: Import yolu ve `configure<T>` söz dizimi, Firebase'in
+  resmi "Get readable crash reports" dokümantasyonundaki örnekle birebir
+  doğrulandı (websearch ile).
