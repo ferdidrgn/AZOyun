@@ -1,80 +1,19 @@
-import 'dart:async';
-
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import 'core/config/firebase_options.dart';
-import 'core/services/ad_service.dart';
+import 'core/app_initializer.dart';
 import 'core/services/analytics_service.dart';
 import 'core/services/app_keys.dart';
 import 'core/services/deep_link_service.dart';
 import 'core/services/language_service.dart';
-import 'core/services/notification_service.dart';
-import 'core/services/play_games_service.dart';
-import 'core/services/profile_service.dart';
 import 'core/services/theme_service.dart';
 import 'core/theme/az_theme.dart';
 import 'features/onboarding/splash_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Web'de arka plan bildirimleri ayrı bir service worker mekanizması
-  // gerektirir (bu Dart handler'ın bir karşılığı yoktur) — bu yüzden
-  // sadece native platformlarda kaydediliyor.
-  if (!kIsWeb) {
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  }
-
-  // Yakalanmayan tüm hataları Crashlytics'e gönder — debug modda konsola da
-  // yazdırılmaya devam eder (kDebugMode kontrolü Crashlytics'in kendi
-  // varsayılan davranışı, burada ayrıca engellemiyoruz ki geliştirme
-  // sırasında da raporlama test edilebilsin).
-  // `firebase_crashlytics` sadece Android/iOS/macOS destekler — Web'de bu
-  // paket hiç yok, `FirebaseCrashlytics.instance`'a erişmek uygulamanın
-  // en açılışında (runApp'tan önce) patlamasına yol açardı.
-  if (!kIsWeb) {
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
-  }
-
-  await ProfileService.instance.load();
-  await ThemeService.instance.load();
-  await LanguageService.instance.load();
-
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-  ));
-
+  await AppInitializer.runBlocking();
   runApp(const AZOyunApp());
-
-  unawaited(AnalyticsService.instance.logAppOpen());
-
-  // Bu servisler ilk kareyi bloklamadan, arka planda başlatılır: Play Games
-  // oturumu varsa sessizce bağlanır (yoksa no-op), bildirim/token altyapısı
-  // hazırlanır, deep link dinleyicisi kurulur.
-  //
-  // AdService.initialize() de bilerek burada, unawaited: MobileAds SDK'sının
-  // native initialize() çağrısı emülatörde/zayıf ağda/Play Services eksikken
-  // süresiz asılı kalabiliyor — main()'de await edilirse runApp() hiç
-  // çağrılmıyor, yani splash ekranı bile hiç görünmeden uygulama "takılı"
-  // kalıyordu.
-  unawaited(
-    AdService.instance.initialize().then((_) => AdService.instance.applyPremiumStateIfActive()),
-  );
-  unawaited(PlayGamesService.instance.signIn());
-  unawaited(NotificationService.instance.initialize());
-  unawaited(DeepLinkService.instance.initialize(onLink: _handleDeepLink));
+  AppInitializer.runAfterFirstFrame(onDeepLink: _handleDeepLink);
 }
 
 void _handleDeepLink(Uri uri) {
