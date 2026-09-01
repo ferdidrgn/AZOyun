@@ -1657,6 +1657,27 @@ sabiti kullanan) toplam ~40 renk noktası bulundu ve düzeltildi:
   eksik-import hatasının bir daha yaşanmaması için).
 - **Hâlâ kapsam dışı** (bilinçli, 8.30'daki gerekçeyle aynı): 30+ oyunun
   bizzat OYUN ALANI çizimleri (Okey taşlarının kendi iç deseni, Dama
-  tahtasının kare renkleri, yarış pisti asfaltı gibi) ve Splash'ın "daha
-  anlamlı" olması için istenen içerik/animasyon zenginleştirmesi henüz
-  yapılmadı.
+  tahtasının kare renkleri, yarış pisti asfaltı gibi) henüz yapılmadı.
+
+### 8.32 Splash ekranı "daha anlamlı" hale getirildi
+
+Kullanıcı açıkça "daha anlamlı splash" istemişti — 8.30/8.31 sadece
+rengi düzeltmişti, yapı hâlâ statik bir ikon+yazı+spinner'dı.
+
+- [x] `splash_screen.dart` artık `SingleTickerProviderStateMixin` ile
+      900ms'lik sıralı bir giriş animasyonu oynatıyor: logo dairesi
+      ölçeklenerek+solarak beliriyor (`Curves.easeOutBack`, hafif bir
+      "sekme" hissi), başlık aşağıdan kayarak+solarak geliyor, altına
+      yeni bir slogan satırı ("Arkadaşlarınla oyna" — README'deki
+      tagline ile aynı) ekleniyor, spinner da son olarak beliriyor.
+      Logo artık düz bir ikon değil, yarı saydam dairesel bir "rozet"
+      zemini üzerinde (kenarlık + gölge ile) gösteriliyor.
+- [x] Navigasyon mantığı (`_boot()`, minimum 900ms gösterim süresi,
+      onboarding/ana sayfa yönlendirmesi) hiç değiştirilmedi — sadece
+      `build()` içindeki görsel katman zenginleştirildi.
+- **Not**: Gerçek bir logo görseli (`web/icon.jpg`) kullanmak yerine
+  bilinçli olarak ikon tabanlı kalındı — o dosyayı bir Flutter asset'i
+  olarak paketlemek (`pubspec.yaml`'a `assets:` eklemek,
+  `android/ios/assets` klasörüne kopyalamak) bu ortamda derleme ile
+  doğrulanamayacak yeni bir bağımlılık zinciri açardı; ikon tabanlı
+  yaklaşım garantili derlenir.
