@@ -470,7 +470,7 @@ class _ScoreBar extends StatelessWidget {
     decoration: const BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [Color(0xFF226B2C), Color(0xFF1B5E20)],
+        colors: [AZColors.green, AZColors.greenDk],
       ),
       boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
     ),
@@ -529,14 +529,14 @@ class _GolfFieldPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size s) {
     canvas.drawRect(Rect.fromLTWH(0, 0, s.width, s.height),
-        Paint()..color = const Color(0xFF388E3C));
+        Paint()..color = AZColors.green);
     final stripe = Paint()..color = const Color(0x0A000000);
     for (var i = 0; i < 10; i++) {
       if (i.isOdd) canvas.drawRect(
           Rect.fromLTWH(0, s.height * i / 10, s.width, s.height / 10), stripe);
     }
     final wallPaint = Paint()
-      ..color = const Color(0xFF6D4C41) ..strokeWidth = 8
+      ..color = const Color(0xFF7A6552) ..strokeWidth = 8
       ..strokeCap = StrokeCap.round ..style = PaintingStyle.stroke;
     for (final w in walls) {
       canvas.drawLine(Offset(w.a.dx * s.width, w.a.dy * s.height),
@@ -550,7 +550,7 @@ class _GolfFieldPainter extends CustomPainter {
       canvas.drawRRect(rr.shift(const Offset(2, 3)),
           Paint()..color = Colors.black26
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
-      canvas.drawRRect(rr, Paint()..color = const Color(0xFF795548));
+      canvas.drawRRect(rr, Paint()..color = const Color(0xFF8C7863));
       canvas.drawRRect(rr, Paint()
           ..color = const Color(0x24FFFFFF) ..style = PaintingStyle.stroke
           ..strokeWidth = 1.2);
@@ -567,7 +567,7 @@ class _GolfFieldPainter extends CustomPainter {
       ..moveTo(hx, hy - s.height * 0.075)
       ..lineTo(hx + s.width * 0.048, hy - s.height * 0.056)
       ..lineTo(hx, hy - s.height * 0.037) ..close();
-    canvas.drawPath(flag, Paint()..color = Colors.redAccent);
+    canvas.drawPath(flag, Paint()..color = AZColors.red);
 
     if (dragStart != null && dragCurrent != null && !moving) {
       final bx    = ball.dx * s.width; final by = ball.dy * s.height;
@@ -579,18 +579,18 @@ class _GolfFieldPainter extends CustomPainter {
       canvas.drawLine(Offset(bx, by), Offset(tx, ty),
           Paint()
             ..color = Color.lerp(Colors.white.withAlpha(217),
-                Colors.red.withAlpha(217), power)!
+                AZColors.red.withAlpha(217), power)!
             ..strokeWidth = 3.5 ..strokeCap = StrokeCap.round);
       for (var i = 1; i <= 5; i++) {
         canvas.drawCircle(
             Offset(bx + dx * 1.4 * i / 6, by + dy * 1.4 * i / 6), 5,
-            Paint()..color = Colors.yellowAccent
+            Paint()..color = AZColors.orange
                 .withAlpha(power > i / 5.0 ? 230 : 51));
       }
       canvas.drawCircle(Offset(bx, by), s.width * 0.034,
           Paint()
             ..color = Color.lerp(Colors.white38,
-                Colors.redAccent.withAlpha(153), power)!
+                AZColors.red.withAlpha(153), power)!
             ..style = PaintingStyle.stroke ..strokeWidth = 2.5);
     }
 

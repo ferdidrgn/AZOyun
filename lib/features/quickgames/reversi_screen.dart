@@ -259,7 +259,7 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
                     onTap: () => _tap(r, c),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1B5E20),
+                        color: AZColors.greenDk,
                         border: Border.all(color: Colors.black26, width: 0.5),
                       ),
                       child: Center(

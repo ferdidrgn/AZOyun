@@ -995,7 +995,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
                 child: Container(height: 2,
                     decoration: BoxDecoration(gradient: LinearGradient(
                         colors: [Colors.transparent,
-                            Colors.red.shade900.withAlpha(150), Colors.transparent])))),
+                            AZColors.redDk.withAlpha(150), Colors.transparent])))),
 
             // Rakip karakter
             Positioned(top: 20, right: 30,

@@ -699,28 +699,28 @@ class _VGS extends State<VampireGameScreen> {
       'vampire' => (
           '🧛',
           'SEN BİR VAMPİRSİN',
-          const Color(0xFF4A0000),
+          const Color(0xFF5C2A26),
           'Geceleri diğer vampirlerle birlikte bir kurbanı seç. Kimse senin '
               'vampir olduğunu bilmemeli. Köylüleri sayıca geçersen kazanırsın.'
         ),
       'doctor' => (
           '💉',
           'SEN DOKTORSUN',
-          const Color(0xFF004D40),
+          const Color(0xFF2C4A46),
           'Her gece bir kişiyi (kendin dahil) koruyabilirsin. Vampirler o '
               'kişiyi hedef alırsa saldırı boşa çıkar. Kimliğini gizli tut.'
         ),
       'detective' => (
           '🔎',
           'SEN DEDEKTİFSİN',
-          const Color(0xFF01579B),
+          const Color(0xFF31485A),
           'Her gece bir kişiyi gizlice soruşturup gerçek rolünü öğrenebilirsin. '
               'Bulduklarını gündüz akıllıca kullan.'
         ),
       _ => (
           '👨‍🌾',
           'SEN BİR KÖYLÜSÜN',
-          const Color(0xFF1B5E20),
+          const Color(0xFF33402E),
           'Özel bir yeteneğin yok ama gözlemlerin çok değerli. Gündüzleri oy '
               'vererek vampirleri bulmaya çalış.'
         ),
@@ -810,23 +810,23 @@ class _VGS extends State<VampireGameScreen> {
   Widget build(BuildContext context) {
     if (_room.isEmpty) {
       return const Scaffold(
-        backgroundColor: Color(0xFF1A1A2E),
-        body: Center(child: CircularProgressIndicator(color: Colors.purple)),
+        backgroundColor: Color(0xFF23202E),
+        body: Center(child: CircularProgressIndicator(color: AZColors.purple)),
       );
     }
     final isTransition = _phase == 'dawn' || _phase == 'dusk';
     return AZLeaveGuard(
       onLeave: _confirmLeave,
       child: Scaffold(
-      backgroundColor: _isNight ? const Color(0xFF0D0D1F) : const Color(0xFFFFF9C4),
+      backgroundColor: _isNight ? AZColors.bgDark : const Color(0xFFF2E9C9),
       body: SafeArea(
         child: Column(children: [
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
                 gradient: LinearGradient(colors: _isNight || isTransition
-                    ? [Colors.deepPurple.shade900, Colors.indigo.shade900]
-                    : [Colors.orange.shade700, Colors.yellow.shade600]),
+                    ? [const Color(0xFF3A3350), const Color(0xFF2E2F4A)]
+                    : [AZColors.orange, AZColors.accentGoldSoft]),
                 boxShadow: [BoxShadow(color: Colors.black.withAlpha(130), blurRadius: 16, offset: const Offset(0, 6))]),
             padding: const EdgeInsets.symmetric(vertical: 14),
             child: Stack(alignment: Alignment.center, children: [
@@ -847,12 +847,12 @@ class _VGS extends State<VampireGameScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
                 gradient: LinearGradient(colors: _isVampire
-                    ? [Colors.red.shade900, Colors.purple.shade900]
+                    ? [const Color(0xFF5C2A26), const Color(0xFF4A3550)]
                     : (_isDoctor
-                        ? [Colors.teal.shade900, Colors.green.shade800]
+                        ? [const Color(0xFF2C4A46), const Color(0xFF33452F)]
                         : (_isDetective
-                            ? [Colors.blue.shade900, Colors.indigo.shade800]
-                            : [Colors.green.shade800, Colors.teal.shade800]))),
+                            ? [const Color(0xFF31485A), const Color(0xFF3A3350)]
+                            : [const Color(0xFF33452F), const Color(0xFF2C4A46)]))),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [BoxShadow(color: Colors.black.withAlpha(100), blurRadius: 12, offset: const Offset(0, 6))]),
             child: Row(children: [
@@ -869,9 +869,9 @@ class _VGS extends State<VampireGameScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                  color: Colors.red.shade900.withAlpha(180),
+                  color: AZColors.redDk.withAlpha(180),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.red.shade400)),
+                  border: Border.all(color: AZColors.red)),
               child: Row(children: [
                 const Text('☠️', style: TextStyle(fontSize: 18)),
                 const SizedBox(width: 8),
@@ -941,17 +941,17 @@ class _VGS extends State<VampireGameScreen> {
     if (_isNight) {
       if (_isVampire) return _hasVoted ? _waitingCard('🩸', 'Kurbanın seçildi!') : _actionList(
           title: '🩸 Kimi ısıralım?',
-          color: Colors.deepPurple.shade700,
+          color: AZColors.purpleDk,
           targets: _killTargets,
           onTap: _vote);
       if (_isDoctor) return _hasProtected ? _waitingCard('💉', 'Koruman hazır!', showCount: false) : _actionList(
           title: '💉 Kimi koruyalım?',
-          color: Colors.teal.shade700,
+          color: const Color(0xFF4F7A79),
           targets: _protectTargets,
           onTap: _protect);
       if (_isDetective) return _hasInvestigated ? _waitingCard('🔎', 'Soruşturman tamamlandı!', showCount: false) : _actionList(
           title: '🔎 Kimi soruşturalım?',
-          color: Colors.blue.shade700,
+          color: AZColors.blueDk,
           targets: _investigateTargets,
           onTap: _investigate);
       return Center(
@@ -970,7 +970,7 @@ class _VGS extends State<VampireGameScreen> {
     if (_hasVoted) return _waitingCard('🗳️', 'Oyunu verdin!');
     return _actionList(
       title: '🗳️ Kim vampir?',
-      color: Colors.amber.shade600,
+      color: AZColors.orange,
       targets: _dayTargets,
       onTap: _vote,
     );

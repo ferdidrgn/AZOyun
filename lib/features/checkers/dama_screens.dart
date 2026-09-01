@@ -7,6 +7,7 @@ import '../../core/services/ad_service.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
@@ -703,10 +704,10 @@ class _DamaGameState extends State<DamaGameScreen> {
                     duration: const Duration(milliseconds: 100),
                     decoration: BoxDecoration(
                       color: isSel
-                          ? Colors.yellow.shade600
+                          ? AZColors.orange
                           : isTarget
-                          ? Colors.green.shade400
-                          : isDark ? const Color(0xFF5D4037) : const Color(0xFFEFEBE9),
+                          ? AZColors.green
+                          : isDark ? const Color(0xFF5F4A38) : const Color(0xFFE6DBC7),
                     ),
                     child: Center(child: piece == 0 ? null : _PieceWidget(piece: piece)),
                   ),

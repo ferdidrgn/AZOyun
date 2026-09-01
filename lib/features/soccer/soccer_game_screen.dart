@@ -763,7 +763,7 @@ class _SoccerScoreBar extends StatelessWidget {
     decoration: const BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [Color(0xFF226B2C), Color(0xFF1B5E20)],
+        colors: [AZColors.green, AZColors.greenDk],
       ),
       boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
     ),
@@ -831,7 +831,7 @@ class _SoccerFieldPainter extends CustomPainter {
     final grassPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [const Color(0xFF388E3C), const Color(0xFF2E7D32)],
+        colors: [AZColors.green, AZColors.greenDk],
       ).createShader(Rect.fromLTWH(0, 0, W, H));
     canvas.drawRect(Rect.fromLTWH(0, 0, W, H), grassPaint);
 
@@ -902,7 +902,7 @@ class _SoccerFieldPainter extends CustomPainter {
         ..lineTo(goalLeft, goalY)
         ..close();
       canvas.drawPath(glowPath,
-          Paint()..color = Colors.yellow.withAlpha(40)
+          Paint()..color = AZColors.accentGold.withAlpha(40)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20));
     }
 
@@ -1009,7 +1009,7 @@ class _SoccerFieldPainter extends CustomPainter {
     canvas.drawPath(bodyPath,
         Paint()..shader = RadialGradient(
           center: const Alignment(-0.3, -0.3),
-          colors: [Colors.orange.shade300, Colors.orange.shade700],
+          colors: [AZColors.orange, AZColors.orangeDk],
         ).createShader(Rect.fromCenter(
             center: Offset(cx, cy), width: r * 2.2, height: r * 2.5)));
 
@@ -1034,12 +1034,12 @@ class _SoccerFieldPainter extends CustomPainter {
     // Eldivenler
     final glove = Paint()
       ..shader = RadialGradient(
-        colors: [Colors.yellow.shade300, Colors.yellow.shade600],
+        colors: [AZColors.accentGoldSoft, AZColors.orangeDk],
       ).createShader(Rect.fromCircle(center: Offset(cx - r * 1.2, cy), radius: r * 0.4));
     canvas.drawCircle(Offset(cx - r * 1.2, cy), r * 0.38, glove);
     canvas.drawCircle(Offset(cx + r * 1.2, cy), r * 0.38,
         Paint()..shader = RadialGradient(
-          colors: [Colors.yellow.shade300, Colors.yellow.shade600],
+          colors: [AZColors.accentGoldSoft, AZColors.orangeDk],
         ).createShader(Rect.fromCircle(
             center: Offset(cx + r * 1.2, cy), radius: r * 0.4)));
 

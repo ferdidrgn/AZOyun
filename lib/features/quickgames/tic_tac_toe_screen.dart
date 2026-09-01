@@ -217,7 +217,7 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
                           fontWeight: FontWeight.bold,
                           color: isWinCell
                               ? AZColors.purple
-                              : (mark == 'X' ? Colors.white : const Color(0xFFFFD54F)),
+                              : (mark == 'X' ? Colors.white : AZColors.accentGoldSoft),
                         ),
                       ),
                     ),

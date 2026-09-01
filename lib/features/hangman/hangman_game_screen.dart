@@ -6,6 +6,7 @@ import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
+import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
@@ -411,13 +412,13 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
               _amGuesser ? 50  : 0,
               0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _amGuesser ? _kGreen : Colors.orange),
+          border: Border.all(color: _amGuesser ? _kGreen : AZColors.orange),
         ),
         child: Text(
           _amGuesser ? '🔍 Sıra sende — harf seç!'
               : '👀 ${_pName(_guesser)} tahmin ediyor...',
           style: TextStyle(
-              color: _amGuesser ? _kGreen : Colors.orange.shade800,
+              color: _amGuesser ? _kGreen : AZColors.orangeDk,
               fontWeight: FontWeight.bold, fontSize: 14),
           textAlign: TextAlign.center,
         ),
@@ -691,7 +692,7 @@ class _HangmanPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size s) {
     final g = Paint()
-      ..color = const Color(0xFF4E342E)
+      ..color = const Color(0xFF5C4A3D)
       ..strokeWidth = 5 ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 

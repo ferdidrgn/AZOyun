@@ -459,13 +459,13 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: _amLiar
-                        ? [Colors.red.shade400, Colors.red.shade900]
+                        ? [const Color(0xFFB8776A), const Color(0xFF6B3A32)]
                         : [_kRose, AZColors.redDk],
                   ),
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                        color: (_amLiar ? Colors.red : _kRose).withAlpha(90),
+                        color: (_amLiar ? AZColors.redDk : _kRose).withAlpha(90),
                         blurRadius: 24,
                         offset: const Offset(0, 12)),
                   ],

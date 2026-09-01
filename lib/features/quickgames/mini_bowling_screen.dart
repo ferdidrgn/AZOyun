@@ -179,7 +179,7 @@ class _BowlingSessionState extends State<_BowlingSession> {
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF3E2723), Color(0xFF6D4C41)],
+                  colors: [Color(0xFF2E241D), Color(0xFF7A6552)],
                 ),
                 borderRadius: BorderRadius.circular(AZRadius.md),
               ),
