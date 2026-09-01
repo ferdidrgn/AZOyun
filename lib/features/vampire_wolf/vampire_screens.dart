@@ -53,7 +53,7 @@ class _VLS extends State<VampireLobbyScreen> {
   }
 
   Future<void> _ask() async {
-    final n = await showNameDialog(context, current: _name, accentColor: Colors.deepPurple);
+    final n = await showNameDialog(context, current: _name, accentColor: AZColors.purple);
     if (n == null || !mounted) return;
     await _storage.setPlayerName(n);
     setState(() => _name = n);
@@ -168,7 +168,7 @@ class _VLS extends State<VampireLobbyScreen> {
                     label: 'YENİ ODA',
                     icon: Icons.add_circle_outline_rounded,
                     onPressed: _create,
-                    color: Colors.deepPurple,
+                    color: AZColors.purple,
                     loading: _loading,
                     width: 280),
                 const SizedBox(height: 20),
@@ -342,7 +342,7 @@ class _VRS extends State<VampireRoomScreen> {
             child: Column(children: [
               AZRoomHeader(title: 'VAMPİR KÖYLÜ', onClose: _leave),
               const SizedBox(height: 20),
-              AZRoomCode(code: _code, accentColor: Colors.deepPurpleAccent),
+              AZRoomCode(code: _code, accentColor: AZColors.purple),
               const SizedBox(height: 20),
               AZFrostCard(
                 child: Column(
@@ -373,7 +373,7 @@ class _VRS extends State<VampireRoomScreen> {
                     label: 'OYUNU BAŞLAT',
                     icon: Icons.play_arrow_rounded,
                     onPressed: _canStart ? _start : null,
-                    color: Colors.deepPurple,
+                    color: AZColors.purple,
                     width: double.infinity)
               else
                 const AZWaitingCard(message: 'Host oyunu başlatacak...'),
@@ -767,7 +767,7 @@ class _VGS extends State<VampireGameScreen> {
         ),
         actions: [
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.deepPurple),
+            style: FilledButton.styleFrom(backgroundColor: AZColors.purple),
             onPressed: () async {
               await _db.child('${GamePaths.vampire}/${widget.roomId}').remove();
               if (mounted) Navigator.popUntil(context, (r) => r.isFirst);

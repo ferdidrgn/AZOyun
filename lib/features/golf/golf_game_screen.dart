@@ -371,7 +371,7 @@ class _GolfGameScreenState extends State<GolfGameScreen>
   @override
   Widget build(BuildContext context) {
     if (_room.isEmpty) {
-      return const Scaffold(backgroundColor: Color(0xFF2E7D32),
+      return const Scaffold(backgroundColor: AZColors.greenDk,
           body: Center(child: CircularProgressIndicator(color: Colors.white)));
     }
     final holeNo  = (_room['currentHole'] as int?) ?? 1;
@@ -381,16 +381,16 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     return AZLeaveGuard(
       onLeave: _confirmLeave,
       child: Scaffold(
-      backgroundColor: const Color(0xFF2E7D32),
+      backgroundColor: AZColors.greenDk,
       body: SafeArea(child: Column(children: [
         _ScoreBar(players: players, myKey: widget.myKey,
             holeNo: holeNo, maxHole: maxHole, onLeave: _confirmLeave),
         AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           decoration: BoxDecoration(
-            color: _myDone ? const Color(0xFF1B5E20)
-                : _moving  ? const Color(0xFFF57F17)
-                : const Color(0xFF33691E),
+            color: _myDone ? AZColors.greenDk
+                : _moving  ? AZColors.orange
+                : AZColors.green,
             boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 3))],
           ),
           padding: const EdgeInsets.symmetric(vertical: 7),

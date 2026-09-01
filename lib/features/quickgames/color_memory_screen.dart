@@ -25,10 +25,10 @@ class ColorMemoryLobbyScreen extends StatelessWidget {
 }
 
 const _kMemoryColors = [
-  Color(0xFFE53935),
-  Color(0xFF1E88E5),
-  Color(0xFF43A047),
-  Color(0xFFFDD835),
+  AZColors.red,
+  AZColors.blue,
+  AZColors.green,
+  AZColors.orange,
 ];
 
 class ColorMemoryGameScreen extends StatelessWidget {

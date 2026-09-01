@@ -26,10 +26,10 @@ class CarData {
 }
 
 const _cars = [
-  CarData(id:'sport',  name:'Spor',    emoji:'🏎️', maxSpeed:1.0,  acceleration:0.7, handling:0.8, color:Color(0xFFE53935)),
-  CarData(id:'muscle', name:'Muscle',  emoji:'🚗', maxSpeed:0.9,  acceleration:0.9, handling:0.6, color:Color(0xFF1565C0)),
-  CarData(id:'rally',  name:'Rally',   emoji:'🚙', maxSpeed:0.8,  acceleration:0.8, handling:1.0, color:Color(0xFF2E7D32)),
-  CarData(id:'turbo',  name:'Turbo',   emoji:'🚕', maxSpeed:1.1,  acceleration:0.6, handling:0.7, color:Color(0xFFF57F17)),
+  CarData(id:'sport',  name:'Spor',    emoji:'🏎️', maxSpeed:1.0,  acceleration:0.7, handling:0.8, color:AZColors.red),
+  CarData(id:'muscle', name:'Muscle',  emoji:'🚗', maxSpeed:0.9,  acceleration:0.9, handling:0.6, color:AZColors.blue),
+  CarData(id:'rally',  name:'Rally',   emoji:'🚙', maxSpeed:0.8,  acceleration:0.8, handling:1.0, color:AZColors.green),
+  CarData(id:'turbo',  name:'Turbo',   emoji:'🚕', maxSpeed:1.1,  acceleration:0.6, handling:0.7, color:AZColors.orange),
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -56,7 +56,7 @@ class _RacingLobbyState extends State<RacingLobbyScreen> {
     if (n != null && n.isNotEmpty) setState(() => _name = n); else _ask();
   }
   Future<void> _ask() async {
-    final n = await showNameDialog(context, current: _name, accentColor: const Color(0xFFE53935));
+    final n = await showNameDialog(context, current: _name, accentColor: AZColors.redDk);
     if (n == null || !mounted) return;
     await _storage.setPlayerName(n); setState(() => _name = n);
   }
@@ -111,7 +111,7 @@ class _RacingLobbyState extends State<RacingLobbyScreen> {
   @override
   Widget build(BuildContext context) => AZGradientScaffold(
     gradient: const LinearGradient(
-      colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+      colors: [Color(0xFF3A4356), Color(0xFF232B3A)],
       begin: Alignment.topLeft, end: Alignment.bottomRight,
     ),
     child: Column(children: [
@@ -183,7 +183,7 @@ class _RacingLobbyState extends State<RacingLobbyScreen> {
           )),
           const SizedBox(height: 20),
           AZButton(label: 'ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-              onPressed: _create, color: const Color(0xFFE53935), loading: _loading, width: 280),
+              onPressed: _create, color: AZColors.redDk, loading: _loading, width: 280),
           const SizedBox(height: 20),
           const Text('— veya —', style: TextStyle(color: Colors.white54)),
           const SizedBox(height: 20),
@@ -295,11 +295,11 @@ class _RRoomState extends State<RacingRoomScreen> {
   @override
   Widget build(BuildContext context) => AZLeaveGuard(onLeave: _leave,
     child: AZGradientScaffold(
-      gradient: const LinearGradient(colors: [Color(0xFF1A1A2E), Color(0xFF16213E)]),
+      gradient: const LinearGradient(colors: [Color(0xFF3A4356), Color(0xFF232B3A)]),
       child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
         AZRoomHeader(title: '🏁 ARABA YARIŞI', onClose: _leave),
         const SizedBox(height: 20),
-        AZRoomCode(code: _code, accentColor: const Color(0xFFE53935)),
+        AZRoomCode(code: _code, accentColor: AZColors.redDk),
         const SizedBox(height: 20),
         AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Pilotlar (${_players.length}/4)',
@@ -318,7 +318,7 @@ class _RRoomState extends State<RacingRoomScreen> {
         const Spacer(),
         if (_isHost) AZButton(label: 'YARISMAYI BAŞLAT! 🏁', icon: Icons.sports_motorsports_rounded,
             onPressed: _canStart ? _start : null,
-            color: const Color(0xFFE53935), width: double.infinity)
+            color: AZColors.redDk, width: double.infinity)
         else const AZWaitingCard(message: 'Host yarışı başlatacak...'),
       ])),
     ),
@@ -673,7 +673,7 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
         }).toList(),
       ),
       actions: [FilledButton(
-        style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE53935)),
+        style: FilledButton.styleFrom(backgroundColor: AZColors.redDk),
         onPressed: () async {
           await _db.child('${GamePaths.racing}/${widget.roomId}').remove();
           if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
@@ -690,14 +690,14 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
     return AZLeaveGuard(
       onLeave: _confirmLeave,
       child: Scaffold(
-      backgroundColor: const Color(0xFF2C2C2C),
+      backgroundColor: const Color(0xFF2E333F),
       body: SafeArea(child: Column(children: [
         // HUD üst
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              colors: [Color(0xFF23233F), Color(0xFF1A1A2E)],
+              colors: [Color(0xFF3C4558), Color(0xFF2E3646)],
             ),
             boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 12, offset: Offset(0, 4))],
           ),
@@ -801,7 +801,7 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              colors: [Color(0xFF1A1A2E), Color(0xFF13131F)],
+              colors: [Color(0xFF2E3646), Color(0xFF232B3A)],
             ),
             boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 12, offset: Offset(0, -4))],
           ),

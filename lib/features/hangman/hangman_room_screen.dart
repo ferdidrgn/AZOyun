@@ -24,7 +24,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
   Map<String, dynamic> _room = {};
   bool _navigating = false;
 
-  static const _kRed = Color(0xFFD32F2F);
+  static const _kRed = Color(0xFFAD6F63);
 
   @override
   void initState() {
@@ -89,7 +89,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
       child: AZGradientScaffold(
         gradient: const LinearGradient(
           begin: Alignment.topCenter, end: Alignment.bottomCenter,
-          colors: [Color(0xFFD32F2F), Color(0xFFB71C1C)],
+          colors: [Color(0xFFCB8A7E), Color(0xFFAD6F63)],
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),

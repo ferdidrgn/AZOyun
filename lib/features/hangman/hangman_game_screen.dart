@@ -25,11 +25,11 @@ const _kWords = [
   'KITAP','ROMAN','SENARYO','MAKALE','DERGI','GAZETE',
 ];
 
-const _kRed   = Color(0xFFD32F2F);
-const _kGreen = Color(0xFF2E7D32);
+const _kRed   = Color(0xFFAD6F63);
+const _kGreen = Color(0xFF77916F);
 const _kGrey  = Color(0xFF9E9E9E);
-const _kRedLt = Color(0xFFFFEBEE);
-const _kBg    = Color(0xFFFAFAFA);
+const _kRedLt = Color(0xFFF3E3DF);
+const _kBg    = Color(0xFFF6F1E9);
 
 /// Dart'ın `String.toUpperCase()` metodu Türkçe'ye duyarlı değil: küçük
 /// "i" harfini noktasız "I" yapar, noktalı "İ" değil (bkz. aynı düzeltme

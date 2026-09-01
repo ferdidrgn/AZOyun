@@ -8,6 +8,7 @@ import '../../core/services/ad_service.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
@@ -29,10 +30,10 @@ class FighterData {
 
 const kFighters = [
   FighterData(id:'ninja',   name:'Ninja',    emoji:'🥷', maxHp:80,  attack:25, defense:10, speed:500,  color:Color(0xFF37474F), special:'Gizlenme: 2 sn çok yüksek savunma'),
-  FighterData(id:'warrior', name:'Savaşçı',  emoji:'⚔️', maxHp:120, attack:18, defense:20, speed:900,  color:Color(0xFFB71C1C), special:'Kılıç fırtınası: 3× hasar'),
-  FighterData(id:'mage',    name:'Büyücü',   emoji:'🧙', maxHp:70,  attack:32, defense:5,  speed:1100, color:Color(0xFF4A148C), special:'Ateş topu: Yanma hasarı'),
-  FighterData(id:'archer',  name:'Okçu',     emoji:'🏹', maxHp:90,  attack:22, defense:8,  speed:650,  color:Color(0xFF1B5E20), special:'Kritik atış: garantili 2.2× hasar'),
-  FighterData(id:'paladin', name:'Paladin',  emoji:'🛡️', maxHp:150, attack:15, defense:30, speed:1000, color:Color(0xFFE65100), special:'Kutsal kalkan: 3 sn çok yüksek savunma'),
+  FighterData(id:'warrior', name:'Savaşçı',  emoji:'⚔️', maxHp:120, attack:18, defense:20, speed:900,  color:AZColors.redDk, special:'Kılıç fırtınası: 3× hasar'),
+  FighterData(id:'mage',    name:'Büyücü',   emoji:'🧙', maxHp:70,  attack:32, defense:5,  speed:1100, color:AZColors.purpleDk, special:'Ateş topu: Yanma hasarı'),
+  FighterData(id:'archer',  name:'Okçu',     emoji:'🏹', maxHp:90,  attack:22, defense:8,  speed:650,  color:AZColors.greenDk, special:'Kritik atış: garantili 2.2× hasar'),
+  FighterData(id:'paladin', name:'Paladin',  emoji:'🛡️', maxHp:150, attack:15, defense:30, speed:1000, color:AZColors.orangeDk, special:'Kutsal kalkan: 3 sn çok yüksek savunma'),
   FighterData(id:'rogue',   name:'Haydut',   emoji:'🗡️', maxHp:85,  attack:28, defense:6,  speed:480,  color:Color(0xFF263238), special:'Zehir bıçağı: DoT hasarı'),
 ];
 
@@ -76,7 +77,7 @@ class _FLobbyState extends State<FighterLobbyScreen>
   }
 
   Future<void> _ask() async {
-    final n = await showNameDialog(context, current: _name, accentColor: const Color(0xFFB71C1C));
+    final n = await showNameDialog(context, current: _name, accentColor: AZColors.redDk);
     if (n == null || !mounted) return;
     await _storage.setPlayerName(n); setState(() => _name = n);
   }
@@ -134,7 +135,7 @@ class _FLobbyState extends State<FighterLobbyScreen>
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [Color(0xFF1A0000), Color(0xFF0A0010), Color(0xFF000A00)],
+            colors: [Color(0xFF2E1A17), Color(0xFF241419), Color(0xFF16211C)],
           ),
         ),
         child: SafeArea(child: Column(children: [
@@ -259,11 +260,11 @@ class _FLobbyState extends State<FighterLobbyScreen>
                   label: const Text('ODA OLUŞTUR',
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB71C1C),
+                    backgroundColor: AZColors.redDk,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: 6,
-                    shadowColor: const Color(0xFFB71C1C),
+                    shadowColor: AZColors.redDk,
                   ),
                 ),
               ),
@@ -398,13 +399,13 @@ class _FRoomState extends State<FighterRoomScreen> {
       child: Scaffold(
         body: Container(
           decoration: const BoxDecoration(gradient: LinearGradient(
-              colors: [Color(0xFF1A0000), Color(0xFF0A0010)],
+              colors: [Color(0xFF2E1A17), Color(0xFF241419)],
               begin: Alignment.topLeft, end: Alignment.bottomRight)),
           child: SafeArea(child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
             AZRoomHeader(
                 title: '⚔️ DÖVÜŞÇÜLER', onClose: _leave, closeColor: Colors.white54),
             const SizedBox(height: 16),
-            AZRoomCode(code: _code, accentColor: const Color(0xFFEF5350)),
+            AZRoomCode(code: _code, accentColor: AZColors.red),
             const SizedBox(height: 24),
 
             // Fighter showcase VS
@@ -438,7 +439,7 @@ class _FRoomState extends State<FighterRoomScreen> {
                   label: const Text('DÖVÜŞÜ BAŞLAT!',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _canStart ? const Color(0xFFB71C1C) : Colors.grey.shade800,
+                    backgroundColor: _canStart ? AZColors.redDk : Colors.grey.shade800,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: _canStart ? 8 : 0,
@@ -881,7 +882,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
 
     showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0000),
+        backgroundColor: const Color(0xFF2E1A17),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: iWon ? Colors.amber : Colors.red.shade800, width: 2)),
         title: Text(iWon ? '🏆 ZAFER!' : '💀 YENİLDİN',
@@ -928,7 +929,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     if (_room.isEmpty || _players.isEmpty) {
-      return const Scaffold(backgroundColor: Color(0xFF1A0000),
+      return const Scaffold(backgroundColor: Color(0xFF2E1A17),
           body: Center(child: CircularProgressIndicator(color: Colors.red)));
     }
 
@@ -943,7 +944,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
     final oppBurning = (oppData?['burning'] as bool?) ?? false;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF100010),
+      backgroundColor: const Color(0xFF231822),
       body: SafeArea(child: Column(children: [
         // HP barları + skor
         _FightHUD(
@@ -967,8 +968,8 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [const Color(0xFF1A0010), const Color(0xFF0A0020),
-                      const Color(0xFF1A0000)],
+                  colors: [const Color(0xFF2E1A22), const Color(0xFF221530),
+                      const Color(0xFF2E1A17)],
                 ),
               ),
             ),
@@ -1073,7 +1074,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
         Container(
           decoration: const BoxDecoration(
               gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Color(0xFF1A0000), Color(0xFF100010)])),
+                  colors: [Color(0xFF2E1A17), Color(0xFF231822)])),
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
           child: Row(children: [
             // Normal saldırı
@@ -1081,7 +1082,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
               label: '⚔️', sublabel: _atkCd ? '...' : 'SALDIR',
               onTap: _normalAttack,
               active: !_atkCd && _alive,
-              color: const Color(0xFFB71C1C),
+              color: AZColors.redDk,
               flex: 3,
             ),
             const SizedBox(width: 10),
@@ -1090,7 +1091,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
               label: '🛡️', sublabel: _shieldOn ? 'AKTİF' : 'BLOK',
               onTap: _activateShield,
               active: !_shieldOn && _alive,
-              color: const Color(0xFF0D47A1),
+              color: AZColors.blueDk,
             ),
             const SizedBox(width: 10),
             // Özel
@@ -1098,7 +1099,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
               label: '✨', sublabel: _specCd ? '...' : 'ÖZEL',
               onTap: _specialAttack,
               active: !_specCd && _alive,
-              color: const Color(0xFF4A148C),
+              color: AZColors.purpleDk,
             ),
           ]),
         ),
@@ -1137,7 +1138,7 @@ class _FightHUD extends StatelessWidget {
     decoration: const BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [Color(0xFF1A0000), Color(0xFF0D0000)],
+        colors: [Color(0xFF2E1A17), Color(0xFF231715)],
       ),
       boxShadow: [BoxShadow(color: Colors.black87, blurRadius: 16, offset: Offset(0, 6))],
     ),

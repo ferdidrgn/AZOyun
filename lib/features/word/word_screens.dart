@@ -34,7 +34,7 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
   final _storage  = StorageService.instance;
   final _codeCtrl = TextEditingController();
   String? _playerName; bool _loading = false;
-  static const _kCyan = Color(0xFF00f2fe);
+  static const _kCyan = Color(0xFF7FA79B);
 
   @override void initState() { super.initState(); _loadName(); }
   @override void dispose()   { _codeCtrl.dispose(); super.dispose(); }
@@ -160,7 +160,7 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _navigating = false;
-  static const _kCyan = Color(0xFF00f2fe);
+  static const _kCyan = Color(0xFF7FA79B);
 
   @override
   void initState() {
@@ -270,7 +270,7 @@ class _WordGameScreenState extends State<WordGameScreen>
 
   late AnimationController _successCtrl;
   late Animation<double>   _successScale;
-  static const _kCyan = Color(0xFF00f2fe);
+  static const _kCyan = Color(0xFF7FA79B);
 
   @override
   void initState() {
@@ -419,7 +419,7 @@ class _WordGameScreenState extends State<WordGameScreen>
               margin: const EdgeInsets.symmetric(vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                  color: isMe ? Colors.cyan.shade50 : null,
+                  color: isMe ? Theme.of(context).colorScheme.primary.withAlpha(28) : null,
                   borderRadius: BorderRadius.circular(10)),
               child: Row(children: [
                 Text(e.key < medals.length ? medals[e.key] : '?',
@@ -481,7 +481,7 @@ class _WordGameScreenState extends State<WordGameScreen>
     return AZLeaveGuard(
       onLeave: _confirmLeave,
       child: Scaffold(
-      backgroundColor: const Color(0xFFE0F7FA),
+      backgroundColor: const Color(0xFFE6EEEC),
       body: SafeArea(child: Column(children: [
 
         // Score bar
@@ -532,7 +532,7 @@ class _WordGameScreenState extends State<WordGameScreen>
         if (_gameOver)
           Container(
             width: double.infinity,
-            color: const Color(0xFF00838F),
+            color: const Color(0xFF4F7A79),
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: const Text('⏳ Süren doldu! Diğer oyuncular bekleniyor...',
                 textAlign: TextAlign.center,
@@ -555,7 +555,7 @@ class _WordGameScreenState extends State<WordGameScreen>
                 child: Text(
                   current.isEmpty ? '...' : current.split('').join(' '),
                   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold,
-                      letterSpacing: 6, color: Color(0xFF00838F)),
+                      letterSpacing: 6, color: Color(0xFF4F7A79)),
                 ),
               ),
             ),

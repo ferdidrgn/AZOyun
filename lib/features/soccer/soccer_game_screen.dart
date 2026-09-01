@@ -598,14 +598,14 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
   Widget build(BuildContext context) {
     if (_room.isEmpty) {
       return const Scaffold(
-          backgroundColor: Color(0xFF1B5E20),
+          backgroundColor: AZColors.greenDk,
           body: Center(child: CircularProgressIndicator(color: Colors.white)));
     }
 
     return AZLeaveGuard(
       onLeave: _confirmLeave,
       child: Scaffold(
-      backgroundColor: const Color(0xFF2E7D32),
+      backgroundColor: AZColors.greenDk,
       body: SafeArea(child: Column(children: [
 
         // ── Score bar ──────────────────────────────────────────────────────
@@ -621,7 +621,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: _isMyTurn ? const Color(0xFF33691E) : const Color(0xFF1B5E20),
+            color: _isMyTurn ? AZColors.green : AZColors.greenDk,
             boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 3))],
           ),
           padding: const EdgeInsets.symmetric(vertical: 6),

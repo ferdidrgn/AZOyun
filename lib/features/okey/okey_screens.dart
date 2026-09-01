@@ -181,7 +181,7 @@ class _OLobbyState extends State<OkeyLobbyScreen> {
   @override void initState() { super.initState(); _mode = widget.mode; _load(); }
   @override void dispose() { _codeCtrl.dispose(); super.dispose(); }
 
-  Color get _accent => _mode == '101' ? const Color(0xFFE65100) : const Color(0xFF1B5E20);
+  Color get _accent => _mode == '101' ? AZColors.orangeDk : AZColors.greenDk;
   Gradient get _grad => _mode == '101' ? AZColors.gradOrange : AZColors.gradGreen;
 
   Future<void> _load() async {
@@ -374,7 +374,7 @@ class _ORoomState extends State<OkeyRoomScreen> {
   bool get _isHost => widget.myKey == 'p1';
   bool get _canStart => _players.length >= 2;
   String get _mode => _room['mode'] ?? widget.mode;
-  Color get _accent => _mode == '101' ? const Color(0xFFE65100) : const Color(0xFF1B5E20);
+  Color get _accent => _mode == '101' ? AZColors.orangeDk : AZColors.greenDk;
   Gradient get _grad => _mode == '101' ? AZColors.gradOrange : AZColors.gradGreen;
 
   Future<void> _start() async {
@@ -724,7 +724,7 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
         }).toList(),
       ),
       actions: [FilledButton(
-        style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1B5E20)),
+        style: FilledButton.styleFrom(backgroundColor: AZColors.greenDk),
         onPressed: () async {
           await _db.child('${GamePaths.okey}/${widget.roomId}').remove();
           if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
@@ -780,7 +780,7 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
                     borderRadius: BorderRadius.circular(12),
                     border: isTurn ? Border.all(color: Colors.yellow, width: 2) : null),
                 child: Text('${e.value['name']}: $score',
-                    style: TextStyle(color: isMe ? const Color(0xFF1B5E20) : Colors.white,
+                    style: TextStyle(color: isMe ? AZColors.greenDk : Colors.white,
                         fontWeight: FontWeight.bold, fontSize: 12)),
               );
             }),
@@ -860,10 +860,10 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-              color: _isMyTurn ? const Color(0xFF2E7D32) : Colors.black26,
+              color: _isMyTurn ? AZColors.green : Colors.black26,
               borderRadius: BorderRadius.circular(12),
               boxShadow: _isMyTurn
-                  ? [BoxShadow(color: const Color(0xFF2E7D32).withAlpha(120), blurRadius: 10, offset: const Offset(0, 3))]
+                  ? [BoxShadow(color: AZColors.green.withAlpha(120), blurRadius: 10, offset: const Offset(0, 3))]
                   : const []),
           child: Text(
             _isMyTurn
@@ -1018,7 +1018,7 @@ class _TileW extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final numColor = tile.joker ? Colors.deepPurple : OTile.uiColor(tile.color);
+    final numColor = tile.joker ? AZColors.purpleDk : OTile.uiColor(tile.color);
     final topShade = isOkey ? const Color(0xFFFFF3C4) : const Color(0xFFFFFDF7);
     final botShade = isOkey ? const Color(0xFFFFE082) : const Color(0xFFEAE3D2);
     return AnimatedContainer(
@@ -1069,7 +1069,7 @@ class _TileW extends StatelessWidget {
                   color: Colors.amber.shade800, fontWeight: FontWeight.bold)),
             if (tile.joker)
               Text('JKR', style: TextStyle(fontSize: size * 0.13,
-                  color: Colors.deepPurple, fontWeight: FontWeight.bold)),
+                  color: AZColors.purpleDk, fontWeight: FontWeight.bold)),
           ]),
         )),
       ]),
