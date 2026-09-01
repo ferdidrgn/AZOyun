@@ -24,7 +24,7 @@ const List<Color> kPlayerColors = [
   AZColors.green,
   AZColors.orange,
   AZColors.purple,
-  Color(0xFF00BFA5),
+  Color(0xFF4F8FA3),
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════

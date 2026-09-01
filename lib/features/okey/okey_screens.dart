@@ -32,8 +32,8 @@ class OTile {
   Map<String, dynamic> toMap() => {'n': num, 'c': color.index, 'j': joker, 'id': id};
 
   static Color uiColor(TColor c) => [
-    const Color(0xFFFFD600), const Color(0xFF1565C0),
-    const Color(0xFFD32F2F), const Color(0xFF212121),
+    const Color(0xFFCBA135), AZColors.blueDk,
+    AZColors.redDk, const Color(0xFF212121),
   ][c.index];
 
   String get display => joker ? '★' : '$num';
@@ -742,13 +742,13 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
         ? OTile.fromMap(Map<String, dynamic>.from(_discard.last as Map)) : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D3B18),
+      backgroundColor: const Color(0xFF232C21),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.topCenter,
             radius: 1.4,
-            colors: [Color(0xFF276B33), Color(0xFF163F1F), Color(0xFF0A2812)],
+            colors: [Color(0xFF4A5C42), Color(0xFF33402E), Color(0xFF232C21)],
             stops: [0.0, 0.6, 1.0],
           ),
         ),
@@ -758,7 +758,7 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              colors: [Color(0xFF124A20), Color(0xFF0D3B18)],
+              colors: [Color(0xFF3A4A34), Color(0xFF232C21)],
             ),
             boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 4))],
           ),
@@ -893,11 +893,11 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Color(0xFF8D6E4A), Color(0xFF5D4128), Color(0xFF432D18)],
+                  colors: [Color(0xFF8C7863), Color(0xFF5C4A3D), Color(0xFF3A2E22)],
                   stops: [0.0, 0.55, 1.0],
                 ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF2E1D10), width: 1.5),
+                border: Border.all(color: const Color(0xFF2E241D), width: 1.5),
                 boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 12, offset: Offset(0, 6))],
               ),
               padding: const EdgeInsets.fromLTRB(4, 14, 4, 6),
@@ -1019,8 +1019,8 @@ class _TileW extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final numColor = tile.joker ? AZColors.purpleDk : OTile.uiColor(tile.color);
-    final topShade = isOkey ? const Color(0xFFFFF3C4) : const Color(0xFFFFFDF7);
-    final botShade = isOkey ? const Color(0xFFFFE082) : const Color(0xFFEAE3D2);
+    final topShade = isOkey ? const Color(0xFFF0E0B8) : const Color(0xFFFFFDF7);
+    final botShade = isOkey ? AZColors.accentGoldSoft : const Color(0xFFEAE3D2);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 120),
       curve: Curves.easeOut,
@@ -1035,10 +1035,10 @@ class _TileW extends StatelessWidget {
             colors: [topShade, botShade]),
         borderRadius: BorderRadius.circular(9),
         border: Border.all(
-            color: isOkey ? Colors.amber.shade700
-                : selected ? Colors.orange.shade400
-                : highlighted ? Colors.greenAccent
-                : mustDiscard ? Colors.red.withAlpha(130)
+            color: isOkey ? AZColors.orangeDk
+                : selected ? AZColors.orange
+                : highlighted ? AZColors.green
+                : mustDiscard ? AZColors.red.withAlpha(130)
                 : Colors.grey.shade500,
             width: selected || isOkey ? 2.5 : 1.3),
         boxShadow: [BoxShadow(
@@ -1066,7 +1066,7 @@ class _TileW extends StatelessWidget {
                         offset: Offset(0, 1), blurRadius: 1)])),
             if (isOkey && !tile.joker)
               Text('OK', style: TextStyle(fontSize: size * 0.13,
-                  color: Colors.amber.shade800, fontWeight: FontWeight.bold)),
+                  color: AZColors.orangeDk, fontWeight: FontWeight.bold)),
             if (tile.joker)
               Text('JKR', style: TextStyle(fontSize: size * 0.13,
                   color: AZColors.purpleDk, fontWeight: FontWeight.bold)),

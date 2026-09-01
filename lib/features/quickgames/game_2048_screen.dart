@@ -196,17 +196,17 @@ class _Game2048GameScreenState extends State<Game2048GameScreen> {
 
   Color _tileColor(int v) {
     const colors = {
-      2: Color(0xFFEEE4DA),
-      4: Color(0xFFEDE0C8),
-      8: Color(0xFFF2B179),
-      16: Color(0xFFF59563),
-      32: Color(0xFFF67C5F),
-      64: Color(0xFFF65E3B),
-      128: Color(0xFFEDCF72),
-      256: Color(0xFFEDCC61),
-      512: Color(0xFFEDC850),
-      1024: Color(0xFFEDC53F),
-      2048: Color(0xFFEDC22E),
+      2: Color(0xFFE6DBC7),
+      4: Color(0xFFDED0B4),
+      8: Color(0xFFD9A25C),
+      16: Color(0xFFCE9556),
+      32: Color(0xFFC38650),
+      64: Color(0xFFB8724A),
+      128: Color(0xFFE0C17A),
+      256: Color(0xFFD9B468),
+      512: Color(0xFFD2A857),
+      1024: Color(0xFFCB9C47),
+      2048: Color(0xFFC49038),
     };
     if (v == 0) return const Color(0x14FFFFFF);
     return colors[v] ?? const Color(0xFF3C3A32);

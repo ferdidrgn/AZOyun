@@ -504,7 +504,7 @@ class _WordGameScreenState extends State<WordGameScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                  color: _timeLeft <= 10 ? Colors.red : Colors.white,
+                  color: _timeLeft <= 10 ? AZColors.red : Colors.white,
                   borderRadius: BorderRadius.circular(20)),
               child: Text('⏱ $_timeLeft',
                   style: TextStyle(fontWeight: FontWeight.bold,

@@ -713,7 +713,7 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(width: 16),
             Text('Hız: ${(_speed * 1000).toStringAsFixed(0)} km/h',
-                style: TextStyle(color: Colors.yellow.shade300, fontSize: 13)),
+                style: const TextStyle(color: AZColors.accentGoldSoft, fontSize: 13)),
             const Spacer(),
             ...players.entries.map((e) {
               final isMe = e.key == widget.myKey;
@@ -776,9 +776,9 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(color: Colors.black87,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.yellow, width: 3)),
+                      border: Border.all(color: AZColors.accentGold, width: 3)),
                   child: Text(_countdown > 0 ? '$_countdown' : 'GO!',
-                      style: TextStyle(color: _countdown > 0 ? Colors.white : Colors.green,
+                      style: TextStyle(color: _countdown > 0 ? Colors.white : AZColors.green,
                           fontSize: 48, fontWeight: FontWeight.bold)),
                 )),
 
@@ -789,7 +789,7 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
                   decoration: BoxDecoration(color: Colors.black87,
                       borderRadius: BorderRadius.circular(20)),
                   child: const Text('🏁 BİTTİ!',
-                      style: TextStyle(color: Colors.amber, fontSize: 32,
+                      style: TextStyle(color: AZColors.accentGold, fontSize: 32,
                           fontWeight: FontWeight.bold)),
                 )),
             ]),
@@ -809,21 +809,21 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
           child: Row(children: [
             // Sol
             _CtrlBtn(label: '◀', onDown: () => setState(() => _leftDown = true),
-                onUp: () => setState(() => _leftDown = false), color: Colors.blue),
+                onUp: () => setState(() => _leftDown = false), color: AZColors.blueDk),
             const SizedBox(width: 8),
             // Fren
             _CtrlBtn(label: '🔴', onDown: () => setState(() => _brakeDown = true),
-                onUp: () => setState(() => _brakeDown = false), color: Colors.red.shade800),
+                onUp: () => setState(() => _brakeDown = false), color: AZColors.redDk),
             const Spacer(),
             // Gaz
             _CtrlBtn(label: '⚡ GAZ', onDown: () => setState(() => _gasDown = true),
                 onUp: () => setState(() => _gasDown = false),
-                color: _gasDown ? Colors.green.shade700 : Colors.green.shade900,
+                color: _gasDown ? AZColors.green : AZColors.greenDk,
                 wide: true),
             const Spacer(),
             // Sağ
             _CtrlBtn(label: '▶', onDown: () => setState(() => _rightDown = true),
-                onUp: () => setState(() => _rightDown = false), color: Colors.blue),
+                onUp: () => setState(() => _rightDown = false), color: AZColors.blueDk),
           ]),
         ),
 
@@ -881,13 +881,13 @@ class _TrackPainter extends CustomPainter {
   void paint(Canvas canvas, Size s) {
     // Zemin
     canvas.drawRect(Rect.fromLTWH(0, 0, s.width, s.height),
-        Paint()..color = const Color(0xFF4CAF50));
+        Paint()..color = AZColors.green);
 
     // Pist (kapalı devre — oval/döngüsel)
     final pts = checkpoints.map((cp) => Offset(cp.dx * s.width, cp.dy * s.height)).toList();
 
     final trackPaint = Paint()
-      ..color = const Color(0xFF616161) ..strokeWidth = s.width * 0.18
+      ..color = const Color(0xFF5A5650) ..strokeWidth = s.width * 0.18
       ..strokeCap = StrokeCap.round ..style = PaintingStyle.stroke;
     final path = Path();
     path.moveTo(pts.first.dx, pts.first.dy);
@@ -905,7 +905,7 @@ class _TrackPainter extends CustomPainter {
     for (var i = 0; i < pts.length; i++) {
       final past = i < myCheckpoint;
       canvas.drawCircle(pts[i], 14,
-          Paint()..color = past ? Colors.green.withAlpha(180) : Colors.yellow.withAlpha(180));
+          Paint()..color = past ? AZColors.greenDk.withAlpha(180) : AZColors.orange.withAlpha(180));
       canvas.drawCircle(pts[i], 14,
           Paint()..color = Colors.white ..style = PaintingStyle.stroke ..strokeWidth = 2);
     }

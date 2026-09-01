@@ -1681,3 +1681,154 @@ rengi düzeltmişti, yapı hâlâ statik bir ikon+yazı+spinner'dı.
   `android/ios/assets` klasörüne kopyalamak) bu ortamda derleme ile
   doğrulanamayacak yeni bir bağımlılık zinciri açardı; ikon tabanlı
   yaklaşım garantili derlenir.
+
+### 8.33 "Soft UI" taramasının son parçası: 30+ oyunun kendi OYUN ALANI çizimleri
+
+8.30/8.31'de bilinçli olarak ertelenen tek kalem buydu: "Okey taşlarının
+kendi iç deseni, Dama tahtasının kare renkleri, yarış pisti asfaltı gibi
+— bunlar jenerik UI değil oyuna özgü görsel kimlik" notuyla ayrılmıştı.
+Bu turda tüm online ve tek-cihaz (hızlı) oyunların `CustomPainter`/
+`GridView`/hardcoded `BoxDecoration` ile çizilen bizzat OYUN ALANI
+renkleri tek tek incelendi; her renk noktası önce FONKSİYONEL mi (iki
+farklı durumu/oyuncuyu/rolü ayırt ediyor mu) yoksa salt DEKORATİF mi
+diye sınıflandırıldı — fonksiyonel olanlar birbirinden hâlâ net şekilde
+ayırt edilebilir kalacak şekilde mat'landı, dekoratif olanlar doğrudan
+`AZColors` ailesine taşındı.
+
+- [x] **Dama (`checkers/dama_screens.dart`)** — tahtanın kendisi
+      (8 satırlık `GridView`) şimdiye kadar hiç dokunulmamıştı: açık kare
+      `#EFEBE9` → `#E6DBC7` (sıcak krem), koyu kare `#5D4037` → `#5F4A38`
+      (mat ceviz), aralarındaki kontrast bilinçli olarak korundu (tahtayı
+      bir bakışta okumak hâlâ kolay). Seçili taş vurgusu `Colors.yellow.
+      shade600` → `AZColors.orange`, geçerli hamle vurgusu `Colors.green.
+      shade400` → `AZColors.green`. Taş renkleri (beyaz/siyah gradyan)
+      bilinçli olarak dokunulmadı — zaten nötr, gerçek dama taşı gibi
+      siyah/beyaz olmaları oyunun kendi kimliği.
+- [x] **Okey (`okey/okey_screens.dart`)** — 4 taş rengi (sarı/mavi/
+      kırmızı/siyah, `OTile.uiColor`) FONKSİYONEL: sarı `#FFD600` → mat
+      hardal `#CBA135`, mavi `#1565C0` → `AZColors.blueDk`, kırmızı
+      `#D32F2F` → `AZColors.redDk`, siyah zaten nötr bırakıldı — dördü
+      hâlâ birbirinden net ayrılıyor. Yeşil çuha masa (radial gradyan
+      `#276B33`/`#163F1F`/`#0A2812`) → mat adaçayı yeşili ailesine
+      taşındı; skor barı aynı aileden türetildi. Ahşap istaka gradyanı
+      (`#8D6E4A`/`#5D4128`/`#432D18`) Dama'daki ahşap paletiyle aynı
+      değerlere (`#8C7863`/`#5C4A3D`/`#3A2E22`) hizalandı — artık iki
+      oyunun "ahşap" kimliği tutarlı. Okey göstergesi taşının parlak sarı
+      zemini (`#FFF3C4`/`#FFE082`) ve kenarlıkları (`Colors.amber.
+      shade700/800`, `Colors.greenAccent`) `AZColors.accentGoldSoft/
+      orangeDk/orange/green` ailesine taşındı.
+- [x] **Araba Yarışı (`racing/racing_screens.dart`)** — `_TrackPainter`
+      (pistin kendisi) ilk kez düzeltildi: çim zemin `#4CAF50` →
+      `AZColors.green`, asfalt `#616161` → sıcak mat gri `#5A5650`.
+      Checkpoint noktaları (geçilen: yeşil, geçilmemiş: sarı) `AZColors.
+      greenDk`/`AZColors.orange`'a taşındı — hâlâ net ayırt ediliyor.
+      Direksiyon kontrol düğmeleri (sol/sağ/fren/gaz — ekranda sürekli
+      görünen, oyunun bir parçası sayılan `Colors.blue`/`red.shade800`/
+      `green.shade700-900`) da `AZColors.blueDk/redDk/green/greenDk`'ya
+      taşındı. Hız göstergesi, geri sayım çemberi ve bitiş banner'ı
+      (`Colors.yellow`/`amber`) `AZColors.accentGold(Soft)` ailesine
+      hizalandı.
+- [x] **Golf (`golf/golf_game_screen.dart`)** — `_GolfFieldPainter` (mini
+      golf sahası) ilk kez düzeltildi: çim `#388E3C` → `AZColors.green`,
+      duvarlar `#6D4C41` → `#7A6552`, engeller `#795548` → `#8C7863`
+      (Okey/Dama'daki ahşap aileyle tutarlı). Vuruş gücü göstergesi
+      (`Colors.red`/`redAccent`/`yellowAccent`) → `AZColors.red`/
+      `AZColors.orange`; bayrak `Colors.redAccent` → `AZColors.red`. Top
+      beyaz kalması bilinçli — gerçek bir golf topu beyazdır, "parlak/
+      doygun" bir renk değil.
+- [x] **Serbest Vuruş (`soccer/soccer_game_screen.dart`)** — `_Soccer
+      FieldPainter` (sahanın kendisi) ilk kez düzeltildi: çim gradyanı
+      `#388E3C`/`#2E7D32` → `AZColors.green`/`greenDk`. Kaleci figürünün
+      forması (`Colors.orange.shade300/700`) ve eldivenleri (`Colors.
+      yellow.shade300/600`) `AZColors.orange/orangeDk` ve
+      `accentGoldSoft/orangeDk` ailesine taşındı; gol ışıltısı `Colors.
+      yellow` → `AZColors.accentGold`.
+- [x] **Vampir Köylü (`vampire_wolf/vampire_screens.dart`)** — 4 rolün
+      (Vampir/Doktor/Dedektif/Köylü) rol-açılış kartı renkleri
+      FONKSİYONEL: `#4A0000`/`#004D40`/`#01579B`/`#1B5E20` (parlak kan
+      kırmızısı/lacivert/teal/yeşil) → koyu ama mat `#5C2A26`/`#2C4A46`/
+      `#31485A`/`#33402E` — dört rol hâlâ birbirinden net ayrılıyor, artık
+      sadece daha az "neon". Gece/gündüz arka planı (`#0D0D1F`/
+      `#FFF9C4` parlak sarı) → `AZColors.bgDark`/mat güneşli krem
+      `#F2E9C9`. Üst bar gecesi/gündüzü (`deepPurple.shade900`/`indigo.
+      shade900` ve `orange.shade700`/`yellow.shade600`) ve devam eden rol
+      banner'ı (aynı 4 rolün ikinci bir renk seti) aynı mat aileye
+      taşındı. Gece eylemi renkleri (vampir ısırma/doktor koruma/dedektif
+      soruşturma/gündüz oylama) `AZColors.purpleDk`/`#4F7A79` (mat teal)/
+      `AZColors.blueDk`/`AZColors.orange`'a taşındı.
+- [x] **Hain Kim? (`impostor/impostor_screens.dart`)** — "dışarı atıldı"
+      uyarı şeridi ve "öldür" butonu (`Colors.red.shade900/400`) →
+      `AZColors.redDk`/`AZColors.red`; "YAP" (görev tamamlama) butonu ve
+      yükleniyor göstergesinin parlak `Colors.cyanAccent`'i →
+      `AZColors.accentGoldSoft` (koyu "uzay istasyonu" zemininde daha
+      yüksek kontrast); "ACİL TOPLANTI ÇAĞIR" `Colors.orange.shade800` →
+      `AZColors.orangeDk`. Uzay gemisi arka planı (`_kSpaceGradient`,
+      zaten mat lacivert-gri) dokunulmadan bırakıldı — zaten yeni koyu
+      temayla uyumlu.
+- [x] **Yalancılar Kahvesi (`liar/liar_screens.dart`)** — "sen yalancısın"
+      rol kartı (`Colors.red.shade400/900`, parlak) "sen yalancı
+      değilsin" kartıyla (`_kRose`/`AZColors.redDk`, zaten mat) yan yana
+      duruyordu ve aradaki kontrast fazla keskindi; yalancı kartı artık
+      daha koyu ama aynı ölçüde mat bir bordo aralığına (`#B8776A`/
+      `#6B3A32`) taşındı — iki kart hâlâ görsel olarak ayrışıyor (yalancı
+      kartı gözle görülür şekilde daha "karanlık"), ikisi de artık aynı
+      mat aileden.
+- [x] **Adam Asmaca (`hangman/hangman_game_screen.dart`)** — `_Hangman
+      Painter`'daki darağacı çizgisi `#4E342E` → Dama/Okey'in ahşap
+      tonuyla (`#5C4A3D`) hizalandı. Tahminci/kelime-sahibi rozeti
+      (`Colors.orange`/`orange.shade800`) `AZColors.orange`/`orangeDk`'ya
+      taşındı.
+- [x] **Kelime Bulmaca (`word/word_screens.dart`)** — son 10 saniye
+      uyarısı `Colors.red` → `AZColors.red` (dosyanın geri kalanı zaten
+      `_kCyan = #7FA79B` ile mat).
+- [x] **2048 (`quickgames/game_2048_screen.dart`)** — klasik 2048'in 11
+      basamaklı (2→2048) parlak turuncu/sarı taş paleti uçtan uca mat
+      bir aileye taşındı, aynı göreli açıklık/koyuluk sırası (küçük
+      değerler krem, büyük değerler daha doygun altın/kiremit) korundu —
+      sayı zaten taş üzerinde yazılı olduğundan tam renk ayrımı kritik
+      değil, ama aile bütünlüğü önemliydi.
+- [x] **XOX / 4'lü Bağlantı / Reversi / Mini Bowling / paylaşılan hızlı-
+      oyun altyapısı** — XOX'ta "O" işareti `#FFD54F` → `AZColors.
+      accentGoldSoft`; 4'lü Bağlantı'nın disk renkleri (`#E53935`/
+      `#FFC107`) → `AZColors.redDk`/`accentGoldSoft`; Reversi tahtasının
+      kare zemini `#1B5E20` → `AZColors.greenDk` (taş renkleri siyah/
+      beyaz bilinçli olarak dokunulmadı — Othello'nun kendi kimliği);
+      Mini Bowling'in salon zemini `#3E2723`/`#6D4C41` → ahşap ailesiyle
+      hizalandı. `core/quickplay/quickplay.dart`'taki paylaşılan
+      `kPlayerColors` listesinin 6. rengi (`#00BFA5`, parlak teal —
+      Dots&Boxes ve Reflex gibi çok oyunculu hızlı oyunların ortak
+      oyuncu paletinden) mat bir çelik-mavi tona (`#4F8FA3`) taşındı;
+      diğer 5 renk zaten `AZColors` kullanıyordu.
+- **Bilinçli olarak dokunulmayanlar**:
+  - Fighter (`fighter/fighter_screens.dart`) karakter seçim ekranındaki
+    CAN/SALDIRI/SAVUNMA/HIZ istatistik çubukları (`Colors.red/orange/
+    blue/green.shade400`) ve Araba Yarışı'nın aynı işlevdeki istatistik
+    çubukları: bunlar OYUN ALANI değil, seçim ekranındaki jenerik bir
+    karşılaştırma göstergesi — arenanın kendisi (zemin gradyanı, yerdeki
+    kan-çizgisi vurgusu) bu turda düzeltildi, istatistik çubukları
+    kapsam dışında bırakıldı.
+  - Nim (`quickgames/nim_screen.dart`) taş rengi `#BCAAA4` zaten mat bir
+    taş/gri tonu — hiç değiştirilmedi.
+  - Snake, Memory Match, Dots and Boxes, Reflex, Trivia, Bulls & Cows,
+    Balloon Pop, Party Dice, 15-Puzzle, Jump Dash, Renk Hafızası (zaten
+    8.31'de yapıldı) — tek tek incelendi, hepsi zaten `AZColors`
+    kullanıyor ya da (Balon Patlat gibi) renk yerine emoji ile çiziliyor;
+    değiştirilecek bir şey bulunamadı.
+  - Şehir Bulmaca (`city/city_screens.dart`) — bu oyunun bir "oyun alanı"
+    yok (ipucu metni + tahmin girişi), zaten tamamen `AZColors` üzerinden
+    boyanıyor; dokunulmadı.
+  - Dama/Okey/Fighter'ın vuruş-anı "flaş" efektleri (hasar aldığında
+    ekranın kenarından geçen kırmızı vinyet, taş vurgusunun anlık
+    parlaması gibi *geçici* geri bildirim efektleri) bilinçli olarak
+    dokunulmadı — bunlar statik bir "zemin" rengi değil, anlık bir
+    uyarı/his aktarıyor; mat'landırmanın aciliyet hissini azaltıp
+    azaltmayacağı ekranda görmeden emin olunamayacağı için dokunulmadı.
+- **Doğrulama**: Değiştirilen 17 dosyanın her biri tek tek okunarak
+  diff'i gözden geçirildi; her dosya için ayrı ayrı parantez/süslü
+  parantez/köşeli parantez dengesi `python3` ile doğrulandı; eski hex
+  değerlerinin dosyada gerçekten kalmadığı `grep` ile teyit edildi;
+  `AZColors` kullanan iki dosyaya (`dama_screens.dart`,
+  `hangman_game_screen.dart`) eksik olan `az_theme.dart` import'u
+  eklendi (8.24/8.31'deki eksik-import hatasının tekrarını önlemek
+  için, isim çakışması olmadığı `az_widgets.dart` ile karşılaştırılarak
+  doğrulandı).

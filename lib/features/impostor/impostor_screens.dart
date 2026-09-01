@@ -710,7 +710,7 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
     if (_room.isEmpty) {
       return const Scaffold(
         backgroundColor: AZColors.bgDark,
-        body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
+        body: Center(child: CircularProgressIndicator(color: AZColors.accentGoldSoft)),
       );
     }
     return AZLeaveGuard(
@@ -755,9 +755,9 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                  color: Colors.red.shade900.withAlpha(180),
+                  color: AZColors.redDk.withAlpha(180),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.red.shade400)),
+                  border: Border.all(color: AZColors.red)),
               child: Row(children: [
                 const Text('🚀', style: TextStyle(fontSize: 18)),
                 const SizedBox(width: 8),
@@ -890,7 +890,7 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
                       icon: const Icon(Icons.dangerous_rounded, size: 18),
                       label: Text(e.value['name'] as String? ?? e.key),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.shade900, foregroundColor: Colors.white),
+                          backgroundColor: AZColors.redDk, foregroundColor: Colors.white),
                     ),
                   ),
                 ),
@@ -951,7 +951,7 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
                     onPressed: () => _completeTask(i),
                     style: FilledButton.styleFrom(
                         backgroundColor: const Color(0x33FFFFFF),
-                        foregroundColor: Colors.cyanAccent,
+                        foregroundColor: AZColors.accentGoldSoft,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AZRadius.md))),
                     child: const Text('YAP', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -963,7 +963,7 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
         if (_canCallMeeting)
           AZButton(
               label: '🚨 ACİL TOPLANTI ÇAĞIR',
-              color: Colors.orange.shade800,
+              color: AZColors.orangeDk,
               onPressed: _callMeeting),
         const SizedBox(height: 16),
       ]),

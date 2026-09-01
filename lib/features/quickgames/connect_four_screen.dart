@@ -45,7 +45,7 @@ class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
 
   QPPlayer get _current => widget.players[_turn];
   String _mark(int idx) => idx == 0 ? 'R' : 'Y';
-  Color _color(String mark) => mark == 'R' ? const Color(0xFFE53935) : const Color(0xFFFFC107);
+  Color _color(String mark) => mark == 'R' ? AZColors.redDk : AZColors.accentGoldSoft;
 
   @override
   void initState() {
