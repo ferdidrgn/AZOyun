@@ -1607,3 +1607,56 @@ Eski parlak/doygun mor-kırmızı-turuncu-camgöbeği paleti tamamen kaldırıld
   değiştirilmedi. Kalan 5 dosyada (`grep` ile tespit edildi) hâlâ
   `Colors.deepPurple`/`Colors.indigo`/`Colors.cyan`/`Colors.pink` gibi
   eski palet dışı sabit renkler var — bir sonraki turda taranacak.
+
+### 8.31 "Soft UI" taramasının devamı: 16 oyun dosyasındaki kalan sabit renkler
+
+8.30'da tespit edilen "5 dosyada hâlâ eski renk var" notu üzerine, tüm
+`lib/features/` ağacı `Colors.deepPurple`/`Colors.indigo`/`Colors.cyan`/
+`Colors.pink` ve ham `Color(0xFF...)` hex literalleri için tekrar
+tarandı. 16 dosyada, merkezi `AZColors`/`AZTheme` sisteminin dışında
+kalan (doğrudan hex yazılmış ya da eski `Colors.deepPurple` gibi Flutter
+sabiti kullanan) toplam ~40 renk noktası bulundu ve düzeltildi:
+
+- [x] **Karakter/araç kimliği renkleri** (fonksiyonel ayrım korunarak):
+      Dövüşçüler'in 4 karakteri (Savaşçı/Büyücü/Okçu/Paladin →
+      redDk/purpleDk/greenDk/orangeDk), Araba Yarışı'nın 4 arabası (Spor/
+      Muscle/Rally/Turbo → red/blue/green/orange). Her karakter/araç HÂLÂ
+      birbirinden net şekilde ayırt edilebiliyor, sadece tonlar mat.
+- [x] **Oda/lobi arka planları**: Dama, Dövüşçüler, Hain Kim?, Araba
+      Yarışı, Adam Asmaca'nın kendi ekranlarındaki (home_screen.dart'ta
+      değil, bizzat o oyunun kendi dosyasındaki) hardcoded gradyanlar da
+      aynı mat aileye taşındı — 8.30'da sadece home_screen.dart'taki kart
+      önizlemesi düzeltilmişti, oyunun kendi ekranı unutulmuştu.
+      Vampir Köylü'nün her yerde `Colors.deepPurple`/`deepPurpleAccent`
+      kullanan 5 noktası `AZColors.purple`'a taşındı.
+      Okey/Golf/Serbest Vuruş/Şehir Bulmaca/Kelime Bulmaca/Yalancılar
+      Kahvesi/Hain Kim?'in `#2E7D32`/`#E65100`/`#1B5E20`/`#FCE4EC`/
+      `#E0F7FA`/`#d66d75`/`#2C5364` gibi hex sabitleri karşılık gelen
+      `AZColors` üyelerine (greenDk/orangeDk/green/red/redDk vb.) taşındı.
+- [x] **"Bu mesajı ben mi yazdım?" vurgusu** (Şehir Bulmaca, Yalancılar
+      Kahvesi, Kelime Bulmaca'nın skor/sonuç listelerinde `isMe ? renk :
+      null` deseni): sabit `Colors.pink.shade50`/`Colors.cyan.shade50`
+      yerine `Theme.of(context).colorScheme.primary.withAlpha(28)`
+      kullanıldı — artık kullanıcının Ayarlar'dan seçtiği özel renge göre
+      dinamik olarak boyanıyor, sabit kalmıyor.
+- [x] Okey'in joker taş rengi (`Colors.deepPurple` → `AZColors.purpleDk`),
+      HOST ödemeleri/host-only "sonucu göster" butonlarındaki tekil hex
+      sabitler de aynı aileye taşındı.
+- **Bilinçli risk notu — Renk Hafızası (Simon Says) oyunu**: Bu oyunun
+  4 rengi (`_kMemoryColors`) artık `AZColors.red/blue/green/orange`
+  (mat/pastel) — eskiden parlak, yüksek kontrastlı Material renklerdi
+  (`#E53935`/`#1E88E5`/`#43A047`/`#FDD835`). Dört renk hâlâ birbirinden
+  farklı (kırmızımsı-toprak / mavi / yeşil / altın), ama daha az doygun
+  olduğundan hızlı oynanan bir hafıza oyununda ayırt etmesi eskisinden
+  biraz daha zor olabilir. Kullanıcının bunu gerçek cihazda test edip
+  "çok benziyor" derse kolayca geri alınabilecek, izole bir tercih.
+- **Doğrulama**: 16 dosyanın hepsi tek tek okunarak diff'i kontrol
+  edildi, her dosya için parantez/süslü parantez dengesi doğrulandı;
+  `AZColors` kullanan HİÇBİR dosyanın `az_theme.dart` import'unu
+  eksik bırakmadığı repo genelinde grep ile teyit edildi (8.24'teki
+  eksik-import hatasının bir daha yaşanmaması için).
+- **Hâlâ kapsam dışı** (bilinçli, 8.30'daki gerekçeyle aynı): 30+ oyunun
+  bizzat OYUN ALANI çizimleri (Okey taşlarının kendi iç deseni, Dama
+  tahtasının kare renkleri, yarış pisti asfaltı gibi) ve Splash'ın "daha
+  anlamlı" olması için istenen içerik/animasyon zenginleştirmesi henüz
+  yapılmadı.

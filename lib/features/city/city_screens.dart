@@ -53,7 +53,7 @@ class _CityLobbyScreenState extends State<CityLobbyScreen> {
   final _codeCtrl = TextEditingController();
   String? _playerName;
   bool    _loading = false;
-  static const _kPink = Color(0xFFf5576c);
+  static const _kPink = AZColors.red;
 
   @override
   void initState() { super.initState(); _loadName(); }
@@ -196,7 +196,7 @@ class _CityRoomScreenState extends State<CityRoomScreen> {
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _navigating = false;
-  static const _kPink = Color(0xFFf5576c);
+  static const _kPink = AZColors.red;
 
   @override
   void initState() {
@@ -310,7 +310,7 @@ class _CityGameScreenState extends State<CityGameScreen> {
   bool _answered    = false;
   bool _usedRewardedHint = false; // bu tur rewarded ipucu kullandı mı
 
-  static const _kPink = Color(0xFFf5576c);
+  static const _kPink = AZColors.red;
 
   @override
   void initState() {
@@ -433,7 +433,7 @@ class _CityGameScreenState extends State<CityGameScreen> {
               margin: const EdgeInsets.symmetric(vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: isMe ? Colors.pink.shade50 : null,
+                color: isMe ? Theme.of(context).colorScheme.primary.withAlpha(28) : null,
                 borderRadius: BorderRadius.circular(10)),
               child: Row(children: [
                 Text(e.key < medals.length ? medals[e.key] : '?',
@@ -493,7 +493,7 @@ class _CityGameScreenState extends State<CityGameScreen> {
     return AZLeaveGuard(
       onLeave: _confirmLeave,
       child: Scaffold(
-      backgroundColor: const Color(0xFFFCE4EC),
+      backgroundColor: const Color(0xFFF3E3E0),
       body: SafeArea(child: Column(children: [
 
         // Score bar

@@ -30,7 +30,7 @@ class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
   final _storage  = StorageService.instance;
   final _codeCtrl = TextEditingController();
   String? _playerName; bool _loading = false;
-  static const _kRose = Color(0xFFd66d75);
+  static const _kRose = AZColors.red;
 
   @override void initState() { super.initState(); _loadName(); }
   @override void dispose()   { _codeCtrl.dispose(); super.dispose(); }
@@ -164,7 +164,7 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
   StreamSubscription? _sub;
   Map<String, dynamic> _room = {};
   bool _navigating = false;
-  static const _kRose = Color(0xFFd66d75);
+  static const _kRose = AZColors.red;
 
   @override
   void initState() {
@@ -266,7 +266,7 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
   bool _finalShown  = false;
   bool _roomGone = false;
   final _answerCtrl = TextEditingController();
-  static const _kRose = Color(0xFFd66d75);
+  static const _kRose = AZColors.red;
 
   @override
   void initState() {
@@ -377,7 +377,7 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
               margin: const EdgeInsets.symmetric(vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                  color: isMe ? Colors.pink.shade50 : null,
+                  color: isMe ? Theme.of(context).colorScheme.primary.withAlpha(28) : null,
                   borderRadius: BorderRadius.circular(10)),
               child: Row(children: [
                 Text(e.key < medals.length ? medals[e.key] : '?',
@@ -408,7 +408,7 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
     final liarCaught = (_room['liarCaught'] as bool?) ?? false;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFCE4EC),
+      backgroundColor: const Color(0xFFF3E3E0),
       body: SafeArea(child: Column(children: [
 
         // Top bar
@@ -460,7 +460,7 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
                     end: Alignment.bottomRight,
                     colors: _amLiar
                         ? [Colors.red.shade400, Colors.red.shade900]
-                        : [_kRose, const Color(0xFF8E3A42)],
+                        : [_kRose, AZColors.redDk],
                   ),
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [

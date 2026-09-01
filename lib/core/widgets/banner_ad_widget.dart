@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_service.dart';
+import '../theme/az_theme.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STANDARD BANNER
@@ -192,7 +193,7 @@ class RewardedAdButton extends StatelessWidget {
     required this.label,
     required this.onRewarded,
     this.icon         = Icons.play_circle_outline_rounded,
-    this.color        = const Color(0xFF6C63FF),
+    this.color        = AZColors.purple,
     this.onNotReady,
   });
 

@@ -185,7 +185,7 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
     if (n != null && n.isNotEmpty) setState(() => _name = n); else _ask();
   }
   Future<void> _ask() async {
-    final n = await showNameDialog(context, current: _name, accentColor: const Color(0xFF4E342E));
+    final n = await showNameDialog(context, current: _name, accentColor: const Color(0xFF5C4A3D));
     if (n == null || !mounted) return;
     await _storage.setPlayerName(n); setState(() => _name = n);
   }
@@ -232,7 +232,7 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
   @override
   Widget build(BuildContext context) => AZGradientScaffold(
     gradient: const LinearGradient(
-      colors: [Color(0xFF4E342E), Color(0xFF1A0A00)],
+      colors: [Color(0xFF5C4A3D), Color(0xFF2E241D)],
       begin: Alignment.topLeft, end: Alignment.bottomRight,
     ),
     child: Column(children: [
@@ -260,7 +260,7 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
           )),
           const SizedBox(height: 24),
           AZButton(label: 'ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-              onPressed: _create, color: const Color(0xFF6D4C41), loading: _loading, width: 280),
+              onPressed: _create, color: const Color(0xFF7A6552), loading: _loading, width: 280),
           const SizedBox(height: 20),
           const Text('— veya —', style: TextStyle(color: Colors.white54)),
           const SizedBox(height: 20),
@@ -360,11 +360,11 @@ class _DamaRoomState extends State<DamaRoomScreen> {
   @override
   Widget build(BuildContext context) => AZLeaveGuard(onLeave: _leave,
     child: AZGradientScaffold(
-      gradient: const LinearGradient(colors: [Color(0xFF4E342E), Color(0xFF1A0A00)]),
+      gradient: const LinearGradient(colors: [Color(0xFF5C4A3D), Color(0xFF2E241D)]),
       child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
         AZRoomHeader(title: 'DAMA', onClose: _leave),
         const SizedBox(height: 20),
-        AZRoomCode(code: _code, accentColor: const Color(0xFF8D6E63)),
+        AZRoomCode(code: _code, accentColor: const Color(0xFF8C7863)),
         const SizedBox(height: 20),
         AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Oyuncular (2 gerekli)',
@@ -382,7 +382,7 @@ class _DamaRoomState extends State<DamaRoomScreen> {
         const Spacer(),
         if (_isHost) AZButton(label: 'OYUNU BAŞLAT', icon: Icons.sports_esports_rounded,
             onPressed: _canStart ? _start : null,
-            color: const Color(0xFF6D4C41), width: double.infinity)
+            color: const Color(0xFF7A6552), width: double.infinity)
         else const AZWaitingCard(message: 'Host oyunu başlatacak...'),
       ])),
     ),
@@ -589,7 +589,7 @@ class _DamaGameState extends State<DamaGameScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold)),
       ]),
       actions: [FilledButton(
-        style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6D4C41)),
+        style: FilledButton.styleFrom(backgroundColor: const Color(0xFF7A6552)),
         onPressed: () async {
           await _db.child('${GamePaths.dama}/${widget.roomId}').remove();
           if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
@@ -609,7 +609,7 @@ class _DamaGameState extends State<DamaGameScreen> {
     final targetSet = _validForSel.map((m) => '${m.tr},${m.tc}').toSet();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF3E2723),
+      backgroundColor: const Color(0xFF473A30),
       body: SafeArea(child: Column(children: [
         // Üst bar
         Container(
@@ -617,7 +617,7 @@ class _DamaGameState extends State<DamaGameScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF2A1200), Color(0xFF1A0A00)],
+              colors: [Color(0xFF3A2E22), Color(0xFF2E241D)],
             ),
             boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 14, offset: Offset(0, 6))],
           ),
@@ -656,7 +656,7 @@ class _DamaGameState extends State<DamaGameScreen> {
 
         // Renk bilgisi / zincirleme yakalama uyarısı
         Container(
-          color: _inChain ? const Color(0xFFD84315) : const Color(0xFF2A1000),
+          color: _inChain ? const Color(0xFFBD8748) : const Color(0xFF2E241D),
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text(
@@ -679,7 +679,7 @@ class _DamaGameState extends State<DamaGameScreen> {
             height: side + 16,
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF4E342E),
+              color: const Color(0xFF5C4A3D),
               borderRadius: BorderRadius.circular(10),
               boxShadow: const [
                 BoxShadow(color: Colors.black87, blurRadius: 20, spreadRadius: 1, offset: Offset(0, 10)),
@@ -719,7 +719,7 @@ class _DamaGameState extends State<DamaGameScreen> {
         // Mesaj
         if (_isMyTurn)
           Container(
-            color: const Color(0xFF1A0A00),
+            color: const Color(0xFF2E241D),
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(_selR == null
                 ? '👆 Taş seç'

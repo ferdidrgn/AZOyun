@@ -30,7 +30,7 @@ const _kMaxPlayers = 10;
 const _kSpaceGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+  colors: [Color(0xFF2A3540), Color(0xFF35434D), Color(0xFF425461)],
 );
 
 int _impostorCountFor(int players) => players >= 7 ? 2 : 1;
@@ -75,7 +75,7 @@ class _ImpostorLobbyScreenState extends State<ImpostorLobbyScreen> {
   }
 
   Future<void> _ask() async {
-    final n = await showNameDialog(context, current: _name, accentColor: const Color(0xFF2C5364));
+    final n = await showNameDialog(context, current: _name, accentColor: const Color(0xFF425461));
     if (n == null || !mounted) return;
     await _storage.setPlayerName(n);
     setState(() => _name = n);
@@ -190,7 +190,7 @@ class _ImpostorLobbyScreenState extends State<ImpostorLobbyScreen> {
                     label: 'YENİ ODA',
                     icon: Icons.add_circle_outline_rounded,
                     onPressed: _create,
-                    color: const Color(0xFF2C5364),
+                    color: const Color(0xFF425461),
                     loading: _loading,
                     width: 280),
                 const SizedBox(height: 20),
@@ -327,7 +327,7 @@ class _ImpostorRoomScreenState extends State<ImpostorRoomScreen> {
             child: Column(children: [
               AZRoomHeader(title: 'HAİN KİM?', onClose: _leave),
               const SizedBox(height: 20),
-              AZRoomCode(code: _code, accentColor: const Color(0xFF4FC3F7)),
+              AZRoomCode(code: _code, accentColor: AZColors.blue),
               const SizedBox(height: 20),
               AZFrostCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -355,7 +355,7 @@ class _ImpostorRoomScreenState extends State<ImpostorRoomScreen> {
                     label: 'OYUNU BAŞLAT',
                     icon: Icons.play_arrow_rounded,
                     onPressed: _canStart ? _start : null,
-                    color: const Color(0xFF2C5364),
+                    color: const Color(0xFF425461),
                     width: double.infinity)
               else
                 const AZWaitingCard(message: 'Host oyunu başlatacak...'),
@@ -456,7 +456,7 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
       context,
       emoji: isImpostor ? '👽' : '👨‍🚀',
       title: isImpostor ? 'SEN GİZLİ HAİNSİN' : 'SEN MÜRETTEBATSIN',
-      color: isImpostor ? const Color(0xFF7A0C2E) : const Color(0xFF0D5C63),
+      color: isImpostor ? AZColors.redDk : const Color(0xFF4F7A79),
       description: isImpostor
           ? 'Kimse senin hain olduğunu bilmemeli. Görevleri sahte yaparak '
               'gizlen, fırsat bulunca mürettebatı tek tek ele. Mürettebat '
@@ -683,7 +683,7 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
         ),
         actions: [
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF2C5364)),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF425461)),
             onPressed: () async {
               await _ref.remove();
               if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
@@ -709,14 +709,14 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
   Widget build(BuildContext context) {
     if (_room.isEmpty) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0F2027),
+        backgroundColor: AZColors.bgDark,
         body: Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
       );
     }
     return AZLeaveGuard(
       onLeave: _confirmLeave,
       child: Scaffold(
-      backgroundColor: const Color(0xFF0F2027),
+      backgroundColor: AZColors.bgDark,
       body: SafeArea(
         child: Column(children: [
           Container(
