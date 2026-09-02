@@ -6,6 +6,7 @@ import '../../core/models/player_profile.dart';
 import '../../core/services/play_games_service.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/theme/dashboard_tokens.dart';
+import 'leaderboard_screen.dart';
 import 'widgets/achievement_bento_tile.dart';
 import 'widgets/bento_card.dart';
 import 'widgets/game_variety_chart.dart';
@@ -230,6 +231,8 @@ class _MobileContent extends StatelessWidget {
         connecting: connecting,
         onConnect: onConnectPlayGames,
       ),
+      const SizedBox(height: 14),
+      const _LeaderboardEntryCard(),
       const SizedBox(height: 24),
       BentoSectionLabel('Başarımlar (${d.unlocked.length}/${kAchievements.length})'),
       const SizedBox(height: 12),
@@ -323,6 +326,8 @@ class _DesktopContent extends StatelessWidget {
                 onConnect: onConnectPlayGames,
               ),
               const SizedBox(height: 16),
+              const _LeaderboardEntryCard(),
+              const SizedBox(height: 16),
               BentoCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   BentoSectionLabel('Başarımlar (${d.unlocked.length}/${kAchievements.length})'),
@@ -368,6 +373,45 @@ class _NewPlayerBanner extends StatelessWidget {
               ],
             ),
           ),
+        ]),
+      ).animate().fadeIn(duration: 350.ms);
+}
+
+/// Profil ekranından Liderlik Tablosu'na giden tıklanabilir kart — Home
+/// ekranındaki profil kartının vaat ettiği "Liderlik Tablosu" bağlantısı.
+class _LeaderboardEntryCard extends StatelessWidget {
+  const _LeaderboardEntryCard();
+
+  @override
+  Widget build(BuildContext context) => BentoCard(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+        ),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: DashTokens.amber.withAlpha(38),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.emoji_events_rounded, color: DashTokens.amber, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Liderlik Tablosu',
+                    style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700, color: DashTokens.textPrimary)),
+                const SizedBox(height: 2),
+                Text('Yılan ve 2048\'de en iyi skorlar', style: DashTokens.labelSm),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: DashTokens.textTertiary),
         ]),
       ).animate().fadeIn(duration: 350.ms);
 }

@@ -9,6 +9,10 @@ import '../widgets/az_widgets.dart';
 
 export 'game_ids.dart';
 
+/// Türkçe büyük harfe çevirir (`toUpperCase()` "i" → noktasız "I" yapar,
+/// başlıklarda "İ" olması gerekir).
+String _trUpper(String s) => s.replaceAll('i', 'İ').replaceAll('ı', 'I').toUpperCase();
+
 /// Tek cihazda oynanan hızlı oyunlar için ortak oyuncu modeli.
 class QPPlayer {
   QPPlayer({required this.name, this.isAI = false});
@@ -107,7 +111,7 @@ class _QuickPlaySetupState extends State<QuickPlaySetup> {
           ),
           Text(widget.emoji, style: const TextStyle(fontSize: 64)),
           const SizedBox(height: 8),
-          Text(widget.gameTitle.toUpperCase(),
+          Text(_trUpper(widget.gameTitle),
               style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,

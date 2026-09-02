@@ -1832,3 +1832,65 @@ ayırt edilebilir kalacak şekilde mat'landı, dekoratif olanlar doğrudan
   eklendi (8.24/8.31'deki eksik-import hatasının tekrarını önlemek
   için, isim çakışması olmadığı `az_widgets.dart` ile karşılaştırılarak
   doğrulandı).
+
+### 8.34 Eski oturumlardan kalan boşlukların taranması: eksik Liderlik Tablosu ekranı + kozmetik "İ" düzeltmesi
+
+Kullanıcı "tüm eski sessionlarda yarım kalmış her şeyi tamamla" dedi.
+`ROADMAP.md`'nin tamamı tarandı, her açık madde şu üç kovadan birine
+kondu: (a) kullanıcının kendisinin Play/Firebase Console'da, alan adı
+satın alarak ya da hukuki incelemeyle yapması gereken dış eylemler,
+(b) bilinçli olarak kapsam dışı bırakılmış, "yarım kalmış hata" değil
+gerçek gelecek-iş kalemleri (30+ oyunun tüm oyun-içi metninin 5 dile
+tam çevirisi, derin bağlantıyla otomatik odaya katılma, riskli AGP/
+Gradle/Kotlin sürüm atlamaları), (c) şu an gerçekten tamamlanabilecek
+somut kod boşlukları. (c)'de tek net madde bulundu:
+
+- **Liderlik Tablosu ekranı hiç yapılmamıştı.** `LeaderboardService`
+  (`core/services/leaderboard_service.dart`) baştan beri tam çalışır
+  durumdaydı — `topScores(gameId)`/`submitScore(...)` skorları
+  `SharedPreferences`'a kaydediyor, `QuickPlayResult.show(...)` skor
+  parametresi verilince (`quickplay.dart:282-288`) bunu zaten otomatik
+  çağırıyordu — ama bu veriyi gösterecek TEK BİR EKRAN yoktu
+  (`find`/`grep -rn "LeaderboardScreen"` sıfır sonuç). Buna rağmen
+  `home_screen.dart`'taki profil kartının alt metni zaten "Seviye ·
+  Başarımlar · Liderlik Tablosu" yazıyordu — yani uygulama, var
+  olmayan bir özelliği kullanıcıya vaat ediyordu.
+  - Yeni `lib/features/profile/leaderboard_screen.dart`: Snake/2048
+    (skoru gerçekten `submitScore` ile kaydeden iki hızlı oyun) arasında
+    üstte bir sekme seçici, altında `FutureBuilder` ile `topScores(...)`
+    sonucunu listeleyen bir `ListView` — ilk 3 sıra için madalya emojisi,
+    boş liste için "henüz skor yok" durumu. Görsel dil, Profil ekranıyla
+    aynı `DashTokens`/`BentoCard` lacivert/altın dashboard paleti
+    (uygulamanın geri kalanındaki `AZColors` soft-UI'ından KASITLI
+    olarak farklı — Profil zaten kendi ayrı dashboard dilini kullanıyor,
+    bu tutarlılığı bozmamak için aynı aileye eklendi).
+  - `lib/features/profile/profile_screen.dart`: yeni `_LeaderboardEntryCard`
+    tıklanabilir `BentoCard`'ı hem `_MobileContent`'e (PlayGamesBanner'dan
+    sonra) hem `_DesktopContent`'in sağ paneline eklendi, `LeaderboardScreen`'e
+    `Navigator.push` ile açılıyor.
+  - Refleks (`reflex_tap_screen.dart`) leaderboard'a dahil edilmedi:
+    `_finish()` metodu `QuickPlayResult.show(...)`'u `score:` parametresi
+    OLMADAN çağırıyor (yani zaten hiç skor kaydetmiyor) ve oyunun kendisi
+    "ilk hedefe ulaşan kazanır" yarışı — "en yüksek skor" kavramına uygun
+    değil; retrofit edilmedi, bilerek kapsam dışı bırakıldı.
+- **Kozmetik "İ" başlık düzeltmesi** (8.30'da tespit edilip bilerek
+  ertelenmişti): `quickplay.dart`'taki `widget.gameTitle.toUpperCase()`
+  ve `mystery_case_screen.dart`'taki `_case.title.toUpperCase()` —
+  hiçbir karşılaştırmaya girmeyen, sadece görsel başlık metniydi ama
+  küçük "i" harfini yanlış noktasız "I"ya çeviriyordu. Her iki dosyaya
+  da (daha önce `city_screens.dart`/`hangman_game_screen.dart`'ta
+  kullanılan) aynı `_trUpper()` yardımcı fonksiyonu eklendi.
+- **Doğrulama**: Yeni ve değiştirilen 4 dosyanın hepsinde parantez/süslü
+  parantez/köşeli parantez dengesi `python3` ile doğrulandı;
+  `_trUpper` adının her dosyada sadece bir kez tanımlandığı (isim
+  çakışması yok) `grep` ile teyit edildi; `LeaderboardScreen`'in tek
+  bir yerden (`profile_screen.dart`) çağrıldığı doğrulandı.
+- **Kod-dışı, kullanıcının kendisinin yapması gereken kalemler**
+  (değişmedi, bu oturumda dokunulmadı): Firebase Console'da test push
+  gönderimi, Universal Links için alan adı satın alma, Gizlilik
+  Politikası/Kullanım Şartları'nın hukuki incelemesi, Play Console'da
+  `premium_6m_noads` ürününün oluşturulması, bir sonraki Play Console
+  yüklemesinde bitmap uyarısının gerçekten temizlendiğinin doğrulanması,
+  `imgbot` ve eski `claude/flutter-game-collection-plan-2syqqe`
+  dallarının GitHub arayüzünden elle silinmesi (bu oturumun git
+  kimlik bilgileri dal silmeye yetkili değil — bkz. 8.28).
