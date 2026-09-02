@@ -15,6 +15,10 @@ const kNoirGradient = LinearGradient(
 const _kAccent = Color(0xFFA85C5C);
 const _kGoldAccent = Color(0xFFD9A25C);
 
+/// Türkçe büyük harfe çevirir (`toUpperCase()` "i" → noktasız "I" yapar,
+/// başlıklarda "İ" olması gerekir).
+String _trUpper(String s) => s.replaceAll('i', 'İ').replaceAll('ı', 'I').toUpperCase();
+
 // ═══════════════════════════════════════════════════════════════════════════
 // KAMPANYA HUB — vaka listesi, kilit durumu
 // ═══════════════════════════════════════════════════════════════════════════
@@ -295,7 +299,7 @@ class _MysteryCaseScreenState extends State<MysteryCaseScreen> {
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => Navigator.pop(context)),
           Expanded(
-            child: Text(_case.title.toUpperCase(),
+            child: Text(_trUpper(_case.title),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
           ),
