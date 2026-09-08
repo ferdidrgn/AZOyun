@@ -7,6 +7,11 @@
 .buildlog/
 .history
 
+# BFG / git-filter-repo secret cleanup helper files - never commit
+keys.txt
+keys*.txt
+replacements.txt
+
 # IDE / editor
 .idea/
 *.iml
