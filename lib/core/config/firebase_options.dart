@@ -14,7 +14,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: '***REMOVED***',
+    apiKey: 'AIzaSyBk-s_vzzWyLnVNEvGSLPxXFXz4DwwVrt4',
     appId: '1:517819561284:web:789006e117993517c01311',
     messagingSenderId: '517819561284',
     projectId: 'azoyun-569b2',
@@ -25,7 +25,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: '***REMOVED***',
+    apiKey: 'AIzaSyD4g57Y9pdan7U8I9sO2Jhgtz7yyCcGKp8',
     appId: '1:517819561284:android:d8f5631f7e8d72e1c01311',
     messagingSenderId: '517819561284',
     projectId: 'azoyun-569b2',
@@ -34,7 +34,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: '***REMOVED***',
+    apiKey: 'AIzaSyCb-brF3v0wyZ4aHu3yjdrQI6jBoNTay2c',
     appId: '1:517819561284:ios:1790d41295fb5868c01311',
     messagingSenderId: '517819561284',
     projectId: 'azoyun-569b2',
