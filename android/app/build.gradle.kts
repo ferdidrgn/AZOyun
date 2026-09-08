@@ -1,6 +1,7 @@
 import java.util.Properties
 import java.io.FileInputStream
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -77,9 +78,11 @@ android {
         // eski Android sürümlerinde kullanabilmek için bunu istiyor.
         isCoreLibraryDesugaringEnabled = true
     }
+}
 
-    kotlinOptions {
-        jvmTarget = "17"
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
