@@ -1,14 +1,23 @@
-name: Web'i derle ve Firebase Hosting'e yayınla
+name: CI ve web yayını
 
-# main'e her push'ta (ör. bir PR merge edildiğinde) otomatik çalışır.
-# Kurulum için tek bir manuel adım gerekiyor — bkz. docs/DEPLOY.md.
+# Her push ve pull request test edilir. main'e geçen kod, testten sonra
+# Firebase Hosting'e (azoyun.web.app) yayınlanır.
 on:
   push:
     branches: [main]
-  workflow_dispatch: {} # Actions sekmesinden elle de tetiklenebilir
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
 
 jobs:
-  build-and-deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Kodu çek
@@ -18,12 +27,48 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
       - name: Bağımlılıkları al
         run: flutter pub get
 
+      - name: Testleri çalıştır
+        run: flutter test
+
       - name: Web için derle
         run: flutter build web --release
+
+      - name: Web çıktısını sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: build/web
+          if-no-files-found: error
+          retention-days: 3
+
+  deploy:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu çek
+        uses: actions/checkout@v4
+
+      - name: Web çıktısını al
+        uses: actions/download-artifact@v4
+        with:
+          name: web
+          path: build/web
+
+      - name: Firebase sırrını kontrol et
+        env:
+          FIREBASE_SERVICE_ACCOUNT_AZOYUN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AZOYUN }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_AZOYUN" ]; then
+            echo "GitHub Actions secret FIREBASE_SERVICE_ACCOUNT_AZOYUN boş."
+            echo "Kurulum: docs/DEPLOY.md"
+            exit 1
+          fi
 
       - name: Firebase Hosting'e yayınla
         uses: FirebaseExtended/action-hosting-deploy@v0

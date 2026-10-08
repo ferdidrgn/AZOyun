@@ -1,11 +1,13 @@
 # Otomatik Web Yayınlama (GitHub Actions → Firebase Hosting)
 
-`main` branch'ine her push yapıldığında (ör. bir Pull Request birleştiğinde)
-`.github/workflows/firebase-hosting-deploy.yml` iş akışı otomatik olarak:
+`main` branch'ine her push yapıldığında ve her pull request'te
+`.github/workflows/firebase-hosting-deploy.yml` iş akışı:
 
 1. Flutter'ı kurar
-2. `flutter build web --release` ile web sürümünü derler
-3. Sonucu Firebase Hosting'e (`azoyun-569b2` projesi, `azoyun` sitesi) yayınlar
+2. `flutter test` ile testleri çalıştırır
+3. `flutter build web --release` ile web sürümünü derler
+4. Yalnızca `main`'de, testler geçtikten sonra sonucu Firebase Hosting'e
+   (`azoyun-569b2` projesi, `azoyun` sitesi) yayınlar
 
 Elle `flutter build web` + `firebase deploy` çalıştırmana artık gerek yok.
 
@@ -42,7 +44,7 @@ kendi domainin) yansır.
 ## Nasıl kontrol ederim?
 
 GitHub'da reponun **Actions** sekmesine gir — her push'tan sonra orada
-"Web'i derle ve Firebase Hosting'e yayınla" adında bir çalışma göreceksin.
+"CI ve web yayını" adında bir çalışma göreceksin.
 Yeşil tik ✅ = başarıyla yayınlandı. Kırmızı çarpı ❌ = bir hata var, üstüne
 tıklayıp log'ları okuyabilirsin (ya da hatayı bana yapıştır, birlikte
 çözeriz).
