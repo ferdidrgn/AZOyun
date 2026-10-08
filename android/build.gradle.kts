@@ -1,11 +1,11 @@
 // android/build.gradle.kts
 
 plugins {
-    // Hata mesajındaki 8.11.1 sürümünü kullanıyoruz
-    id("com.android.application") version "8.11.1" apply false
+    // Flutter SDK's FlutterPlugin, AGP 9.1.1'e karşı derleniyor.
+    id("com.android.application") version "9.1.1" apply false
 
-    // Hata mesajında belirtilen Kotlin sürümünü (2.2.20) buraya yazıyoruz
-    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
+    // AGP 9.1, Kotlin 2.2.20 ile uyumsuz; Flutter şablonu 2.4.20 istiyor.
+    id("org.jetbrains.kotlin.android") version "2.4.20" apply false
 }
 
 allprojects {
