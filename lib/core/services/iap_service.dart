@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ad_service.dart';
 import 'analytics_service.dart';
+import 'profile_service.dart';
 import 'storage_service.dart';
 
 /// Uygulama içi satın alma iskeleti.
@@ -15,7 +17,7 @@ import 'storage_service.dart';
 /// ÖNEMLİ: Aşağıdaki ürün ID'leri Google Play Console → Uygulamalar →
 /// Uygulama içi ürünler bölümünde oluşturulmalı; ID'ler burada
 /// tanımlananlarla birebir eşleşmeli.
-class IAPService {
+class IAPService extends ChangeNotifier {
   IAPService._();
   static final IAPService instance = IAPService._();
 
@@ -42,6 +44,11 @@ class IAPService {
     premium6mId,
   };
 
+  static const _grantedKey = 'iap_granted_purchase_ids';
+
+  final _notes = StreamController<String>.broadcast();
+  Stream<String> get notes => _notes.stream;
+
   // `late`: sadece gerçekten kullanıldığında (yani kIsWeb guard'larını
   // geçtikten sonra) resolve edilir — Web'de hiç dokunulmaz.
   late final InAppPurchase _iap = InAppPurchase.instance;
@@ -51,37 +58,21 @@ class IAPService {
   bool available = false;
   bool _initialized = false;
 
-  /// `in_app_purchase` paketi sadece Android/iOS/macOS destekler — Web'de
-  /// native mağaza köprüsü hiç yok. Web'de satın alma tamamen
-  /// devre dışı: `products` boş kalır, tüm satın alma metodları no-op'tur.
-  Future<void> initialize({
-    required void Function(PurchaseDetails purchase) onPurchase,
-  }) async {
+  /// Play Billing akışı uygulama açılışında dinlenir. Ayarlar ekranı kapalıyken
+  /// gelen satın alma da coin, reklamsız ve premium haklarını işler.
+  Future<void> initialize() async {
     if (kIsWeb || _initialized) return;
     _initialized = true;
     try {
       available = await _iap.isAvailable();
       if (!available) {
         debugPrint('[IAPService] mağaza kullanılamıyor (emülatör/test olabilir)');
+        notifyListeners();
         return;
       }
-      _sub = _iap.purchaseStream.listen((purchases) {
-        for (final p in purchases) {
-          if (p.status == PurchaseStatus.purchased ||
-              p.status == PurchaseStatus.restored) {
-            if (p.productID == premium6mId) _activatePremium();
-            if (p.productID == removeAdsId) AdService.instance.disableAds();
-            unawaited(AnalyticsService.instance.logPurchase(
-              productId: p.productID,
-              value: productById(p.productID)?.rawPrice,
-            ));
-            onPurchase(p);
-          }
-          if (p.pendingCompletePurchase) {
-            _iap.completePurchase(p);
-          }
-        }
-      }, onError: (e) => debugPrint('[IAPService] purchaseStream hata: $e'));
+      _sub = _iap.purchaseStream.listen(_onPurchases, onError: (Object e) {
+        debugPrint('[IAPService] purchaseStream hata: $e');
+      });
 
       final response = await _iap.queryProductDetails(productIds);
       if (response.notFoundIDs.isNotEmpty) {
@@ -90,9 +81,78 @@ class IAPService {
             '${response.notFoundIDs}');
       }
       products = response.productDetails;
+      notifyListeners();
     } catch (e) {
       debugPrint('[IAPService] init hatası: $e');
+      notifyListeners();
     }
+  }
+
+  int? coinsFor(String productId) => switch (productId) {
+        coinsSmallId => 250,
+        coinsMediumId => 800,
+        _ => null,
+      };
+
+  Future<void> _onPurchases(List<PurchaseDetails> purchases) async {
+    for (final purchase in purchases) {
+      if (purchase.status == PurchaseStatus.purchased ||
+          purchase.status == PurchaseStatus.restored) {
+        await _deliver(purchase);
+      }
+      if (purchase.pendingCompletePurchase) {
+        await _iap.completePurchase(purchase);
+      }
+    }
+  }
+
+  Future<void> _deliver(PurchaseDetails purchase) async {
+    final consumable = coinsFor(purchase.productID) != null ||
+        purchase.productID == donationSmallId;
+    if (purchase.status == PurchaseStatus.restored && consumable) {
+      return;
+    }
+    final grantId = purchase.purchaseID ?? '${purchase.productID}:${purchase.transactionDate}';
+    final prefs = await SharedPreferences.getInstance();
+    final granted = prefs.getStringList(_grantedKey) ?? <String>[];
+    if (granted.contains(grantId)) {
+      return;
+    }
+    final coins = coinsFor(purchase.productID);
+    if (coins != null) {
+      await ProfileService.instance.addCoins(coins);
+      _notes.add('$coins coin eklendi');
+    } else if (purchase.productID == removeAdsId) {
+      await StorageService.instance.setAdsRemoved();
+      AdService.instance.disableAds();
+      _notes.add('Reklamlar kapatıldı');
+    } else if (purchase.productID == premium6mId) {
+      await _activatePremium();
+      _notes.add('Altı aylık reklamsız süre açıldı');
+    } else if (purchase.productID == donationSmallId) {
+      _notes.add('Desteğin için teşekkürler');
+    }
+    granted.add(grantId);
+    await prefs.setStringList(_grantedKey, granted);
+    unawaited(AnalyticsService.instance.logPurchase(
+      productId: purchase.productID,
+      value: productById(purchase.productID)?.rawPrice,
+    ));
+    notifyListeners();
+  }
+
+  Future<bool> buy(String productId) async {
+    final product = productById(productId);
+    if (product == null) {
+      return false;
+    }
+    final coins = coinsFor(productId);
+    if (coins != null || productId == donationSmallId) {
+      await buyConsumable(product);
+    } else {
+      await buyNonConsumable(product);
+    }
+    return true;
   }
 
   ProductDetails? productById(String id) {
@@ -149,5 +209,10 @@ class IAPService {
     return _iap.restorePurchases();
   }
 
-  void dispose() => _sub?.cancel();
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _notes.close();
+    super.dispose();
+  }
 }

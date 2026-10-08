@@ -89,7 +89,7 @@ class _GolfRoomScreenState extends State<GolfRoomScreen> {
             AZRoomHeader(title: 'MİNİ GOLF', onClose: _leaveRoom),
             const SizedBox(height: 20),
 
-            AZRoomCode(code: _code, accentColor: AZColors.green),
+            AZRoomCode(code: _code, accentColor: AZColors.green, inviteGame: 'golf'),
             const SizedBox(height: 20),
 
             AZFrostCard(

@@ -37,7 +37,8 @@ const _cars = [
 // ═══════════════════════════════════════════════════════════════════
 
 class RacingLobbyScreen extends StatefulWidget {
-  const RacingLobbyScreen({super.key});
+  const RacingLobbyScreen({super.key, this.initialCode});
+  final String? initialCode;
   @override State<RacingLobbyScreen> createState() => _RacingLobbyState();
 }
 
@@ -48,7 +49,11 @@ class _RacingLobbyState extends State<RacingLobbyScreen> {
   String? _name; bool _loading = false;
   CarData _car = _cars[0];
 
-  @override void initState() { super.initState(); _load(); }
+  @override void initState() {
+    super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
+    _load();
+  }
   @override void dispose() { _codeCtrl.dispose(); super.dispose(); }
 
   Future<void> _load() async {
@@ -299,7 +304,7 @@ class _RRoomState extends State<RacingRoomScreen> {
       child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
         AZRoomHeader(title: '🏁 ARABA YARIŞI', onClose: _leave),
         const SizedBox(height: 20),
-        AZRoomCode(code: _code, accentColor: AZColors.redDk),
+        AZRoomCode(code: _code, accentColor: AZColors.redDk, inviteGame: 'racing'),
         const SizedBox(height: 20),
         AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Pilotlar (${_players.length}/4)',

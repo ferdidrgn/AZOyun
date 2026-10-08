@@ -97,7 +97,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
             AZRoomHeader(title: 'ADAM ASMACA', onClose: _leaveRoom),
             const SizedBox(height: 20),
 
-            AZRoomCode(code: _code, accentColor: _kRed),
+            AZRoomCode(code: _code, accentColor: _kRed, inviteGame: 'hangman'),
             const SizedBox(height: 20),
 
             AZFrostCard(

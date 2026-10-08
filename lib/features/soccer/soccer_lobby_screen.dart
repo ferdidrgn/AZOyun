@@ -7,7 +7,9 @@ import '../../core/widgets/az_widgets.dart';
 import 'soccer_room_screen.dart';
 
 class SoccerLobbyScreen extends StatefulWidget {
-  const SoccerLobbyScreen({super.key});
+  const SoccerLobbyScreen({super.key, this.initialCode});
+
+  final String? initialCode;
 
   @override
   State<SoccerLobbyScreen> createState() => _SoccerLobbyScreenState();
@@ -28,6 +30,7 @@ class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
   @override
   void initState() {
     super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
     _bounce = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 700))
       ..repeat(reverse: true);

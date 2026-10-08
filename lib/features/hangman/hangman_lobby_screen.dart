@@ -6,7 +6,9 @@ import '../../core/widgets/az_widgets.dart';
 import 'hangman_room_screen.dart';
 
 class HangmanLobbyScreen extends StatefulWidget {
-  const HangmanLobbyScreen({super.key});
+  const HangmanLobbyScreen({super.key, this.initialCode});
+
+  final String? initialCode;
 
   @override
   State<HangmanLobbyScreen> createState() => _HangmanLobbyScreenState();
@@ -23,7 +25,11 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
   static const _kRed = Color(0xFFAD6F63);
 
   @override
-  void initState() { super.initState(); _loadName(); }
+  void initState() {
+    super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
+    _loadName();
+  }
 
   @override
   void dispose() { _codeCtrl.dispose(); super.dispose(); }

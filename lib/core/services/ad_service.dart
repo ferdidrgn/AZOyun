@@ -231,9 +231,10 @@ class AdService {
   /// başlatır (aksi halde her açılışta varsayılan olarak reklamlar açık
   /// başlar).
   Future<void> applyPremiumStateIfActive() async {
-    if (await StorageService.instance.isPremiumActive()) {
+    if (await StorageService.instance.adsRemoved() ||
+        await StorageService.instance.isPremiumActive()) {
       disableAds();
-      debugPrint('[AdService] premium aktif, reklamlar kapalı başladı');
+      debugPrint('[AdService] satın alma reklamları kapattı');
     }
   }
 

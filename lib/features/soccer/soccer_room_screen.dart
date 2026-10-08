@@ -100,7 +100,7 @@ class _SoccerRoomScreenState extends State<SoccerRoomScreen>
             AZRoomHeader(title: 'SERBEST VURUŞ', onClose: _leaveRoom),
             const SizedBox(height: 20),
 
-            AZRoomCode(code: _code, accentColor: AZColors.orange),
+            AZRoomCode(code: _code, accentColor: AZColors.orange, inviteGame: 'soccer'),
             const SizedBox(height: 20),
 
             AZFrostCard(

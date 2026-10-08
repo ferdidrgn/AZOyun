@@ -45,7 +45,8 @@ FighterData getFighter(String id) =>
 // ═══════════════════════════════════════════════════════════════════
 
 class FighterLobbyScreen extends StatefulWidget {
-  const FighterLobbyScreen({super.key});
+  const FighterLobbyScreen({super.key, this.initialCode});
+  final String? initialCode;
   @override State<FighterLobbyScreen> createState() => _FLobbyState();
 }
 
@@ -62,6 +63,7 @@ class _FLobbyState extends State<FighterLobbyScreen>
   @override
   void initState() {
     super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
     _glowCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
       ..repeat(reverse: true);
     _glow = Tween(begin: 0.5, end: 1.0).animate(
@@ -405,7 +407,7 @@ class _FRoomState extends State<FighterRoomScreen> {
             AZRoomHeader(
                 title: '⚔️ DÖVÜŞÇÜLER', onClose: _leave, closeColor: Colors.white54),
             const SizedBox(height: 16),
-            AZRoomCode(code: _code, accentColor: AZColors.red),
+            AZRoomCode(code: _code, accentColor: AZColors.red, inviteGame: 'fighter'),
             const SizedBox(height: 24),
 
             // Fighter showcase VS

@@ -11,6 +11,8 @@ import 'config/firebase_options.dart';
 import 'services/ad_service.dart';
 import 'services/analytics_service.dart';
 import 'services/deep_link_service.dart';
+import 'services/cosmetic_service.dart';
+import 'services/iap_service.dart';
 import 'services/language_service.dart';
 import 'services/notification_service.dart';
 import 'services/play_games_service.dart';
@@ -49,6 +51,7 @@ class AppInitializer {
     _wireCrashlytics();
 
     await ProfileService.instance.load();
+    await CosmeticService.instance.load();
     await ThemeService.instance.load();
     await LanguageService.instance.load();
 
@@ -83,6 +86,7 @@ class AppInitializer {
       AdService.instance.initialize().then((_) => AdService.instance.applyPremiumStateIfActive()),
     );
     unawaited(PlayGamesService.instance.signIn());
+    unawaited(IAPService.instance.initialize());
     unawaited(NotificationService.instance.initialize());
     unawaited(DeepLinkService.instance.initialize(onLink: onDeepLink));
   }

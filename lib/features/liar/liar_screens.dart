@@ -21,7 +21,8 @@ const _liarTopics = [
 // ════════════════════════════════════════════════════════════════════════════
 
 class LiarLobbyScreen extends StatefulWidget {
-  const LiarLobbyScreen({super.key});
+  const LiarLobbyScreen({super.key, this.initialCode});
+  final String? initialCode;
   @override State<LiarLobbyScreen> createState() => _LiarLobbyScreenState();
 }
 
@@ -32,7 +33,11 @@ class _LiarLobbyScreenState extends State<LiarLobbyScreen> {
   String? _playerName; bool _loading = false;
   static const _kRose = AZColors.red;
 
-  @override void initState() { super.initState(); _loadName(); }
+  @override void initState() {
+    super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
+    _loadName();
+  }
   @override void dispose()   { _codeCtrl.dispose(); super.dispose(); }
 
   Future<void> _loadName() async {
@@ -220,7 +225,7 @@ class _LiarRoomScreenState extends State<LiarRoomScreen> {
         child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
           AZRoomHeader(title: 'YALANCILAR KAHVESİ', onClose: _leave, titleSize: 17),
           const SizedBox(height: 20),
-          AZRoomCode(code: _code, accentColor: _kRose),
+          AZRoomCode(code: _code, accentColor: _kRose, inviteGame: 'liar'),
           const SizedBox(height: 20),
           AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Oyuncular (${_players.length}/6)',

@@ -2,6 +2,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 
 import 'core/app_initializer.dart';
+import 'core/navigation/join_router.dart';
 import 'core/services/analytics_service.dart';
 import 'core/services/app_keys.dart';
 import 'core/services/deep_link_service.dart';
@@ -18,14 +19,10 @@ void main() async {
 
 void _handleDeepLink(Uri uri) {
   final joined = DeepLinkService.parseJoinLink(uri);
-  if (joined == null) return;
-  final messenger = scaffoldMessengerKey.currentState;
-  messenger?.showSnackBar(
-    SnackBar(
-      content: Text('Davet linki: ${joined.game} · Kod: ${joined.code}'),
-      duration: const Duration(seconds: 4),
-    ),
-  );
+  if (joined == null) {
+    return;
+  }
+  PendingJoin.instance.offer(joined.game, joined.code);
 }
 
 class AZOyunApp extends StatelessWidget {

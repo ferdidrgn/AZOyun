@@ -1,174 +1,254 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../core/services/cosmetic_service.dart';
+import '../../core/services/iap_service.dart';
+import '../../core/navigation/join_router.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
+import '../../core/theme/felt.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
-
+import '../checkers/dama_screens.dart';
+import '../city/city_screens.dart';
+import '../deck/deck_lobby_screen.dart';
+import '../fighter/fighter_screens.dart';
 import '../golf/golf_lobby_screen.dart';
 import '../hangman/hangman_lobby_screen.dart';
+import '../impostor/impostor_screens.dart';
 import '../liar/liar_screens.dart';
+import '../mystery/mystery_case_screen.dart';
+import '../okey/okey_screens.dart';
+import '../profile/profile_screen.dart';
+import '../quickgames/balloon_pop_screen.dart';
+import '../quickgames/bulls_cows_screen.dart';
+import '../quickgames/carrom_screen.dart';
+import '../quickgames/chess_screen.dart';
+import '../quickgames/color_memory_screen.dart';
+import '../quickgames/connect_four_screen.dart';
+import '../quickgames/count_numbers_screen.dart';
+import '../quickgames/dice_party_screen.dart';
+import '../quickgames/dots_boxes_screen.dart';
+import '../quickgames/draw_smash_screen.dart';
+import '../quickgames/elite_quiz_screen.dart';
+import '../quickgames/game_2048_screen.dart';
+import '../quickgames/jump_dash_screen.dart';
+import '../quickgames/kid_party_screens.dart';
+import '../quickgames/lane_race_screen.dart';
+import '../quickgames/math_puzzle_screen.dart';
+import '../quickgames/memory_match_screen.dart';
+import '../quickgames/mini_bowling_screen.dart';
+import '../quickgames/monkey_touch_screen.dart';
+import '../quickgames/nail_salon_screen.dart';
+import '../quickgames/nim_screen.dart';
+import '../quickgames/pac_maze_screen.dart';
+import '../quickgames/reflex_tap_screen.dart';
+import '../quickgames/reversi_screen.dart';
+import '../quickgames/rps_screen.dart';
+import '../quickgames/scuba_sweep_screen.dart';
+import '../quickgames/sliding_puzzle_screen.dart';
+import '../quickgames/snake_screen.dart';
+import '../quickgames/spot_diff_screen.dart';
+import '../quickgames/tic_tac_toe_screen.dart';
+import '../quickgames/tiger_run_screen.dart';
+import '../quickgames/triple_match_screen.dart';
+import '../quickgames/trivia_screen.dart';
+import '../quickgames/word_mania_screen.dart';
+import '../racing/racing_screens.dart';
+import '../settings/settings_screen.dart';
+import '../store/play_hub_screen.dart';
 import '../soccer/soccer_lobby_screen.dart';
 import '../vampire_wolf/vampire_screens.dart';
 import '../word/word_screens.dart';
-import '../city/city_screens.dart';
-import '../okey/okey_screens.dart';
-import '../fighter/fighter_screens.dart';
-import '../racing/racing_screens.dart';
-import '../checkers/dama_screens.dart';
-import '../impostor/impostor_screens.dart';
-import '../mystery/mystery_case_screen.dart';
-
-import '../profile/profile_screen.dart';
-import '../settings/settings_screen.dart';
-import '../quickgames/tic_tac_toe_screen.dart';
-import '../quickgames/connect_four_screen.dart';
-import '../quickgames/reversi_screen.dart';
-import '../quickgames/rps_screen.dart';
-import '../quickgames/memory_match_screen.dart';
-import '../quickgames/dots_boxes_screen.dart';
-import '../quickgames/nim_screen.dart';
-import '../quickgames/snake_screen.dart';
-import '../quickgames/game_2048_screen.dart';
-import '../quickgames/reflex_tap_screen.dart';
-import '../quickgames/trivia_screen.dart';
-import '../quickgames/bulls_cows_screen.dart';
-import '../quickgames/balloon_pop_screen.dart';
-import '../quickgames/dice_party_screen.dart';
-import '../quickgames/sliding_puzzle_screen.dart';
-import '../quickgames/jump_dash_screen.dart';
-import '../quickgames/color_memory_screen.dart';
-import '../quickgames/mini_bowling_screen.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
 // HOME SCREEN — sabit üst kısım (başlık + profil) + iki sekme (Hızlı / Online)
 // ════════════════════════════════════════════════════════════════════════════
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _section = 0;
+  late final StreamSubscription<String> _purchaseNotes;
+
+  @override
+  void initState() {
+    super.initState();
+    PendingJoin.instance.addListener(_openPendingInvite);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingInvite());
+    _purchaseNotes = IAPService.instance.notes.listen((message) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    });
+  }
+
+  @override
+  void dispose() {
+    _purchaseNotes.cancel();
+    PendingJoin.instance.removeListener(_openPendingInvite);
+    super.dispose();
+  }
+
+  void _openPendingInvite() {
+    final invite = PendingJoin.instance.take();
+    if (invite == null || !mounted) {
+      return;
+    }
+    openGameInvite(context, invite.game, invite.code);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(gradient: AZTheme.dynamicGradient(context)),
-          child: SafeArea(
-            bottom: false,
-            child: Column(children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                child: Column(children: [
-                  _buildHeader(context),
-                  const SizedBox(height: 16),
-                  _buildProfileCard(context),
-                ]),
-              ),
-              const SizedBox(height: 14),
-              const _HomeTabBar(),
-              const Expanded(
-                child: TabBarView(children: [
-                  _QuickGamesTab(),
-                  _OnlineGamesTab(),
-                ]),
-              ),
-              const AdaptiveBannerAdWidget(),
-            ]),
-          ),
+    final palette = FeltPalette.of(context);
+    final wide = MediaQuery.sizeOf(context).width >= 840;
+    final pages = <Widget>[
+      const _QuickGamesTab(),
+      const _OnlineGamesTab(),
+      const _TableTab(),
+    ];
+    final body = Column(
+      children: [
+        _HomeHeader(onSettings: () => _push(context, const SettingsScreen())),
+        Expanded(
+          child: IndexedStack(index: _section, children: pages),
         ),
+        const AdaptiveBannerAdWidget(),
+      ],
+    );
+    return Scaffold(
+      bottomNavigationBar: wide
+          ? null
+          : _SectionBar(
+              index: _section,
+              onSelect: (index) => setState(() => _section = index),
+              ink: palette.ink,
+            ),
+      body: ListenableBuilder(
+        listenable: CosmeticService.instance,
+        builder: (context, _) {
+          final cloth = CosmeticService.instance.equipped;
+          final classic = cloth.id == 'classic';
+          return FeltBackdrop(
+            canvasTop: classic ? null : cloth.top,
+            canvasBottom: classic ? null : cloth.bottom,
+            child: SafeArea(
+              child: wide
+                  ? Row(
+                      children: [
+                        _SectionRail(
+                          index: _section,
+                          onSelect: (index) => setState(() => _section = index),
+                        ),
+                        Expanded(child: body),
+                      ],
+                    )
+                  : body,
+            ),
+          );
+        },
       ),
     );
   }
-
-  Widget _buildHeader(BuildContext context) => Stack(alignment: Alignment.center, children: [
-    Column(children: [
-      Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(color: Color(0x26FFFFFF), shape: BoxShape.circle),
-        child: const Icon(Icons.sports_esports, size: 44, color: Colors.white),
-      ),
-      const SizedBox(height: 10),
-      const Text('AZ OYUN',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold,
-              color: Colors.white, letterSpacing: 3)),
-      const SizedBox(height: 4),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        decoration: BoxDecoration(color: const Color(0x26FFFFFF),
-            borderRadius: BorderRadius.circular(20)),
-        child: const Text('31 OYUN · ONLINE & AYNI CİHAZDA',
-            style: TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1.2)),
-      ),
-    ]),
-    Positioned(
-      right: 0,
-      top: 0,
-      child: IconButton(
-        icon: const Icon(Icons.settings_rounded, color: Colors.white70),
-        onPressed: () => _push(context, const SettingsScreen()),
-      ),
-    ),
-  ]);
-
-  Widget _buildProfileCard(BuildContext context) => GestureDetector(
-    onTap: () => _push(context, const ProfileScreen()),
-    child: AZFrostCard(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      child: Row(children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(color: Color(0x33FFFFFF), shape: BoxShape.circle),
-          child: const Icon(Icons.person_rounded, color: Colors.white, size: 20),
-        ),
-        const SizedBox(width: 14),
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Profilim',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-              Text('Seviye · Başarımlar · Liderlik Tablosu',
-                  style: TextStyle(color: Colors.white60, fontSize: 10)),
-            ],
-          ),
-        ),
-        const Icon(Icons.arrow_forward_ios_rounded, color: Color(0x99FFFFFF), size: 14),
-      ]),
-    ),
-  );
 }
 
-class _HomeTabBar extends StatelessWidget {
-  const _HomeTabBar();
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({required this.onSettings});
+
+  final VoidCallback onSettings;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.symmetric(horizontal: 20),
-    padding: const EdgeInsets.all(4),
-    decoration: BoxDecoration(
-      color: const Color(0x1AFFFFFF),
-      borderRadius: BorderRadius.circular(AZRadius.lg),
-    ),
-    child: TabBar(
-      indicator: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AZRadius.md),
+  Widget build(BuildContext context) {
+    final palette = FeltPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 8, 0),
+      child: Row(
+        children: [
+          const FeltMark(size: 52),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('AZ Oyun', style: feltDisplay(palette.ink, 28)),
+                Text('Aynı masada', style: feltUi(palette.muted, 13)),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Play mağazası',
+            onPressed: () => _push(context, const PlayHubScreen()),
+            icon: Icon(Icons.storefront_rounded, color: palette.ink),
+          ),
+          IconButton(
+            tooltip: 'Profil',
+            onPressed: () => _push(context, const ProfileScreen()),
+            icon: Icon(Icons.person_rounded, color: palette.ink),
+          ),
+          IconButton(
+            tooltip: 'Ayarlar',
+            onPressed: onSettings,
+            icon: Icon(Icons.settings_rounded, color: palette.ink),
+          ),
+        ],
       ),
-      indicatorSize: TabBarIndicatorSize.tab,
-      dividerColor: Colors.transparent,
-      labelColor: Theme.of(context).colorScheme.primary,
-      unselectedLabelColor: Colors.white,
-      labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
-      unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
-      tabs: const [
-        Tab(height: 42, text: '⚡ HIZLI OYUNLAR'),
-        Tab(height: 42, text: '🌐 ONLINE OYUNLAR'),
+    );
+  }
+}
+
+class _SectionBar extends StatelessWidget {
+  const _SectionBar({required this.index, required this.onSelect, required this.ink});
+
+  final int index;
+  final ValueChanged<int> onSelect;
+  final Color ink;
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationBar(
+      selectedIndex: index,
+      height: 68,
+      backgroundColor: FeltPalette.of(context).surface,
+      indicatorColor: FeltColors.brass.withValues(alpha: 0.28),
+      labelTextStyle: WidgetStatePropertyAll(feltUi(ink, 12, weight: FontWeight.w600)),
+      onDestinationSelected: onSelect,
+      destinations: const [
+        NavigationDestination(icon: Icon(Icons.bolt_rounded), label: 'Hızlı'),
+        NavigationDestination(icon: Icon(Icons.public_rounded), label: 'Online'),
+        NavigationDestination(icon: Icon(Icons.table_restaurant_rounded), label: 'Masa'),
       ],
-    ),
-  );
+    );
+  }
+}
+
+class _SectionRail extends StatelessWidget {
+  const _SectionRail({required this.index, required this.onSelect});
+
+  final int index;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = FeltPalette.of(context);
+    return NavigationRail(
+      selectedIndex: index,
+      onDestinationSelected: onSelect,
+      backgroundColor: palette.surface,
+      indicatorColor: FeltColors.brass.withValues(alpha: 0.28),
+      labelType: NavigationRailLabelType.all,
+      minWidth: 88,
+      destinations: const [
+        NavigationRailDestination(icon: Icon(Icons.bolt_rounded), label: Text('Hızlı')),
+        NavigationRailDestination(icon: Icon(Icons.public_rounded), label: Text('Online')),
+        NavigationRailDestination(icon: Icon(Icons.table_restaurant_rounded), label: Text('Masa')),
+      ],
+    );
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -186,6 +266,41 @@ class _QuickGamesTab extends StatelessWidget {
   Widget build(BuildContext context) => SingleChildScrollView(
     padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _sectionHeader('🎈  ÇOCUK MASASI'),
+      _grid(context, [
+        _QuickTile(
+          emoji: '🐱', title: 'Ters Mama', subtitle: '1-6 kişi, kediyi besle', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const TersMamaLobbyScreen(),
+              game: (p) => TersMamaGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🥞', title: 'Hıçkırık Kulesi', subtitle: '1-6 kişi, ritme bas', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const HiccupTowerLobbyScreen(),
+              game: (p) => HiccupTowerGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🥣', title: 'Geri Sar Çorba', subtitle: '1-6 kişi, kaşığı durdur', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const SoupBackLobbyScreen(),
+              game: (p) => SoupBackGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🍃', title: 'Saçtaki Yaprak', subtitle: '1-6 kişi, üfle', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const HairLeafLobbyScreen(),
+              game: (p) => HairLeafGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🩴', title: 'Tek Terlik', subtitle: '1-6 kişi, eşiyle oturt', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const SlipperFlipLobbyScreen(),
+              game: (p) => SlipperFlipGameScreen(players: p)),
+        ),
+      ]),
+      const SizedBox(height: 26),
+
       _sectionHeader('🕵️  BÜYÜK OYUN'),
       AZGameCard(
         emoji: '🕵️', title: 'Dedektif Dosyaları',
@@ -197,7 +312,7 @@ class _QuickGamesTab extends StatelessWidget {
       const SizedBox(height: 26),
 
       _sectionHeader('🧠  STRATEJİ OYUNLARI'),
-      _grid([
+      _grid(context, [
         _QuickTile(
           emoji: '❌⭕', title: 'XOX', subtitle: '2 Kişi · AI', gradient: _strategyGrad,
           onTap: () => _openQuickGame(context,
@@ -222,11 +337,17 @@ class _QuickGamesTab extends StatelessWidget {
               lobby: const NimLobbyScreen(),
               game: (p) => NimGameScreen(players: p)),
         ),
+        _QuickTile(
+          emoji: '♟️', title: 'Satranç', subtitle: '2 Kişi', gradient: _strategyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const ChessLobbyScreen(),
+              game: (p) => ChessGameScreen(players: p)),
+        ),
       ]),
       const SizedBox(height: 26),
 
       _sectionHeader('🎉  PARTİ OYUNLARI'),
-      _grid([
+      _grid(context, [
         _QuickTile(
           emoji: '🪨📄✂️', title: 'Taş Kağıt Makas', subtitle: '2-6 Kişi · AI', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
@@ -275,11 +396,53 @@ class _QuickGamesTab extends StatelessWidget {
               lobby: const DicePartyLobbyScreen(),
               game: (p) => DicePartyGameScreen(players: p)),
         ),
+        _QuickTile(
+          emoji: '🎯', title: 'Quiz Eliti', subtitle: '1-6 kişi, jokerli', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const EliteQuizLobbyScreen(),
+              game: (p) => EliteQuizGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '➗', title: 'Matematik Bulmaca', subtitle: '1-6 kişi', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const MathPuzzleLobbyScreen(),
+              game: (p) => MathPuzzleGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🔤', title: 'Kelime Avı', subtitle: '1-6 kişi, 6 deneme', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const WordManiaLobbyScreen(),
+              game: (p) => WordManiaGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🔍', title: 'Farkı Bul', subtitle: '1-6 kişi', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const SpotDiffLobbyScreen(),
+              game: (p) => SpotDiffGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🍒', title: 'Üçlü Eşle', subtitle: '1-6 kişi', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const TripleMatchLobbyScreen(),
+              game: (p) => TripleMatchGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '1️⃣', title: 'Sayı Say', subtitle: '1-6 kişi', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const CountNumbersLobbyScreen(),
+              game: (p) => CountNumbersGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '💅', title: 'Oje Atölyesi', subtitle: '1-6 kişi', gradient: _partyGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const NailSalonLobbyScreen(),
+              game: (p) => NailSalonGameScreen(players: p)),
+        ),
       ]),
       const SizedBox(height: 26),
 
       _sectionHeader('🕹️  ARCADE & SKOR'),
-      _grid([
+      _grid(context, [
         _QuickTile(
           emoji: '🐍', title: 'Yılan', subtitle: '1-6 Kişi · Skor', gradient: _arcadeGrad,
           onTap: () => _openQuickGame(context,
@@ -311,6 +474,48 @@ class _QuickGamesTab extends StatelessWidget {
               game: (p) => ColorMemoryGameScreen(players: p)),
         ),
         _QuickTile(
+          emoji: '🤿', title: 'Scuba Sweep', subtitle: '1-6 kişi, okyanusu temizle', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const ScubaSweepLobbyScreen(),
+              game: (players) => ScubaSweepGameScreen(players: players)),
+        ),
+        _QuickTile(
+          emoji: '🐯', title: 'Kaplan Koşusu', subtitle: '1-6 kişi, altın topla', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const TigerRunLobbyScreen(),
+              game: (p) => TigerRunGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🐵', title: 'Maymun Dokunuşu', subtitle: '1-6 kişi', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const MonkeyTouchLobbyScreen(),
+              game: (p) => MonkeyTouchGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '✏️', title: 'Çiz Kazan', subtitle: '1-6 kişi', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const DrawSmashLobbyScreen(),
+              game: (p) => DrawSmashGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🏎️', title: 'Şerit Yarışı', subtitle: '1-6 kişi', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const LaneRaceLobbyScreen(),
+              game: (p) => LaneRaceGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '🟠', title: 'Karambol', subtitle: '1-6 kişi', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const CarromLobbyScreen(),
+              game: (p) => CarromGameScreen(players: p)),
+        ),
+        _QuickTile(
+          emoji: '😮', title: 'Pelet Labirenti', subtitle: '1-6 kişi', gradient: _arcadeGrad,
+          onTap: () => _openQuickGame(context,
+              lobby: const PacMazeLobbyScreen(),
+              game: (p) => PacMazeGameScreen(players: p)),
+        ),
+        _QuickTile(
           emoji: '🎳', title: 'Mini Bovling', subtitle: '1-6 Kişi · 3D · Skor', gradient: _arcadeGrad,
           onTap: () => _openQuickGame(context,
               lobby: const MiniBowlingLobbyScreen(),
@@ -320,15 +525,24 @@ class _QuickGamesTab extends StatelessWidget {
     ]),
   );
 
-  Widget _grid(List<Widget> tiles) => GridView.count(
-    crossAxisCount: 2,
-    shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
-    crossAxisSpacing: 12,
-    mainAxisSpacing: 12,
-    childAspectRatio: 1.35,
-    children: tiles,
-  );
+  Widget _grid(BuildContext context, List<Widget> tiles) {
+    final width = MediaQuery.sizeOf(context).width;
+    var columns = 2;
+    if (width >= 1100) {
+      columns = 4;
+    } else if (width >= 720) {
+      columns = 3;
+    }
+    return GridView.count(
+      crossAxisCount: columns,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: columns >= 3 ? 1.45 : 1.22,
+      children: tiles,
+    );
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -461,25 +675,9 @@ class _OnlineGamesTab extends StatelessWidget {
       ),
       const SizedBox(height: 24),
 
-      AZFrostCard(
-        opacity: 0.10,
-        child: const Column(children: [
-          Icon(Icons.info_outline_rounded, color: Colors.white70, size: 22),
-          SizedBox(height: 10),
-          Text('NASIL OYNANIR?', style: TextStyle(color: Colors.white,
-              fontWeight: FontWeight.bold, letterSpacing: 1)),
-          SizedBox(height: 10),
-          Text(
-            '1. Oyun seç\n'
-            '2. "Oda Oluştur" a bas\n'
-            '3. 6 haneli kodu arkadaşına gönder\n'
-            '4. Arkadaşın "Odaya Katıl" ile girer\n'
-            '5. Host "Başlat" a basar → Oyna! 🎮',
-            style: TextStyle(color: Colors.white70,
-                height: 1.7, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
-        ]),
+      Text(
+        'Oda kur, QR kodu TV, bilgisayar veya telefonda aç. Arkadaşın aynı odaya düşer.',
+        style: feltUi(FeltPalette.of(context).muted, 14),
       ),
     ]),
   );
@@ -489,12 +687,49 @@ class _OnlineGamesTab extends StatelessWidget {
 // ORTAK YARDIMCILAR
 // ════════════════════════════════════════════════════════════════════════════
 
-Widget _sectionHeader(String t) => Padding(
-  padding: const EdgeInsets.only(bottom: 12),
-  child: Text(t, style: const TextStyle(
-      color: Colors.white, fontSize: 15,
-      fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-);
+Widget _sectionHeader(String title) => Builder(
+      builder: (context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12, top: 8),
+        child: Text(title, style: feltUi(FeltPalette.of(context).ink, 18, weight: FontWeight.w700)),
+      ),
+    );
+
+class _TableTab extends StatelessWidget {
+  const _TableTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = FeltPalette.of(context);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+      children: [
+        Text('Masa', style: feltDisplay(palette.ink, 36)),
+        const SizedBox(height: 8),
+        Text(
+          'Bir ekranı ortaya koy. Telefonlar eldeki kartları gösterir. QR kodunu TV, bilgisayar veya başka bir telefonda aç.',
+          style: feltUi(palette.muted, 15),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 56,
+          child: FilledButton(
+            onPressed: () => _push(context, const DeckLobbyScreen()),
+            style: FilledButton.styleFrom(
+              backgroundColor: FeltColors.felt,
+              foregroundColor: FeltColors.ivory,
+            ),
+            child: Text('Pişti masasına geç', style: feltUi(FeltColors.ivory, 16, weight: FontWeight.w700)),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Text(
+          'Diğer online odaların kodunun altında da aynı QR vardır. Oyun, kodu açan her cihazda başlar.',
+          style: feltUi(palette.muted, 14),
+        ),
+      ],
+    );
+  }
+}
 
 void _push(BuildContext context, Widget screen) =>
     Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
@@ -530,45 +765,40 @@ class _QuickTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent =
-        gradient is LinearGradient ? (gradient as LinearGradient).colors.first : AZColors.purple;
+    final palette = FeltPalette.of(context);
+    final accent = gradient is LinearGradient ? (gradient as LinearGradient).colors.first : AZColors.purple;
     return Material(
-      color: Colors.transparent,
+      color: palette.surface,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AZRadius.lg),
+        borderRadius: BorderRadius.circular(16),
         child: Ink(
           decoration: BoxDecoration(
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(AZRadius.lg),
-            boxShadow: [
-              BoxShadow(color: accent.withAlpha(70), blurRadius: 10, offset: const Offset(0, 5)),
-            ],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: palette.line),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration:
-                      const BoxDecoration(color: Color(0x33FFFFFF), shape: BoxShape.circle),
-                  child: Center(child: Text(emoji, style: const TextStyle(fontSize: 18))),
+                Container(width: 28, height: 4, decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(4))),
+                const Spacer(),
+                Text(emoji, style: const TextStyle(fontSize: 20)),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: feltUi(palette.ink, 14, weight: FontWeight.w700),
                 ),
-                const SizedBox(height: 10),
-                Text(title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5)),
-                const SizedBox(height: 2),
-                Text(subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 10.5)),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: feltUi(palette.muted, 11),
+                ),
               ],
             ),
           ),

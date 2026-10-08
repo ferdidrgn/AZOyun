@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../services/deep_link_service.dart';
 import '../theme/az_theme.dart';
+import '../theme/felt.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LAYOUT
@@ -23,7 +28,16 @@ class AZGradientScaffold extends StatelessWidget {
     resizeToAvoidBottomInset: resizeToAvoidBottomInset,
     body: Container(
       decoration: BoxDecoration(gradient: gradient),
-      child: SafeArea(child: child),
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(painter: FeltVignettePainter()),
+            ),
+          ),
+          SafeArea(child: child),
+        ],
+      ),
     ),
   );
 }
@@ -107,9 +121,11 @@ class _AZGameCardState extends State<AZGameCard> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = FeltPalette.of(context);
     final accent = widget.gradient is LinearGradient
         ? (widget.gradient as LinearGradient).colors.first
         : AZColors.purple;
+    final reduce = MediaQuery.disableAnimationsOf(context);
 
     return GestureDetector(
       onTapDown: (_) => _setPressed(true),
@@ -117,78 +133,60 @@ class _AZGameCardState extends State<AZGameCard> {
       onTapCancel: () => _setPressed(false),
       onTap: widget.onTap,
       child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 110),
+        scale: _pressed ? 0.98 : 1,
+        duration: reduce ? Duration.zero : const Duration(milliseconds: 110),
         curve: Curves.easeOut,
         child: Container(
+          constraints: const BoxConstraints(minHeight: 76),
           decoration: BoxDecoration(
-            gradient: widget.gradient,
-            borderRadius: BorderRadius.circular(AZRadius.xl),
-            boxShadow: [
-              BoxShadow(
-                color: accent.withAlpha(_pressed ? 60 : 100),
-                blurRadius: _pressed ? 10 : 20,
-                offset: Offset(0, _pressed ? 4 : 10),
-              ),
-            ],
+            color: palette.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: palette.line),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
             child: Row(children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: const Color(0x33FFFFFF),
-                  borderRadius: BorderRadius.circular(AZRadius.lg),
-                  border: Border.all(color: const Color(0x40FFFFFF)),
-                ),
-                child: Center(
-                    child: Text(widget.emoji, style: const TextStyle(fontSize: 32))),
-              ),
-              const SizedBox(width: 16),
+              Container(width: 6, color: accent),
+              const SizedBox(width: 14),
+              Text(widget.emoji, style: const TextStyle(fontSize: 28)),
+              const SizedBox(width: 14),
               Expanded(
-                child: Column(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(children: [
                         Expanded(
-                          child: Text(widget.title,
-                              style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
+                          child: Text(
+                            widget.title,
+                            style: feltUi(palette.ink, 17, weight: FontWeight.w700),
+                          ),
                         ),
-                        if (widget.badge != null) ...[
-                          const SizedBox(width: 6),
+                        if (widget.badge != null)
                           Container(
+                            margin: const EdgeInsets.only(right: 12),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20)),
-                            child: Text(widget.badge!,
-                                style: TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: accent,
-                                    letterSpacing: 0.3)),
+                              color: FeltColors.brass.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              widget.badge!,
+                              style: feltUi(palette.ink, 11, weight: FontWeight.w700),
+                            ),
                           ),
-                        ],
                       ]),
-                      const SizedBox(height: 5),
-                      Text(widget.subtitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 12.5, color: Color(0xD9FFFFFF), height: 1.3)),
-                    ]),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                width: 30,
-                height: 30,
-                decoration: const BoxDecoration(color: Color(0x26FFFFFF), shape: BoxShape.circle),
-                child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: feltUi(palette.muted, 13),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ]),
           ),
@@ -328,42 +326,70 @@ class AZRoomHeader extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class AZRoomCode extends StatelessWidget {
-  const AZRoomCode(
-      {super.key, required this.code, required this.accentColor});
+  const AZRoomCode({
+    super.key,
+    required this.code,
+    required this.accentColor,
+    this.inviteGame,
+  });
 
   final String code;
-  final Color  accentColor;
+  final Color accentColor;
+
+  /// Doluysa oda kodunun yanında QR ve paylaşım çıkar.
+  /// Değer, davet adresindeki oyun kimliğidir (`golf`, `deck`, `okey101`).
+  final String? inviteGame;
 
   @override
-  Widget build(BuildContext context) => AZCard(
-    child: Column(children: [
-      Text('ODA KODU',
-          style: TextStyle(
-              fontSize: 11,
-              letterSpacing: 2,
-              color: Colors.grey.shade500)),
-      const SizedBox(height: 6),
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(code,
-            style: TextStyle(
-                fontSize: 38,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 10,
-                color: accentColor)),
-        IconButton(
-          icon: Icon(Icons.copy_rounded, color: accentColor),
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: code));
-            ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Kod kopyalandı!')));
-          },
-        ),
+  Widget build(BuildContext context) {
+    final link = inviteGame == null ? null : DeepLinkService.webInvite(inviteGame!, code);
+    return AZCard(
+      child: Column(children: [
+        Text('Oda kodu',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+        const SizedBox(height: 6),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(code,
+              style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 8,
+                  color: accentColor)),
+          IconButton(
+            icon: Icon(Icons.copy_rounded, color: accentColor),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: link ?? code));
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Davet kopyalandı')));
+            },
+          ),
+        ]),
+        if (link != null) ...[
+          const SizedBox(height: 8),
+          ColoredBox(
+            color: Colors.white,
+            child: QrImageView(data: link, size: 168, backgroundColor: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Text('TV, bilgisayar veya telefonda aç',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+          TextButton(
+            onPressed: () => Share.share('AZ Oyun odasına katıl. Kod: $code\n$link'),
+            child: const Text('Daveti paylaş'),
+          ),
+        ] else
+          Text('Arkadaşına gönder',
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
       ]),
-      Text('Arkadaşına gönder',
-          style:
-              TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-    ]),
-  );
+    );
+  }
+}
+
+void seedRoomCode(TextEditingController controller, String? code) {
+  if (code == null || code.isEmpty) {
+    return;
+  }
+  controller.text = code.toUpperCase();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -40,7 +40,8 @@ int _impostorCountFor(int players) => players >= 7 ? 2 : 1;
 // ═══════════════════════════════════════════════════════════════════════════
 
 class ImpostorLobbyScreen extends StatefulWidget {
-  const ImpostorLobbyScreen({super.key});
+  const ImpostorLobbyScreen({super.key, this.initialCode});
+  final String? initialCode;
   @override
   State<ImpostorLobbyScreen> createState() => _ImpostorLobbyScreenState();
 }
@@ -55,6 +56,7 @@ class _ImpostorLobbyScreenState extends State<ImpostorLobbyScreen> {
   @override
   void initState() {
     super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
     _load();
   }
 
@@ -327,7 +329,7 @@ class _ImpostorRoomScreenState extends State<ImpostorRoomScreen> {
             child: Column(children: [
               AZRoomHeader(title: 'HAİN KİM?', onClose: _leave),
               const SizedBox(height: 20),
-              AZRoomCode(code: _code, accentColor: AZColors.blue),
+              AZRoomCode(code: _code, accentColor: AZColors.blue, inviteGame: 'impostor'),
               const SizedBox(height: 20),
               AZFrostCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

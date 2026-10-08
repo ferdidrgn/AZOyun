@@ -18,7 +18,8 @@ import '../../core/widgets/banner_ad_widget.dart';
 // ═══════════════════════════════════════════════════════════════════════════
 
 class VampireLobbyScreen extends StatefulWidget {
-  const VampireLobbyScreen({super.key});
+  const VampireLobbyScreen({super.key, this.initialCode});
+  final String? initialCode;
   @override
   State<VampireLobbyScreen> createState() => _VLS();
 }
@@ -33,6 +34,7 @@ class _VLS extends State<VampireLobbyScreen> {
   @override
   void initState() {
     super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
     _load();
   }
 
@@ -342,7 +344,7 @@ class _VRS extends State<VampireRoomScreen> {
             child: Column(children: [
               AZRoomHeader(title: 'VAMPİR KÖYLÜ', onClose: _leave),
               const SizedBox(height: 20),
-              AZRoomCode(code: _code, accentColor: AZColors.purple),
+              AZRoomCode(code: _code, accentColor: AZColors.purple, inviteGame: 'vampire'),
               const SizedBox(height: 20),
               AZFrostCard(
                 child: Column(

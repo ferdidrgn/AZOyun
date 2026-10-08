@@ -13,6 +13,7 @@ class StorageService {
   static const _kName           = 'player_name';
   static const _kGameEnterCount = 'game_enter_count';
   static const _kPremiumUntil   = 'premium_until';
+  static const _kAdsRemoved     = 'ads_removed';
 
   // ── Player name ───────────────────────────────────────────────────────────
 
@@ -65,6 +66,10 @@ class StorageService {
     final until = await getPremiumUntil();
     return until != null && until.isAfter(DateTime.now());
   }
+
+  Future<void> setAdsRemoved() => _storage.write(key: _kAdsRemoved, value: 'true');
+
+  Future<bool> adsRemoved() async => (await _storage.read(key: _kAdsRemoved)) == 'true';
 
   Future<void> clearAll() => _storage.deleteAll();
 }

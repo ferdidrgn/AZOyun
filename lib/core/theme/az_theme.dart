@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DESIGN TOKENS
@@ -16,18 +17,18 @@ import 'package:flutter/services.dart';
 
 abstract class AZColors {
   // Marka — yumuşak toprak/lavanta ailesi (eski parlak #6C63FF mor yerine)
-  static const purple   = Color(0xFF9B8FC9);
-  static const purpleDk = Color(0xFF7D6FB0);
+  static const purple   = Color(0xFF6D5AAE);
+  static const purpleDk = Color(0xFF4C3D82);
 
   // Oyun renkleri — hepsi aynı mat/pastel aileden, eski neon tonların yerine
-  static const red      = Color(0xFFCB8A7E);
-  static const redDk    = Color(0xFFAD6F63);
-  static const green    = Color(0xFF93AE8C);
-  static const greenDk  = Color(0xFF77916F);
-  static const orange   = Color(0xFFD9A25C);
-  static const orangeDk = Color(0xFFBD8748);
-  static const blue     = Color(0xFF83ABC7);
-  static const blueDk   = Color(0xFF6390AC);
+  static const red      = Color(0xFFC15B52);
+  static const redDk    = Color(0xFF8E3E38);
+  static const green    = Color(0xFF3F8F62);
+  static const greenDk  = Color(0xFF246246);
+  static const orange   = Color(0xFFD4923E);
+  static const orangeDk = Color(0xFFA56A22);
+  static const blue     = Color(0xFF3E7EA8);
+  static const blueDk   = Color(0xFF2A5878);
 
   // Semantik
   static const success = green;
@@ -56,31 +57,31 @@ abstract class AZColors {
   // neon renk" değil, "hangi oyun hangi yumuşak ton" mantığıyla ayrışıyor
   static const gradPurple = LinearGradient(
     begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFFB3A7DB), purpleDk],
+    colors: [purple, purpleDk],
   );
   static const gradRed = LinearGradient(
     begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFFDDA69B), redDk],
+    colors: [red, redDk],
   );
   static const gradGreen = LinearGradient(
     begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFFA8C3A0), greenDk],
+    colors: [green, greenDk],
   );
   static const gradOrange = LinearGradient(
     begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFFE3B583), orangeDk],
+    colors: [orange, orangeDk],
   );
   static const gradBlue = LinearGradient(
     begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFF9CC0D8), blueDk],
+    colors: [blue, blueDk],
   );
   static const gradPink = LinearGradient(
     begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFFE8C4C0), Color(0xFFCB8A7E)],
+    colors: [Color(0xFFC47A90), Color(0xFF8E4E62)],
   );
   static const gradCyan = LinearGradient(
     begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFFA9D4C9), Color(0xFF7FA79B)],
+    colors: [Color(0xFF3E8F86), Color(0xFF24635C)],
   );
   static const gradDark = LinearGradient(
     begin: Alignment.topLeft, end: Alignment.bottomRight,
@@ -88,7 +89,7 @@ abstract class AZColors {
   );
   static const gradRose = LinearGradient(
     begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFFE0B8AE), Color(0xFFCB8A7E)],
+    colors: [Color(0xFFC46A62), Color(0xFF8A403C)],
   );
 
   /// Koyu temanın kendi "token sheet" gradyanı — Ayarlar/Splash/Onboarding
@@ -187,11 +188,12 @@ abstract class AZTheme {
       brightness: brightness,
       colorScheme: scheme,
       scaffoldBackgroundColor: bg,
-      fontFamily: 'Roboto',
-      textTheme: ThemeData(brightness: brightness).textTheme.apply(
-            bodyColor: textPrimary,
-            displayColor: textPrimary,
-          ),
+      textTheme: GoogleFonts.figtreeTextTheme(
+        ThemeData(brightness: brightness).textTheme,
+      ).apply(
+        bodyColor: textPrimary,
+        displayColor: textPrimary,
+      ),
       appBarTheme: AppBarTheme(
         elevation: 0,
         centerTitle: true,

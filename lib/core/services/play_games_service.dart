@@ -1,22 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:games_services/games_services.dart';
 
-/// Google Play Games Services (Android) / Game Center (iOS) köprüsü.
-///
-/// Play Console tarafında (proje kimliği 517819561284) şu an:
-///   - 1 genel liderlik tablosu ("Skorboard") — bkz. [_defaultLeaderboardId]
-///   - 1 başarım ("İlk" / first_step) — bkz. [_achievementIds]
-///   - 1 etkinlik ("Hoşgeldin") — Events API henüz bu serviste
-///     uygulanmadı, ileride eklenebilir.
-/// Yeni oyuna özel liderlik tablosu/başarım oluşturulunca ilgili ID
-/// [_leaderboardIds]/[_achievementIds] haritalarına eklenmesi yeterli.
-///
-/// ID'ler boş/eksikse bu servis tüm çağrılarda sessizce no-op çalışır —
-/// uygulama Play Games olmadan da tamamen sorunsuz çalışmaya devam eder.
-/// Bu dosya `games_services` paketinin API'sine göre yazıldı; paket
-/// sürümü güncellenirse (`flutter pub get` sonrası) derleme hatası
-/// çıkarsa yalnız bu dosyanın güncellenmesi yeterlidir.
-class PlayGamesService {
+class PlayGamesService extends ChangeNotifier {
   PlayGamesService._();
   static final PlayGamesService instance = PlayGamesService._();
 
@@ -58,6 +43,14 @@ class PlayGamesService {
       debugPrint('[PlayGamesService] sign-in atlandı: $e');
       _signedIn = false;
     }
+    notifyListeners();
+  }
+
+  Future<bool> ensureSignedIn() async {
+    if (!_signedIn) {
+      await signIn();
+    }
+    return _signedIn;
   }
 
   Future<void> submitScore({required String gameId, required int score}) async {
@@ -86,7 +79,7 @@ class PlayGamesService {
   }
 
   Future<void> showLeaderboard(String gameId) async {
-    if (!_signedIn) return;
+    if (!await ensureSignedIn()) return;
     final leaderboardId = _leaderboardIdFor(gameId);
     try {
       await GamesServices.showLeaderboards(androidLeaderboardID: leaderboardId);
@@ -96,7 +89,7 @@ class PlayGamesService {
   }
 
   Future<void> showAchievements() async {
-    if (!_signedIn) return;
+    if (!await ensureSignedIn()) return;
     try {
       await GamesServices.showAchievements();
     } catch (e) {

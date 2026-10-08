@@ -168,7 +168,8 @@ class _Move {
 // ═══════════════════════════════════════════════════════════════════
 
 class DamaLobbyScreen extends StatefulWidget {
-  const DamaLobbyScreen({super.key});
+  const DamaLobbyScreen({super.key, this.initialCode});
+  final String? initialCode;
   @override State<DamaLobbyScreen> createState() => _DamaLobbyState();
 }
 
@@ -178,7 +179,11 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
   final _codeCtrl = TextEditingController();
   String? _name; bool _loading = false;
 
-  @override void initState() { super.initState(); _load(); }
+  @override void initState() {
+    super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
+    _load();
+  }
   @override void dispose() { _codeCtrl.dispose(); super.dispose(); }
 
   Future<void> _load() async {
@@ -365,7 +370,7 @@ class _DamaRoomState extends State<DamaRoomScreen> {
       child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
         AZRoomHeader(title: 'DAMA', onClose: _leave),
         const SizedBox(height: 20),
-        AZRoomCode(code: _code, accentColor: const Color(0xFF8C7863)),
+        AZRoomCode(code: _code, accentColor: const Color(0xFF8C7863), inviteGame: 'dama'),
         const SizedBox(height: 20),
         AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Oyuncular (2 gerekli)',

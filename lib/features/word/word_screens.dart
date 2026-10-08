@@ -25,7 +25,8 @@ const _wordBank = [
 ];
 
 class WordLobbyScreen extends StatefulWidget {
-  const WordLobbyScreen({super.key});
+  const WordLobbyScreen({super.key, this.initialCode});
+  final String? initialCode;
   @override State<WordLobbyScreen> createState() => _WordLobbyScreenState();
 }
 
@@ -36,7 +37,11 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
   String? _playerName; bool _loading = false;
   static const _kCyan = Color(0xFF7FA79B);
 
-  @override void initState() { super.initState(); _loadName(); }
+  @override void initState() {
+    super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
+    _loadName();
+  }
   @override void dispose()   { _codeCtrl.dispose(); super.dispose(); }
 
   Future<void> _loadName() async {
@@ -208,7 +213,7 @@ class _WordRoomScreenState extends State<WordRoomScreen> {
         child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
           AZRoomHeader(title: 'KELİME BULMACA', onClose: _leave),
           const SizedBox(height: 20),
-          AZRoomCode(code: _code, accentColor: _kCyan),
+          AZRoomCode(code: _code, accentColor: _kCyan, inviteGame: 'word'),
           const SizedBox(height: 20),
           AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Oyuncular (${_players.length}/4)',

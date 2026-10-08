@@ -7,7 +7,9 @@ import '../../core/widgets/az_widgets.dart';
 import 'golf_room_screen.dart';
 
 class GolfLobbyScreen extends StatefulWidget {
-  const GolfLobbyScreen({super.key});
+  const GolfLobbyScreen({super.key, this.initialCode});
+
+  final String? initialCode;
 
   @override
   State<GolfLobbyScreen> createState() => _GolfLobbyScreenState();
@@ -28,6 +30,7 @@ class _GolfLobbyScreenState extends State<GolfLobbyScreen>
   @override
   void initState() {
     super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
     _bounce = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 750))
       ..repeat(reverse: true);

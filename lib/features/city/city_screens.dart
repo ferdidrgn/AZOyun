@@ -42,7 +42,9 @@ String _trUpper(String s) =>
 // ══════════════════════════════════════════════════════════════════════════════
 
 class CityLobbyScreen extends StatefulWidget {
-  const CityLobbyScreen({super.key});
+  const CityLobbyScreen({super.key, this.initialCode});
+
+  final String? initialCode;
   @override
   State<CityLobbyScreen> createState() => _CityLobbyScreenState();
 }
@@ -56,7 +58,11 @@ class _CityLobbyScreenState extends State<CityLobbyScreen> {
   static const _kPink = AZColors.red;
 
   @override
-  void initState() { super.initState(); _loadName(); }
+  void initState() {
+    super.initState();
+    seedRoomCode(_codeCtrl, widget.initialCode);
+    _loadName();
+  }
   @override
   void dispose() { _codeCtrl.dispose(); super.dispose(); }
 
@@ -253,7 +259,7 @@ class _CityRoomScreenState extends State<CityRoomScreen> {
         child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
           AZRoomHeader(title: 'ŞEHİR BULMACA', onClose: _leave),
           const SizedBox(height: 20),
-          AZRoomCode(code: _code, accentColor: _kPink),
+          AZRoomCode(code: _code, accentColor: _kPink, inviteGame: 'city'),
           const SizedBox(height: 20),
           AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Oyuncular (${_players.length}/4)',

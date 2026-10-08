@@ -19,6 +19,7 @@ abstract class GamePaths {
   static const racing     = 'racing_rooms';
   static const dama       = 'dama_rooms';
   static const impostor   = 'impostor_rooms';
+  static const deck       = 'deck_rooms';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/player_profile.dart';
@@ -21,7 +22,7 @@ class GameRewardResult {
 
 /// Oyuncunun XP/coin/istatistik profilini yönetir. Yerelde (SharedPreferences)
 /// saklanır; Play Games'e bağlıysa gelecekte bulut kaydıyla senkronize edilir.
-class ProfileService {
+class ProfileService extends ChangeNotifier {
   ProfileService._();
   static final ProfileService instance = ProfileService._();
 
@@ -54,6 +55,7 @@ class ProfileService {
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode(_profile.toJson()));
+    notifyListeners();
   }
 
   /// Bir hızlı oyun maçı bitince çağrılır. Kazanılan ödülü döner.

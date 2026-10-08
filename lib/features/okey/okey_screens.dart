@@ -166,8 +166,9 @@ List<Map<String, dynamic>> buildDeck(int seed) {
 // ═══════════════════════════════════════════════════════════════════
 
 class OkeyLobbyScreen extends StatefulWidget {
-  const OkeyLobbyScreen({super.key, this.mode = 'okey'});
+  const OkeyLobbyScreen({super.key, this.mode = 'okey', this.initialCode});
   final String mode;
+  final String? initialCode;
   @override State<OkeyLobbyScreen> createState() => _OLobbyState();
 }
 
@@ -178,7 +179,12 @@ class _OLobbyState extends State<OkeyLobbyScreen> {
   String? _name; bool _loading = false;
   late String _mode;
 
-  @override void initState() { super.initState(); _mode = widget.mode; _load(); }
+  @override void initState() {
+    super.initState();
+    _mode = widget.mode;
+    seedRoomCode(_codeCtrl, widget.initialCode);
+    _load();
+  }
   @override void dispose() { _codeCtrl.dispose(); super.dispose(); }
 
   Color get _accent => _mode == '101' ? AZColors.orangeDk : AZColors.greenDk;
@@ -426,7 +432,7 @@ class _ORoomState extends State<OkeyRoomScreen> {
       child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
         AZRoomHeader(title: _mode == '101' ? 'OKEY 101' : 'OKEY', onClose: _leave),
         const SizedBox(height: 20),
-        AZRoomCode(code: _code, accentColor: _accent),
+        AZRoomCode(code: _code, accentColor: _accent, inviteGame: _mode == '101' ? 'okey101' : 'okey'),
         const SizedBox(height: 20),
         AZFrostCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Oyuncular (${_players.length}/4)',

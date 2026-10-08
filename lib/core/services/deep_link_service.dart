@@ -40,17 +40,29 @@ class DeepLinkService {
     );
   }
 
-  /// `azoyun://join/<oyun>/<kod>` bağlantısını ayrıştırır.
-  /// Eşleşmezse `null` döner.
+  static String webInvite(String game, String code) =>
+      'https://azoyun.web.app/?join=$game&code=${code.toUpperCase()}';
+
+  static String appInvite(String game, String code) =>
+      'azoyun://join/$game/${code.toUpperCase()}';
+
+  /// `azoyun://join/<oyun>/<kod>`, `https://azoyun.web.app/join/<oyun>/<kod>`
+  /// ve `?join=<oyun>&code=<kod>` bağlantılarını ayrıştırır.
   static ({String game, String code})? parseJoinLink(Uri uri) {
-    if (uri.host != 'join' && !(uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'join')) {
-      return null;
+    final queryCode = uri.queryParameters['code'];
+    final queryGame = uri.queryParameters['join'] ?? uri.queryParameters['game'];
+    if (queryGame != null && queryGame.isNotEmpty && queryCode != null && queryCode.isNotEmpty) {
+      return (game: queryGame, code: queryCode.toUpperCase());
     }
-    final segments = uri.host == 'join'
-        ? uri.pathSegments
-        : uri.pathSegments.skip(1).toList();
-    if (segments.length < 2) return null;
-    return (game: segments[0], code: segments[1].toUpperCase());
+    if (uri.host == 'join' && uri.pathSegments.length >= 2) {
+      return (game: uri.pathSegments[0], code: uri.pathSegments[1].toUpperCase());
+    }
+    final segments = uri.pathSegments.where((segment) => segment.isNotEmpty).toList();
+    final joinAt = segments.indexOf('join');
+    if (joinAt >= 0 && segments.length >= joinAt + 3) {
+      return (game: segments[joinAt + 1], code: segments[joinAt + 2].toUpperCase());
+    }
+    return null;
   }
 
   void dispose() => _sub?.cancel();

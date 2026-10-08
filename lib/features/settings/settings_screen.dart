@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:share_plus/share_plus.dart';
@@ -13,6 +14,7 @@ import '../../core/services/play_games_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/theme_service.dart';
 import '../../core/theme/az_theme.dart';
+import '../store/play_hub_screen.dart';
 import 'language_screen.dart';
 import 'legal_screens.dart';
 
@@ -25,7 +27,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String _version = '';
-  bool _connectingPlayGames = false;
   bool _donating = false;
   bool _buyingPremium = false;
   DateTime? _premiumUntil;
@@ -35,8 +36,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadVersion();
     _loadPremiumStatus();
-    IAPService.instance.initialize(onPurchase: _onPurchase);
+    _iapNotes = IAPService.instance.notes.listen((_) {
+      if (!mounted) return;
+      _loadPremiumStatus();
+    });
   }
+
+  late final StreamSubscription<String> _iapNotes;
 
   Future<void> _loadVersion() async {
     try {
@@ -54,21 +60,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _premiumUntil = until);
   }
 
-  void _onPurchase(PurchaseDetails purchase) {
-    if (!mounted) return;
-    if (purchase.productID == IAPService.donationSmallId) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('donate_thanks'))));
-    } else if (purchase.productID == IAPService.premium6mId) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('premium_thanks'))));
-      _loadPremiumStatus();
-    }
-  }
-
-  Future<void> _connectPlayGames() async {
-    setState(() => _connectingPlayGames = true);
-    await PlayGamesService.instance.signIn();
-    if (!mounted) return;
-    setState(() => _connectingPlayGames = false);
+  @override
+  void dispose() {
+    _iapNotes.cancel();
+    super.dispose();
   }
 
   Future<void> _donate() async {
@@ -151,16 +146,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: PlayGamesService.instance.isSignedIn
                   ? t('settings_play_games_connected')
                   : t('settings_play_games_connect'),
-              trailing: _connectingPlayGames
-                  ? const SizedBox(
-                      width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : (PlayGamesService.instance.isSignedIn
-                      ? const Icon(Icons.check_circle_rounded, color: Colors.green)
-                      : null),
-              onTap: PlayGamesService.instance.isSignedIn ? null : _connectPlayGames,
+              trailing: PlayGamesService.instance.isSignedIn
+                  ? const Icon(Icons.check_circle_rounded, color: Colors.green)
+                  : null,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PlayHubScreen()),
+              ),
             ),
             const SizedBox(height: 20),
             _sectionLabel(context, t('settings_support')),
+            _tile(
+              context,
+              icon: Icons.storefront_rounded,
+              title: 'Play mağazası',
+              subtitle: 'Coin, reklamsız süre, masa örtüsü',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PlayHubScreen()),
+              ),
+            ),
             _tile(
               context,
               icon: Icons.workspace_premium_rounded,

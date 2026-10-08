@@ -52,6 +52,8 @@ dependencies:
   # Google Play Games Services (giriş, liderlik tablosu, başarımlar, bulut kayıt)
   games_services: ^4.1.1
 
+  qr_flutter: ^4.1.0
+
   # Hızlı oyunlar için yerel profil/XP/liderlik depolama
   shared_preferences: ^2.3.3
 

@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/app_strings.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/onboarding_service.dart';
-import '../../core/theme/az_theme.dart';
-import '../../core/widgets/az_widgets.dart';
+import '../../core/theme/felt.dart';
 import '../home/home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -51,21 +50,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = FeltPalette.of(context);
+    final reduce = MediaQuery.disableAnimationsOf(context);
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(gradient: AZTheme.dynamicGradient(context)),
+      body: FeltBackdrop(
         child: SafeArea(
           child: Column(children: [
             Align(
               alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: TextButton(
-                  onPressed: _finish,
-                  child: Text(t('common_skip'), style: const TextStyle(color: Colors.white70)),
-                ),
+              child: TextButton(
+                onPressed: _finish,
+                child: Text(t('common_skip'), style: feltUi(palette.muted, 15)),
               ),
             ),
+            const FeltMark(size: 96),
             Expanded(
               child: PageView.builder(
                 controller: _controller,
@@ -78,16 +76,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(emoji, style: const TextStyle(fontSize: 88)),
-                        const SizedBox(height: 32),
-                        Text(t(titleKey),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 16),
-                        Text(t(bodyKey),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white70, fontSize: 15, height: 1.6)),
+                        Text(emoji, style: const TextStyle(fontSize: 64)),
+                        const SizedBox(height: 24),
+                        Text(
+                          t(titleKey),
+                          textAlign: TextAlign.center,
+                          style: feltDisplay(palette.ink, 32),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          t(bodyKey),
+                          textAlign: TextAlign.center,
+                          style: feltUi(palette.muted, 16),
+                        ),
                       ],
                     ),
                   );
@@ -99,12 +100,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: [
                 for (var i = 0; i < _pages.length; i++)
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: reduce ? Duration.zero : const Duration(milliseconds: 180),
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     width: i == _page ? 22 : 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: i == _page ? Colors.white : Colors.white30,
+                      color: i == _page ? FeltColors.brass : palette.line,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -112,11 +113,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             Padding(
               padding: const EdgeInsets.all(24),
-              child: AZButton(
-                label: _page < _pages.length - 1 ? t('onboarding_next') : t('onboarding_start'),
-                icon: Icons.arrow_forward_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                onPressed: _next,
+              child: SizedBox(
+                height: 56,
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: _next,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: FeltColors.felt,
+                    foregroundColor: FeltColors.ivory,
+                  ),
+                  child: Text(
+                    _page < _pages.length - 1 ? t('onboarding_next') : t('onboarding_start'),
+                    style: feltUi(FeltColors.ivory, 16, weight: FontWeight.w700),
+                  ),
+                ),
               ),
             ),
           ]),
