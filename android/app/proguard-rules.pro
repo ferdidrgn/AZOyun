@@ -1,16 +1,18 @@
 # Bu dosya release build için minifyEnabled + shrinkResources açıkken
 # (bkz. app/build.gradle.kts) R8'in reflection ile erişilen sınıfları
-# yanlışlıkla silmesini/obfuscate etmesini önler.
-#
-# ÖNEMLİ: Bu dosya daha önce boştu. Sonuç: uygulama "flutter run" ile veya
-# yerel olarak kurulan bir APK ile sorunsuz çalışıyor, ama Play Store'dan
-# indirilen (signed, minified) sürümde R8 bu paketlerin reflection/native
-# köprü ile çağırdığı sınıfları silip uygulamayı açılışta çökertiyor.
-# Bu, Flutter + Firebase + Play Services tabanlı uygulamalarda çok bilinen
-# bir sorun.
+# yanlışlıkla silmesini/obfuscate etmesini önler — ama ÖNEMLİ: olabildiğince
+# DAR tutulmalı. Daha önce burada Firebase/Play Services/AdMob/Billing/Gson
+# gibi koca paketlerin tamamını "-keep class X.** { *; }" ile koruyorduk;
+# bu, R8'in o paketlerin neredeyse tamamını küçültmeden/obfuscate etmeden
+# bırakmasına yol açtı (Play Console "düşük optimizasyon/küçültme/karartma
+# oranı" uyarısı — bkz. ROADMAP). Bu kütüphanelerin hepsi zaten kendi AAR'ları
+# içinde kendi consumer-proguard-rules.txt dosyalarını taşıyor ve R8 bunları
+# otomatik uyguluyor — ayrıca bizim geniş "-keep"lerimize gerek yok. Burada
+# sadece o kütüphanelerin KENDİ kurallarının kapsamadığı, Flutter'a özgü ve
+# gerçekten yaşanmış iki dar sorunu koruyoruz.
 
 # Gerekli attribute'lar — reflection, generic tip bilgisi ve annotation'lara
-# bağımlı tüm kütüphaneler (Firebase, Gson, Play Services) için gerekli.
+# bağımlı kütüphaneler için gerekli; kod boyutuna/küçültmeye etkisi yok.
 -keepattributes Signature
 -keepattributes *Annotation*
 -keepattributes EnclosingMethod
@@ -18,52 +20,31 @@
 -keepattributes Exceptions
 -keepattributes SourceFile,LineNumberTable
 
-# --- Flutter ---
--keep class io.flutter.app.** { *; }
--keep class io.flutter.plugin.**  { *; }
--keep class io.flutter.util.**  { *; }
--keep class io.flutter.view.**  { *; }
--keep class io.flutter.**  { *; }
--keep class io.flutter.plugins.**  { *; }
--dontwarn io.flutter.embedding.**
-
 # --- Play Core / deferred components ---
-# Flutter'ın embedding'i Play Store'dan kurulan APK'larda bu sınıflara
-# (varsa) başvurur; R8 bunları native/isteğe bağlı bağımlılık olarak
-# görüp silebilir, bu da "sadece Play Store'dan indirince çöküyor" semptomunun
-# klasik sebebidir.
+# Flutter'ın embedding'i Play Store'dan kurulan APK'larda (varsa) bu
+# sınıflara başvurur; R8 bunları isteğe bağlı/eksik bağımlılık sanıp
+# silebilir — "sadece Play Store'dan indirince açılışta çöküyor"
+# semptomunun klasik, dar kapsamlı sebeplerinden biri. Paket küçük,
+# tamamını korumanın optimizasyon oranına etkisi ihmal edilebilir.
 -keep class com.google.android.play.core.** { *; }
 -dontwarn com.google.android.play.core.**
 
-# --- Google Play Services / Play Games Services v2 ---
--keep class com.google.android.gms.** { *; }
--dontwarn com.google.android.gms.**
-
-# --- Firebase (Core, Database, Messaging, Analytics, Crashlytics) ---
--keep class com.google.firebase.** { *; }
--dontwarn com.google.firebase.**
-
-# --- Google Mobile Ads (AdMob) ---
--keep class com.google.ads.** { *; }
--keep class com.google.android.gms.ads.** { *; }
--dontwarn com.google.ads.**
-
-# --- Play Billing (in_app_purchase) ---
--keep class com.android.billingclient.** { *; }
--dontwarn com.android.billingclient.**
-
 # --- flutter_local_notifications ---
-# Bildirim/alarm yeniden planlama BroadcastReceiver'ları ve zaman dilimi
-# verisi reflection ile kullanılır; silinirse bildirimler ya da (bu paketin
-# init sırasında çağrılan) zaman dilimi okuma kodu çöker.
+# Bildirim/alarm yeniden planlama BroadcastReceiver'ları manifest'ten
+# reflection ile çağrılır; silinirse/adı değişirse bildirimler çöker.
+# Paket küçük, tamamını korumanın etkisi ihmal edilebilir.
 -keep class com.dexterous.** { *; }
 
-# --- Gson (Firebase/Play Services tarafından dahili olarak kullanılır) ---
--keep class com.google.gson.** { *; }
--keep class * implements com.google.gson.TypeAdapterFactory
--keep class * implements com.google.gson.JsonSerializer
--keep class * implements com.google.gson.JsonDeserializer
-
-# Enum'lar reflection ile (valueOf/values) kullanılabiliyor — genel güvenlik
-# ağı olarak enum sınıflarının üyelerini koru.
+# Enum'lar bazı kütüphanelerde reflection ile (valueOf/values) kullanılır —
+# üyeleri korumak kod boyutunu neredeyse hiç etkilemez, genel güvenlik ağı.
 -keepclassmembers enum * { *; }
+
+# Firebase / Play Services / AdMob / Play Billing / Gson kendi AAR'larında
+# kendi consumer-proguard kurallarını taşıyor (R8 bunları otomatik okur) —
+# burada ayrıca -keep yazmıyoruz; sadece build sırasında o kütüphanelerin
+# optional/platforma özel sınıflarını bulamazsa R8'in hata vermemesi için:
+-dontwarn com.google.android.gms.**
+-dontwarn com.google.firebase.**
+-dontwarn com.google.ads.**
+-dontwarn com.android.billingclient.**
+-dontwarn com.google.gson.**
