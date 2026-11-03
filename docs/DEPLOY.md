@@ -54,3 +54,83 @@ tıklayıp log'ları okuyabilirsin (ya da hatayı bana yapıştır, birlikte
 Secret'ı ekledikten sonra, yeni bir kod değişikliği olmadan da yayınlamak
 istersen: **Actions** sekmesi → soldan bu iş akışını seç → **Run workflow**
 butonuna bas.
+
+---
+
+# Otomatik Google Play Yayınlama (GitHub Actions → AAB)
+
+`main`'e her push'ta `.github/workflows/play-store-deploy.yml` iş akışı:
+
+1. Flutter + Java kurar
+2. Aşağıdaki secret'lardan imzalama anahtarını (keystore) geri oluşturur
+3. `flutter test` çalıştırır
+4. `flutter build appbundle --release` ile imzalı AAB üretir
+5. AAB'yi Google Play Console'daki **internal** (dahili test) kanalına yükler
+
+**Bilerek production'a otomatik basmıyor** — bir önceki AdMob/AdSense askıya
+alma olayından sonra, yeni bir sürümün gözden geçirilmeden gerçek kullanıcılara
+gitmesini istemedik. İnternal kanalda test edip sorun yoksa Play Console'dan
+elle "Production'a terfi ettir" diyebilirsin, ya da Actions sekmesinden bu
+iş akışını **Run workflow** ile manuel tetikleyip açılan listeden
+`alpha` / `beta` / `production` seçebilirsin.
+
+## Tek seferlik kurulum: 5 secret
+
+GitHub'da `ferdidrgn/AZOyun` → **Settings** → **Secrets and variables** →
+**Actions** → **New repository secret** ile aşağıdaki 5 secret'ı ekle.
+
+### 1-4. İmzalama (keystore) bilgileri
+
+Bunlar bilgisayarındaki `android/key.properties` (ve `keys.txt`) dosyalarında
+zaten var — o dosyaları aç, değerleri kopyala:
+
+| Secret adı | Değer |
+|---|---|
+| `ANDROID_KEY_ALIAS` | `key.properties` içindeki `keyAlias` |
+| `ANDROID_KEY_PASSWORD` | `key.properties` içindeki `keyPassword` |
+| `ANDROID_STORE_PASSWORD` | `key.properties` içindeki `storePassword` |
+| `ANDROID_KEYSTORE_BASE64` | Aşağıda anlatılan şekilde `.jks`/`.keystore` dosyasının base64 hâli |
+
+`ANDROID_KEYSTORE_BASE64` için: `key.properties`'teki `storeFile` satırının
+gösterdiği `.jks` dosyasının **içeriğini** base64'e çevirip o metni secret
+olarak yapıştırman gerekiyor (dosyanın kendisini değil, metin karşılığını).
+
+PowerShell'de:
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\yol\dosya.jks")) | Set-Clipboard
+```
+Bu komut base64 metnini direkt panoya kopyalar — GitHub'daki secret kutusuna
+yapıştırman yeterli.
+
+⚠️ Bu dosyayı ve şifreleri kaybedersen, Play Console'da yayınlanmış uygulamayı
+**güncelleyemezsin** (yeni bir uygulama gibi görünür) — zaten güvenli bir
+yere yedekli olduğundan emin ol.
+
+### 5. Play Console API erişimi (servis hesabı)
+
+1. https://play.google.com/console → uygulaman → **Kurulum (Setup)** →
+   **API access**.
+2. Bağlı bir Google Cloud projesi yoksa oluşturmanı isteyecek, kabul et.
+3. **Create new service account** (ya da var olan Cloud projesinde bir
+   servis hesabı oluştur) — Google Cloud Console'a yönlendirir, orada
+   **IAM & Admin → Service Accounts → Create Service Account** ile bir
+   hesap oluştur, rol gerekmiyor (Play Console tarafında yetki vereceğiz).
+4. Oluşturduğun servis hesabı için bir **JSON anahtarı** indir (Keys →
+   Add Key → Create new key → JSON).
+5. Play Console'a geri dön → **Users and permissions** → bu servis
+   hesabını (e-posta adresiyle) davet et → en azından **"Release to
+   testing tracks"** (ve production'a da basmak istiyorsan **"Release to
+   production"**) iznini ver.
+6. İndirdiğin `.json` dosyasının **tüm içeriğini** kopyala, GitHub secret'ı
+   `PLAY_STORE_SERVICE_ACCOUNT_JSON` olarak yapıştır.
+
+⚠️ Bu API, Play Console'da **daha önce en az bir kez elle yayınlanmış**
+bir uygulama üzerinde çalışır — sıfırdan bir uygulama/listing oluşturamaz.
+AZOyun zaten yayında olduğu için bu bir sorun değil.
+
+## Nasıl kontrol ederim?
+
+GitHub'da **Actions** sekmesi → "Google Play'e yayınla (AAB)" çalışması.
+Yeşil tik ✅ = internal kanala yüklendi (Play Console → Test → Internal
+testing'de görünür). Kırmızı çarpı ❌ = log'lara bak (ya da hatayı bana
+yapıştır).

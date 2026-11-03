@@ -1,0 +1,98 @@
+name: Google Play'e yayınla (AAB)
+
+# main'e her push'ta Android App Bundle (AAB) derler, imzalar ve Google Play
+# Console'daki "internal" (dahili test) kanalına yükler. Üretime (production)
+# terfi etmek bilinçli bir adım olsun diye otomatik değil — ya Play
+# Console'dan elle terfi et, ya da bu iş akışını "Run workflow" ile manuel
+# tetikleyip istediğin kanalı seç (bkz. docs/DEPLOY.md).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "Play Console kanalı"
+        required: true
+        default: internal
+        type: choice
+        options: [internal, alpha, beta, production]
+
+concurrency:
+  group: play-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu çek
+        uses: actions/checkout@v4
+
+      - name: Gerekli sırları kontrol et
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PW: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          STORE_PW: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          PLAY_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          missing=()
+          [ -z "$KS" ] && missing+=(ANDROID_KEYSTORE_BASE64)
+          [ -z "$ALIAS" ] && missing+=(ANDROID_KEY_ALIAS)
+          [ -z "$KEY_PW" ] && missing+=(ANDROID_KEY_PASSWORD)
+          [ -z "$STORE_PW" ] && missing+=(ANDROID_STORE_PASSWORD)
+          [ -z "$PLAY_JSON" ] && missing+=(PLAY_STORE_SERVICE_ACCOUNT_JSON)
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "Eksik GitHub Actions secret(lar): ${missing[*]}"
+            echo "Kurulum: docs/DEPLOY.md"
+            exit 1
+          fi
+
+      - name: Flutter kur
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Java kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Bağımlılıkları al
+        run: flutter pub get
+
+      - name: Keystore dosyasını geri oluştur
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/release.jks
+
+      - name: key.properties oluştur
+        run: |
+          cat > android/key.properties <<EOF
+          storeFile=release.jks
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Testleri çalıştır
+        run: flutter test
+
+      - name: AAB derle (release, imzalı)
+        run: flutter build appbundle --release
+
+      - name: Geçici imzalama dosyalarını sil
+        if: always()
+        run: rm -f android/app/release.jks android/key.properties
+
+      - name: Google Play'e yükle
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.ferdidrgn.azgame
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: ${{ github.event.inputs.track || 'internal' }}
+          status: completed
