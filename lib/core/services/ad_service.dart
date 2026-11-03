@@ -73,9 +73,25 @@ class AdService {
   /// paketin native köprüsü hiç yok, çağrılırsa `MissingPluginException`
   /// fırlatır. Bu yüzden Web'de tüm reklam altyapısı sessizce no-op'tur;
   /// uygulama reklamsız (ve hatasız) çalışmaya devam eder.
+  // Gerçek (release) reklam birimi ID'leriyle kendi/ekip cihazlarında test
+  // yaparken yanlışlıkla gerçek reklamlara tıklanması — Google'ın "geçersiz
+  // trafik" tespitiyle hesabı askıya aldığı en yaygın sebeplerden biridir.
+  // Cihazının GAID'ini (Settings → Google → Ads, veya ilk `initialize()`
+  // çağrısında logcat'te "Use RequestConfiguration.Builder.setTestDeviceIds"
+  // satırında) buraya ekleyince o cihaza gerçek ID'lerle de TEST reklamı
+  // gelir; gerçek tıklama/gösterim sayılmaz.
+  static const List<String> _testDeviceIds = <String>[
+    // 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  ];
+
   Future<void> initialize() async {
     if (kIsWeb || _initialized) return;
     try {
+      if (_testDeviceIds.isNotEmpty) {
+        await MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(testDeviceIds: _testDeviceIds),
+        );
+      }
       // MobileAds SDK'sının native initialize() çağrısı emülatörde/zayıf
       // ağda/Play Services eksikken süresiz asılı kalabiliyor — bir zaman
       // aşımı olmadan bu Future hiç tamamlanmayabilir.
