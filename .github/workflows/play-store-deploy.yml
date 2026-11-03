@@ -1,10 +1,12 @@
 name: Google Play'e yayınla (AAB)
 
 # main'e her push'ta Android App Bundle (AAB) derler, imzalar ve Google Play
-# Console'daki "internal" (dahili test) kanalına yükler. Üretime (production)
-# terfi etmek bilinçli bir adım olsun diye otomatik değil — ya Play
-# Console'dan elle terfi et, ya da bu iş akışını "Run workflow" ile manuel
-# tetikleyip istediğin kanalı seç (bkz. docs/DEPLOY.md).
+# Console'daki production kanalına yükler — diğer uygulamalarla (Anlık
+# Depremler, Sağlam Spot, Huda Kuran) aynı kurulum: servis hesabına sadece
+# "Üretim sürümüne yayınlama" izni verildi, "test kanallarına yayınlama"
+# izni yok, o yüzden hedef internal/alpha/beta değil production olmalı.
+# Farklı bir kanala manuel yüklemek istersen Actions'tan "Run workflow" ile
+# tetikleyip açılan listeden seçebilirsin (bkz. docs/DEPLOY.md).
 on:
   push:
     branches: [main]
@@ -13,7 +15,7 @@ on:
       track:
         description: "Play Console kanalı"
         required: true
-        default: internal
+        default: production
         type: choice
         options: [internal, alpha, beta, production]
 
@@ -94,5 +96,5 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
           packageName: com.ferdidrgn.azgame
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: ${{ github.event.inputs.track || 'internal' }}
+          tracks: ${{ github.event.inputs.track || 'production' }}
           status: completed

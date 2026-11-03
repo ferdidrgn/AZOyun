@@ -65,14 +65,17 @@ butonuna bas.
 2. Aşağıdaki secret'lardan imzalama anahtarını (keystore) geri oluşturur
 3. `flutter test` çalıştırır
 4. `flutter build appbundle --release` ile imzalı AAB üretir
-5. AAB'yi Google Play Console'daki **internal** (dahili test) kanalına yükler
+5. AAB'yi doğrudan Google Play Console'daki **production** kanalına yükler
 
-**Bilerek production'a otomatik basmıyor** — bir önceki AdMob/AdSense askıya
-alma olayından sonra, yeni bir sürümün gözden geçirilmeden gerçek kullanıcılara
-gitmesini istemedik. İnternal kanalda test edip sorun yoksa Play Console'dan
-elle "Production'a terfi ettir" diyebilirsin, ya da Actions sekmesinden bu
-iş akışını **Run workflow** ile manuel tetikleyip açılan listeden
-`alpha` / `beta` / `production` seçebilirsin.
+Diğer uygulamalarla (Anlık Depremler, Sağlam Spot, Huda Kuran) aynı kurulum:
+servis hesabına yalnızca **"Üretim sürümüne yayınlama"** izni verildi,
+**"Uygulamaları test kanallarına yayınlama"** izni verilmedi — o yüzden
+`internal`/`alpha`/`beta` hedeflenirse API "The caller does not have
+permission" hatası verir. Farklı bir kanala yüklemek istersen önce Play
+Console → Kullanıcılar ve izinler'den o servis hesabına ilgili test kanalı
+iznini ver, sonra Actions sekmesinden bu iş akışını **Run workflow** ile
+manuel tetikleyip açılan listeden `internal`/`alpha`/`beta`/`production`
+seçebilirsin.
 
 ## Tek seferlik kurulum: 5 secret
 
