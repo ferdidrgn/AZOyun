@@ -65,7 +65,12 @@ butonuna bas.
 2. Aşağıdaki secret'lardan imzalama anahtarını (keystore) geri oluşturur
 3. `flutter test` çalıştırır
 4. `flutter build appbundle --release` ile imzalı AAB üretir
-5. AAB'yi doğrudan Google Play Console'daki **production** kanalına yükler
+5. AAB'yi Google Play Console'daki **production** kanalına **taslak (draft)**
+   olarak yükler — Google Play API, production'a otomatik "incelemeye
+   gönderme"yi reddediyor (`changesNotSentForReview` zorunlu). Yani her
+   main push'u sonrası **Play Console'a girip o sürümü elle "İncelemeye
+   gönder / Yayınla" demen gerekiyor** — gerçek kullanıcılara gitmeden önce
+   son bir göz atma fırsatı, otomasyon seni bu adımda durduruyor.
 
 Diğer uygulamalarla (Anlık Depremler, Sağlam Spot, Huda Kuran) aynı kurulum:
 servis hesabına yalnızca **"Üretim sürümüne yayınlama"** izni verildi,
