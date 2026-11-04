@@ -89,6 +89,8 @@ class AppStrings {
 
     'privacy_title': 'Gizlilik Politikası',
     'terms_title': 'Kullanım Şartları',
+    'privacy_body': _privacyBodyTr,
+    'terms_body': _termsBodyTr,
 
     'donate_title': '☕ Bize Kahve Ismarla',
     'donate_body':
@@ -172,6 +174,8 @@ class AppStrings {
 
     'privacy_title': 'Privacy Policy',
     'terms_title': 'Terms of Service',
+    'privacy_body': _privacyBodyEn,
+    'terms_body': _termsBodyEn,
 
     'donate_title': '☕ Buy Us a Coffee',
     'donate_body':
@@ -525,3 +529,266 @@ class AppStrings {
     'premium_thanks': 'Премиум активирован! 6 месяцев без рекламы. ✨',
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GİZLİLİK POLİTİKASI + KULLANIM ŞARTLARI — uygulama içi tam metinler.
+// Web sürümüyle (web/privacy-policy.html, web/terms.html ve İngilizce
+// karşılıkları web/en/) aynı içeriği taşır — biri değişirse diğeri de
+// güncellenmelidir. Şu an sadece TR ve EN dolu; diğer diller TR'ye düşer
+// (bkz. AppStrings.of fallback'i).
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _legalLastUpdatedTr = '4 Kasım 2026';
+const _legalLastUpdatedEn = 'November 4, 2026';
+
+const _privacyBodyTr = '''
+Son güncelleme: $_legalLastUpdatedTr
+
+AZ Oyun ("biz", "uygulama"), geliştiricisi Ferdi Durgun tarafından işletilir. Gizliliğinize önem veriyoruz. Bu Gizlilik Politikası, AZ Oyun'u (Android, iOS ve azoyun.web.app web sürümü) kullanırken hangi verilerin toplandığını, nasıl kullanıldığını, kimlerle paylaşıldığını ve haklarınızın ne olduğunu açıklar.
+
+1. TOPLADIĞIMIZ VERİLER
+
+• Oyuncu adı: Kendi seçtiğiniz takma ad; cihazınızda saklanır ve online oyunlarda diğer oyunculara gösterilir. Hesap/e-posta/şifre istemiyoruz, misafir olarak oynanabilir.
+• Oyun içi verileri: Online oda oyunlarında oda kodu, hamleler ve skorlar Firebase Realtime Database üzerinde oyun süresince geçici olarak tutulur, oda kapandığında silinir.
+• İlerleme verileri: Seviye, XP, coin ve başarımlar cihazınızda yerel olarak (shared_preferences / secure storage) saklanır.
+• Teknik ve kullanım verileri: Firebase Analytics ile anonimleştirilmiş kullanım istatistikleri (açılan ekranlar, oynanan oyun türü, oturum süresi) ve Firebase Crashlytics ile çökme/hata raporları (cihaz modeli, işletim sistemi sürümü, hata yığın izi) topluyoruz. Bu veriler uygulamayı iyileştirmek için kullanılır ve kimliğinizi doğrudan belirlemez.
+• Reklam verileri: Google AdMob (mobil) ve Google AdSense (web) reklamları göstermek için cihazınızın reklam kimliğini (Advertising ID/GAID, IDFA) ve web'de çerezleri kullanabilir. Bkz. Bölüm 4.
+• Bildirim jetonu: Bildirim izni verirseniz Firebase Cloud Messaging cihazınıza özgü bir jeton oluşturur; bu jeton sadece size bildirim göndermek için kullanılır.
+• Google Play Games Services / Game Center: Bağlanmayı seçerseniz, Google/Apple hesabınızla ilişkili oyuncu kimliği, liderlik tablosu ve başarım verileri bu servislerle paylaşılır.
+• Satın alma verileri: Uygulama içi satın alma (reklam kaldırma, coin paketi, 6 aylık premium, gönüllü bağış) Google Play / App Store üzerinden işlenir. Kredi kartı veya ödeme bilgilerinizi biz görmeyiz, saklamayız; sadece işlemin başarılı olup olmadığı bilgisini alırız.
+
+2. VERİLERİ NASIL KULLANIYORUZ
+
+Verileriniz şu amaçlarla kullanılır: uygulamanın çalışması (oda eşleştirme, ilerleme takibi), hata ayıklama ve performans iyileştirme (Crashlytics/Analytics), bildirim gönderme, reklam gösterimi ve satın alma haklarının teslimi. Verilerinizi satmıyoruz ve pazarlama amacıyla üçüncü taraflara aktarmıyoruz.
+
+3. ÜÇÜNCÜ TARAF HİZMET SAĞLAYICILAR
+
+Uygulama aşağıdaki üçüncü taraf hizmetleri kullanır; her biri kendi gizlilik politikasına tabidir:
+
+• Google Firebase — Analytics, Crashlytics, Realtime Database, Cloud Messaging (privacy.google.com)
+• Google AdMob — mobil uygulama içi reklamlar (policies.google.com/technologies/ads)
+• Google AdSense — web sürümü (azoyun.web.app) reklamları
+• Google Play Games Services / Apple Game Center — liderlik tablosu ve başarımlar
+• Google Play Billing / Apple In-App Purchase — uygulama içi satın almaların işlenmesi
+
+4. REKLAMLAR, ÇEREZLER VE KİŞİSELLEŞTİRİLMİŞ REKLAM TERCİHLERİ
+
+Google dahil üçüncü taraf reklam satıcıları, reklam sunmak için çerezler ve mobil reklam kimlikleri kullanır. Google'ın reklam çerezlerini kullanması, Google'ın ve iş ortaklarının kullanıcılara AZ Oyun'daki ve/veya internetteki diğer sitelerdeki önceki ziyaretlerine dayanarak reklam sunmasına olanak tanır.
+
+Kişiselleştirilmiş reklamları devre dışı bırakmak isterseniz:
+• Web'de Google Reklam Ayarları (adssettings.google.com) veya www.aboutads.info üzerinden üçüncü taraf satıcı çerezlerini devre dışı bırakabilirsiniz.
+• Mobilde cihazınızın işletim sistemi ayarlarından (Android: Ayarlar → Gizlilik → Reklamlar; iOS: Ayarlar → Gizlilik → Reklam) reklam kişiselleştirmesini sınırlayabilir veya reklam kimliğinizi sıfırlayabilirsiniz.
+• Reklamsız deneyim için uygulama içinden kalıcı "Reklamları Kaldır" veya "6 Ay Premium" satın alabilirsiniz.
+
+5. ÇOCUKLARIN GİZLİLİĞİ
+
+AZ Oyun genel kitleye yöneliktir ve 13 yaş altı kullanıcılardan bilerek kişisel veri toplamıyoruz. 13 yaşından küçük bir çocuğun bize veri sağladığını fark edersek bu veriyi sileriz. Bir veli/vasi olarak çocuğunuzun bize veri sağladığını düşünüyorsanız Bölüm 9'daki iletişim bilgilerinden bize ulaşın.
+
+6. VERİ GÜVENLİĞİ
+
+Verileriniz Google Firebase altyapısında endüstri standardı güvenlik önlemleriyle (şifreli aktarım, erişim kontrolü) saklanır. Hiçbir sistem %100 güvenli değildir; makul güvenlik önlemleri alsak da mutlak güvenlik garanti edilemez.
+
+7. VERİ SAKLAMA VE SİLME
+
+Yerel verileri (ilerleme, tema, dil tercihi) uygulamayı cihazınızdan silerek kaldırabilirsiniz. Online oda verileri, oda kapandığında veya belirli bir süre işlem görmediğinde sunucudan otomatik silinir. Analytics/Crashlytics verileri Google'ın kendi saklama politikalarına göre periyodik olarak anonimleştirilir veya silinir.
+
+8. HAKLARINIZ (KVKK ve GDPR)
+
+6698 sayılı KVKK ve ilgili olduğu ölçüde GDPR kapsamında; verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, düzeltilmesini veya silinmesini isteme ve işlemeye itiraz etme hakkına sahipsiniz. Bu taleplerinizi Bölüm 9'daki iletişim yollarıyla bize iletebilirsiniz; makul bir süre içinde yanıtlarız.
+
+9. İLETİŞİM
+
+Bu Gizlilik Politikası veya kişisel verilerinizle ilgili sorularınız için Google Play / App Store'daki uygulama sayfamızdaki geliştirici (Ferdi Durgun) iletişim bilgilerini kullanabilir veya azoyun.web.app üzerinden bize ulaşabilirsiniz.
+
+10. DEĞİŞİKLİKLER
+
+Bu politikayı zaman zaman güncelleyebiliriz. Önemli değişiklikler uygulama içinde duyurulur ve bu sayfadaki "Son güncelleme" tarihi yenilenir.
+''';
+
+const _termsBodyTr = '''
+Son güncelleme: $_legalLastUpdatedTr
+
+Bu Kullanım Şartları ("Şartlar"), geliştiricisi Ferdi Durgun olan AZ Oyun uygulamasını (Android, iOS, azoyun.web.app) kullanırken uymanız gereken kuralları belirler. Uygulamayı indirip kullanarak bu Şartları kabul etmiş olursunuz.
+
+1. HİZMETİN TANIMI
+
+AZ Oyun; Dama, Okey, çok oyunculu sosyal çıkarım oyunları ve tek-cihaz parti oyunları dahil 30'dan fazla oyunu içeren, hesap gerektirmeyen (misafir olarak oynanabilen) ücretsiz bir eğlence uygulamasıdır. Hizmet reklam destekli sunulur; isteğe bağlı uygulama içi satın almalar mevcuttur.
+
+2. UYGUNLUK
+
+Uygulama genel kitleye yöneliktir. 13 yaşından küçükseniz uygulamayı bir ebeveyn/vasi gözetiminde kullanmalısınız.
+
+3. HİZMETİN KULLANIMI
+
+AZ Oyun'u yasalara uygun, saygılı ve adil bir şekilde kullanmayı kabul edersiniz. Aşağıdakiler yasaktır: hile/bot kullanımı, diğer oyuncuları taciz etme, uygunsuz/hakaret içeren kullanıcı adı veya içerik paylaşma, uygulamayı tersine mühendislikle incelemeye çalışma veya sunucu/oda altyapısını kötüye kullanma.
+
+4. HESAP VE İÇERİK
+
+Hesap oluşturmadan (misafir olarak) oynayabilirsiniz; girdiğiniz takma addan ve paylaştığınız içerikten siz sorumlusunuz. Uygunsuz kullanıcı adları veya davranışlar bildirilebilir ve ilgili odadan/oturumdan engellenebilirsiniz.
+
+5. REKLAMLAR
+
+Uygulama Google AdMob (mobil) ve Google AdSense (web) aracılığıyla banner ve geçiş (interstitial) reklamlar gösterir. Reklam içeriği Google ve reklam verenler tarafından belirlenir; reklam içeriğinden veya reklama tıklayarak gittiğiniz üçüncü taraf sitelerden sorumlu değiliz. Reklamsız deneyim satın alarak reklamları kaldırabilirsiniz.
+
+6. UYGULAMA İÇİ SATIN ALMALAR
+
+Reklam kaldırma, coin paketleri, 6 aylık premium ve gönüllü bağış satın almaları tamamen isteğe bağlıdır ve hiçbir oyun içi rekabet avantajı (pay-to-win) sağlamaz — AZ Oyun'un temel ilkesi budur. Satın almalar Google Play / App Store üzerinden işlenir ve ilgili mağazanın iade/fatura politikalarına tabidir; biz ödeme bilgilerinizi tutmayız.
+
+7. FİKRİ MÜLKİYET
+
+Uygulamanın tasarımı, kodu, logosu ve özgün içerikleri (örn. Dedektif Kampanyası hikâyesi) AZ Oyun'a aittir. İzinsiz kopyalama, dağıtma veya ticari amaçla kullanma yasaktır.
+
+8. ÜÇÜNCÜ TARAF HİZMETLER
+
+Uygulama Google Firebase, Google Play Games Services, Apple Game Center ve ilgili mağaza ödeme sistemlerini kullanır; bu hizmetlerin kendi kullanım şartları ayrıca geçerlidir.
+
+9. HİZMETİN DEĞİŞTİRİLMESİ VEYA SONLANDIRILMASI
+
+Hizmeti, özellikleri veya belirli oyunları önceden bildirmeden ekleyebilir, değiştirebilir veya kaldırabiliriz. Kötüye kullanım tespit edilirse bir kullanıcının/oturumun erişimini kısıtlayabiliriz.
+
+10. GARANTİ REDDİ
+
+Uygulama "olduğu gibi" ve "mevcut haliyle" sunulur. Kesintisiz, hatasız veya her cihazla uyumlu çalışacağını garanti etmiyoruz.
+
+11. SORUMLULUĞUN SINIRLANDIRILMASI
+
+Yürürlükteki kanunların izin verdiği azami ölçüde, uygulamanın kullanımından veya kullanılamamasından doğabilecek dolaylı, arızi veya sonuç niteliğindeki zararlardan sorumlu değiliz.
+
+12. GEÇERLİ HUKUK
+
+Bu Şartlar Türkiye Cumhuriyeti kanunlarına tabidir; uyuşmazlıklarda Türkiye mahkemeleri yetkilidir.
+
+13. DEĞİŞİKLİKLER
+
+Bu Şartları zaman zaman güncelleyebiliriz; önemli değişiklikler uygulama içinde duyurulur ve bu sayfadaki "Son güncelleme" tarihi yenilenir. Güncelleme sonrası uygulamayı kullanmaya devam etmeniz yeni Şartları kabul ettiğiniz anlamına gelir.
+
+14. İLETİŞİM
+
+Sorularınız için Google Play / App Store'daki uygulama sayfamızdaki geliştirici (Ferdi Durgun) iletişim bilgilerini kullanabilir veya azoyun.web.app üzerinden bize ulaşabilirsiniz.
+''';
+
+const _privacyBodyEn = '''
+Last updated: $_legalLastUpdatedEn
+
+AZ Oyun ("we", "the app") is developed and operated by Ferdi Durgun. We care about your privacy. This Privacy Policy explains what data is collected, how it is used, who it is shared with, and what your rights are when you use AZ Oyun (Android, iOS, and the azoyun.web.app web version).
+
+1. DATA WE COLLECT
+
+• Player name: A nickname of your choosing; stored on your device and shown to other players in online games. We don't require an account, email, or password — you can play as a guest.
+• In-game data: In online room games, the room code, moves, and scores are temporarily held in Firebase Realtime Database for the duration of the game and deleted when the room closes.
+• Progress data: Level, XP, coins, and achievements are stored locally on your device (shared_preferences / secure storage).
+• Technical and usage data: We use Firebase Analytics for anonymized usage statistics (screens viewed, game types played, session length) and Firebase Crashlytics for crash/error reports (device model, OS version, error stack trace). This data is used to improve the app and does not directly identify you.
+• Advertising data: Google AdMob (mobile) and Google AdSense (web) may use your device's advertising identifier (Advertising ID/GAID, IDFA) and, on web, cookies, to serve ads. See Section 4.
+• Notification token: If you grant notification permission, Firebase Cloud Messaging generates a token unique to your device, used solely to send you notifications.
+• Google Play Games Services / Game Center: If you choose to connect, your player ID, leaderboard, and achievement data linked to your Google/Apple account are shared with these services.
+• Purchase data: In-app purchases (remove ads, coin packs, 6-month premium, voluntary donation) are processed via Google Play / the App Store. We never see or store your card or payment details — we only receive confirmation of whether the transaction succeeded.
+
+2. HOW WE USE DATA
+
+Your data is used to: operate the app (room matchmaking, progress tracking), debug and improve performance (Crashlytics/Analytics), send notifications, serve ads, and fulfill purchases. We do not sell your data and do not transfer it to third parties for marketing purposes.
+
+3. THIRD-PARTY SERVICE PROVIDERS
+
+The app uses the following third-party services, each subject to its own privacy policy:
+
+• Google Firebase — Analytics, Crashlytics, Realtime Database, Cloud Messaging (privacy.google.com)
+• Google AdMob — in-app mobile ads (policies.google.com/technologies/ads)
+• Google AdSense — ads on the web version (azoyun.web.app)
+• Google Play Games Services / Apple Game Center — leaderboards and achievements
+• Google Play Billing / Apple In-App Purchase — processing in-app purchases
+
+4. ADVERTISING, COOKIES, AND PERSONALIZED AD CHOICES
+
+Third-party ad vendors, including Google, use cookies and mobile advertising identifiers to serve ads. Google's use of advertising cookies enables Google and its partners to serve ads based on your prior visits to AZ Oyun and/or other sites on the internet.
+
+If you'd like to opt out of personalized ads:
+• On the web, you can disable third-party vendor cookies via Google Ad Settings (adssettings.google.com) or www.aboutads.info.
+• On mobile, you can limit ad personalization or reset your advertising identifier from your device's OS settings (Android: Settings → Privacy → Ads; iOS: Settings → Privacy → Advertising).
+• For an ad-free experience, you can purchase a permanent "Remove Ads" or "6-Month Premium" from within the app.
+
+5. CHILDREN'S PRIVACY
+
+AZ Oyun is intended for a general audience and we do not knowingly collect personal data from users under 13. If we become aware that a child under 13 has provided us with data, we will delete it. If you are a parent/guardian and believe your child has provided us with data, please contact us using the details in Section 9.
+
+6. DATA SECURITY
+
+Your data is stored on Google Firebase infrastructure with industry-standard security measures (encrypted transit, access control). No system is 100% secure; while we take reasonable precautions, absolute security cannot be guaranteed.
+
+7. DATA RETENTION AND DELETION
+
+You can remove local data (progress, theme, language preference) by uninstalling the app from your device. Online room data is automatically deleted from the server when the room closes or after a period of inactivity. Analytics/Crashlytics data is periodically anonymized or deleted according to Google's own retention policies.
+
+8. YOUR RIGHTS (Turkish KVKK Law No. 6698 and, where applicable, GDPR)
+
+Under Turkish Law No. 6698 on the Protection of Personal Data (KVKK) and, where applicable, the GDPR, you have the right to learn whether your data is being processed, request information about it, request correction or deletion, and object to processing. You may submit these requests to us using the contact details in Section 9; we will respond within a reasonable time.
+
+9. CONTACT
+
+For questions about this Privacy Policy or your personal data, you can use the developer (Ferdi Durgun) contact details on our Google Play / App Store listing, or reach us via azoyun.web.app.
+
+10. CHANGES
+
+We may update this policy from time to time. Significant changes will be announced in the app, and the "Last updated" date on this page will be refreshed.
+''';
+
+const _termsBodyEn = '''
+Last updated: $_legalLastUpdatedEn
+
+These Terms of Service ("Terms") set out the rules you must follow when using AZ Oyun (Android, iOS, azoyun.web.app), developed by Ferdi Durgun. By downloading and using the app, you agree to these Terms.
+
+1. DESCRIPTION OF SERVICE
+
+AZ Oyun is a free entertainment app offering 30+ games, including Checkers, Okey, multiplayer social-deduction games, and single-device party games, with no account required (you can play as a guest). The service is ad-supported; optional in-app purchases are available.
+
+2. ELIGIBILITY
+
+The app is intended for a general audience. If you are under 13, you should use the app under the supervision of a parent or guardian.
+
+3. USE OF THE SERVICE
+
+You agree to use AZ Oyun lawfully, respectfully, and fairly. The following are prohibited: using cheats/bots, harassing other players, using inappropriate or offensive usernames or content, attempting to reverse-engineer the app, or abusing the server/room infrastructure.
+
+4. ACCOUNT AND CONTENT
+
+You can play without creating an account (as a guest); you are responsible for the nickname you enter and the content you share. Inappropriate usernames or behavior may be reported and you may be blocked from the relevant room/session.
+
+5. ADVERTISING
+
+The app displays banner and interstitial ads via Google AdMob (mobile) and Google AdSense (web). Ad content is determined by Google and advertisers; we are not responsible for ad content or for third-party sites you reach by clicking an ad. You can remove ads by purchasing an ad-free experience.
+
+6. IN-APP PURCHASES
+
+Purchases such as removing ads, coin packs, 6-month premium, and voluntary donations are entirely optional and provide no in-game competitive advantage (pay-to-win) — this is a core principle of AZ Oyun. Purchases are processed via Google Play / the App Store and are subject to that store's refund/billing policies; we do not retain your payment details.
+
+7. INTELLECTUAL PROPERTY
+
+The app's design, code, logo, and original content (e.g. the Detective Campaign storyline) belong to AZ Oyun. Unauthorized copying, distribution, or commercial use is prohibited.
+
+8. THIRD-PARTY SERVICES
+
+The app uses Google Firebase, Google Play Games Services, Apple Game Center, and the relevant store payment systems; each of these services' own terms of service also apply.
+
+9. MODIFICATION OR TERMINATION OF SERVICE
+
+We may add, change, or remove the service, features, or specific games without prior notice. We may restrict a user's/session's access if abuse is detected.
+
+10. DISCLAIMER OF WARRANTIES
+
+The app is provided "as is" and "as available." We do not guarantee that it will be uninterrupted, error-free, or compatible with every device.
+
+11. LIMITATION OF LIABILITY
+
+To the maximum extent permitted by applicable law, we are not liable for any indirect, incidental, or consequential damages arising from your use or inability to use the app.
+
+12. GOVERNING LAW
+
+These Terms are governed by the laws of the Republic of Türkiye; Turkish courts have jurisdiction over any disputes.
+
+13. CHANGES
+
+We may update these Terms from time to time; significant changes will be announced in the app, and the "Last updated" date on this page will be refreshed. Continuing to use the app after an update means you accept the new Terms.
+
+14. CONTACT
+
+For questions, you can use the developer (Ferdi Durgun) contact details on our Google Play / App Store listing, or reach us via azoyun.web.app.
+''';

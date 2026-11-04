@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gizlilik Politikası — AZ Oyun</title>
-  <meta name="description" content="AZ Oyun gizlilik politikası: Firebase, Google AdMob/AdSense ve Google Play Games Services ile hangi verilerin toplandığı, nasıl kullanıldığı ve haklarınız.">
+  <title>Gizlilik Politikası / Privacy Policy — AZ Oyun</title>
+  <meta name="description" content="AZ Oyun (geliştirici: Ferdi Durgun) gizlilik politikası: Firebase, Google AdMob/AdSense ve Google Play Games Services ile hangi verilerin toplandığı, nasıl kullanıldığı ve haklarınız. / AZ Oyun privacy policy (developer: Ferdi Durgun).">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://azoyun.web.app/privacy-policy.html">
   <meta name="theme-color" content="#6C63FF">
@@ -24,78 +24,151 @@
     header { padding: 32px 0 8px; }
     a.home { color: #9b93ff; text-decoration: none; font-weight: 600; font-size: 14px; }
     h1 { font-size: 28px; margin: 12px 0 4px; }
-    .updated { color: #a6a6b8; font-size: 13px; margin-bottom: 28px; }
+    .updated { color: #a6a6b8; font-size: 13px; margin-bottom: 20px; }
+    .langnav { display: flex; gap: 10px; margin: 0 0 28px; }
+    .langnav a {
+      color: #c9c4ff; text-decoration: none; font-weight: 700; font-size: 13px;
+      padding: 6px 14px; border: 1px solid #332f55; border-radius: 999px;
+    }
+    .langnav a:hover { background: #1b1a2e; }
     h2 { font-size: 18px; color: #c9c4ff; margin: 32px 0 8px; }
     p { margin: 0 0 14px; font-size: 15px; }
     ul { margin: 0 0 14px; padding-left: 20px; }
     li { margin-bottom: 8px; font-size: 15px; }
+    hr.lang-divider { border: none; border-top: 2px solid #26233d; margin: 56px 0 40px; }
     footer { margin-top: 40px; font-size: 13px; color: #7d7d90; }
+    a { color: #9b93ff; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <a class="home" href="/">&larr; AZ Oyun'a dön</a>
-      <h1>Gizlilik Politikası</h1>
-      <div class="updated">Son güncelleme: 13 Ekim 2026</div>
+      <a class="home" href="/">&larr; AZ Oyun'a dön / Back to AZ Oyun</a>
+      <h1>Gizlilik Politikası / Privacy Policy</h1>
+      <div class="updated">Son güncelleme / Last updated: 4 Kasım 2026 — November 4, 2026</div>
+      <nav class="langnav">
+        <a href="#tr">🇹🇷 Türkçe</a>
+        <a href="#en">🇬🇧 English</a>
+      </nav>
     </header>
 
-    <p>AZ Oyun ("biz", "uygulama") olarak gizliliğinize önem veriyoruz. Bu Gizlilik Politikası, AZ Oyun'u (Android, iOS ve bu web sürümü) kullanırken hangi verilerin toplandığını, nasıl kullanıldığını, kimlerle paylaşıldığını ve haklarınızın ne olduğunu açıklar.</p>
+    <section id="tr" lang="tr">
+      <p>AZ Oyun ("biz", "uygulama"), geliştiricisi <strong>Ferdi Durgun</strong> tarafından işletilir. Gizliliğinize önem veriyoruz. Bu Gizlilik Politikası, AZ Oyun'u (Android, iOS ve bu web sürümü — azoyun.web.app) kullanırken hangi verilerin toplandığını, nasıl kullanıldığını, kimlerle paylaşıldığını ve haklarınızın ne olduğunu açıklar.</p>
 
-    <h2>1. Topladığımız Veriler</h2>
-    <ul>
-      <li><strong>Oyuncu adı:</strong> Kendi seçtiğiniz takma ad; cihazınızda saklanır ve online oyunlarda diğer oyunculara gösterilir. Hesap/e-posta/şifre istemiyoruz, misafir olarak oynanabilir.</li>
-      <li><strong>Oyun içi verileri:</strong> Online oda oyunlarında oda kodu, hamleler ve skorlar Firebase Realtime Database üzerinde oyun süresince geçici olarak tutulur, oda kapandığında silinir.</li>
-      <li><strong>İlerleme verileri:</strong> Seviye, XP, coin ve başarımlar cihazınızda yerel olarak saklanır.</li>
-      <li><strong>Teknik ve kullanım verileri:</strong> Firebase Analytics ile anonimleştirilmiş kullanım istatistikleri ve Firebase Crashlytics ile çökme/hata raporları (cihaz modeli, işletim sistemi sürümü, hata yığın izi) topluyoruz.</li>
-      <li><strong>Reklam verileri:</strong> Google AdMob (mobil) ve Google AdSense (web) reklamları göstermek için cihazınızın reklam kimliğini (Advertising ID/GAID, IDFA) ve web'de çerezleri kullanabilir. Bkz. Bölüm 4.</li>
-      <li><strong>Bildirim jetonu:</strong> Bildirim izni verirseniz Firebase Cloud Messaging cihazınıza özgü bir jeton oluşturur.</li>
-      <li><strong>Google Play Games Services / Game Center:</strong> Bağlanmayı seçerseniz oyuncu kimliği, liderlik tablosu ve başarım verileri bu servislerle paylaşılır.</li>
-      <li><strong>Satın alma verileri:</strong> Uygulama içi satın almalar Google Play / App Store üzerinden işlenir. Ödeme bilgilerinizi biz görmeyiz, saklamayız.</li>
-    </ul>
+      <h2>1. Topladığımız Veriler</h2>
+      <ul>
+        <li><strong>Oyuncu adı:</strong> Kendi seçtiğiniz takma ad; cihazınızda saklanır ve online oyunlarda diğer oyunculara gösterilir. Hesap/e-posta/şifre istemiyoruz, misafir olarak oynanabilir.</li>
+        <li><strong>Oyun içi verileri:</strong> Online oda oyunlarında oda kodu, hamleler ve skorlar Firebase Realtime Database üzerinde oyun süresince geçici olarak tutulur, oda kapandığında silinir.</li>
+        <li><strong>İlerleme verileri:</strong> Seviye, XP, coin ve başarımlar cihazınızda yerel olarak saklanır.</li>
+        <li><strong>Teknik ve kullanım verileri:</strong> Firebase Analytics ile anonimleştirilmiş kullanım istatistikleri ve Firebase Crashlytics ile çökme/hata raporları (cihaz modeli, işletim sistemi sürümü, hata yığın izi) topluyoruz.</li>
+        <li><strong>Reklam verileri:</strong> Google AdMob (mobil) ve Google AdSense (web) reklamları göstermek için cihazınızın reklam kimliğini (Advertising ID/GAID, IDFA) ve web'de çerezleri kullanabilir. Bkz. Bölüm 4.</li>
+        <li><strong>Bildirim jetonu:</strong> Bildirim izni verirseniz Firebase Cloud Messaging cihazınıza özgü bir jeton oluşturur.</li>
+        <li><strong>Google Play Games Services / Game Center:</strong> Bağlanmayı seçerseniz oyuncu kimliği, liderlik tablosu ve başarım verileri bu servislerle paylaşılır.</li>
+        <li><strong>Satın alma verileri:</strong> Uygulama içi satın almalar Google Play / App Store üzerinden işlenir. Ödeme bilgilerinizi biz görmeyiz, saklamayız.</li>
+      </ul>
 
-    <h2>2. Verileri Nasıl Kullanıyoruz</h2>
-    <p>Verileriniz uygulamanın çalışması, hata ayıklama ve performans iyileştirme, bildirim gönderme, reklam gösterimi ve satın alma haklarının teslimi amacıyla kullanılır. Verilerinizi satmıyoruz ve pazarlama amacıyla üçüncü taraflara aktarmıyoruz.</p>
+      <h2>2. Verileri Nasıl Kullanıyoruz</h2>
+      <p>Verileriniz uygulamanın çalışması, hata ayıklama ve performans iyileştirme, bildirim gönderme, reklam gösterimi ve satın alma haklarının teslimi amacıyla kullanılır. Verilerinizi satmıyoruz ve pazarlama amacıyla üçüncü taraflara aktarmıyoruz.</p>
 
-    <h2>3. Üçüncü Taraf Hizmet Sağlayıcılar</h2>
-    <p>Uygulama aşağıdaki üçüncü taraf hizmetleri kullanır; her biri kendi gizlilik politikasına tabidir:</p>
-    <ul>
-      <li>Google Firebase — Analytics, Crashlytics, Realtime Database, Cloud Messaging</li>
-      <li>Google AdMob — mobil uygulama içi reklamlar</li>
-      <li>Google AdSense — web sürümü (azoyun.web.app) reklamları</li>
-      <li>Google Play Games Services / Apple Game Center — liderlik tablosu ve başarımlar</li>
-      <li>Google Play Billing / Apple In-App Purchase — satın almaların işlenmesi</li>
-    </ul>
+      <h2>3. Üçüncü Taraf Hizmet Sağlayıcılar</h2>
+      <p>Uygulama aşağıdaki üçüncü taraf hizmetleri kullanır; her biri kendi gizlilik politikasına tabidir:</p>
+      <ul>
+        <li>Google Firebase — Analytics, Crashlytics, Realtime Database, Cloud Messaging</li>
+        <li>Google AdMob — mobil uygulama içi reklamlar</li>
+        <li>Google AdSense — web sürümü (azoyun.web.app) reklamları</li>
+        <li>Google Play Games Services / Apple Game Center — liderlik tablosu ve başarımlar</li>
+        <li>Google Play Billing / Apple In-App Purchase — satın almaların işlenmesi</li>
+      </ul>
 
-    <h2>4. Reklamlar, Çerezler ve Kişiselleştirilmiş Reklam Tercihleri</h2>
-    <p>Google dahil üçüncü taraf reklam satıcıları, reklam sunmak için çerezler ve mobil reklam kimlikleri kullanır. Google'ın reklam çerezlerini kullanması, Google'ın ve iş ortaklarının kullanıcılara AZ Oyun'daki ve/veya internetteki diğer sitelerdeki önceki ziyaretlerine dayanarak reklam sunmasına olanak tanır.</p>
-    <p>Kişiselleştirilmiş reklamları devre dışı bırakmak isterseniz:</p>
-    <ul>
-      <li>Web'de <a href="https://adssettings.google.com" style="color:#9b93ff">Google Reklam Ayarları</a> veya <a href="https://www.aboutads.info" style="color:#9b93ff">www.aboutads.info</a> üzerinden üçüncü taraf satıcı çerezlerini devre dışı bırakabilirsiniz.</li>
-      <li>Mobilde cihazınızın işletim sistemi ayarlarından reklam kişiselleştirmesini sınırlayabilir veya reklam kimliğinizi sıfırlayabilirsiniz.</li>
-      <li>Reklamsız deneyim için uygulama içinden "Reklamları Kaldır" veya "6 Ay Premium" satın alabilirsiniz.</li>
-    </ul>
+      <h2>4. Reklamlar, Çerezler ve Kişiselleştirilmiş Reklam Tercihleri</h2>
+      <p>Google dahil üçüncü taraf reklam satıcıları, reklam sunmak için çerezler ve mobil reklam kimlikleri kullanır. Google'ın reklam çerezlerini kullanması, Google'ın ve iş ortaklarının kullanıcılara AZ Oyun'daki ve/veya internetteki diğer sitelerdeki önceki ziyaretlerine dayanarak reklam sunmasına olanak tanır.</p>
+      <p>Kişiselleştirilmiş reklamları devre dışı bırakmak isterseniz:</p>
+      <ul>
+        <li>Web'de <a href="https://adssettings.google.com">Google Reklam Ayarları</a> veya <a href="https://www.aboutads.info">www.aboutads.info</a> üzerinden üçüncü taraf satıcı çerezlerini devre dışı bırakabilirsiniz.</li>
+        <li>Mobilde cihazınızın işletim sistemi ayarlarından reklam kişiselleştirmesini sınırlayabilir veya reklam kimliğinizi sıfırlayabilirsiniz.</li>
+        <li>Reklamsız deneyim için uygulama içinden "Reklamları Kaldır" veya "6 Ay Premium" satın alabilirsiniz.</li>
+      </ul>
 
-    <h2>5. Çocukların Gizliliği</h2>
-    <p>AZ Oyun genel kitleye yöneliktir ve 13 yaş altı kullanıcılardan bilerek kişisel veri toplamıyoruz. 13 yaşından küçük bir çocuğun bize veri sağladığını fark edersek bu veriyi sileriz.</p>
+      <h2>5. Çocukların Gizliliği</h2>
+      <p>AZ Oyun genel kitleye yöneliktir ve 13 yaş altı kullanıcılardan bilerek kişisel veri toplamıyoruz. 13 yaşından küçük bir çocuğun bize veri sağladığını fark edersek bu veriyi sileriz.</p>
 
-    <h2>6. Veri Güvenliği</h2>
-    <p>Verileriniz Google Firebase altyapısında endüstri standardı güvenlik önlemleriyle saklanır. Hiçbir sistem %100 güvenli değildir; makul güvenlik önlemleri alsak da mutlak güvenlik garanti edilemez.</p>
+      <h2>6. Veri Güvenliği</h2>
+      <p>Verileriniz Google Firebase altyapısında endüstri standardı güvenlik önlemleriyle saklanır. Hiçbir sistem %100 güvenli değildir; makul güvenlik önlemleri alsak da mutlak güvenlik garanti edilemez.</p>
 
-    <h2>7. Veri Saklama ve Silme</h2>
-    <p>Yerel verileri uygulamayı cihazınızdan silerek kaldırabilirsiniz. Online oda verileri, oda kapandığında sunucudan otomatik silinir. Analytics/Crashlytics verileri Google'ın kendi saklama politikalarına göre periyodik olarak anonimleştirilir veya silinir.</p>
+      <h2>7. Veri Saklama ve Silme</h2>
+      <p>Yerel verileri uygulamayı cihazınızdan silerek kaldırabilirsiniz. Online oda verileri, oda kapandığında sunucudan otomatik silinir. Analytics/Crashlytics verileri Google'ın kendi saklama politikalarına göre periyodik olarak anonimleştirilir veya silinir.</p>
 
-    <h2>8. Haklarınız (KVKK ve GDPR)</h2>
-    <p>6698 sayılı KVKK ve ilgili olduğu ölçüde GDPR kapsamında; verilerinizin işlenip işlenmediğini öğrenme, bilgi talep etme, düzeltilmesini veya silinmesini isteme ve işlemeye itiraz etme hakkına sahipsiniz. Taleplerinizi Bölüm 9'daki iletişim yollarıyla bize iletebilirsiniz.</p>
+      <h2>8. Haklarınız (KVKK ve GDPR)</h2>
+      <p>6698 sayılı KVKK ve ilgili olduğu ölçüde GDPR kapsamında; verilerinizin işlenip işlenmediğini öğrenme, bilgi talep etme, düzeltilmesini veya silinmesini isteme ve işlemeye itiraz etme hakkına sahipsiniz. Taleplerinizi Bölüm 9'daki iletişim yollarıyla bize iletebilirsiniz.</p>
 
-    <h2>9. İletişim</h2>
-    <p>Bu Gizlilik Politikası veya kişisel verilerinizle ilgili sorularınız için Google Play / App Store'daki uygulama sayfamızdaki geliştirici iletişim bilgilerini kullanabilir veya azoyun.web.app üzerinden bize ulaşabilirsiniz.</p>
+      <h2>9. İletişim</h2>
+      <p>Bu Gizlilik Politikası veya kişisel verilerinizle ilgili sorularınız için Google Play / App Store'daki uygulama sayfamızdaki geliştirici (Ferdi Durgun) iletişim bilgilerini kullanabilir veya azoyun.web.app üzerinden bize ulaşabilirsiniz.</p>
 
-    <h2>10. Değişiklikler</h2>
-    <p>Bu politikayı zaman zaman güncelleyebiliriz. Önemli değişiklikler uygulama içinde duyurulur ve bu sayfadaki "Son güncelleme" tarihi yenilenir.</p>
+      <h2>10. Değişiklikler</h2>
+      <p>Bu politikayı zaman zaman güncelleyebiliriz. Önemli değişiklikler uygulama içinde duyurulur ve bu sayfadaki "Son güncelleme" tarihi yenilenir.</p>
+    </section>
+
+    <hr class="lang-divider">
+
+    <section id="en" lang="en">
+      <h1 style="font-size:22px;margin:0 0 4px;">Privacy Policy</h1>
+      <p>AZ Oyun ("we", "the app") is developed and operated by <strong>Ferdi Durgun</strong>. We care about your privacy. This Privacy Policy explains what data is collected, how it is used, who it is shared with, and what your rights are when you use AZ Oyun (Android, iOS, and this web version — azoyun.web.app).</p>
+
+      <h2>1. Data We Collect</h2>
+      <ul>
+        <li><strong>Player name:</strong> A nickname of your choosing; stored on your device and shown to other players in online games. We don't require an account, email, or password — you can play as a guest.</li>
+        <li><strong>In-game data:</strong> In online room games, the room code, moves, and scores are temporarily held in Firebase Realtime Database for the duration of the game and deleted when the room closes.</li>
+        <li><strong>Progress data:</strong> Level, XP, coins, and achievements are stored locally on your device.</li>
+        <li><strong>Technical and usage data:</strong> We use Firebase Analytics for anonymized usage statistics and Firebase Crashlytics for crash/error reports (device model, OS version, error stack trace).</li>
+        <li><strong>Advertising data:</strong> Google AdMob (mobile) and Google AdSense (web) may use your device's advertising identifier (Advertising ID/GAID, IDFA) and, on web, cookies, to serve ads. See Section 4.</li>
+        <li><strong>Notification token:</strong> If you grant notification permission, Firebase Cloud Messaging generates a token unique to your device.</li>
+        <li><strong>Google Play Games Services / Game Center:</strong> If you choose to connect, your player ID, leaderboard, and achievement data are shared with these services.</li>
+        <li><strong>Purchase data:</strong> In-app purchases are processed via Google Play / the App Store. We never see or store your payment details.</li>
+      </ul>
+
+      <h2>2. How We Use Data</h2>
+      <p>Your data is used to operate the app, debug and improve performance, send notifications, serve ads, and fulfill purchases. We do not sell your data and do not transfer it to third parties for marketing purposes.</p>
+
+      <h2>3. Third-Party Service Providers</h2>
+      <p>The app uses the following third-party services, each subject to its own privacy policy:</p>
+      <ul>
+        <li>Google Firebase — Analytics, Crashlytics, Realtime Database, Cloud Messaging</li>
+        <li>Google AdMob — in-app mobile ads</li>
+        <li>Google AdSense — ads on the web version (azoyun.web.app)</li>
+        <li>Google Play Games Services / Apple Game Center — leaderboards and achievements</li>
+        <li>Google Play Billing / Apple In-App Purchase — processing in-app purchases</li>
+      </ul>
+
+      <h2>4. Advertising, Cookies, and Personalized Ad Choices</h2>
+      <p>Third-party ad vendors, including Google, use cookies and mobile advertising identifiers to serve ads. Google's use of advertising cookies enables Google and its partners to serve ads based on your prior visits to AZ Oyun and/or other sites on the internet.</p>
+      <p>If you'd like to opt out of personalized ads:</p>
+      <ul>
+        <li>On the web, you can disable third-party vendor cookies via <a href="https://adssettings.google.com">Google Ad Settings</a> or <a href="https://www.aboutads.info">www.aboutads.info</a>.</li>
+        <li>On mobile, you can limit ad personalization or reset your advertising identifier from your device's OS settings.</li>
+        <li>For an ad-free experience, you can purchase a permanent "Remove Ads" or "6-Month Premium" from within the app.</li>
+      </ul>
+
+      <h2>5. Children's Privacy</h2>
+      <p>AZ Oyun is intended for a general audience and we do not knowingly collect personal data from users under 13. If we become aware that a child under 13 has provided us with data, we will delete it.</p>
+
+      <h2>6. Data Security</h2>
+      <p>Your data is stored on Google Firebase infrastructure with industry-standard security measures. No system is 100% secure; while we take reasonable precautions, absolute security cannot be guaranteed.</p>
+
+      <h2>7. Data Retention and Deletion</h2>
+      <p>You can remove local data by uninstalling the app from your device. Online room data is automatically deleted from the server when the room closes. Analytics/Crashlytics data is periodically anonymized or deleted according to Google's own retention policies.</p>
+
+      <h2>8. Your Rights (Turkish KVKK Law No. 6698 and, where applicable, GDPR)</h2>
+      <p>Under Turkish Law No. 6698 on the Protection of Personal Data (KVKK) and, where applicable, the GDPR, you have the right to learn whether your data is being processed, request information about it, request correction or deletion, and object to processing. You may submit these requests using the contact details in Section 9.</p>
+
+      <h2>9. Contact</h2>
+      <p>For questions about this Privacy Policy or your personal data, you can use the developer (Ferdi Durgun) contact details on our Google Play / App Store listing, or reach us via azoyun.web.app.</p>
+
+      <h2>10. Changes</h2>
+      <p>We may update this policy from time to time. Significant changes will be announced in the app, and the "Last updated" date on this page will be refreshed.</p>
+    </section>
 
     <footer>
-      <a class="home" href="/">&larr; AZ Oyun'a dön</a> &middot; <a class="home" href="/terms.html">Kullanım Şartları</a>
+      <a class="home" href="/">&larr; AZ Oyun'a dön / Back to AZ Oyun</a> &middot; <a class="home" href="/terms.html">Kullanım Şartları / Terms of Service</a>
     </footer>
   </div>
 </body>
