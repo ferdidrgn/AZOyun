@@ -39,6 +39,27 @@
 # üyeleri korumak kod boyutunu neredeyse hiç etkilemez, genel güvenlik ağı.
 -keepclassmembers enum * { *; }
 
+# --- AndroidX Room / WorkManager ---
+# GERÇEK ÇÖKME (Play Console pre-launch raporu, "16 KB sayfa boyutu" diye
+# etiketlense de sayfa boyutuyla ilgisi yok — o test cihazında rastlandı
+# diye öyle sınıflandırılmış):
+#   java.lang.RuntimeException: Failed to create an instance of
+#   androidx.work.impl.WorkDatabase (androidx.startup.InitializationProvider
+#   -> WorkManagerInitializer, uygulama açılışında, Flutter hiç devreye
+#   girmeden çöküyor)
+# Room, *_Impl veritabanı sınıflarını (WorkManager'ın kendi dahili
+# WorkDatabase'i dahil) reflection ile no-arg constructor üzerinden
+# oluşturuyor; Room'un kendi consumer-rules'u sınıf adını korusa da R8 bu
+# constructor'ı silebiliyor. androidx.work muhtemelen Firebase/Play Core
+# üzerinden transitive geliyor, pubspec'te doğrudan bir bağımlılık değil.
+-keep class * extends androidx.room.RoomDatabase {
+    <init>(...);
+}
+-keep class androidx.work.impl.WorkDatabase { *; }
+-keep class * extends androidx.work.impl.WorkDatabase { *; }
+-dontwarn androidx.room.**
+-dontwarn androidx.work.**
+
 # Firebase / Play Services / AdMob / Play Billing / Gson kendi AAR'larında
 # kendi consumer-proguard kurallarını taşıyor (R8 bunları otomatik okur) —
 # burada ayrıca -keep yazmıyoruz; sadece build sırasında o kütüphanelerin
