@@ -101,4 +101,3 @@ jobs:
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           tracks: ${{ github.event.inputs.track || 'production' }}
           status: completed
-          changesNotSentForReview: true
