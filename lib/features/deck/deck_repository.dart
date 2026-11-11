@@ -126,6 +126,7 @@ class DeckRepository {
         roomId: roomId,
         updates: {
           'status': 'playing',
+          'dealStartedAt': ServerValue.timestamp,
           'game': game.toMap(),
         },
       );

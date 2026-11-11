@@ -409,7 +409,7 @@ class _WordGameScreenState extends State<WordGameScreen>
           .compareTo((a.value['score'] as int?) ?? 0));
     final iWon = sorted.isNotEmpty && sorted.first.key == widget.myKey;
     ProfileService.instance
-        .reportGameResult(gameId: 'word', won: iWon)
+        .reportGameResult(gameId: 'word', resultId: widget.roomId, won: iWon)
         .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈', '🥉', '4.'];
     showDialog(context: context, barrierDismissible: false,

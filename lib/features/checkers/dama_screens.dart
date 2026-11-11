@@ -575,7 +575,7 @@ class _DamaGameState extends State<DamaGameScreen> {
     final winner = _room['winner'] as String? ?? '';
     final iWon = winner == widget.myKey;
     ProfileService.instance
-        .reportGameResult(gameId: 'dama', won: iWon)
+        .reportGameResult(gameId: 'dama', resultId: widget.roomId, won: iWon)
         .then((_) => AchievementService.instance.checkAndUnlock());
     final myColor = _isWhite ? '⚪' : '⚫';
     final oppKey = widget.myKey == 'p1' ? 'p2' : 'p1';

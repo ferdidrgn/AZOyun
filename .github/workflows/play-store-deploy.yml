@@ -87,7 +87,25 @@ jobs:
         env:
           FAMILY_API_URL: ${{ vars.FAMILY_API_URL }}
           FAMILY_WEB_URL: ${{ vars.FAMILY_WEB_URL }}
-        run: flutter build appbundle --release --dart-define="FAMILY_API_URL=$FAMILY_API_URL" --dart-define="FAMILY_WEB_URL=$FAMILY_WEB_URL"
+          PGS_XP_LEADERBOARD_ID: ${{ vars.PGS_XP_LEADERBOARD_ID }}
+          PGS_ACHIEVEMENT_TEN_GAMES: ${{ vars.PGS_ACHIEVEMENT_TEN_GAMES }}
+          PGS_ACHIEVEMENT_FIFTY_GAMES: ${{ vars.PGS_ACHIEVEMENT_FIFTY_GAMES }}
+          PGS_ACHIEVEMENT_FIVE_WINS: ${{ vars.PGS_ACHIEVEMENT_FIVE_WINS }}
+          PGS_ACHIEVEMENT_TWENTY_WINS: ${{ vars.PGS_ACHIEVEMENT_TWENTY_WINS }}
+          PGS_ACHIEVEMENT_WIN_STREAK_3: ${{ vars.PGS_ACHIEVEMENT_WIN_STREAK_3 }}
+          PGS_ACHIEVEMENT_TRY_THEM_ALL: ${{ vars.PGS_ACHIEVEMENT_TRY_THEM_ALL }}
+          PGS_ACHIEVEMENT_HUNDRED_GAMES: ${{ vars.PGS_ACHIEVEMENT_HUNDRED_GAMES }}
+          PGS_ACHIEVEMENT_TEN_GAME_TYPES: ${{ vars.PGS_ACHIEVEMENT_TEN_GAME_TYPES }}
+        run: |
+          defines=()
+          for key in FAMILY_API_URL FAMILY_WEB_URL PGS_XP_LEADERBOARD_ID \
+            PGS_ACHIEVEMENT_TEN_GAMES PGS_ACHIEVEMENT_FIFTY_GAMES \
+            PGS_ACHIEVEMENT_FIVE_WINS PGS_ACHIEVEMENT_TWENTY_WINS \
+            PGS_ACHIEVEMENT_WIN_STREAK_3 PGS_ACHIEVEMENT_TRY_THEM_ALL \
+            PGS_ACHIEVEMENT_HUNDRED_GAMES PGS_ACHIEVEMENT_TEN_GAME_TYPES; do
+            defines+=("--dart-define=$key=${!key}")
+          done
+          flutter build appbundle --release "${defines[@]}"
 
       - name: Geçici imzalama dosyalarını sil
         if: always()

@@ -188,8 +188,8 @@ lib/
 ## 🔄 Otomatik Dağıtım
 
 `main` branch'ine her push, GitHub Actions üzerinden otomatik olarak
-`flutter build web` çalıştırıp sonucu Firebase Hosting'e yayınlıyor —
-elle deploy komutu çalıştırmaya gerek yok. Kurulum adımları için
+`node scripts/build-web.mjs` ile HTML, CSS ve JavaScript salonunu hazırlayıp Firebase Hosting'e yayınlıyor.
+Kurulum adımları için
 [`docs/DEPLOY.md`](docs/DEPLOY.md)'ye bak.
 
 ## 🗺️ Yol Haritası

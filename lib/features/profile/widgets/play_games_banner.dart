@@ -11,10 +11,12 @@ class PlayGamesBanner extends StatelessWidget {
     required this.connected,
     required this.connecting,
     required this.onConnect,
+    this.status,
   });
 
   final bool connected, connecting;
   final VoidCallback onConnect;
+  final String? status;
 
   @override
   Widget build(BuildContext context) => BentoCard(
@@ -26,12 +28,18 @@ class PlayGamesBanner extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: (connected ? DashTokens.emerald : DashTokens.accent(context)).withAlpha(28),
+              color:
+                  (connected ? DashTokens.emerald : DashTokens.accent(context))
+                      .withAlpha(28),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              connected ? Icons.cloud_done_rounded : Icons.videogame_asset_rounded,
-              color: connected ? DashTokens.emeraldSoft : DashTokens.accentSoft(context),
+              connected
+                  ? Icons.cloud_done_rounded
+                  : Icons.videogame_asset_rounded,
+              color: connected
+                  ? DashTokens.emeraldSoft
+                  : DashTokens.accentSoft(context),
               size: 20,
             ),
           ),
@@ -41,15 +49,20 @@ class PlayGamesBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  connected ? 'Google Play Games\'e bağlı' : 'Google Play Games\'e bağlan',
+                  connected
+                      ? 'Google Play Games\'e bağlı'
+                      : 'Google Play Games\'e bağlan',
                   style: TextStyle(
-                      fontSize: 13.5, fontWeight: FontWeight.w700, color: DashTokens.textPrimary),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: DashTokens.textPrimary),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  connected
-                      ? 'İlerlemen bulutta yedekleniyor'
-                      : 'İlerlemeni buluta yedekle, liderlik tablosuna gir',
+                  status ??
+                      (connected
+                          ? 'Bulut eşitlemesini kontrol et'
+                          : 'İlerlemeni buluta yedekle, liderlik tablosuna gir'),
                   style: DashTokens.labelSm,
                 ),
               ],
@@ -57,8 +70,10 @@ class PlayGamesBanner extends StatelessWidget {
           ),
           if (connecting)
             SizedBox(
-                width: 18, height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: DashTokens.accentSoft(context)))
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: DashTokens.accentSoft(context)))
           else if (!connected)
             Icon(Icons.chevron_right_rounded, color: DashTokens.textTertiary),
         ]),

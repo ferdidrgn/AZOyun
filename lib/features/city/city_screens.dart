@@ -425,7 +425,7 @@ class _CityGameScreenState extends State<CityGameScreen> {
           .compareTo((a.value['score'] as int?) ?? 0));
     final iWon = sorted.isNotEmpty && sorted.first.key == widget.myKey;
     ProfileService.instance
-        .reportGameResult(gameId: 'city', won: iWon)
+        .reportGameResult(gameId: 'city', resultId: widget.roomId, won: iWon)
         .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈', '🥉', '4.'];
     showDialog(context: context, barrierDismissible: false,

@@ -658,7 +658,7 @@ class _ImpostorGameScreenState extends State<ImpostorGameScreen> {
     if (!mounted) return;
     final winner = (_room['winner'] as String?) ?? 'crew';
     final iWon = winner == 'impostors' ? _isImpostor : !_isImpostor;
-    unawaited(ProfileService.instance.reportGameResult(gameId: 'impostor', won: iWon));
+    unawaited(ProfileService.instance.reportGameResult(gameId: 'impostor', resultId: widget.roomId, won: iWon));
     showDialog(
       context: context,
       barrierDismissible: false,

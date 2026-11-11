@@ -20,25 +20,42 @@
       }
     }
   },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "legacy-rooms",
+      "ignore": ["node_modules", ".git", "*.test.mjs"]
+    }
+  ],
   "hosting": {
     "site": "azoyun",
-    "public": "build/web",
+    "public": "build/salon",
     "ignore": [
       "firebase.json",
-      "**/.*",
       "**/node_modules/**"
     ],
     "rewrites": [
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "/join/**",
+        "destination": "/join/index.html"
       }
     ],
     "headers": [
       {
-        "source": "**/*.@(js|css)",
+        "regex": "^[/\\\\]\\.well-known[/\\\\](assetlinks\\.json|apple-app-site-association)$",
         "headers": [
-          { "key": "Cache-Control", "value": "max-age=31536000" }
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "regex": "^[/\\\\](join|arcade3d)([/\\\\].*)?$",
+        "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+      },
+      {
+        "source": "**/*.@(js|mjs|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
         ]
       },
       {

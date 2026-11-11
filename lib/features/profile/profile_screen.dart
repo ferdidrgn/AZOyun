@@ -43,26 +43,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _connectPlayGames() async {
-    setState(() { _connectingPlayGames = true; _connectError = null; });
+    setState(() {
+      _connectingPlayGames = true;
+      _connectError = null;
+    });
     await PlayGamesService.instance.signIn();
     if (!mounted) return;
     final ok = PlayGamesService.instance.isSignedIn;
     setState(() {
       _connectingPlayGames = false;
-      _connectError = ok ? null : 'Bağlanılamadı — Play Games henüz yapılandırılmamış olabilir';
+      _connectError = ok
+          ? null
+          : 'Bağlanılamadı — Play Games henüz yapılandırılmamış olabilir';
     });
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_connectError!)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(_connectError!)));
     }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: DashTokens.canvas,
-        body: LayoutBuilder(builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= DashTokens.desktopBreakpoint;
-          return isDesktop ? _buildDesktopDashboard(context) : _buildMobileDashboard(context);
-        }),
+        body: AnimatedBuilder(
+            animation: Listenable.merge(
+                [ProfileService.instance, PlayGamesService.instance]),
+            builder: (context, _) =>
+                LayoutBuilder(builder: (context, constraints) {
+                  final isDesktop =
+                      constraints.maxWidth >= DashTokens.desktopBreakpoint;
+                  return isDesktop
+                      ? _buildDesktopDashboard(context)
+                      : _buildMobileDashboard(context);
+                })),
       );
 
   // ═══════════════════════════════════════════════════════════════════
@@ -77,17 +90,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             pinned: true,
             expandedHeight: 96,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back_rounded, color: DashTokens.textPrimary),
+              icon:
+                  Icon(Icons.arrow_back_rounded, color: DashTokens.textPrimary),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-              title: Text('Profil', style: DashTokens.displayLg.copyWith(fontSize: 22)),
+              title: Text('Profil',
+                  style: DashTokens.displayLg.copyWith(fontSize: 22)),
               background: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                    colors: [DashTokens.accent(context).withAlpha(24), DashTokens.canvas],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      DashTokens.accent(context).withAlpha(24),
+                      DashTokens.canvas
+                    ],
                   ),
                 ),
               ),
@@ -119,7 +138,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Row(children: [
                 IconButton(
-                  icon: Icon(Icons.arrow_back_rounded, color: DashTokens.textPrimary),
+                  icon: Icon(Icons.arrow_back_rounded,
+                      color: DashTokens.textPrimary),
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(width: 8),
@@ -128,7 +148,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 28),
               Expanded(
                 child: _loading
-                    ? const SingleChildScrollView(child: ProfileDashboardShimmer(desktop: true))
+                    ? const SingleChildScrollView(
+                        child: ProfileDashboardShimmer(desktop: true))
                     : SingleChildScrollView(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 1240),
@@ -153,10 +174,13 @@ class _DashboardData {
   _DashboardData()
       : profile = ProfileService.instance.profile,
         unlocked = kAchievements
-            .where((a) => ProfileService.instance.profile.unlockedAchievementIds.contains(a.id))
+            .where((a) => ProfileService.instance.profile.unlockedAchievementIds
+                .contains(a.id))
             .toList(),
         locked = kAchievements
-            .where((a) => !ProfileService.instance.profile.unlockedAchievementIds.contains(a.id))
+            .where((a) => !ProfileService
+                .instance.profile.unlockedAchievementIds
+                .contains(a.id))
             .toList();
 
   final PlayerProfile profile;
@@ -169,7 +193,8 @@ class _DashboardData {
 // ═══════════════════════════════════════════════════════════════════════
 
 class _MobileContent extends StatelessWidget {
-  const _MobileContent({required this.connecting, required this.onConnectPlayGames});
+  const _MobileContent(
+      {required this.connecting, required this.onConnectPlayGames});
   final bool connecting;
   final VoidCallback onConnectPlayGames;
 
@@ -189,8 +214,11 @@ class _MobileContent extends StatelessWidget {
         xpIntoLevel: p.xpIntoLevel,
         xpPerLevel: 100,
         coins: p.coins,
-        playerName: 'Oyuncu',
-      ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.06, curve: Curves.easeOutCubic),
+        playerName: PlayGamesService.instance.playerName ?? 'Oyuncu',
+      )
+          .animate()
+          .fadeIn(duration: 400.ms)
+          .slideY(begin: 0.06, curve: Curves.easeOutCubic),
       const SizedBox(height: 14),
       Row(children: [
         Expanded(
@@ -208,7 +236,9 @@ class _MobileContent extends StatelessWidget {
             value: '${p.wins}',
             label: 'Galibiyet',
             accent: DashTokens.emerald,
-            trend: p.gamesPlayed > 0 ? '${(p.wins / p.gamesPlayed * 100).round()}%' : null,
+            trend: p.gamesPlayed > 0
+                ? '${(p.wins / p.gamesPlayed * 100).round()}%'
+                : null,
           ),
         ),
         const SizedBox(width: 12),
@@ -222,19 +252,23 @@ class _MobileContent extends StatelessWidget {
         ),
       ]).animate().fadeIn(duration: 400.ms, delay: 80.ms),
       const SizedBox(height: 14),
-      WinRateDonut(wins: p.wins, gamesPlayed: p.gamesPlayed, bestStreak: p.bestWinStreak),
+      WinRateDonut(
+          wins: p.wins,
+          gamesPlayed: p.gamesPlayed,
+          bestStreak: p.bestWinStreak),
       const SizedBox(height: 14),
       GameVarietyChart(playedGameIds: p.playedGameIds),
       const SizedBox(height: 14),
-      PlayGamesBanner(
-        connected: PlayGamesService.instance.isSignedIn,
-        connecting: connecting,
-        onConnect: onConnectPlayGames,
-      ),
+      if (PlayGamesService.instance.isSupported)
+        _PlayGamesAccount(
+            connecting: connecting, onConnect: onConnectPlayGames),
       const SizedBox(height: 14),
       const _LeaderboardEntryCard(),
+      const SizedBox(height: 14),
+      _MissionCard(data: d),
       const SizedBox(height: 24),
-      BentoSectionLabel('Başarımlar (${d.unlocked.length}/${kAchievements.length})'),
+      BentoSectionLabel(
+          'Başarımlar (${d.unlocked.length}/${kAchievements.length})'),
       const SizedBox(height: 12),
       _AchievementGrid(unlocked: d.unlocked, locked: d.locked),
     ]);
@@ -246,7 +280,8 @@ class _MobileContent extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════
 
 class _DesktopContent extends StatelessWidget {
-  const _DesktopContent({required this.connecting, required this.onConnectPlayGames});
+  const _DesktopContent(
+      {required this.connecting, required this.onConnectPlayGames});
   final bool connecting;
   final VoidCallback onConnectPlayGames;
 
@@ -266,76 +301,97 @@ class _DesktopContent extends StatelessWidget {
           // ── Sol panel ──────────────────────────────────────────────
           Expanded(
             flex: 3,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              ProfileHeroCard(
-                level: p.level,
-                xpIntoLevel: p.xpIntoLevel,
-                xpPerLevel: 100,
-                coins: p.coins,
-                playerName: 'Oyuncu',
-              ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, curve: Curves.easeOutCubic),
-              const SizedBox(height: 16),
-              Row(children: [
-                Expanded(
-                  child: KpiMetricCard(
-                    icon: Icons.sports_esports_rounded,
-                    value: '${p.gamesPlayed}',
-                    label: 'Oynanan Maç',
-                    accent: DashTokens.accent(context),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: KpiMetricCard(
-                    icon: Icons.emoji_events_rounded,
-                    value: '${p.wins}',
-                    label: 'Galibiyet',
-                    accent: DashTokens.emerald,
-                    trend: p.gamesPlayed > 0 ? '${(p.wins / p.gamesPlayed * 100).round()}%' : null,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: KpiMetricCard(
-                    icon: Icons.local_fire_department_rounded,
-                    value: '${p.bestWinStreak}',
-                    label: 'En İyi Seri',
-                    accent: DashTokens.amber,
-                  ),
-                ),
-              ]).animate().fadeIn(duration: 400.ms, delay: 80.ms),
-              const SizedBox(height: 16),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(
-                  child: WinRateDonut(
-                      wins: p.wins, gamesPlayed: p.gamesPlayed, bestStreak: p.bestWinStreak),
-                ),
-                const SizedBox(width: 16),
-                Expanded(child: GameVarietyChart(playedGameIds: p.playedGameIds)),
-              ]),
-            ]),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ProfileHeroCard(
+                    level: p.level,
+                    xpIntoLevel: p.xpIntoLevel,
+                    xpPerLevel: 100,
+                    coins: p.coins,
+                    playerName:
+                        PlayGamesService.instance.playerName ?? 'Oyuncu',
+                  )
+                      .animate()
+                      .fadeIn(duration: 400.ms)
+                      .slideY(begin: 0.05, curve: Curves.easeOutCubic),
+                  const SizedBox(height: 16),
+                  Row(children: [
+                    Expanded(
+                      child: KpiMetricCard(
+                        icon: Icons.sports_esports_rounded,
+                        value: '${p.gamesPlayed}',
+                        label: 'Oynanan Maç',
+                        accent: DashTokens.accent(context),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: KpiMetricCard(
+                        icon: Icons.emoji_events_rounded,
+                        value: '${p.wins}',
+                        label: 'Galibiyet',
+                        accent: DashTokens.emerald,
+                        trend: p.gamesPlayed > 0
+                            ? '${(p.wins / p.gamesPlayed * 100).round()}%'
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: KpiMetricCard(
+                        icon: Icons.local_fire_department_rounded,
+                        value: '${p.bestWinStreak}',
+                        label: 'En İyi Seri',
+                        accent: DashTokens.amber,
+                      ),
+                    ),
+                  ]).animate().fadeIn(duration: 400.ms, delay: 80.ms),
+                  const SizedBox(height: 16),
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(
+                      child: WinRateDonut(
+                          wins: p.wins,
+                          gamesPlayed: p.gamesPlayed,
+                          bestStreak: p.bestWinStreak),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                        child:
+                            GameVarietyChart(playedGameIds: p.playedGameIds)),
+                  ]),
+                ]),
           ),
           const SizedBox(width: 16),
           // ── Sağ panel ──────────────────────────────────────────────
           Expanded(
             flex: 2,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              PlayGamesBanner(
-                connected: PlayGamesService.instance.isSignedIn,
-                connecting: connecting,
-                onConnect: onConnectPlayGames,
-              ),
-              const SizedBox(height: 16),
-              const _LeaderboardEntryCard(),
-              const SizedBox(height: 16),
-              BentoCard(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  BentoSectionLabel('Başarımlar (${d.unlocked.length}/${kAchievements.length})'),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (PlayGamesService.instance.isSupported)
+                    _PlayGamesAccount(
+                        connecting: connecting, onConnect: onConnectPlayGames),
                   const SizedBox(height: 16),
-                  _AchievementGrid(unlocked: d.unlocked, locked: d.locked, columns: 2, shrinkWrap: true),
+                  const _LeaderboardEntryCard(),
+                  const SizedBox(height: 16),
+                  _MissionCard(data: d),
+                  const SizedBox(height: 16),
+                  BentoCard(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          BentoSectionLabel(
+                              'Başarımlar (${d.unlocked.length}/${kAchievements.length})'),
+                          const SizedBox(height: 16),
+                          _AchievementGrid(
+                              unlocked: d.unlocked,
+                              locked: d.locked,
+                              columns: 2,
+                              shrinkWrap: true),
+                        ]),
+                  ),
                 ]),
-              ),
-            ]),
           ),
         ]),
       ),
@@ -353,7 +409,8 @@ class _NewPlayerBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BentoCard(
         gradient: LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [DashTokens.emerald.withAlpha(38), DashTokens.surface],
         ),
         borderColor: DashTokens.emerald.withAlpha(60),
@@ -366,15 +423,87 @@ class _NewPlayerBanner extends StatelessWidget {
               children: [
                 Text('Henüz hiç maç oynamadın',
                     style: TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700, color: DashTokens.textPrimary)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: DashTokens.textPrimary)),
                 const SizedBox(height: 3),
-                Text('İlk maçını oyna, istatistiklerin burada canlanmaya başlasın.',
+                Text(
+                    'İlk maçını oyna, istatistiklerin burada canlanmaya başlasın.',
                     style: DashTokens.labelSm),
               ],
             ),
           ),
         ]),
       ).animate().fadeIn(duration: 350.ms);
+}
+
+class _PlayGamesAccount extends StatelessWidget {
+  const _PlayGamesAccount({required this.connecting, required this.onConnect});
+
+  final bool connecting;
+  final VoidCallback onConnect;
+
+  @override
+  Widget build(BuildContext context) {
+    final play = PlayGamesService.instance;
+    final profile = ProfileService.instance;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      PlayGamesBanner(
+        connected: play.isSignedIn,
+        connecting: connecting,
+        onConnect: onConnect,
+        status: switch (profile.cloudStatus) {
+          ProfileCloudStatus.local => 'İlerlemeni buluta yedekle',
+          ProfileCloudStatus.syncing => 'Bulut profili eşitleniyor…',
+          ProfileCloudStatus.synced => 'İlerlemen Google hesabına kaydedildi',
+          ProfileCloudStatus.unavailable =>
+            'İlerleme cihazda kayıtlı. Bulut bağlantısı bekleniyor.',
+        },
+      ),
+      if (play.isSignedIn)
+        Wrap(spacing: 8, children: [
+          TextButton(
+            onPressed: play.showAchievements,
+            child: const Text('Play Games görevleri'),
+          ),
+          if (profile.cloudStatus == ProfileCloudStatus.unavailable)
+            TextButton(
+              onPressed: profile.syncPlayGames,
+              child: const Text('Tekrar eşitle'),
+            ),
+        ]),
+    ]);
+  }
+}
+
+class _MissionCard extends StatelessWidget {
+  const _MissionCard({required this.data});
+
+  final _DashboardData data;
+
+  @override
+  Widget build(BuildContext context) => BentoCard(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const BentoSectionLabel('Oyuncu görevleri'),
+          const SizedBox(height: 10),
+          if (data.locked.isEmpty) const Text('Tüm görevleri tamamladın.'),
+          for (final mission in data.locked.take(3)) ...[
+            Text(mission.description, style: DashTokens.headline),
+            const SizedBox(height: 4),
+            LinearProgressIndicator(
+              value: mission.progress(data.profile).clamp(0, mission.goal) /
+                  mission.goal,
+              semanticsLabel: mission.title,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${mission.progress(data.profile).clamp(0, mission.goal)}/${mission.goal}  ·  +${mission.xpReward} AZ XP',
+              style: DashTokens.labelSm,
+            ),
+            const SizedBox(height: 10),
+          ],
+        ]),
+      );
 }
 
 /// Profil ekranından Liderlik Tablosu'na giden tıklanabilir kart — Home
@@ -396,7 +525,8 @@ class _LeaderboardEntryCard extends StatelessWidget {
               color: DashTokens.amber.withAlpha(38),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.emoji_events_rounded, color: DashTokens.amber, size: 22),
+            child: Icon(Icons.emoji_events_rounded,
+                color: DashTokens.amber, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -405,9 +535,12 @@ class _LeaderboardEntryCard extends StatelessWidget {
               children: [
                 Text('Liderlik Tablosu',
                     style: TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700, color: DashTokens.textPrimary)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: DashTokens.textPrimary)),
                 const SizedBox(height: 2),
-                Text('Yılan ve 2048\'de en iyi skorlar', style: DashTokens.labelSm),
+                Text('Yılan ve 2048\'de en iyi skorlar',
+                    style: DashTokens.labelSm),
               ],
             ),
           ),

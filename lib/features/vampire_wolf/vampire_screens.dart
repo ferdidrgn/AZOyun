@@ -741,7 +741,7 @@ class _VGS extends State<VampireGameScreen> {
     final winner = (_room['winner'] as String?) ?? 'villagers';
     final iWon = winner == 'vampires' ? _isVampire : !_isVampire;
     ProfileService.instance
-        .reportGameResult(gameId: 'vampire', won: iWon)
+        .reportGameResult(gameId: 'vampire', resultId: widget.roomId, won: iWon)
         .then((_) => AchievementService.instance.checkAndUnlock());
 
     showDialog(

@@ -520,7 +520,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
           ((b.value['score'] as int?) ?? 0).compareTo((a.value['score'] as int?) ?? 0));
     final iWon = sorted.isNotEmpty && sorted.first.key == widget.myKey;
     ProfileService.instance
-        .reportGameResult(gameId: 'soccer', won: iWon)
+        .reportGameResult(gameId: 'soccer', resultId: widget.roomId, won: iWon)
         .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈'];
 

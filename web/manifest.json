@@ -3,11 +3,10 @@
     "short_name": "AZ Oyun",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#09090B",
-    "theme_color": "#6C63FF",
-    "description": "30'dan fazla ücretsiz, çok oyunculu ve tek kişilik oyun: Dama, Okey, Araba Yarışı, Hain Kim?, Dedektif Kampanyası ve daha fazlası.",
+    "background_color": "#141320",
+    "theme_color": "#141320",
+    "description": "Aile Masası, 3D Arcade ve tarayıcı oyunları.",
     "lang": "tr",
-    "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {

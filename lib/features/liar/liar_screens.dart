@@ -368,7 +368,7 @@ class _LiarGameScreenState extends State<LiarGameScreen> {
           .compareTo((a.value['score'] as int?) ?? 0));
     final iWon = sorted.isNotEmpty && sorted.first.key == widget.myKey;
     ProfileService.instance
-        .reportGameResult(gameId: 'liar', won: iWon)
+        .reportGameResult(gameId: 'liar', resultId: widget.roomId, won: iWon)
         .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈', '🥉', '4.', '5.', '6.'];
     showDialog(context: context, barrierDismissible: false,

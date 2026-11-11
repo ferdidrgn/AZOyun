@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/achievement.dart';
-import '../services/achievement_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/profile_service.dart';
 import '../theme/az_theme.dart';
@@ -280,7 +279,7 @@ class QuickPlayResult {
   }) async {
     final reward =
         await ProfileService.instance.reportGameResult(gameId: gameId, won: humanWon);
-    final unlocked = await AchievementService.instance.checkAndUnlock();
+    final unlocked = reward.unlockedAchievements;
 
     bool isNewRecord = false;
     if (score != null) {

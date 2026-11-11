@@ -101,6 +101,7 @@ class _DeckRoomScreenState extends State<DeckRoomScreen> {
     _rewarded = true;
     unawaited(ProfileService.instance.reportGameResult(
       gameId: 'pisti',
+      resultId: '${widget.roomId}:${_room?['dealStartedAt'] ?? 'initial'}',
       won: leaders == 1 && mine == best && best > 0,
     ));
   }

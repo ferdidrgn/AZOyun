@@ -3,13 +3,13 @@
 `main` branch'ine her push yapıldığında ve her pull request'te
 `.github/workflows/firebase-hosting-deploy.yml` iş akışı:
 
-1. Flutter'ı kurar
-2. `flutter test` ile testleri çalıştırır
-3. `flutter build web --release` ile web sürümünü derler
+1. Node.js'i kurar
+2. Aile Masası sunucu testlerini çalıştırır
+3. `node scripts/build-web.mjs` ile statik web salonunu hazırlar
 4. Yalnızca `main`'de, testler geçtikten sonra sonucu Firebase Hosting'e
    (`azoyun-569b2` projesi, `azoyun` sitesi) yayınlar
 
-Elle `flutter build web` + `firebase deploy` çalıştırmana artık gerek yok.
+Yerel web çalıştırma adımları için [Aile Masası kurulumuna](FAMILY_TABLE.md) bak.
 
 ## Tek seferlik kurulum: GitHub'a Firebase izni ver
 
@@ -65,12 +65,9 @@ butonuna bas.
 2. Aşağıdaki secret'lardan imzalama anahtarını (keystore) geri oluşturur
 3. `flutter test` çalıştırır
 4. `flutter build appbundle --release` ile imzalı AAB üretir
-5. AAB'yi Google Play Console'daki **production** kanalına yükler —
-   Google Play API, production'a otomatik "incelemeye
-   gönderme"yi reddediyor (`changesNotSentForReview` zorunlu). Yani her
-   main push'u sonrası **Play Console'a girip o sürümü elle "İncelemeye
-   gönder / Yayınla" demen gerekiyor** — gerçek kullanıcılara gitmeden önce
-   son bir göz atma fırsatı, otomasyon seni bu adımda durduruyor.
+5. AAB'yi Google Play Console'daki **production** kanalına yükler. Play
+   Console değişiklikleri otomatik olarak incelemeye gönderir. Mağazadaki
+   erişim, Google'ın incelemesine ve Play Console yayın ayarlarına bağlıdır.
 
 Diğer uygulamalarla (Anlık Depremler, Sağlam Spot, Huda Kuran) aynı kurulum:
 servis hesabına yalnızca **"Üretim sürümüne yayınlama"** izni verildi,

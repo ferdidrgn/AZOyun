@@ -301,7 +301,7 @@ class _GolfGameScreenState extends State<GolfGameScreen>
           .compareTo((b.value['totalShots'] as int?) ?? 99));
     final iWon = sorted.isNotEmpty && sorted.first.key == widget.myKey;
     ProfileService.instance
-        .reportGameResult(gameId: 'golf', won: iWon)
+        .reportGameResult(gameId: 'golf', resultId: widget.roomId, won: iWon)
         .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈', '🥉', '4.'];
     showDialog(context: context, barrierDismissible: false,

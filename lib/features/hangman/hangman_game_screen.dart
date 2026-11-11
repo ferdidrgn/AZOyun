@@ -322,7 +322,7 @@ class _HangmanGameScreenState extends State<HangmanGameScreen>
     final myScore = _pScore(widget.myKey);
     final otherScore = widget.myKey == 'p1' ? p2s : p1s;
     ProfileService.instance
-        .reportGameResult(gameId: 'hangman', won: myScore > otherScore)
+        .reportGameResult(gameId: 'hangman', resultId: widget.roomId, won: myScore > otherScore)
         .then((_) => AchievementService.instance.checkAndUnlock());
 
     showDialog(context: context, barrierDismissible: false,

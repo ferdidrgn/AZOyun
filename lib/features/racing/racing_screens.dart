@@ -645,7 +645,7 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
     final myIndex = sorted.indexWhere((e) => e.key == widget.myKey);
     if (myIndex != -1) {
       ProfileService.instance
-          .reportGameResult(gameId: 'racing', won: myIndex == 0)
+          .reportGameResult(gameId: 'racing', resultId: widget.roomId, won: myIndex == 0)
           .then((_) => AchievementService.instance.checkAndUnlock());
     }
 

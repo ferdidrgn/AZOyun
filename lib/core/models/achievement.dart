@@ -1,7 +1,13 @@
 import '../quickplay/game_ids.dart';
 import 'player_profile.dart';
 
-enum AchievementCondition { gamesPlayed, wins, winStreak, allGamesTried }
+enum AchievementCondition {
+  gamesPlayed,
+  wins,
+  winStreak,
+  gameTypes,
+  allGamesTried
+}
 
 class AchievementDef {
   final String id;
@@ -22,18 +28,20 @@ class AchievementDef {
     this.threshold = 0,
   });
 
-  bool isMetBy(PlayerProfile p) {
-    switch (condition) {
-      case AchievementCondition.gamesPlayed:
-        return p.gamesPlayed >= threshold;
-      case AchievementCondition.wins:
-        return p.wins >= threshold;
-      case AchievementCondition.winStreak:
-        return p.bestWinStreak >= threshold;
-      case AchievementCondition.allGamesTried:
-        return kQuickGameIds.every(p.playedGameIds.contains);
-    }
-  }
+  int get goal => condition == AchievementCondition.allGamesTried
+      ? kQuickGameIds.length
+      : threshold;
+
+  int progress(PlayerProfile profile) => switch (condition) {
+        AchievementCondition.gamesPlayed => profile.gamesPlayed,
+        AchievementCondition.wins => profile.wins,
+        AchievementCondition.winStreak => profile.bestWinStreak,
+        AchievementCondition.gameTypes => profile.playedGameIds.length,
+        AchievementCondition.allGamesTried =>
+          kQuickGameIds.where(profile.playedGameIds.contains).length,
+      };
+
+  bool isMetBy(PlayerProfile profile) => progress(profile) >= goal;
 }
 
 const List<AchievementDef> kAchievements = [
@@ -98,5 +106,23 @@ const List<AchievementDef> kAchievements = [
     emoji: '🎲',
     xpReward: 40,
     condition: AchievementCondition.allGamesTried,
+  ),
+  AchievementDef(
+    id: 'hundred_games',
+    title: 'Yüz Maç',
+    description: '100 maç oyna',
+    emoji: '🎖️',
+    xpReward: 35,
+    condition: AchievementCondition.gamesPlayed,
+    threshold: 100,
+  ),
+  AchievementDef(
+    id: 'ten_game_types',
+    title: 'Oyun Gezgini',
+    description: '10 farklı oyun oyna',
+    emoji: '🧭',
+    xpReward: 20,
+    condition: AchievementCondition.gameTypes,
+    threshold: 10,
   ),
 ];

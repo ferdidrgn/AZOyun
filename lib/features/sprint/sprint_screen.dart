@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/services/room_service.dart';
+import '../../core/services/profile_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/widgets/az_widgets.dart';
 import 'sprint_rules.dart';
@@ -76,6 +77,10 @@ class _SprintScreenState extends State<SprintScreen> {
     _timer?.cancel();
     unawaited(_watch?.cancel());
     unawaited(_clock?.cancel());
+    final roomId = _ref?.key;
+    if (roomId != null) {
+      unawaited(_unregisterPresence(roomId));
+    }
     _name.dispose();
     _code.dispose();
     super.dispose();
@@ -135,6 +140,12 @@ class _SprintScreenState extends State<SprintScreen> {
         _code.text = code;
         _room = sprintMap(result.snapshot.value);
       });
+      unawaited(RoomService.instance.registerPresence(
+        gamePath: _gamePath,
+        roomId: ref.key!,
+        playerKey: _me,
+        isHost: create,
+      ));
       _watch = ref.onValue.listen((event) {
         if (!mounted || _ref != ref) return;
         final next = sprintMap(event.snapshot.value);
@@ -143,6 +154,7 @@ class _SprintScreenState extends State<SprintScreen> {
           _room = next;
           if (next.isEmpty) _message = 'Oda kapatıldı.';
         });
+        _recordFinishedMatch(next, code);
       }, onError: (Object _) {
         if (mounted) setState(() => _message = 'Oda bağlantısı kesildi.');
       });
@@ -158,6 +170,28 @@ class _SprintScreenState extends State<SprintScreen> {
       unawaited(warmup?.cancel());
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  void _recordFinishedMatch(SprintData state, String code) {
+    final winner = state['winner'];
+    final createdAt = state['createdAt'];
+    if (state['phase'] != 'finished' ||
+        winner == null ||
+        winner == 'left' ||
+        createdAt is! num ||
+        !sprintPlayers(state).contains(_me)) {
+      return;
+    }
+    final won = switch (winner) {
+      'crew' => _me != state['saboteur'],
+      'saboteur' => _me == state['saboteur'],
+      _ => winner == _me,
+    };
+    unawaited(ProfileService.instance.reportGameResult(
+      gameId: _mode.invite,
+      resultId: '$code:$createdAt',
+      won: won,
+    ));
   }
 
   Future<void> _action(String type, [int? choice]) async {
@@ -196,7 +230,11 @@ class _SprintScreenState extends State<SprintScreen> {
 
   Future<void> _leave() async {
     if (_busy) return;
+    final roomId = _ref?.key;
     if (_ref != null) await _action('leave');
+    if (roomId != null) {
+      unawaited(_unregisterPresence(roomId));
+    }
     if (!mounted) return;
     unawaited(_watch?.cancel());
     setState(() {
@@ -205,6 +243,13 @@ class _SprintScreenState extends State<SprintScreen> {
       _message = null;
     });
   }
+
+  Future<void> _unregisterPresence(String roomId) =>
+      RoomService.instance.unregisterPresence(
+        gamePath: _gamePath,
+        roomId: roomId,
+        playerKey: _me,
+      );
 
   @override
   Widget build(BuildContext context) => PopScope(

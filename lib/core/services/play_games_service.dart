@@ -5,99 +5,151 @@ class PlayGamesService extends ChangeNotifier {
   PlayGamesService._();
   static final PlayGamesService instance = PlayGamesService._();
 
-  bool _signedIn = false;
-  bool get isSignedIn => _signedIn;
+  static const profileSlot = 'azoyun_profile_v2';
+  static const _requestTimeout = Duration(seconds: 8);
+  static const _defaultLeaderboardId = 'CgkIxOrNg4kPEAIQAQ';
+  static const xpLeaderboardId =
+      String.fromEnvironment('PGS_XP_LEADERBOARD_ID');
 
-  /// Reads the platform session without launching interactive sign-in.
-  Future<void> refreshSignIn() async {
-    if (kIsWeb || _signedIn) return;
+  static const _achievementIds = {
+    'first_step': 'CgkIxOrNg4kPEAIQAw',
+    'ten_games': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAMES'),
+    'fifty_games': String.fromEnvironment('PGS_ACHIEVEMENT_FIFTY_GAMES'),
+    'five_wins': String.fromEnvironment('PGS_ACHIEVEMENT_FIVE_WINS'),
+    'twenty_wins': String.fromEnvironment('PGS_ACHIEVEMENT_TWENTY_WINS'),
+    'win_streak_3': String.fromEnvironment('PGS_ACHIEVEMENT_WIN_STREAK_3'),
+    'try_them_all': String.fromEnvironment('PGS_ACHIEVEMENT_TRY_THEM_ALL'),
+    'hundred_games': String.fromEnvironment('PGS_ACHIEVEMENT_HUNDRED_GAMES'),
+    'ten_game_types': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAME_TYPES'),
+  };
+
+  String? _playerId;
+  String? _playerName;
+  Future<void>? _sessionRequest;
+
+  String? get playerId => _playerId;
+  String? get playerName => _playerName;
+  bool get isSignedIn => _playerId != null;
+  bool get isSupported =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  Future<void> refreshSignIn() => _updateSession(interactive: false);
+  Future<void> signIn() => _updateSession(interactive: true);
+
+  Future<void> _updateSession({required bool interactive}) async {
+    if (!isSupported) return;
+    final pending = _sessionRequest;
+    if (pending != null) {
+      await pending;
+      if (!interactive || isSignedIn) return;
+    }
+    final request = _readSession(interactive);
+    _sessionRequest = request;
     try {
-      if (await GamesServices.isSignedIn && !_signedIn) {
-        _signedIn = true;
-        notifyListeners();
+      await request;
+    } finally {
+      if (identical(_sessionRequest, request)) _sessionRequest = null;
+    }
+  }
+
+  Future<void> _readSession(bool interactive) async {
+    try {
+      if (interactive &&
+          !await GamesServices.isSignedIn.timeout(_requestTimeout)) {
+        await GamesServices.signIn();
       }
+      if (!await GamesServices.isSignedIn.timeout(_requestTimeout)) {
+        _setPlayer(null, null);
+        return;
+      }
+      final id = await GamesServices.getPlayerID().timeout(_requestTimeout);
+      String? name;
+      try {
+        name = await GamesServices.getPlayerName().timeout(_requestTimeout);
+      } catch (_) {
+        // The account ID is sufficient when the profile name is unavailable.
+      }
+      _setPlayer(id?.isNotEmpty == true ? id : null, name);
     } catch (error) {
       debugPrint('[PlayGamesService] oturum okunamadı: $error');
     }
   }
 
-  /// Play Console'da şimdilik tek bir genel skor tablosu ("Skorboard")
-  /// oluşturuldu — oyuna özel bir ID tanımlanmamış tüm hızlı oyunların
-  /// skoru buraya gider. İleride her oyun için ayrı tablo açılırsa
-  /// [_leaderboardIds]'e o oyunun ID'si eklenmesi yeterli, bu satır
-  /// değişmeden kalabilir.
-  static const String _defaultLeaderboardId = 'CgkIxOrNg4kPEAIQAQ'; // Skorboard
-
-  /// Oyuna özel liderlik tablosu ID'si (varsa [_defaultLeaderboardId]'nin
-  /// önüne geçer).
-  static const Map<String, String> _leaderboardIds = {};
-
-  String _leaderboardIdFor(String gameId) =>
-      _leaderboardIds[gameId]?.isNotEmpty == true
-          ? _leaderboardIds[gameId]!
-          : _defaultLeaderboardId;
-
-  /// Başarım ID eşlemesi (AchievementDef.id -> Play Games achievement ID).
-  /// Play Console'da şimdilik sadece "İlk" (first_step) başarımı oluşturuldu.
-  static const Map<String, String> _achievementIds = {
-    'first_step': 'CgkIxOrNg4kPEAIQAw', // "İlk" — ilk maçını oyna
-  };
-
-  /// `games_services` paketi sadece Android/iOS/macOS destekler — Web'de
-  /// köprüsü yok. Web'de bu yüzden en baştan no-op: [_signedIn] hep
-  /// `false` kalır ve aşağıdaki tüm diğer metodlar zaten `if
-  /// (!_signedIn) return;` ile sessizce atlanır.
-  Future<void> signIn() async {
-    if (kIsWeb || _signedIn) return;
-    try {
-      await GamesServices.signIn();
-      _signedIn = await GamesServices.isSignedIn;
-    } catch (e) {
-      debugPrint('[PlayGamesService] sign-in atlandı: $e');
-      _signedIn = false;
-    }
+  void _setPlayer(String? id, String? name) {
+    if (_playerId == id && _playerName == name) return;
+    _playerId = id;
+    _playerName = id == null ? null : name;
     notifyListeners();
   }
 
   Future<bool> ensureSignedIn() async {
-    if (!_signedIn) {
-      await signIn();
-    }
-    return _signedIn;
+    if (!isSignedIn) await signIn();
+    return isSignedIn;
   }
 
-  Future<void> submitScore({required String gameId, required int score}) async {
-    if (!_signedIn) return;
-    final leaderboardId = _leaderboardIdFor(gameId);
+  Future<void> _verifyPlayer(String id) async {
+    if (playerId != id ||
+        await GamesServices.getPlayerID().timeout(_requestTimeout) != id) {
+      throw StateError('Play Games hesabı değişti.');
+    }
+  }
+
+  Future<String?> loadProfile(String id) async {
+    await _verifyPlayer(id);
+    final saves = await GamesServices.getSavedGames(forceRefresh: true)
+        .timeout(_requestTimeout);
+    if (saves == null) throw StateError('Bulut kayıt listesi alınamadı.');
+    if (!saves.any((save) => save.name == profileSlot)) return null;
+    final data = await GamesServices.loadGame(name: profileSlot)
+        .timeout(_requestTimeout);
+    if (data == null) throw StateError('Bulut profili okunamadı.');
+    await _verifyPlayer(id);
+    return data;
+  }
+
+  Future<void> saveProfile(String id, String data) async {
+    await _verifyPlayer(id);
+    await GamesServices.saveGame(name: profileSlot, data: data)
+        .timeout(_requestTimeout);
+  }
+
+  Future<void> submitScore({required String gameId, required int score}) =>
+      _submitScore(_defaultLeaderboardId, score);
+
+  Future<void> submitProfileXp(int xp) => _submitScore(xpLeaderboardId, xp);
+
+  Future<void> _submitScore(String leaderboardId, int value) async {
+    if (!isSignedIn || leaderboardId.isEmpty) return;
     try {
       await GamesServices.submitScore(
-        score: Score(androidLeaderboardID: leaderboardId, value: score),
+        score: Score(androidLeaderboardID: leaderboardId, value: value),
       );
-    } catch (e) {
-      debugPrint('[PlayGamesService] skor gönderilemedi: $e');
+    } catch (error) {
+      debugPrint('[PlayGamesService] skor gönderilemedi: $error');
     }
   }
 
   Future<void> unlockAchievement(String achievementDefId) async {
-    if (!_signedIn) return;
-    final playGamesId = _achievementIds[achievementDefId];
-    if (playGamesId == null || playGamesId.isEmpty) return;
+    if (!isSignedIn) return;
+    final id = _achievementIds[achievementDefId];
+    if (id == null || id.isEmpty) return;
     try {
       await GamesServices.unlock(
-        achievement: Achievement(androidID: playGamesId, percentComplete: 100),
+        achievement: Achievement(androidID: id, percentComplete: 100),
       );
-    } catch (e) {
-      debugPrint('[PlayGamesService] başarım açılamadı: $e');
+    } catch (error) {
+      debugPrint('[PlayGamesService] başarım açılamadı: $error');
     }
   }
 
   Future<void> showLeaderboard(String gameId) async {
     if (!await ensureSignedIn()) return;
-    final leaderboardId = _leaderboardIdFor(gameId);
+    final id = gameId == 'profile_xp' ? xpLeaderboardId : _defaultLeaderboardId;
+    if (id.isEmpty) return;
     try {
-      await GamesServices.showLeaderboards(androidLeaderboardID: leaderboardId);
-    } catch (e) {
-      debugPrint('[PlayGamesService] liderlik tablosu açılamadı: $e');
+      await GamesServices.showLeaderboards(androidLeaderboardID: id);
+    } catch (error) {
+      debugPrint('[PlayGamesService] liderlik tablosu açılamadı: $error');
     }
   }
 
@@ -105,8 +157,8 @@ class PlayGamesService extends ChangeNotifier {
     if (!await ensureSignedIn()) return;
     try {
       await GamesServices.showAchievements();
-    } catch (e) {
-      debugPrint('[PlayGamesService] başarımlar açılamadı: $e');
+    } catch (error) {
+      debugPrint('[PlayGamesService] başarımlar açılamadı: $error');
     }
   }
 }

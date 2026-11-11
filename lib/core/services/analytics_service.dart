@@ -11,7 +11,7 @@ class AnalyticsService {
   AnalyticsService._();
   static final AnalyticsService instance = AnalyticsService._();
 
-  final _analytics = FirebaseAnalytics.instance;
+  FirebaseAnalytics get _analytics => FirebaseAnalytics.instance;
 
   FirebaseAnalyticsObserver get navigatorObserver => FirebaseAnalyticsObserver(analytics: _analytics);
 

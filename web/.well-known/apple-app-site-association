@@ -1,11 +1,6 @@
 {
   "applinks": {
     "apps": [],
-    "details": [
-      {
-        "appID": "TEAMID.com.ferdidrgn.azgame",
-        "paths": ["/product/*"]
-      }
-    ]
+    "details": []
   }
 }

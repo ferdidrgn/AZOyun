@@ -3,6 +3,7 @@
 !family-server/Dockerfile
 !family-server/game.mjs
 !family-server/server.mjs
+!family-server/progression.mjs
 !build/
-!build/web/
-!build/web/**
+!build/salon/
+!build/salon/**

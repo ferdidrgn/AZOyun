@@ -7,6 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../core/services/profile_service.dart';
 
 const _configuredApi = String.fromEnvironment('FAMILY_API_URL');
 const _configuredWeb = String.fromEnvironment('FAMILY_WEB_URL');
@@ -22,6 +25,11 @@ const _seatColors = [
   Color(0xFFBEB6FA)
 ];
 typedef _Data = Map<String, dynamic>;
+
+class _FamilyHttpError extends FormatException {
+  const _FamilyHttpError(this.status, String message) : super(message);
+  final int status;
+}
 
 class FamilyApp extends StatelessWidget {
   const FamilyApp({super.key, required this.host, this.code});
@@ -57,6 +65,8 @@ class FamilyScreen extends StatefulWidget {
 class _FamilyScreenState extends State<FamilyScreen> {
   final _http = http.Client();
   final _name = TextEditingController();
+  final _playerKey = TextEditingController();
+  final _reportedMatches = <String>{};
   final _codeInput = TextEditingController();
   final _server = TextEditingController(
     text: _configuredApi.isNotEmpty
@@ -153,8 +163,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
     final data = jsonDecode(utf8.decode(result.bodyBytes));
     if (data is! Map<String, dynamic>)
       throw const FormatException('Sunucu yanıtı okunamadı.');
-    if (result.statusCode >= 400)
-      throw FormatException(data['error'] as String? ?? 'Masa açılamadı.');
+    if (result.statusCode >= 400) {
+      throw _FamilyHttpError(
+          result.statusCode, data['error'] as String? ?? 'Masa açılamadı.');
+    }
     return data;
   }
 
@@ -162,6 +174,16 @@ class _FamilyScreenState extends State<FamilyScreen> {
     if (!mounted ||
         data['code'] != _code ||
         (data['revision'] as int) < (_room?['revision'] as int? ?? -1)) return;
+    final matchId = data['matchId'];
+    final seat = data['seat'];
+    if (!_host &&
+        data['completed'] == true &&
+        matchId is String &&
+        seat is int &&
+        seat >= 0 &&
+        _reportedMatches.add(matchId)) {
+      unawaited(_recordResult(data, matchId, seat));
+    }
     final private = data['private'] as Map?;
     final tiles = (private?['hand'] as List? ?? []).cast<Map>();
     final ids = tiles.map((tile) => tile['id'] as int).toSet();
@@ -175,6 +197,25 @@ class _FamilyScreenState extends State<FamilyScreen> {
     });
   }
 
+  Future<void> _recordResult(_Data data, String matchId, int seat) async {
+    try {
+      final result = await ProfileService.instance.reportGameResult(
+        gameId: 'family_${data['game']}',
+        won: data['winner'] == seat,
+        resultId: 'family:$matchId',
+      );
+      if (mounted && result.granted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  '+${result.earnedXp} XP · +${result.earnedCoins} jeton')),
+        );
+      }
+    } catch (_) {
+      _reportedMatches.remove(matchId);
+    }
+  }
+
   Future<void> _refresh() async {
     if (_polling || _code == null) return;
     _polling = true;
@@ -182,7 +223,18 @@ class _FamilyScreenState extends State<FamilyScreen> {
     try {
       _accept(await _request('rooms/$code'));
     } catch (error) {
-      if (mounted && _code == code) setState(() => _error = _message(error));
+      if (mounted && _code == code) {
+        if (_room != null &&
+            error is _FamilyHttpError &&
+            (error.status == 404 || error.status == 401)) {
+          final session = _sessionKey;
+          unawaited(SharedPreferences.getInstance().then((prefs) {
+            return prefs.remove(session);
+          }));
+          _reset();
+        }
+        setState(() => _error = _message(error));
+      }
     } finally {
       _polling = false;
     }
@@ -228,8 +280,14 @@ class _FamilyScreenState extends State<FamilyScreen> {
           _token = null;
         }
       }
+      final playerKey = _playerKey.text.trim();
       final data = await _request(game != null ? 'rooms' : 'rooms/$code/join',
-          payload: game != null ? {'game': game} : {'name': name});
+          payload: game != null
+              ? {'game': game}
+              : {
+                  'name': name,
+                  if (playerKey.isNotEmpty) 'profileToken': playerKey,
+                });
       if (!mounted) return;
       _code = data['code'] as String;
       _token = data['token'] as String;
@@ -304,6 +362,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
     _timer?.cancel();
     _http.close();
     _name.dispose();
+    _playerKey.dispose();
     _codeInput.dispose();
     _server.dispose();
     _price.dispose();
@@ -392,9 +451,39 @@ class _FamilyScreenState extends State<FamilyScreen> {
               decoration: const InputDecoration(labelText: 'Masa kodu')),
           FilledButton(
               onPressed: _busy ? null : _connect, child: const Text('Katıl')),
+          ExpansionTile(
+            title: const Text('Aile Masası profili'),
+            children: [
+              TextField(
+                controller: _playerKey,
+                obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
+                decoration: const InputDecoration(
+                    labelText: 'Oyuncu anahtarı (isteğe bağlı)'),
+              ),
+              TextButton(
+                onPressed: _openPlayerProfile,
+                child: const Text('Rozetler ve sıralama'),
+              ),
+            ],
+          ),
         ],
         if (_busy) const LinearProgressIndicator(),
       ];
+
+  Future<void> _openPlayerProfile() async {
+    try {
+      final base =
+          _configuredWeb.isEmpty ? _url('/') : Uri.parse(_configuredWeb);
+      final profile = base.replace(path: '/', queryParameters: {'profil': ''});
+      if (!await launchUrl(profile, mode: LaunchMode.externalApplication)) {
+        throw const FormatException('Profil sayfası açılamadı.');
+      }
+    } catch (error) {
+      if (mounted) setState(() => _error = _message(error));
+    }
+  }
 
   List<Widget> _match(_Data room, {required bool wide}) {
     final players = (room['players'] as List).cast<Map>();

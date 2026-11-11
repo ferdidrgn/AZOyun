@@ -876,7 +876,7 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
     final winner = _room['winner'] as String? ?? '';
     final iWon = winner == widget.myKey;
     ProfileService.instance
-        .reportGameResult(gameId: 'fighter', won: iWon)
+        .reportGameResult(gameId: 'fighter', resultId: widget.roomId, won: iWon)
         .then((_) => AchievementService.instance.checkAndUnlock());
     final oppData = _players[_oppKey];
     final myF = widget.fighter;

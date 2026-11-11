@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../core/quickplay/game_ids.dart';
 import '../../core/services/leaderboard_service.dart';
+import '../../core/services/play_games_service.dart';
 import '../../core/theme/dashboard_tokens.dart';
 import 'widgets/bento_card.dart';
 
@@ -33,13 +34,33 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               children: [
                 Row(children: [
                   IconButton(
-                    icon: Icon(Icons.arrow_back_rounded, color: DashTokens.textPrimary),
+                    icon: Icon(Icons.arrow_back_rounded,
+                        color: DashTokens.textPrimary),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 4),
-                  Text('Liderlik Tablosu', style: DashTokens.displayLg.copyWith(fontSize: 22)),
+                  Text('Liderlik Tablosu',
+                      style: DashTokens.displayLg.copyWith(fontSize: 22)),
                 ]),
                 const SizedBox(height: 16),
+                if (PlayGamesService.instance.isSupported)
+                  Wrap(spacing: 8, children: [
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          PlayGamesService.instance.showLeaderboard(_gameId),
+                      icon: const Icon(Icons.public),
+                      label: const Text('Play Games skorları'),
+                    ),
+                    if (PlayGamesService.xpLeaderboardId.isNotEmpty)
+                      OutlinedButton(
+                        onPressed: () => PlayGamesService.instance
+                            .showLeaderboard('profile_xp'),
+                        child: const Text('Çevrimiçi AZ XP'),
+                      ),
+                  ]),
+                const SizedBox(height: 8),
+                Text('Bu cihazdaki skorlar', style: DashTokens.labelSm),
+                const SizedBox(height: 8),
                 _GamePicker(
                   games: _games,
                   selected: _gameId,
@@ -53,17 +74,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const Center(
-                          child: CircularProgressIndicator(color: Colors.white24),
+                          child:
+                              CircularProgressIndicator(color: Colors.white24),
                         );
                       }
                       final entries = snapshot.data!;
                       if (entries.isEmpty) {
-                        return _EmptyState(gameTitle: kQuickGameTitles[_gameId] ?? _gameId);
+                        return _EmptyState(
+                            gameTitle: kQuickGameTitles[_gameId] ?? _gameId);
                       }
                       return ListView.separated(
                         itemCount: entries.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, i) => _LeaderboardRow(rank: i + 1, entry: entries[i])
+                        itemBuilder: (context, i) => _LeaderboardRow(
+                                rank: i + 1, entry: entries[i])
                             .animate()
                             .fadeIn(duration: 300.ms, delay: (i * 40).ms)
                             .slideX(begin: 0.04, curve: Curves.easeOutCubic),
@@ -79,7 +103,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 }
 
 class _GamePicker extends StatelessWidget {
-  const _GamePicker({required this.games, required this.selected, required this.onChanged});
+  const _GamePicker(
+      {required this.games, required this.selected, required this.onChanged});
   final List<String> games;
   final String selected;
   final ValueChanged<String> onChanged;
@@ -94,9 +119,12 @@ class _GamePicker extends StatelessWidget {
               onTap: () => onChanged(id),
               child: AnimatedContainer(
                 duration: 200.ms,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? DashTokens.accent(context) : DashTokens.surface,
+                  color: isSelected
+                      ? DashTokens.accent(context)
+                      : DashTokens.surface,
                   borderRadius: BorderRadius.circular(DashTokens.chipRadius),
                   border: Border.all(
                     color: isSelected ? Colors.transparent : DashTokens.border,
@@ -107,7 +135,9 @@ class _GamePicker extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: isSelected ? DashTokens.canvas : DashTokens.textSecondary,
+                    color: isSelected
+                        ? DashTokens.canvas
+                        : DashTokens.textSecondary,
                   ),
                 ),
               ),
@@ -140,9 +170,11 @@ class _LeaderboardRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: Text(entry.name,
-              style: DashTokens.headline.copyWith(fontSize: 15), overflow: TextOverflow.ellipsis),
+              style: DashTokens.headline.copyWith(fontSize: 15),
+              overflow: TextOverflow.ellipsis),
         ),
-        Text('${entry.score}', style: DashTokens.metricValue.copyWith(fontSize: 18)),
+        Text('${entry.score}',
+            style: DashTokens.metricValue.copyWith(fontSize: 18)),
       ]),
     );
   }
@@ -159,7 +191,8 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 12),
           Text('Henüz $gameTitle skoru yok', style: DashTokens.headline),
           const SizedBox(height: 6),
-          Text('İlk skoru sen kaydet, adın burada görünsün.', style: DashTokens.body),
+          Text('İlk skoru sen kaydet, adın burada görünsün.',
+              style: DashTokens.body),
         ]),
       );
 }

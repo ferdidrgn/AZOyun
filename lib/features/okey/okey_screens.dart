@@ -701,7 +701,7 @@ class _OGameState extends State<OkeyGameScreen> with SingleTickerProviderStateMi
     final sorted = _players.entries.toList()
       ..sort((a, b) => ((b.value['score'] as int?) ?? 0).compareTo((a.value['score'] as int?) ?? 0));
     ProfileService.instance
-        .reportGameResult(gameId: 'okey', won: winner == widget.myKey)
+        .reportGameResult(gameId: widget.mode == '101' ? 'okey101' : 'okey', resultId: widget.roomId, won: winner == widget.myKey)
         .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈', '🥉', '4.'];
     showDialog(context: context, barrierDismissible: false, builder: (_) => AlertDialog(

@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 
 typedef DeepLinkHandler = void Function(Uri uri);
 
-/// `azoyun://` özel şemasıyla gelen bağlantıları dinler.
+/// Uygulama ve HTTPS oda davetlerini dinler.
 ///
 /// Desteklenen biçim: `azoyun://join/<oyun>/<kod>` — ör.
 /// `azoyun://join/vampire/AB12CD`. Şu an için tam otomatik oda-doldurma
@@ -15,9 +15,6 @@ typedef DeepLinkHandler = void Function(Uri uri);
 /// bildirim üretir, dışarıdaki [onLink] bunu işler (ör. bir SnackBar/dialog
 /// gösterip kullanıcıyı doğru lobiye yönlendirebilir).
 ///
-/// ⚠️ Gerçek `https://azoyun.app/...` Universal/App Links için barındırılan
-/// bir domain + doğrulama dosyası gerekir (bkz. ROADMAP 7.3). Bu, henüz bir
-/// domain olmadığı için kapsam dışı; sadece `azoyun://` özel şeması aktif.
 class DeepLinkService {
   DeepLinkService._();
   static final DeepLinkService instance = DeepLinkService._();
@@ -41,7 +38,11 @@ class DeepLinkService {
   }
 
   static String webInvite(String game, String code) =>
-      'https://azoyun.web.app/?join=$game&code=${code.toUpperCase()}';
+      Uri(
+        scheme: 'https',
+        host: 'azoyun.web.app',
+        pathSegments: ['join', game, code.toUpperCase()],
+      ).toString();
 
   static String appInvite(String game, String code) =>
       'azoyun://join/$game/${code.toUpperCase()}';
