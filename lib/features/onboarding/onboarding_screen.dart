@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/services/app_strings.dart';
@@ -34,10 +36,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_finishing) return;
     _finishing = true;
     await OnboardingService.instance.markDone();
-    // Bildirim izni onboarding'in sonunda, tek seferlik olarak istenir.
-    await NotificationService.instance.requestPermission();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+    // Bildirim kararı beklerken ana ekran kullanılabilir olsun.
+    unawaited(NotificationService.instance.requestPermission());
   }
 
   void _next() {

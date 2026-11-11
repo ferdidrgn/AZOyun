@@ -19,6 +19,13 @@ import '../hangman/hangman_lobby_screen.dart';
 import '../impostor/impostor_screens.dart';
 import '../liar/liar_screens.dart';
 import '../mystery/mystery_case_screen.dart';
+import '../family/family_screen.dart';
+import '../football/football_quiz_screen.dart';
+import '../football/football_shot_screen.dart';
+import '../sprint/sprint_rules.dart';
+import '../sprint/sprint_screen.dart';
+import '../arcade3d/native_arcade_screen.dart';
+import '../arcade3d/three_arcade_screen.dart';
 import '../okey/okey_screens.dart';
 import '../profile/profile_screen.dart';
 import '../quickgames/balloon_pop_screen.dart';
@@ -304,11 +311,53 @@ class _QuickGamesTab extends StatelessWidget {
       _sectionHeader('🕵️  BÜYÜK OYUN'),
       AZGameCard(
         emoji: '🕵️', title: 'Dedektif Dosyaları',
-        subtitle: 'Polisiye · Birbirine Bağlı Vakalar · Şok Final',
+        subtitle: 'Silt Defteri · 10 bölümlük polisiye',
         gradient: kNoirGradient,
         badge: 'YENİ',
         onTap: () => _push(context, const MysteryLobbyScreen()),
       ),
+      const SizedBox(height: 26),
+
+      _sectionHeader('3D OYUNLAR'),
+      _grid(context, [
+        _QuickTile(
+          emoji: '🏎️', title: NativeArcadeGame.runway.title,
+          subtitle: 'Engellerden kaç · Enerji topla', gradient: _arcadeGrad,
+          onTap: () => _push(context, const NativeArcadeScreen(game: NativeArcadeGame.runway)),
+        ),
+        _QuickTile(
+          emoji: '📡', title: NativeArcadeGame.drones.title,
+          subtitle: 'Dronları yakala · Refleks', gradient: _arcadeGrad,
+          onTap: () => _push(context, const NativeArcadeScreen(game: NativeArcadeGame.drones)),
+        ),
+        _QuickTile(
+          emoji: '🚀', title: ThreeArcadeGame.orbit.title,
+          subtitle: 'Halkalardan geç · Uçuş', gradient: _strategyGrad,
+          onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.orbit)),
+        ),
+        _QuickTile(
+          emoji: '💎', title: ThreeArcadeGame.maze.title,
+          subtitle: 'Kristalleri bul · Labirent', gradient: _strategyGrad,
+          onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.maze)),
+        ),
+      ]),
+      const SizedBox(height: 26),
+
+      _sectionHeader('⚽  FUTBOL ATÖLYESİ'),
+      _grid(context, [
+        _QuickTile(emoji: '⚽', title: ShotMode.freeKick.title,
+          subtitle: 'Baraj · Falso · 6 vuruş', gradient: _strategyGrad,
+          onTap: () => _push(context, const FootballShotScreen(mode: ShotMode.freeKick))),
+        _QuickTile(emoji: '🥅', title: ShotMode.penalty.title,
+          subtitle: 'Kaleciyi geç · 6 vuruş', gradient: _strategyGrad,
+          onTap: () => _push(context, const FootballShotScreen(mode: ShotMode.penalty))),
+        _QuickTile(emoji: '👟', title: FootballQuizMode.player.title,
+          subtitle: 'Kariyer ipuçları · 6 soru', gradient: _arcadeGrad,
+          onTap: () => _push(context, const FootballQuizScreen(mode: FootballQuizMode.player))),
+        _QuickTile(emoji: '🏟️', title: FootballQuizMode.club.title,
+          subtitle: 'Kulüp tarihi · 6 soru', gradient: _arcadeGrad,
+          onTap: () => _push(context, const FootballQuizScreen(mode: FootballQuizMode.club))),
+      ]),
       const SizedBox(height: 26),
 
       _sectionHeader('🧠  STRATEJİ OYUNLARI'),
@@ -558,6 +607,12 @@ class _OnlineGamesTab extends StatelessWidget {
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _sectionHeader('⚽  SPOR'),
       AZGameCard(
+        emoji: '🥅', title: SprintMode.penalty.title,
+        subtitle: '1v1 · 5 penaltı + eşitlik vuruşları', gradient: AZColors.gradGreen,
+        onTap: () => _push(context, const SprintScreen(mode: SprintMode.penalty)),
+      ),
+      const SizedBox(height: 12),
+      AZGameCard(
         emoji: '⛳', title: 'Mini Golf',
         subtitle: '2-4 Oyuncu · 5 Delik',
         gradient: AZColors.gradGreen,
@@ -650,6 +705,18 @@ class _OnlineGamesTab extends StatelessWidget {
 
       _sectionHeader('🎭  SOSYAL'),
       AZGameCard(
+        emoji: '🃏', title: SprintMode.bluff.title,
+        subtitle: '3–6 oyuncu · Kart blöfü · Hızlı turlar', gradient: AZColors.gradRose,
+        onTap: () => _push(context, const SprintScreen(mode: SprintMode.bluff)),
+      ),
+      const SizedBox(height: 12),
+      AZGameCard(
+        emoji: '🛰️', title: SprintMode.station.title,
+        subtitle: '4–8 oyuncu · Terminal görevleri · Gizli sabotajcı', gradient: AZColors.gradCyan,
+        onTap: () => _push(context, const SprintScreen(mode: SprintMode.station)),
+      ),
+      const SizedBox(height: 12),
+      AZGameCard(
         emoji: '👨‍🚀', title: 'Hain Kim?',
         subtitle: '4-10 Oyuncu · Görev tamamla · Gizli haini bul',
         gradient: const LinearGradient(
@@ -706,8 +773,20 @@ class _TableTab extends StatelessWidget {
         Text('Masa', style: feltDisplay(palette.ink, 36)),
         const SizedBox(height: 8),
         Text(
-          'Bir ekranı ortaya koy. Telefonlar eldeki kartları gösterir. QR kodunu TV, bilgisayar veya başka bir telefonda aç.',
+          'TV veya tabletten masa aç. Telefonla QR kodunu okutup kendi koltuğuna otur.',
           style: feltUi(palette.muted, 15),
+        ),
+        const SizedBox(height: 20),
+        FilledButton.icon(
+          onPressed: () => _push(context, const FamilyScreen(host: true)),
+          icon: const Icon(Icons.tv),
+          label: const Text('Aile Masası aç'),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => _push(context, const FamilyScreen(host: false)),
+          icon: const Icon(Icons.qr_code_rounded),
+          label: const Text('Aile Masası’na katıl'),
         ),
         const SizedBox(height: 20),
         SizedBox(

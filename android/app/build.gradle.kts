@@ -105,5 +105,5 @@ dependencies {
     // MainActivity.kt içinde PlayGamesSdk.initialize() çağırabilmek için
     // burada da açıkça tanımlanması gerekiyor (Google'ın resmi kurulum
     // adımı da bu şekilde).
-    implementation("com.google.android.gms:play-services-games-v2:+")
+    implementation("com.google.android.gms:play-services-games-v2:22.1.0")
 }

@@ -1,7 +1,7 @@
 name: AZOyun
 description: Çok oyunculu (multiplayer) oyun platformu
 publish_to: 'none'
-version: 1.0.0+15
+version: 1.0.0+19
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -31,6 +31,12 @@ dependencies:
 
   # Deep link (azoyun:// özel şema)
   app_links: ^6.3.2
+
+  # Paket içindeki çevrimdışı Three.js oyunları.
+  web: ^1.1.1
+  webview_flutter: ^4.14.1
+  # Futbol tahminlerinde Wikidata açıklamaları.
+  http: ^1.6.0
 
   # Uygulamayı paylaş / mağaza sayfasını aç / uygulama bilgisi
   # (share_plus bilinçli olarak 7.x'te sabitlendi — 10.x'te API'nin
@@ -83,3 +89,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/arcade3d/

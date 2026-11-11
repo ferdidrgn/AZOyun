@@ -4,6 +4,7 @@ import '../../features/checkers/dama_screens.dart';
 import '../../features/city/city_screens.dart';
 import '../../features/deck/deck_lobby_screen.dart';
 import '../../features/fighter/fighter_screens.dart';
+import '../../features/family/family_screen.dart';
 import '../../features/golf/golf_lobby_screen.dart';
 import '../../features/hangman/hangman_lobby_screen.dart';
 import '../../features/impostor/impostor_screens.dart';
@@ -11,6 +12,8 @@ import '../../features/liar/liar_screens.dart';
 import '../../features/okey/okey_screens.dart';
 import '../../features/racing/racing_screens.dart';
 import '../../features/soccer/soccer_lobby_screen.dart';
+import '../../features/sprint/sprint_rules.dart';
+import '../../features/sprint/sprint_screen.dart';
 import '../../features/vampire_wolf/vampire_screens.dart';
 import '../../features/word/word_screens.dart';
 import '../services/app_keys.dart';
@@ -51,6 +54,10 @@ void openGameInvite(BuildContext context, String game, String code) {
     'dama' => DamaLobbyScreen(initialCode: normalized),
     'impostor' => ImpostorLobbyScreen(initialCode: normalized),
     'deck' => DeckLobbyScreen(initialCode: normalized),
+    'family' => FamilyScreen(host: false, initialCode: normalized),
+    'sonkart' => SprintScreen(mode: SprintMode.bluff, initialCode: normalized),
+    'istasyon90' => SprintScreen(mode: SprintMode.station, initialCode: normalized),
+    'penaltiduello' => SprintScreen(mode: SprintMode.penalty, initialCode: normalized),
     _ => null,
   };
   if (screen == null) {

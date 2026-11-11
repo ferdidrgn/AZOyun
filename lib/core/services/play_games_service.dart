@@ -8,6 +8,19 @@ class PlayGamesService extends ChangeNotifier {
   bool _signedIn = false;
   bool get isSignedIn => _signedIn;
 
+  /// Reads the platform session without launching interactive sign-in.
+  Future<void> refreshSignIn() async {
+    if (kIsWeb || _signedIn) return;
+    try {
+      if (await GamesServices.isSignedIn && !_signedIn) {
+        _signedIn = true;
+        notifyListeners();
+      }
+    } catch (error) {
+      debugPrint('[PlayGamesService] oturum okunamadı: $error');
+    }
+  }
+
   /// Play Console'da şimdilik tek bir genel skor tablosu ("Skorboard")
   /// oluşturuldu — oyuna özel bir ID tanımlanmamış tüm hızlı oyunların
   /// skoru buraya gider. İleride her oyun için ayrı tablo açılırsa

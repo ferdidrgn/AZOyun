@@ -85,7 +85,7 @@ class AppInitializer {
     unawaited(
       AdService.instance.initialize().then((_) => AdService.instance.applyPremiumStateIfActive()),
     );
-    unawaited(PlayGamesService.instance.signIn());
+    unawaited(PlayGamesService.instance.refreshSignIn());
     unawaited(IAPService.instance.initialize());
     unawaited(NotificationService.instance.initialize());
     unawaited(DeepLinkService.instance.initialize(onLink: onDeepLink));

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AZ Oyun 3D</title>
+<link rel="stylesheet" href="arcade.css">
+<script defer src="three.js"></script>
+<script defer src="arcade.js"></script>
+</head>
+<body>
+<main>
+  <div class="hud" aria-label="Oyun durumu">
+    <div><strong id="score">0</strong><span>SKOR</span></div>
+    <div><strong id="best">0</strong><span>REKOR</span></div>
+    <div><strong id="clock">—</strong><span>KALAN</span></div>
+    <button id="pause" type="button" hidden>Duraklat</button>
+  </div>
+  <div id="scene" aria-label="Üç boyutlu oyun alanı">
+    <section id="panel" aria-live="polite">
+      <p id="tag">AZ OYUN / 3D</p>
+      <h1 id="title">Yükleniyor…</h1>
+      <p id="message"></p>
+      <button type="button" id="start" hidden>Başla</button>
+    </section>
+  </div>
+  <p id="hint"></p>
+  <nav id="controls" aria-label="Yön tuşları" hidden>
+    <button type="button" data-direction="up" aria-label="Yukarı">↑</button>
+    <button type="button" data-direction="left" aria-label="Sol">←</button>
+    <button type="button" data-direction="down" aria-label="Aşağı">↓</button>
+    <button type="button" data-direction="right" aria-label="Sağ">→</button>
+  </nav>
+</main>
+</body>
+</html>

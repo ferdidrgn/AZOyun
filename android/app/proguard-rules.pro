@@ -8,8 +8,7 @@
 # oranı" uyarısı — bkz. ROADMAP). Bu kütüphanelerin hepsi zaten kendi AAR'ları
 # içinde kendi consumer-proguard-rules.txt dosyalarını taşıyor ve R8 bunları
 # otomatik uyguluyor — ayrıca bizim geniş "-keep"lerimize gerek yok. Burada
-# sadece o kütüphanelerin KENDİ kurallarının kapsamadığı, Flutter'a özgü ve
-# gerçekten yaşanmış iki dar sorunu koruyoruz.
+# yalnızca uygulamanın ihtiyaç duyduğu dar kapsamlı kuralları ekliyoruz.
 
 # Gerekli attribute'lar — reflection, generic tip bilgisi ve annotation'lara
 # bağımlı kütüphaneler için gerekli; kod boyutuna/küçültmeye etkisi yok.
@@ -60,10 +59,14 @@
 -dontwarn androidx.room.**
 -dontwarn androidx.work.**
 
-# Firebase / Play Services / AdMob / Play Billing / Gson kendi AAR'larında
-# kendi consumer-proguard kurallarını taşıyor (R8 bunları otomatik okur) —
-# burada ayrıca -keep yazmıyoruz; sadece build sırasında o kütüphanelerin
-# optional/platforma özel sınıflarını bulamazsa R8'in hata vermemesi için:
+# Firebase manifestten okuduğu registrar sınıflarını parametresiz constructor
+# ile oluşturur. Release açılışında bu constructor silinince Crashlytics
+# kaydedilemedi ve Firebase.initializeApp() ilk Flutter karesinden önce durdu.
+-keep,allowoptimization class com.google.firebase.** implements com.google.firebase.components.ComponentRegistrar {
+    <init>();
+}
+
+# İsteğe bağlı veya platforma özel bağımlılıklar için derleme uyarıları.
 -dontwarn com.google.android.gms.**
 -dontwarn com.google.firebase.**
 -dontwarn com.google.ads.**

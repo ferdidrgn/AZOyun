@@ -84,7 +84,10 @@ jobs:
         run: flutter test
 
       - name: AAB derle (release, imzalı)
-        run: flutter build appbundle --release
+        env:
+          FAMILY_API_URL: ${{ vars.FAMILY_API_URL }}
+          FAMILY_WEB_URL: ${{ vars.FAMILY_WEB_URL }}
+        run: flutter build appbundle --release --dart-define="FAMILY_API_URL=$FAMILY_API_URL" --dart-define="FAMILY_WEB_URL=$FAMILY_WEB_URL"
 
       - name: Geçici imzalama dosyalarını sil
         if: always()

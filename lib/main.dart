@@ -1,4 +1,5 @@
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'core/app_initializer.dart';
@@ -10,8 +11,17 @@ import 'core/services/language_service.dart';
 import 'core/services/theme_service.dart';
 import 'core/theme/az_theme.dart';
 import 'features/onboarding/splash_screen.dart';
+import 'features/family/family_screen.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final family = kIsWeb ? Uri.base.queryParameters['family'] : null;
+  final tv = WidgetsBinding.instance.platformDispatcher.defaultRouteName == '/family-tv';
+  if (tv || family != null) {
+    runApp(FamilyApp(host: tv || family == 'tv',
+        code: family == null || family == 'tv' || family == 'join' ? null : family));
+    return;
+  }
   await AppInitializer.runBlocking();
   runApp(const AZOyunApp());
   AppInitializer.runAfterFirstFrame(onDeepLink: _handleDeepLink);

@@ -65,8 +65,8 @@ butonuna bas.
 2. Aşağıdaki secret'lardan imzalama anahtarını (keystore) geri oluşturur
 3. `flutter test` çalıştırır
 4. `flutter build appbundle --release` ile imzalı AAB üretir
-5. AAB'yi Google Play Console'daki **production** kanalına **taslak (draft)**
-   olarak yükler — Google Play API, production'a otomatik "incelemeye
+5. AAB'yi Google Play Console'daki **production** kanalına yükler —
+   Google Play API, production'a otomatik "incelemeye
    gönderme"yi reddediyor (`changesNotSentForReview` zorunlu). Yani her
    main push'u sonrası **Play Console'a girip o sürümü elle "İncelemeye
    gönder / Yayınla" demen gerekiyor** — gerçek kullanıcılara gitmeden önce
@@ -138,7 +138,12 @@ AZOyun zaten yayında olduğu için bu bir sorun değil.
 
 ## Nasıl kontrol ederim?
 
-GitHub'da **Actions** sekmesi → "Google Play'e yayınla (AAB)" çalışması.
-Yeşil tik ✅ = internal kanala yüklendi (Play Console → Test → Internal
-testing'de görünür). Kırmızı çarpı ❌ = log'lara bak (ya da hatayı bana
-yapıştır).
+GitHub'da **Actions** → "Google Play'e yayınla (AAB)" çalışmasındaki
+yeşil tik, paketin seçilen kanala yüklendiğini gösterir. Varsayılan kanal
+production'dır. Play Console'daki **Yayınlamaya genel bakış** ekranında
+doğru sürüm kodunun inceleme ve dağıtım durumunu kontrol et.
+
+Açılış hatası düzeltmelerinde imzalı release paketini boş bir Android
+emülatörüne kur ve ilk açılışta tanıtım ekranının geldiğini doğrula. Tanıtımı
+tamamlayıp uygulamayı yeniden açtığında ana ekran görünmeli. Flutter birim
+testleri Android'de R8 sonrası çalışan bu başlangıç yolunu kapsamaz.

@@ -35,8 +35,19 @@ jobs:
       - name: Testleri çalıştır
         run: flutter test
 
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Aile Masası testlerini çalıştır
+        run: node --test family-server/server.test.mjs
+
       - name: Web için derle
-        run: flutter build web --release
+        env:
+          FAMILY_API_URL: ${{ vars.FAMILY_API_URL }}
+          FAMILY_WEB_URL: ${{ vars.FAMILY_WEB_URL }}
+        run: flutter build web --release --dart-define="FAMILY_API_URL=$FAMILY_API_URL" --dart-define="FAMILY_WEB_URL=$FAMILY_WEB_URL"
 
       - name: Web çıktısını sakla
         uses: actions/upload-artifact@v4

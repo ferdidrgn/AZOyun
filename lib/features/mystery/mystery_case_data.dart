@@ -1,1245 +1,283 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// DEDEKTİF KAMPANYASI — birbirine bağlı vakalar zinciri
-//
-// Tek oyunculu, polisiye/iz sürme temalı hikaye oyunu. Her vaka kendi
-// başına çözülebilir bir cinayet/olay içerir, ama hepsinin arka planında
-// aynı iz var: bir mühür — daire içinde stilize bir göz — ve "V.K." baş
-// harfleri. Vaka 1-3'te bu sadece arka plan detayı gibi görünür. Büyük
-// finalde ("Çember") hepsi birleşir.
-// ═══════════════════════════════════════════════════════════════════════════
-
-class MysteryClue {
-  const MysteryClue({
-    required this.id,
-    required this.emoji,
-    required this.title,
-    required this.description,
-  });
-
-  final String id, emoji, title, description;
+class MysteryEvidence {
+  const MysteryEvidence(this.title, this.account);
+  final String title;
+  final String account;
 }
 
-class MysteryQA {
-  const MysteryQA(this.question, this.answer);
-  final String question, answer;
-}
-
-class MysterySuspect {
-  const MysterySuspect({
-    required this.id,
-    required this.name,
-    required this.role,
-    required this.emoji,
-    required this.flavor,
-    required this.questions,
-  });
-
-  final String id, name, role, emoji, flavor;
-  final List<MysteryQA> questions;
-}
-
-class MysteryEnding {
-  const MysteryEnding({required this.title, required this.body});
-  final String title, body;
-}
-
-/// Bir kampanya vakasının tamamı: giriş metni, kanıtlar, şüpheliler, gerçek
-/// suçlu ve her suçlama seçeneği için ayrı bir final metni.
-class MysteryCase {
-  const MysteryCase({
-    required this.id,
+class MysteryChapter {
+  const MysteryChapter({
     required this.number,
     required this.title,
-    required this.subtitle,
-    required this.emoji,
-    required this.durationLabel,
-    required this.introPages,
-    required this.clues,
-    required this.suspects,
-    required this.culpritId,
-    required this.endings,
-    this.isFinale = false,
+    required this.scenes,
+    required this.evidence,
+    required this.question,
+    required this.answers,
+    required this.solution,
+    required this.reconstruction,
   });
 
-  final String id;
   final int number;
-  final String title, subtitle, emoji, durationLabel;
-  final List<String> introPages;
-  final List<MysteryClue> clues;
-  final List<MysterySuspect> suspects;
-  final String culpritId;
-  final Map<String, MysteryEnding> endings;
-  final bool isFinale;
+  final String title;
+  final List<String> scenes;
+  final List<MysteryEvidence> evidence;
+  final String question;
+  final List<String> answers;
+  final int solution;
+  final String reconstruction;
+
+  String get id => 'silt_defteri_$number';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// VAKA 1 — GECE EKSPRESİ CİNAYETİ
-// ═══════════════════════════════════════════════════════════════════════════
-
-const kCase1 = MysteryCase(
-  id: 'night_express',
-  number: 1,
-  title: 'Gece Ekspresi Cinayeti',
-  subtitle: 'İstanbul-Ankara treninde esrarengiz bir ölüm',
-  emoji: '🚂',
-  durationLabel: '~10 dk',
-  introPages: [
-    'İstanbul-Ankara gece ekspresi, saat 23.50. Dışarıda yağmur camlara '
-        'vuruyor, kompartımanların çoğu karanlık.\n\n'
-        'Birinci sınıf vagonunun sonundaki kompartımandan bir çığlık yükseliyor.',
-    'Ünlü kuyumcu Kaya Aydemir, kendi kompartımanında hareketsiz yatıyor. '
-        'Masasındaki şarap kadehi kırık, kadife kolye kutusu ise bomboş.\n\n'
-        'Tren bir sonraki istasyona varana kadar 40 dakika var. Ve sen, o '
-        'trendeki tek dedektifsin.',
-    'Dört kişi bu olayla bir şekilde bağlantılı: eşi, iş ortağı, vagon '
-        'görevlisi ve tesadüfen olay yerinde bulunan bir doktor.\n\n'
-        'Zaman daralıyor. Kanıtları topla, şüphelileri sorguya çek — ve '
-        'gerçek katili bul. Ama dikkat et: en olası şüpheli her zaman suçlu '
-        'olan değildir.',
-  ],
-  clues: [
-    MysteryClue(
-      id: 'glass',
-      emoji: '🍷',
-      title: 'Kırık Şarap Kadehi',
-      description:
-          'Kadehin dibinde beyaz, tuz gibi bir toz kalıntısı var. Koklayınca '
-          'hafif acı bademe benzer bir koku geliyor. Zehir olabilir mi?',
-    ),
-    MysteryClue(
-      id: 'letter',
-      emoji: '✉️',
-      title: 'Yırtık Mektup',
-      description:
-          '"...seni asla affetmeyeceğim, bu paranın hesabını bir gün '
-          'mutlaka ödeyeceksin..." Mektubun geri kalanı yok, imza da yok. '
-          'Kime, kimden yazılmış?',
-    ),
-    MysteryClue(
-      id: 'window',
-      emoji: '🪟',
-      title: 'Açık Pencere',
-      description:
-          'Kompartımanın penceresi ardına kadar açık, soğuk gece rüzgarı '
-          'içeri doluyor. Ama tren tam hızla giderken pencereden girmek '
-          'neredeyse imkansız — biri dikkatini başka yöne çekmek mi istedi?',
-    ),
-    MysteryClue(
-      id: 'button',
-      emoji: '🔘',
-      title: 'Kopuk Düğme',
-      description:
-          'Yerde, kurbanın ayakkabısının altında ezilmiş bir üniforma '
-          'düğmesi var. Trendeki görevli üniformalarındaki düğmelerle aynı '
-          'desende.',
-    ),
-    MysteryClue(
-      id: 'necklace',
-      emoji: '📦',
-      title: 'Boş Kolye Kutusu',
-      description:
-          'Kadife kutunun içi bomboş. Kilit zorlanmamış, kırılmamış — sanki '
-          'kurban kutuyu kendi eliyle, güvendiği birine açmış gibi.',
-    ),
-    MysteryClue(
-      id: 'ledger',
-      emoji: '📄',
-      title: 'Hesap Defteri Sayfası',
-      description:
-          'Kurbanın ceketinin iç cebinde, dükkânın hesap defterinden '
-          'koparılmış bir sayfa. Kırmızı kalemle daire içine alınmış bir '
-          'açık: 47.500 TL. Kenara küçük harflerle "S.B. ile konuş" yazılmış. '
-          'Sayfanın köşesinde, mürekkeple çizilmiş küçük, tuhaf bir simge '
-          'var: daire içinde tek bir göz.',
-    ),
-  ],
-  suspects: [
-    MysterySuspect(
-      id: 'elif',
-      name: 'Elif Aydemir',
-      role: 'Kurbanın Eşi',
-      emoji: '👩',
-      flavor: 'Gözleri kızarmış, ama elleri hiç titremiyor. Sakinliği mi, '
-          'yoksa alışkınlığı mı?',
-      questions: [
-        MysteryQA(
-          'Kocanızla aranız son zamanlarda nasıldı?',
-          'Zor bir dönemdeydik, evet. Ama "zor" ile "cinayet" arasında büyük '
-              'fark var dedektif. Onu hâlâ seviyordum.',
-        ),
-        MysteryQA(
-          'O gece nerede olduğunuzu söyler misiniz?',
-          'Kendi kompartımanımdaydım, uyumaya çalışıyordum. Yalnızdım, kimse '
-              'doğrulayamaz — biliyorum, kulağa kötü geliyor.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'serkan',
-      name: 'Serkan Bulut',
-      role: 'İş Ortağı',
-      emoji: '🕴️',
-      flavor: 'Gülümsemesi bir an bile bozulmuyor. Tam bir profesyonel — ya '
-          'da tam bir aktör.',
-      questions: [
-        MysteryQA(
-          'Dükkânla ilgili son zamanlarda bir sorun var mıydı?',
-          'Hayır, hayır, her şey yolundaydı. Kaya ile aramızda hiçbir pürüz '
-              'yoktu, inanın.',
-        ),
-        MysteryQA(
-          'O gece nerede olduğunuzu söyler misiniz?',
-          'Vagon restorandaydım, bir kadeh bir şeyler içtim. Garson beni '
-              'görmüştür... sanırım.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'nurcan',
-      name: 'Nurcan Ete',
-      role: 'Vagon Görevlisi',
-      emoji: '👩‍✈️',
-      flavor: 'Otuz yıllık tren görevlisi. Yorgun gözlerinde, anlatmadığı '
-          'çok şey olduğu belli.',
-      questions: [
-        MysteryQA(
-          'Kurbanı daha önce tanıyor muydunuz?',
-          'Bu hat üzerinde onlarca kez yolculuk etti, tabii ki tanıyordum. '
-              'Nazik bir adamdı çoğu zaman.',
-        ),
-        MysteryQA(
-          'Üniformanızda eksik bir düğme var, fark ettiniz mi?',
-          'Ne? ...Evet, galiba kapıyı kontrol ederken bir yere takıldı. '
-              'Önemli bir şey değil.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'halil',
-      name: 'Dr. Halil Soykan',
-      role: 'Tesadüfi Yolcu',
-      emoji: '🩺',
-      flavor: 'Elleri hâlâ hafif titriyor. İlk yardım sahnesinin şoku mu, '
-          'yoksa başka bir şey mi?',
-      questions: [
-        MysteryQA(
-          'Olay yerinde neden bulundunuz?',
-          'Bir çığlık duydum, koşarak geldim. Nabzına baktım ama... çok '
-              'geçti.',
-        ),
-        MysteryQA(
-          'Çantanızdaki şişe nedir?',
-          'Kalp ilacım. Kronik ritim bozukluğum var, yanımdan hiç ayırmam. '
-              'İsterseniz reçetemi gösterebilirim.',
-        ),
-      ],
-    ),
-  ],
-  culpritId: 'serkan',
-  endings: {
-    'serkan': MysteryEnding(
-      title: '🎯 Doğru Dedektif!',
-      body:
-          'Hesap defterindeki o sayfa her şeyi ele veriyordu: Serkan Bulut, '
-          'ortaklık parasından 47.500 TL zimmetine geçirmiş ve Kaya bunu '
-          'öğrenmişti. O gece "barışma kadehi" bahanesiyle Kaya\'nın '
-          'kompartımanına girdi, şarabına sessiz bir zehir kattı.\n\n'
-          'Kolyeyi çalması sahte bir hırsızlık süsü vermek içindi — ne '
-          'yazık ki panik içinde kutuyu açarken izlerini tam da aradığınız '
-          'o sayfada bıraktı. Kondüktörün düğmesi habersiz bir tesadüftü: '
-          'Nurcan, saatler önce farklı bir yolcuyla küçük bir tartışma '
-          'yaşamış, düğmesi orada düşmüştü. Dr. Halil\'in tek suçu, meraklı '
-          've biraz sakar bir kalp doktoru olmaktı.\n\n'
-          'Ama bir şey seni rahatsız ediyor: sayfanın köşesindeki o küçük '
-          'göz simgesi. Serkan\'ın parayı nereye harcadığını hiç sormadın. '
-          'Vaka kapandı, dedektif — ama sanki her şey kapanmadı.',
-    ),
-    'elif': MysteryEnding(
-      title: '❌ Yanlış İz',
-      body:
-          'Elif\'i suçladınız ama itiraf hiç gelmedi — çünkü suçlu o '
-          'değildi. Mektup gerçekten ona aitti, evet, ama sadece bir öfke '
-          'anının kâğıda dökülmüş haliydi, hiçbir zaman gönderilmemişti '
-          'bile.\n\n'
-          'Gerçek katil, ortaklık parasını zimmetine geçirdiğini gizlemeye '
-          'çalışan Serkan Bulut\'tu — ve siz onu fark edemeden trenden '
-          'güvenle indi. Belki bir dahaki vakada, o hesap defteri '
-          'sayfasındaki küçük notu ("S.B. ile konuş") gözden kaçırmazsın.',
-    ),
-    'nurcan': MysteryEnding(
-      title: '❌ Yanlış İz',
-      body:
-          'Nurcan\'ı suçladınız ama elinizde gerçek bir kanıt yoktu — '
-          'sadece bir düğme ve bir önseziniz vardı. Düğme, kurbanla saatler '
-          'önce yaşadığı küçük, alakasız bir tartışmadan kalmıştı.\n\n'
-          'Gerçek katil, zimmetini örtbas etmeye çalışan iş ortağı Serkan '
-          'Bulut\'tu. Nurcan şimdi, haksız yere suçlandığı için size hiç '
-          'güvenmiyor.',
-    ),
-    'halil': MysteryEnding(
-      title: '❌ Yanlış İz',
-      body:
-          'Dr. Halil\'i suçladınız ama onun tek "suçu" meraklı bir doktor '
-          'olmaktı — olay yerine ilk gelen kişi olarak birkaç izi bilmeden '
-          'bozmuştu, hepsi bu.\n\n'
-          'Gerçek katil, zimmetini örtbas etmeye çalışan iş ortağı Serkan '
-          'Bulut\'tu, ve siz onu asla yakalayamadınız.',
-    ),
-  },
-);
-
-// ═══════════════════════════════════════════════════════════════════════════
-// VAKA 2 — GALERİ SİRİUS'TAKİ SAHTEKÂRLIK
-// ═══════════════════════════════════════════════════════════════════════════
-
-const kCase2 = MysteryCase(
-  id: 'sirius_gallery',
-  number: 2,
-  title: "Galeri Sirius'taki Sahtekârlık",
-  subtitle: 'Büyük müzayededen bir gece önce, restoratör ölü bulundu',
-  emoji: '🖼️',
-  durationLabel: '~10 dk',
-  introPages: [
-    'Nişantaşı, Galeri Sirius. Yarın gece, on yıllardır kayıp sanılan bir '
-        'Osmanlı dönemi tablosu tarihinin en yüksek müzayede rekorunu '
-        'kırmaya hazırlanıyor.\n\n'
-        'Ama bu sabah, galerinin baş restoratörü Yasemin Ergin, depo '
-        'katındaki merdivenin dibinde hareketsiz bulundu.',
-    'İlk bakışta bir kaza gibi duruyor: merdivenden düşme. Ama Yasemin on '
-        'yıldır bu merdivenlere çıkıyordu, gözü kapalı bile güvenle inip '
-        'çıkardı.\n\n'
-        'Ve tablonun asıl önemi de burada: Yasemin, ölmeden bir gün önce '
-        'yönetime "sertifikayı henüz imzalamadığını" söylemişti.',
-    'Galeri sahibi, rakip bir eksper, kendi kız kardeşi ve galerinin '
-        'güvenlik şefi — dördü de o gece binadaydı.\n\n'
-        'Müzayedeye 30 saat kaldı. Eğer tablo sahteyse, milyonlarca lira '
-        'el değiştirecek — ve gerçek katil kalabalığın arasında '
-        'kaybolacak. Vakit daralıyor, dedektif.',
-  ],
-  clues: [
-    MysteryClue(
-      id: 'brush',
-      emoji: '🖌️',
-      title: 'Kırık İnce Fırça',
-      description:
-          'Yasemin\'in en hassas restorasyon fırçası ikiye kırılmış halde '
-          'yerde. Ama kırık yüzey temiz ve düz — düşerken değil, bilinçli '
-          'bir şekilde kırılmışa benziyor.',
-    ),
-    MysteryClue(
-      id: 'certificate',
-      emoji: '📜',
-      title: 'Sahte Sertifika Taslağı',
-      description:
-          'Çekmecede, üzerinde defalarca pratik yapılmış iki farklı imza '
-          'bulunan bir "özgünlük sertifikası" taslağı var. Biri Yasemin\'in '
-          'imzası, diğeri hiç tanımadığın bir eksperin.',
-    ),
-    MysteryClue(
-      id: 'key',
-      emoji: '🔑',
-      title: 'Kayıp Anahtar',
-      description:
-          'Depo katının ana anahtarı, olması gerekmeyen bir çalışanın '
-          'mont cebinde bulundu. "Unutmuşum, hep üzerimde kalıyor" diyor '
-          'ama sesi pek emin değil.',
-    ),
-    MysteryClue(
-      id: 'envelope',
-      emoji: '🕯️',
-      title: 'Mühürlü Zarf',
-      description:
-          'Şöminede yarı yanmış bir zarf: kırmızı balmumu mührün üzerinde '
-          'daire içinde tek bir göz simgesi var. İçindeki kâğıtta '
-          'okunabilen tek şey: "...son uyarı, Y.E. Sessiz kal."',
-    ),
-    MysteryClue(
-      id: 'photo',
-      emoji: '📸',
-      title: 'Bulanık Fotoğraf',
-      description:
-          'Yasemin\'in telefonunda, ölümünden saatler önce çekilmiş '
-          'bulanık bir fotoğraf: depo katında, orada olmaması gereken '
-          'birinin silueti.',
-    ),
-    MysteryClue(
-      id: 'gloves',
-      emoji: '🧤',
-      title: 'Tozlu Eldiven',
-      description:
-          'Pahalı, beyaz pamuklu restoratör eldivenleri — ama Yasemin\'in '
-          'kendi paletinde hiç kullanmadığı, mavimsi bir boya lekesi var '
-          'üzerlerinde.',
-    ),
-  ],
-  suspects: [
-    MysterySuspect(
-      id: 'kaan',
-      name: 'Kaan Sezer',
-      role: 'Galeri Sahibi',
-      emoji: '🎩',
-      flavor: 'Gülümsemesi müşteriler için, ama gözleri sürekli saate '
-          'kayıyor. Galeri son iki yıldır zarar ediyor.',
-      questions: [
-        MysteryQA(
-          'Müzayede gerçekleşmezse galeriye ne olur?',
-          'Dürüst olmam gerekirse... batarız. Ama bu, birini öldürmem '
-              'için sebep değil, dedektif.',
-        ),
-        MysteryQA(
-          'Yasemin sertifikayı imzalamayı reddetseydi ne olurdu?',
-          'Bir yolunu bulurduk. Başka bir eksper çağırırdık. Onu '
-              'öldürmeme hiç gerek yoktu.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'deniz',
-      name: 'Deniz Aksu',
-      role: 'Rakip Eksper',
-      emoji: '🧑‍🎨',
-      flavor: 'Kibar, ölçülü konuşuyor — ama Yasemin\'in adı geçtiğinde '
-          'çenesi bir an kilitleniyor.',
-      questions: [
-        MysteryQA(
-          'Yasemin ile aranız nasıldı?',
-          'Meslektaştık. Bazen rekabet ettik, evet, sanat dünyası '
-              'böyledir. Ama saygı duyardım ona.',
-        ),
-        MysteryQA(
-          'O gece galeride neden bulunuyordunuz?',
-          'Tabloyu son kez incelemek istedim, müzayede öncesi standart '
-              'bir nezaket ziyaretiydi.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'melis',
-      name: 'Melis Ergin',
-      role: 'Yardımcı Restoratör, Kız Kardeşi',
-      emoji: '👩‍🔬',
-      flavor: 'Gözleri şişmiş, ama sürekli ablasının çekmecesine bakıp '
-          'duruyor. Bir şey mi arıyor?',
-      questions: [
-        MysteryQA(
-          'Ablanızla ilişkiniz nasıldı?',
-          'Hep onun gölgesindeydim. "Küçük Ergin" derlerdi bana. Ama onu '
-              'kaybetmek... hayır, bunu ben yapmadım.',
-        ),
-        MysteryQA(
-          'Çekmecesinde ne arıyordunuz?',
-          'Kendi çizimlerimi. Bazılarını ona göstermeden satmıştım, '
-              'utanç verici ama suç değil.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'orhan',
-      name: 'Orhan Tekin',
-      role: 'Güvenlik Şefi',
-      emoji: '🛡️',
-      flavor: 'Az konuşuyor, çok gözlemliyor. Yıllardır bu binanın her '
-          'köşesini biliyor.',
-      questions: [
-        MysteryQA(
-          'Kamera kayıtlarında neden boşluk var?',
-          'Sistem bakımdaydı, planlıydı — kağıtları gösterebilirim. Kötü '
-              'bir zamanlama, itiraf ediyorum.',
-        ),
-        MysteryQA(
-          'O gece kimi gördünüz?',
-          'Herkesi. Ama en son, Deniz Bey\'in depo katından çıktığını '
-              'gördüm — geç saatte, tek başına.',
-        ),
-      ],
-    ),
-  ],
-  culpritId: 'deniz',
-  endings: {
-    'deniz': MysteryEnding(
-      title: '🎯 Doğru Dedektif!',
-      body:
-          'Deniz Aksu, o "kayıp başyapıtı" yıllar önce kendisi sipariş '
-          'etmiş bir sahtekârdı — ve şimdi onu gerçek bir müzayedeye '
-          'sokarak temize çıkarmaya çalışıyordu. Yasemin, restorasyon '
-          'sırasında boyanın kimyasını fark etti: tablo, iddia edilen '
-          'yaştan çok daha yeniydi.\n\n'
-          'Deniz onu susturmaya çalıştı — önce o mühürlü zarfla tehdit '
-          'etti, işe yaramayınca depo katında yüzleşti ve merdivenden itti. '
-          'Kırık fırça, mücadelenin izi; mavi boya lekeli eldivenler ise '
-          'Deniz\'in kendi restorasyon setinden kalmaydı.\n\n'
-          'Ama o mühür — daire içindeki göz — yine karşına çıktı. Deniz '
-          'kimin adına çalışıyordu? Zarftaki "V.K." harfleri kimin?'
-          ' Bu iz, Gece Ekspresi\'ndeki o sayfadaki simgeyle aynı.',
-    ),
-    'kaan': MysteryEnding(
-      title: '❌ Yanlış İz',
-      body:
-          'Kaan\'ı suçladınız ama onun tek suçu kötü bir iş adamı olmaktı, '
-          'katil değildi. Gerçek suçlu, sahte tabloyu piyasaya sürmeye '
-          'çalışan rakip eksper Deniz Aksu\'ydu — ve şimdi tablo, sahte '
-          'sertifikasıyla bir başka müzayedede satılmayı bekliyor.',
-    ),
-    'melis': MysteryEnding(
-      title: '❌ Yanlış İz',
-      body:
-          'Melis\'i suçladınız ama o sadece kendi küçük sırrını saklamaya '
-          'çalışan, kırgın bir kız kardeşti. Gerçek katil, tabloyu sahte '
-          'olarak sertifikalandırmaya çalışan Deniz Aksu\'ydu — ve o '
-          'gece galeriden kimse fark etmeden çıktı.',
-    ),
-    'orhan': MysteryEnding(
-      title: '❌ Yanlış İz',
-      body:
-          'Orhan\'ı suçladınız ama o sadece işini yapan, sadık bir '
-          'güvenlik şefiydi. Gerçek katil Deniz Aksu\'ydu — kamera '
-          'boşluğunu fark etmiş ve kendi izini örtmüştü. Şimdi '
-          'özgürce dolaşıyor.',
-    ),
-  },
-);
-
-// ═══════════════════════════════════════════════════════════════════════════
-// VAKA 3 — BORSA KULESİ'NDE ÖLÜM
-// ═══════════════════════════════════════════════════════════════════════════
-
-const kCase3 = MysteryCase(
-  id: 'bourse_tower',
-  number: 3,
-  title: "Borsa Kulesi'nde Ölüm",
-  subtitle: 'Bir fintech CFO\'su, kilitli ofisinde ölü bulundu',
-  emoji: '🏙️',
-  durationLabel: '~10 dk',
-  introPages: [
-    'Zirve Kulesi, 42. kat. Hızla büyüyen fintech şirketi NovaPay\'in mali '
-        'işler direktörü Tarık Emiroğlu, gece geç saatte kendi ofisinde '
-        'ölü bulundu.\n\n'
-        'Masasında bir "istifa/itiraf" notu, yanında boş bir ilaç şişesi. '
-        'Görünüşe göre intihar. Ama sen ilk bakışta bir şey fark ettin: '
-        'masada su bardağı yok.',
-    'Kapının akıllı kilit kaydı, ölüm saatinden üç dakika SONRA, dışarıdan '
-        'kilitlendiğini gösteriyor. Bu, bir intihar değil.\n\n'
-        'Tarık\'ın az önce yönetim kuruluna göndermek üzere hazırladığı '
-        'bir e-posta taslağı var: büyük bir mali usulsüzlüğü ihbar '
-        'ediyordu. Gönderilmeden kalmış.',
-    'Eşi, şirketin CEO\'su, meraklı bir gazeteci, sadık şoförü — dördü de '
-        'o gece kulede ya da yakınındaydı.\n\n'
-        'NovaPay\'in halka arzına üç gün kaldı. Eğer gerçek ortaya '
-        'çıkmazsa, binlerce yatırımcı bilmeden büyük bir yalana para '
-        'yatıracak. Zaman daralıyor, dedektif.',
-  ],
-  clues: [
-    MysteryClue(
-      id: 'pillbottle',
-      emoji: '💊',
-      title: 'Boş İlaç Şişesi',
-      description:
-          'Masada boş bir ilaç şişesi var ama hiçbir yerde su bardağı, '
-          'kahve fincanı ya da başka bir sıvı yok. Bu kadar hapı kuru '
-          'yutmak neredeyse imkansız.',
-    ),
-    MysteryClue(
-      id: 'note',
-      emoji: '💻',
-      title: 'Sahte İtiraf Notu',
-      description:
-          'Laptop ekranındaki "istifa" notu tuhaf derecede kısa ve '
-          'resmî — Tarık\'ın her zamanki sıcak, ayrıntılı yazım tarzına '
-          'hiç benzemiyor.',
-    ),
-    MysteryClue(
-      id: 'lock',
-      emoji: '🔐',
-      title: 'Kilit Kaydı',
-      description:
-          'Akıllı kapı kilidinin dijital kaydı: saat 23.47\'de, tahmini '
-          'ölüm saatinden 3 dakika sonra, kapı DIŞARIDAN kilitlenmiş. '
-          'Ölü bir adam kendi kapısını kilitleyemez.',
-    ),
-    MysteryClue(
-      id: 'spreadsheet',
-      emoji: '📈',
-      title: 'Silinmiş Hesap Tablosu',
-      description:
-          'Kurtarılan bir dosyada, paravan bir şirkete yapılan büyük, '
-          'gizli bir fon transferi var. Şirketin belgelerinin köşesinde, '
-          'filigran gibi, daire içinde bir göz simgesi görünüyor.',
-    ),
-    MysteryClue(
-      id: 'parking',
-      emoji: '🎫',
-      title: 'Otopark Bileti',
-      description:
-          'O gece geçerli bir otopark bileti, NovaPay çalışanlarından '
-          'hiçbirine kayıtlı olmayan bir araca ait.',
-    ),
-    MysteryClue(
-      id: 'call',
-      emoji: '☎️',
-      title: 'Son Arama Kaydı',
-      description:
-          'Tarık\'ın telefonundaki son arama, ölümünden 40 dakika önce, '
-          'kayıtlı olmayan bir numaraya. Numara sonradan tek kullanımlık '
-          'bir hatta ait çıkıyor.',
-    ),
-  ],
-  suspects: [
-    MysterySuspect(
-      id: 'aylin',
-      name: 'Aylin Emiroğlu',
-      role: 'Eşi',
-      emoji: '👰',
-      flavor: 'Gözyaşları içinde ama sorularına net, düşünülmüş cevaplar '
-          'veriyor. Büyük bir hayat sigortası poliçesi var.',
-      questions: [
-        MysteryQA(
-          'Kocanızın hayat sigortasından haberiniz var mıydı?',
-          'Tabii ki vardı, birlikte imzaladık. Ama parayı istemek için '
-              'onu kaybetmeyi asla göze almam.',
-        ),
-        MysteryQA(
-          'O gece nerede olduğunuzu söyler misiniz?',
-          'Evdeydim, çocuklarla. Komşumuz beni bahçede gördü, sorabilirsin.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'baris',
-      name: 'Barış Koral',
-      role: 'NovaPay CEO\'su, Kurucu Ortak',
-      emoji: '👔',
-      flavor: 'Kamerada her zaman gülümseyen, karizmatik bir CEO. Ama '
-          'gözlerinde bir hesap kitap var.',
-      questions: [
-        MysteryQA(
-          'Tarık\'ın ihbar taslağından haberiniz var mıydı?',
-          'Hayır, hiçbir fikrim yoktu. Tarık\'la her konuda açık '
-              'konuşurduk, bunu bana neden söylemesin ki?',
-        ),
-        MysteryQA(
-          'O gece ofiste miydiniz?',
-          'Erken çıktım, evdeydim. Güvenlik kayıtları teyit eder — '
-              'umarım.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'ece',
-      name: 'Ece Duran',
-      role: 'Araştırmacı Gazeteci',
-      emoji: '📰',
-      flavor: 'Aylardır NovaPay\'in hesaplarını kurcalıyor. Kuleye o gece '
-          'girdiği güvenlik kamerasında görünüyor.',
-      questions: [
-        MysteryQA(
-          'O gece kuleye neden girdiniz?',
-          'Tarık beni aramıştı, konuşmak istiyordu. Bir kaynaktan bilgi '
-              'alacaktım — ama asla oraya varamadım, resepsiyonda '
-              'bekletildim.',
-        ),
-        MysteryQA(
-          'Neden şüpheli görünüyorsunuz?',
-          'Çünkü gazeteciyim ve gerçeği arıyorum — bu suç değil, '
-              'dedektif. Suçluyu bulmama yardım edebilirim.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'bora',
-      name: 'Bora Yalçın',
-      role: 'Kişisel Şoför',
-      emoji: '🕶️',
-      flavor: 'Sessiz, dikkatli, sadık görünüyor. Ama kumar borçları '
-          'olduğu söyleniyor.',
-      questions: [
-        MysteryQA(
-          'O gece Tarık Bey\'i nereye götürdünüz?',
-          'Sadece kuleye bıraktım, sonra beklememi söylemedi. Ben de '
-              'ayrıldım.',
-        ),
-        MysteryQA(
-          'Kumar borçlarınız doğru mu?',
-          'Doğru... ama biri bana yardım etti, borcumu kapattı. Kimden '
-              'bahsettiğimi söylemem gerekmiyor sanırım.',
-        ),
-      ],
-    ),
-  ],
-  culpritId: 'baris',
-  endings: {
-    'baris': MysteryEnding(
-      title: '🎯 Doğru Dedektif!',
-      body:
-          'Barış Koral, NovaPay\'in parasını yıllardır gizli bir paravan '
-          'şirkete akıtıyordu — karşılığında şirketinin inanılmaz hızlı '
-          'büyümesi için "arka kapı" destek alıyordu. Tarık, hesapları '
-          'kurcalarken gerçeği buldu ve yönetim kuruluna gitmeye '
-          'hazırlanıyordu.\n\n'
-          'Barış o gece "konuşmak" bahanesiyle ofise geldi, Tarık\'ın '
-          'kahvesine sessiz bir ilaç kattı, sahte itiraf notunu onun '
-          'kendi laptopunda yazdı (şifresini biliyordu) ve çıkarken '
-          'kapıyı kendi yönetici yetkisiyle dışarıdan kilitledi. Şoförü '
-          'Bora\'nın borcunu ödeyen de oydu — sessiz kalması için.\n\n'
-          'Paravan şirketin belgelerindeki o filigran: daire içinde bir '
-          'göz. Aynı mühür, aynı harfler: V.K. Bu artık bir tesadüf '
-          'olamaz.',
-    ),
-    'aylin': MysteryEnding(
-      title: '❌ Yanlış İz',
-      body:
-          'Aylin\'i suçladınız ama sigorta parası bir motiften ibaretti, '
-          'kanıt değildi. Gerçek katil, şirketin gizli fon transferlerini '
-          'örtbas etmeye çalışan CEO Barış Koral\'dı — ve şimdi halka arz '
-          'planlandığı gibi devam ediyor.',
-    ),
-    'ece': MysteryEnding(
-      title: '❌ Yanlış İz',
-      body:
-          'Ece\'yi suçladınız ama o sadece gerçeği arayan bir gazeteciydi '
-          '— resepsiyonda bekletilmesi bile aslında onu olay yerinden '
-          'uzak tutmak için ayarlanmıştı. Gerçek katil Barış Koral\'dı, '
-          've şimdi onu durduracak kimse kalmadı.',
-    ),
-    'bora': MysteryEnding(
-      title: '❌ Yanlış İz',
-      body:
-          'Bora\'yı suçladınız ama o sadece borcunu ödeyen birine sadık '
-          'kalmaya çalışan, korkmuş bir şoförüydü. Gerçek katil CEO '
-          'Barış Koral\'dı — Bora\'nın borcunu ödeyen de oydu.',
-    ),
-  },
-);
-
-// ═══════════════════════════════════════════════════════════════════════════
-// BÜYÜK FİNAL — ÇEMBER
-// ═══════════════════════════════════════════════════════════════════════════
-
-const kFinaleCase = MysteryCase(
-  id: 'the_circle',
-  number: 4,
-  title: 'Çember',
-  subtitle: 'Üç vaka, tek el. Bu gece her şey ortaya çıkıyor.',
-  emoji: '🎭',
-  durationLabel: '~15 dk',
-  isFinale: false,
-  introPages: [
-    'Üç vaka. Üç farklı şehir, üç farklı kurban. Ama hepsinde aynı iz: '
-        'daire içinde bir göz, ve iki harf — V.K.\n\n'
-        'Bu sabah kapının altından mühürlü bir zarf çıktı. İçinde tek bir '
-        'cümle: "Son toplantıya davetlisiniz, dedektif."',
-    'Davet, "V.K. Holdings"in yıllık hayır balosuna. Şehrin en güçlü iş '
-        'insanları, siyasetçileri, gazetecileri tek bir salonda.\n\n'
-        'Resmi söylem: bu gece kurumun kurucusu, yıllardır kamuoyu önüne '
-        'çıkmayan gizemli bir hayırsever, yeni bir "Merkez Sistem" '
-        'girişimini duyuracak — şehrin dijital kimlik, bankacılık ve alt '
-        'yapısını "tek çatı altında birleştiren" bir platform.',
-    'Ama sen artık biliyorsun: Serkan Bulut\'un zimmeti, Deniz Aksu\'nun '
-        'sahte tablosu, Barış Koral\'ın gizli transferleri — hepsi aynı '
-        'kaynaktan besleniyordu. Hepsi, bu "Merkez Sistem"in sessizce '
-        'inşa edilmesi için gereken parayı ve sessizliği sağladı.\n\n'
-        'Ve bu gece, kim olduğunu bile bilmediğin biri, imzayı atacak. '
-        'Onu durdurmak için 90 dakikan var.',
-  ],
-  clues: [
-    MysteryClue(
-      id: 'mask',
-      emoji: '🎭',
-      title: 'Yarım Maske',
-      description:
-          'Özel asansörde, yerde yarısı kırılmış altın yaldızlı bir '
-          'maskeli balo maskesi. Üzerinde o simge: daire içinde bir göz. '
-          'Bu, sıradan bir konuğa ait olamayacak kadar özel işçilikli.',
-    ),
-    MysteryClue(
-      id: 'briefcase',
-      emoji: '💼',
-      title: 'Kilitli Evrak Çantası',
-      description:
-          'Bir yardımcının sıkı sıkı koruduğu evrak çantasında "Merkez '
-          'Sistem Aktivasyon Protokolü" yazan belgeler var — imza '
-          'satırı hâlâ boş... ya da öyle sanıyorsun.',
-    ),
-    MysteryClue(
-      id: 'signature',
-      emoji: '🖋️',
-      title: 'Islak İmza',
-      description:
-          'Özel ofiste, mürekkebi hâlâ ıslak bir imza sayfası. Birileri, '
-          'senin fark etmenden dakikalar önce, "vekaleten" bir imza '
-          'atmış. Kimin adına?',
-    ),
-    MysteryClue(
-      id: 'server',
-      emoji: '📡',
-      title: 'Gizli Sunucu Odası',
-      description:
-          'Kitaplığın arkasında saklı bir kapı, bir sunucu odasına '
-          'açılıyor. Ekranlarda kocaman bir geri sayım: "MERKEZ SİSTEM — '
-          'AKTİVASYON". Süre hızla azalıyor.',
-    ),
-    MysteryClue(
-      id: 'watch',
-      emoji: '🕰️',
-      title: 'Kırık Cep Saati',
-      description:
-          'Özel asansörün önünde düşürülmüş antika bir cep saati, '
-          'kapağının içine "V.K." kazınmış. Demek ki az önce biri, tam '
-          'buradan, aceleyle geçmiş.',
-    ),
-    MysteryClue(
-      id: 'guestlist',
-      emoji: '📇',
-      title: 'Konuk Listesi Notu',
-      description:
-          'Kapıdaki konuk listesinde bir isim üzerine, farklı bir elle, '
-          'başka bir isim yazılmış: "Kerem Aydın". Altındaki orijinal isim '
-          'okunmuyor — sanki bilerek kazınmış.',
-    ),
-  ],
-  suspects: [
-    MysterySuspect(
-      id: 'kerem',
-      name: 'Kerem Aydın',
-      role: 'Balodaki "Yardımcı Dedektif"',
-      emoji: '🕴️‍♂️',
-      flavor: 'Akşam boyunca sana yardım eden, sıcakkanlı, her şeyi bilen '
-          'gizemli bir tanıdık. Belki de fazla yardımsever.',
-      questions: [
-        MysteryQA(
-          'Bu geceki davetin arkasında kim var, biliyor musun?',
-          'Söylentiler var tabii ama kimse gerçek yüzünü görmedi. Ben de '
-              'senin kadar meraklıyım, inan.',
-        ),
-        MysteryQA(
-          'Konuk listesindeki değişikliği nasıl açıklarsın?',
-          'Son dakika bir davet değişikliği olmuş olmalı, bu tür '
-              'balolarda sık olur. Neden bu kadar takıldın ki buna?',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'naz',
-      name: 'Naz Ilgın',
-      role: 'Bir Senatörün Danışmanı',
-      emoji: '👩‍💼',
-      flavor: 'Gergin, sürekli etrafı kolaçan ediyor. Elinde küçük bir '
-          'ses kayıt cihazı sıkıca tutuyor.',
-      questions: [
-        MysteryQA(
-          'Neden bu kadar tedirginsiniz?',
-          'Çünkü haftalardır bu "Merkez Sistem"i araştırıyorum ve '
-              'bulduklarım beni korkutuyor. Elimdeki kayıtlar kanıt '
-              'olabilir — eğer buradan sağ çıkarsam.',
-        ),
-        MysteryQA(
-          'Elinizdeki kayıt cihazında ne var?',
-          'V.K. Holdings\'in yönetim kurulu toplantılarından gizlice '
-              'kaydettiğim konuşmalar. Kimin gerçekte kim olduğuna dair '
-              'ipuçları.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'cengiz',
-      name: 'Cengiz Örs',
-      role: 'V.K. Holdings Güvenlik Şefi',
-      emoji: '🕶️',
-      flavor: 'İri yapılı, sert bakışlı, kulaklığından sürekli talimat '
-          'alıyor. Herkesin ilk şüphelendiği kişi.',
-      questions: [
-        MysteryQA(
-          'Patronunuzu hiç yüz yüze gördünüz mü?',
-          'Hayır. On yıldır burada çalışıyorum, talimatları hep '
-              'aracılardan alırım. Tuhaf, biliyorum — ama iyi para '
-              'ödüyor.',
-        ),
-        MysteryQA(
-          'Bu gece neden bu kadar tedbirlisiniz?',
-          'Çünkü büyük bir gece bu. "Bugün her şey değişecek" dediler '
-              'bana. Ne demek istediklerini ben de bilmiyorum.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'selin',
-      name: 'Selin Kutlu',
-      role: 'Balo Organizatörü',
-      emoji: '💃',
-      flavor: 'Kusursuz, pürüzsüz bir ev sahibi tavrı. Ama gözlerinde, '
-          'her an bir şeyin kontrolden çıkabileceğine dair bir korku var.',
-      questions: [
-        MysteryQA(
-          'V.K. Holdings için ne kadar süredir çalışıyorsunuz?',
-          'Aslında... çalışmıyorum. Kurucusu, küçükken beni büyüten '
-              'kişi. Ama onu gerçekten hiç tanımadım — sadece '
-              'mektuplarla, banka havaleleriyle var oldu hayatımda.',
-        ),
-        MysteryQA(
-          '"Merkez Sistem" hakkında ne biliyorsunuz?',
-          'Sadece bu gece açıklanacağını. Bana hep "bu aile mirası, '
-              'bir gün senin de olacak" dediler. Ama şimdi bundan '
-              'korkuyorum.',
-        ),
-      ],
-    ),
-  ],
-  culpritId: 'kerem',
-  endings: {
-    'kerem': MysteryEnding(
-      title: '🎯 Doğru Dedektif — ama çok geç.',
-      body:
-          'Haklıydın. Akşam boyunca yanında yürüyen, her sorunu '
-          'cevaplayan, sana en çok yardım eden o sıcakkanlı adam — '
-          '"Kerem Aydın" diye biri hiç var olmadı. O, V.K. Holdings\'in '
-          'gerçek kurucusu Vedat Korkmaz\'ın ta kendisiydi; yıllardır '
-          'kimseye göstermediği yüzünü, senin gözlerinin içine bakarak '
-          'gizlemişti.\n\n'
-          'Serkan Bulut\'u parasal çıkmaza o soktu. Deniz Aksu\'nun sahte '
-          'tablosunu o finanse etti. Barış Koral\'ın gizli transferlerini '
-          'o yönetti. Üç ayrı şehirde, üç ayrı ölüm — hepsi, bu gece imzalanan '
-          'tek bir belge için gereken parayı ve sessizliği sağlamak '
-          'içindi.\n\n'
-          '"Tebrikler, dedektif" diyor, sesi hâlâ o tanıdık sıcaklıkta. '
-          '"Gerçekten çok yaklaştın." Sonra saatine bakıyor. "Ama imza beş '
-          'dakika önce atıldı. Sunucu odasındaki geri sayım süs değildi."\n\n'
-          'Salonun devasa ekranları aynı anda yanıyor: "MERKEZ SİSTEM — '
-          'AKTİF." Alkışlar yükseliyor, kimse ne olduğunu anlamıyor. '
-          'Vedat Korkmaz, maskesini yeniden takıyor, sana son kez '
-          'gülümsüyor ve özel asansöre doğru yürüyor.\n\n'
-          'Peşinden koşmak istiyorsun ama bacakların adeta yere '
-          'çakılmış. Güvenlik ekipleri sessizce çıkışları kapatmaya '
-          'başlıyor. Elinde üç vakanın da kanıtı var — ama karşındaki '
-          'artık görünmez, sistemin bir parçası, her yerde ve hiçbir '
-          'yerde.\n\n'
-          'Nefesin kesiliyor. Bu, bir vakanın sonu değil, dedektif. '
-          '\n\nİZ SÜRMEYE DEVAM EDECEK...',
-    ),
-    'naz': MysteryEnding(
-      title: '❌ Yanlış İz — ve zaman doldu.',
-      body:
-          'Naz\'ı suçladın ama o, gerçeği ortaya çıkarmaya çalışan tek '
-          'kişiydi — elindeki kayıtlar seni gerçek suçluya götürebilirdi, '
-          'ama artık çok geç.\n\n'
-          'Salonun ekranları aynı anda yanıyor: "MERKEZ SİSTEM — AKTİF." '
-          'Kalabalık arasında, akşam boyunca sana yardım eden o '
-          'sıcakkanlı "Kerem Aydın" son kez gülümsüyor, maskesini takıyor '
-          've özel asansöre doğru yürüyor. Onu hiç şüphelenmemiştin.\n\n'
-          'Naz sana bakıyor, gözlerinde hem korku hem bir tür acıma var: '
-          '"O oydu, değil mi? Hep o muydu?" Cevap veremeden, güvenlik '
-          'ekipleri çıkışları kapatmaya başlıyor.\n\n'
-          '\nİZ SÜRMEYE DEVAM EDECEK...',
-    ),
-    'cengiz': MysteryEnding(
-      title: '❌ Yanlış İz — ve zaman doldu.',
-      body:
-          'Cengiz\'i suçladın ama o sadece talimat alan, patronunun '
-          'yüzünü bile hiç görmemiş sadık bir çalışandı.\n\n'
-          'Salonun ekranları aynı anda yanıyor: "MERKEZ SİSTEM — AKTİF." '
-          'O sıcakkanlı "Kerem Aydın" — gerçekte Vedat Korkmaz\'ın ta '
-          'kendisi — son kez gülümsüyor ve özel asansöre doğru '
-          'kayboluyor. Bütün gece yanı başındaydı ve fark edemedin.\n\n'
-          'Güvenlik ekipleri çıkışları kapatmaya başlıyor. Elinde üç '
-          'vakanın kanıtı var ama karşındaki artık yok — bir isim, bir '
-          'maske, bir gölge.\n\n'
-          '\nİZ SÜRMEYE DEVAM EDECEK...',
-    ),
-    'selin': MysteryEnding(
-      title: '❌ Yanlış İz — ve zaman doldu.',
-      body:
-          'Selin\'i suçladın ama o, bu dünyaya sadece doğduğu için '
-          'sürüklenmiş, gerçek gücü hiç olmamış bir kurbandı.\n\n'
-          'Salonun ekranları aynı anda yanıyor: "MERKEZ SİSTEM — AKTİF." '
-          'O sıcakkanlı "Kerem Aydın" — gerçekte Vedat Korkmaz\'ın ta '
-          'kendisi — son kez gülümsüyor ve özel asansöre doğru '
-          'kayboluyor.\n\n'
-          'Selin\'in gözlerinde bir şey kırılıyor: "O benim... o benim '
-          'ailemdi." Cevap veremeden, güvenlik ekipleri çıkışları '
-          'kapatmaya başlıyor.\n\n'
-          '\nİZ SÜRMEYE DEVAM EDECEK...',
-    ),
-  },
-);
-
-// ═══════════════════════════════════════════════════════════════════════════
-// VAKA 5 — GÖLGENİN YÜZÜ (gerçek büyük final — hikaye burada kapanıyor)
-// ═══════════════════════════════════════════════════════════════════════════
-
-const kEpilogueCase = MysteryCase(
-  id: 'shadows_face',
-  number: 5,
-  title: 'Gölgenin Yüzü',
-  subtitle: 'Son rapor. Bu sefer gerçekten sonuna kadar.',
-  emoji: '🕯️',
-  durationLabel: '~15 dk · BÜYÜK FİNAL',
-  isFinale: true,
-  introPages: [
-    'Balo gecesinden üç hafta geçti. "Merkez Sistem" resmen aktif — ama '
-        'kimse tam olarak ne yaptığını açıklamıyor. Şehirde tuhaf '
-        'kesintiler var: bazı banka hesapları "yeniden düzenleniyor", '
-        'bazı gazeteciler susturuluyor, bazı haberler bir gecede '
-        'kayboluyor.\n\n'
-        'Telefonun çalıyor. Naz Ilgın.',
-    '"Kayıtları çözdüm, dedektif," diyor, sesi hâlâ o gece kadar '
-        'gergin. "\'Merkez Sistem\' şehrin tüm bankacılık, kimlik ve alt '
-        'yapı verisini tek bir noktaya, V.K. Holdings\'in gölge '
-        'sunucularına yönlendiriyor. Bu bir hayır işi değil — bu bir '
-        'kontrol sistemi."\n\n'
-        'Üç vakadan topladığın kanıtlar — Serkan Bulut\'un zimmeti, Deniz '
-        'Aksu\'nun sahte tablosu, Barış Koral\'ın gizli transferleri — '
-        'artık net bir şema çiziyor: hepsi aynı paravan ağına, aynı '
-        'kaynağa bağlanıyor.',
-    'Ama savcılığa gitmek için tek bir şey eksik: Vedat Korkmaz\'ın '
-        'kendisi. Balo gecesinden beri kimse onu görmedi. "V.K. '
-        'Holdings" resmî olarak "kurucumuz seyahatte" diyor.\n\n'
-        'Naz\'ın son ipucu, şehrin dışında terk edilmiş bir tersane '
-        'kompleksine işaret ediyor — resmî kayıtlarda "arşiv deposu" '
-        'yazan bir bina. Ama oraya gitmeden önce, ona en yakın dört '
-        'kişiden biri gerçeği söylemeye ikna edilmeli. Sadece biri, '
-        'onun gerçekte kim olduğunu ve şu an nerede olduğunu biliyor. '
-        'Bu senin son raporun, dedektif. Bitir bunu.',
-  ],
-  clues: [
-    MysteryClue(
-      id: 'blackbox',
-      emoji: '💾',
-      title: 'Kara Kutu Sunucu Kaydı',
-      description:
-          'Naz\'ın kurtardığı bir sunucu kaydında "Archon" kod adlı bir '
-          'hesabın son giriş konumu görünüyor: terk edilmiş tersane '
-          'kompleksinin koordinatları.',
-    ),
-    MysteryClue(
-      id: 'passport',
-      emoji: '🛂',
-      title: 'Sahte Pasaport Fotokopisi',
-      description:
-          'Bir avukatlık bürosunun çöpünden çıkan bir fotokopi: Vedat '
-          'Korkmaz\'ın yüzü, ama üzerinde bambaşka bir isim yazıyor — '
-          '"Kerim Vardar". Ve bu isim, on iki yıl önce bir tekne '
-          'kazasında öldüğü açıklanan bir mühendise ait.',
-    ),
-    MysteryClue(
-      id: 'testimony',
-      emoji: '📡',
-      title: 'Şifreli Muhbir Dosyası',
-      description:
-          '"Kuzgun" kod adlı biri sana şifreli bir dosya gönderdi: '
-          '"Merkez Sistem"in kendisi tarafından yazılmış ilk kod '
-          'satırları. Yazarın dijital imzası, yıllar önce "ölen" o '
-          'mühendisle eşleşiyor.',
-    ),
-    MysteryClue(
-      id: 'blueprint',
-      emoji: '🗺️',
-      title: 'Tersane Krokisi',
-      description:
-          'Eski tersanenin yapı planında, gizlenmiş bir "kontrol odası" '
-          'işaretli — resmî belgelerde hiç yer almıyor.',
-    ),
-    MysteryClue(
-      id: 'transfer',
-      emoji: '💸',
-      title: 'Son Kişisel Transfer',
-      description:
-          'Vedat Korkmaz\'ın kişisel hesabından, balo gecesinin '
-          'sabahında yurt dışına yapılmış büyük bir transfer. Alıcı '
-          'hesap, yıllar önce "Kerim Vardar" adına açılmış.',
-    ),
-    MysteryClue(
-      id: 'ledger_final',
-      emoji: '📋',
-      title: 'Üç Vakanın Bağlantı Şeması',
-      description:
-          'Kendi not defterin: Serkan Bulut, Deniz Aksu ve Barış '
-          'Koral\'ın hepsi, farklı yollardan, aynı paravan şirket '
-          'ağına — V.K. Holdings\'in gölge yapısına — bağlanıyor. Üç '
-          'vaka, tek bir el.',
-    ),
-  ],
-  suspects: [
-    MysterySuspect(
-      id: 'selin',
-      name: 'Selin Kutlu',
-      role: "V.K.'nın Evlatlığı",
-      emoji: '💃',
-      flavor: 'Balo gecesinden beri gözaltında değil ama kendi isteğiyle '
-          'seninle konuşmaya geldi. Sesi titriyor ama gözlerinde yeni '
-          'bir kararlılık var.',
-      questions: [
-        MysteryQA(
-          'O gece balodan sonra ne oldu?',
-          'Beni bir odaya kilitlediler, "kendi iyiliğim için" dediler. '
-              'Ertesi gün her şey normalmiş gibi davrandılar. Ama artık '
-              'hiçbir şey normal değil, dedektif.',
-        ),
-        MysteryQA(
-          "Vedat Korkmaz'ın gerçek kimliğini biliyor musun?",
-          'Bana hep "baban" dedi ama... galiba hiç değildi. Odasında bir '
-              'dosya buldum — benim çocukluğuma ait değil, bambaşka bir '
-              'isme ait. Onu sana getirebilirim, istersen.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'cengiz',
-      name: 'Cengiz Örs',
-      role: 'Eski Güvenlik Şefi, Şimdi Kaçak',
-      emoji: '🕶️',
-      flavor: 'İşten ayrılmış, artık korkacak kimsesi kalmamış gibi '
-          'davranıyor ama sürekli arkasına bakıyor.',
-      questions: [
-        MysteryQA(
-          'Neden ayrıldın?',
-          'O gece sunucu odasındaki geri sayımı gördüm. Bu iş '
-              'göründüğünden çok daha büyük, dedektif. Ben sadece hayatta '
-              'kalmak istiyorum artık.',
-        ),
-        MysteryQA(
-          'Patronunu hiç gerçekten gördün mü?',
-          'Bir kere. Balo gecesi, maskesi düşecek gibi oldu bir an. '
-              'Yüzünü tam göremedim ama bir şey tanıdıktı — sanki bir '
-              'yerden hatırlıyordum, çıkaramadım.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'aslihan',
-      name: 'Av. Aslıhan Vural',
-      role: 'V.K. Holdings Genel Danışmanı',
-      emoji: '⚖️',
-      flavor: 'Soğukkanlı, her cümlesi hesaplı. Elinde her zaman '
-          'imzalanmayı bekleyen bir evrak var.',
-      questions: [
-        MysteryQA(
-          "Vedat Korkmaz'ın avukatı olarak, onun yerini biliyor musunuz?",
-          'Müvekkil gizliliği, dedektif. Ama şunu söyleyebilirim: '
-              '"Vedat Korkmaz" diye biri hukuken hiçbir zaman var '
-              'olmadı. Bu, bir şirket kaydındaki isim, o kadar.',
-        ),
-        MysteryQA(
-          'O zaman gerçek isim nedir?',
-          'Bunu öğrenmek için doğru soruyu doğru kişiye sormanız '
-              'gerekiyor. Ben sadece kağıtları imzalarım, dedektif — '
-              'hikayeleri değil.',
-        ),
-      ],
-    ),
-    MysterySuspect(
-      id: 'kuzgun',
-      name: '"Kuzgun" (Gökhan Ateş)',
-      role: 'Anonim Muhbir, Sistem Mühendisi',
-      emoji: '🐦‍⬛',
-      flavor: 'Kimliğini gizli tutmaya çalışan ama artık fazla ipucu '
-          'vermiş biri. Sana şifreli bir dosya gönderen oydu.',
-      questions: [
-        MysteryQA(
-          'Neden bunu bana gönderiyorsun?',
-          'Çünkü sistemi ben kurdum, dedektif. Ve gördüğüm şey beni '
-              'korkuttu. Bu, kimsenin durduramayacağı bir şey olacaktı.',
-        ),
-        MysteryQA(
-          "Vedat Korkmaz'ı hiç gördün mü?",
-          'Hiçbir zaman yüz yüze. Ama sunucularda bıraktığı dijital '
-              'izler var — ve bir tanesi seni doğrudan ona götürür, '
-              'eğer doğru kutuyu açarsan.',
-        ),
-      ],
-    ),
-  ],
-  culpritId: 'selin',
-  endings: {
-    'selin': MysteryEnding(
-      title: '🕯️ Dosya Kapandı.',
-      body:
-          'Selin\'e güvendin — ve haklı çıktın. O gece geç saatte, '
-          'üzerinde yıllar önce farklı bir isimle çekilmiş bir '
-          'fotoğrafın olduğu eski bir dosya getiriyor: Vedat Korkmaz, '
-          'gerçekte on iki yıl önce bir tekne kazasında "öldüğü" '
-          'açıklanan mühendis-finansör Kerim Vardar\'dan başkası '
-          'değil. Sahte bir ölüm, yeni bir kimlik, ve yıllarca sabırla '
-          'inşa edilmiş bir gölge imparatorluğu.\n\n'
-          'Naz\'ın kayıtları, Selin\'in dosyası ve üç vakadan topladığın '
-          'kanıtlar birleşince savcılık nihayet harekete geçiyor. Terk '
-          'edilmiş tersanedeki gizli veri merkezine yapılan baskında '
-          '"Merkez Sistem"in ana sunucuları kapatılıyor — şehrin '
-          'bankacılık ve kimlik verileri güvenliğe alınıyor. Cengiz '
-          'ifade veriyor, Aslıhan Vural şirketin belgelerini savcılığa '
-          'teslim ediyor, Kuzgun\'un logları mahkemede en güçlü kanıt '
-          'oluyor.\n\n'
-          'Kerim Vardar o gece orada değil; son anda kaçmış. Ama artık '
-          'bir isim var, bir yüz var, imzalı bir dosya var. Interpol '
-          'kırmızı bülten çıkarıyor — dünyanın neresine giderse gitsin, '
-          'artık bir gölge değil, aranan bir insan.\n\n'
-          'Selin, gerçek adını ilk kez öğreniyor ve hayatını sıfırdan '
-          'kurmaya başlıyor.\n\n'
-          'Masanda üç vakanın dosyalarını kapatırken, hâlâ o daire '
-          'içindeki gözü düşünüyorsun. Belki bir gün, dünyanın bir '
-          'köşesinde, o sembolü taşıyan yeni bir mühür belirir. Ama '
-          'bugün, dedektif, şehir güvende — ve bu, kariyerinin en '
-          'büyük vakası olarak tarihe geçti.\n\n'
-          'DEDEKTİF DOSYALARI — KAPANDI.',
-    ),
-    'cengiz': MysteryEnding(
-      title: '🕯️ Dosya Kapandı — ama eksik bir parçayla.',
-      body:
-          'Cengiz\'i seçtin. Elinden geleni yapıyor, ifadesi mahkemede '
-          'işe yarıyor — ama Vedat Korkmaz\'ın gerçek kimliğini ancak '
-          'Selin\'in bildiğini asla öğrenemiyorsun, o dosya hep '
-          'kilitli kalıyor.\n\n'
-          'Yine de Naz\'ın kayıtları ve üç vakadan toplanan kanıtlar '
-          'birleşince "Merkez Sistem" kamuoyuna ifşa oluyor ve '
-          'kapatılıyor; şehrin verileri güvenliğe alınıyor. V.K. '
-          'Holdings dağılıyor, Aslıhan Vural ve Kuzgun\'un ifadeleri '
-          'davayı güçlendiriyor.\n\n'
-          'Ama Vedat Korkmaz\'ın yüzü hiçbir zaman netleşmiyor. O gece '
-          'sonrasında bir daha hiç görülmüyor — dosyası "aranıyor, '
-          'kimliği belirsiz" olarak kapanıyor, şehrin efsanelerinden '
-          'biri haline geliyor.\n\n'
-          'Şehir güvende, dedektif. Ama bazı sorular cevapsız kalıyor. '
-          'Bu da bir sondur — belki de en gerçekçisi.\n\n'
-          'DEDEKTİF DOSYALARI — KAPANDI.',
-    ),
-    'aslihan': MysteryEnding(
-      title: '🕯️ Dosya Kapandı — ama eksik bir parçayla.',
-      body:
-          'Aslıhan Vural\'ı seçtin. Beklediğin gibi konuşmuyor — '
-          '"müvekkil gizliliği" duvarının arkasına saklanıyor ve '
-          'Selin\'in elindeki asıl dosyaya hiç ulaşamıyorsun.\n\n'
-          'Yine de Naz\'ın kayıtları ve üç vakadan toplanan kanıtlar '
-          'yeterli oluyor: "Merkez Sistem" mahkeme kararıyla '
-          'kapatılıyor, şehrin verileri güvenliğe alınıyor. Aslıhan, '
-          'kendini kurtarmak için elindeki şirket belgelerini son anda '
-          'savcılığa teslim ediyor — dolaylı da olsa yardımcı oluyor.\n\n'
-          'Ama Vedat Korkmaz\'ın gerçek kimliği hiçbir zaman netleşmiyor. '
-          'Bir daha hiç görülmüyor — dosyası "aranıyor, kimliği '
-          'belirsiz" olarak kapanıyor.\n\n'
-          'Şehir güvende, dedektif. Vaka resmen kapandı — ama o daire '
-          'içindeki göz, bir yerlerde, hâlâ bakıyor olabilir. Bu senin '
-          'bilmen gereken bir şey değil artık; bu senin son raporundu, '
-          've onu tamamladın.\n\n'
-          'DEDEKTİF DOSYALARI — KAPANDI.',
-    ),
-    'kuzgun': MysteryEnding(
-      title: '🕯️ Dosya Kapandı — ama eksik bir parçayla.',
-      body:
-          'Kuzgun\'u seçtin. Sistemin teknik iç yüzünü ortaya seriyor — '
-          'kod satırları, sunucu mimarisi, hepsi mahkemeye sunuluyor. '
-          'Ama Vedat Korkmaz\'ı hiç yüz yüze görmediğini itiraf ediyor; '
-          'gerçek kimliği hâlâ Selin\'in dosyasında kilitli kalıyor.\n\n'
-          'Naz\'ın kayıtları, Kuzgun\'un teknik ifşaatı ve üç vakadan '
-          'toplanan kanıtlar birleşince "Merkez Sistem" resmen '
-          'kapatılıyor; şehrin bankacılık ve kimlik verileri '
-          'güvenliğe alınıyor. V.K. Holdings çöküyor.\n\n'
-          'Ama Vedat Korkmaz\'ın yüzü hiçbir zaman netleşmiyor — bir '
-          'daha hiç görülmüyor, dosyası "aranıyor, kimliği belirsiz" '
-          'olarak kapanıyor.\n\n'
-          'Şehir kurtuldu, dedektif. Sistemi durdurdun. Bazı gölgeler '
-          'hep gölge kalır — ama bu sefer, en azından ışığı sen '
-          'yaktın.\n\n'
-          'DEDEKTİF DOSYALARI — KAPANDI.',
-    ),
-  },
-);
-
-/// Kampanya sırası: her vaka bir öncekini tamamlayınca açılır.
-const kMysteryCases = [kCase1, kCase2, kCase3, kFinaleCase, kEpilogueCase];
+const kMysteryChapters = [
+  MysteryChapter(
+    number: 1,
+    title: 'Gece Postası',
+    scenes: [
+      'Sarnıç Garı’nda sabaha karşı deniz kokusu raylara kadar çıkardı. Arşivci Selim Işık, o kokudan hoşlanmadığını mektuplarında üç kez yazmıştı. Cesedi bulunduğunda paltosu kupkuru, botlarının bağlarına kadar tuz tutmuştu. Kondüktör, adamın gece postasına tek başına bindiğine yemin ediyordu. Selim’in bileğindeki saat 02.17’de durmuştu.',
+      'Başkomiser Cem beni peronda buldu. On sekiz yıl önce kardeşim Ali’yi 6. İskele’deki taşkında kaybettiğimizde de ilk tutanağı o yazmıştı. Elindeki kâğıdı bana uzatmadı. “Kaza diye kapatmamı istiyorlar, Derya,” dedi. Selim’in cebindeki bilet koçanını açtım. Arka yüzünde bir tarih, bir depo numarası ve Ali’nin adı vardı.',
+    ],
+    evidence: [
+      MysteryEvidence('Adli ön inceleme',
+          'Akciğerlerde tuzlu su ve kırmızı boya pulları var. Vagon zemini kuru. Selim suya girdiğinde hayattaydı.'),
+      MysteryEvidence('Kondüktörün ifadesi',
+          '“Yüzünü görmedim. Şapkası gözlerine inmişti. Yanındaki hamal, hastalandığını söyledi.”'),
+      MysteryEvidence('Vagonun kapısı',
+          'Kapı altındaki temiz çarşaf, sedyenin teker izini örtüyor. Bilet delgeci 02.31’i gösteriyor.'),
+    ],
+    question: 'Tren, soruşturmanın neresinde duruyor?',
+    answers: [
+      'Selim vagonda boğuldu.',
+      'Vagon, başka yerde işlenen cinayetin sahnesi olarak kullanıldı.',
+      'Selim trenden hiç inmediği için boya kondüktöre ait.'
+    ],
+    solution: 1,
+    reconstruction:
+        'Selim önce tuzlu suda boğuldu. Bilet, ölüm saatinden sonra delinmişti. Kondüktör bir yolcu değil, örtülü bir beden görmüştü. Koçanın arkasındaki 24 numara bizi garın arkasındaki pompa deposuna götürdü.',
+  ),
+  MysteryChapter(
+    number: 2,
+    title: 'Kırmızı Tortu',
+    scenes: [
+      'Depo 24’ün kapısında babamın çalıştığı tersanenin amblemi vardı. Altında yeni bir tabela asılıydı: Meral Kıyı Vakfı. Anahtarı taşıyan Nermin Akın, yıllarca pompalara bakım yapmıştı. “Selim buraya gece değil, öğleden sonra geldi,” dedi. Bir şey söylemek için ağzını açtı, sonra duvardaki kameraya baktı.',
+      'Bodrumda iki havuz bulduk. Birinde yağmur suyu birikmişti. Ötekinin kırmızı kapağı daha sabah boyanmış gibi parlaktı. Eldivenimin ucu kapağa değdiğinde, boyanın üstünde şeffaf bir katman kalktı. Biri kurumasını beklemeden izleri silmişti.',
+    ],
+    evidence: [
+      MysteryEvidence('Havuz örnekleri',
+          'Batı havuzu tatlı su. Doğu havuzu, gelgit vanasına bağlı ve Selim’in akciğerlerindeki boya pullarıyla aynı pigmenti taşıyor.'),
+      MysteryEvidence('Vana kaydedicisi',
+          'Doğu havuzunda 02.12–02.18 arasında olağan dışı debi var. 02.21’de kapak dışarıdan kilitlenmiş.'),
+      MysteryEvidence('Nermin’in bakım defteri',
+          'Kayıt silinmeden önce debi raporunu basmış. Çıktıda vananın yerinden değil, saat kulesindeki kumanda panosundan açıldığı görülüyor.'),
+    ],
+    question: 'Hangi bulgular Selim’in öldürüldüğü yeri birlikte gösteriyor?',
+    answers: [
+      'Doğu havuzunun su ve boyası, ayrıca ölüm saatindeki akış kaydı.',
+      'Batı havuzunun suyu ve depo tabelası.',
+      'Kondüktörün ifadesi ve Nermin’in anahtarı.'
+    ],
+    solution: 0,
+    reconstruction:
+        'Doğu havuzu, bedendeki iki izi de açıklıyordu. Debi ve dış kilit, suyun birinin müdahalesiyle yükseldiğini gösterdi. Nermin cebime saat kulesinin çizimini bıraktı. Çizimde birbirine bağlanmaması gereken iki hat işaretliydi.',
+  ),
+  MysteryChapter(
+    number: 3,
+    title: 'Saat Kulesinin Kör Dakikası',
+    scenes: [
+      'Saat kulesine merdivenden değil, çan halatının geçtiği dar boşluktan çıktık. Belediye restorasyonunda duvarı örmüşler, kabloyu bırakmışlardı. Tepede, Selim’in el yazısını taşıyan küçük bir kâğıt buldum: “Saatin kaç olduğuna bakma. Kimin saatine baktığını sor.”',
+      'Vakıf avukatı Rauf Gencer aşağıda bizi bekliyordu. Müdürü İhsan Meral’in o gece gala salonunda olduğunu, kule kamerasında Nermin’in göründüğünü söyledi. Cem görüntüyü durdurdu. Nermin’in elindeki bisiklet lambası yanıp sönüyordu. Arkadaki tramvay ise çizelgede yazan saatte çoktan seferini bitirmiş olmalıydı.',
+    ],
+    evidence: [
+      MysteryEvidence('Kule kaydı',
+          'Nermin görüntüde 02.14’te geçiyor. Arkasından son tramvay geliyor ve hat numarası okunuyor.'),
+      MysteryEvidence('Tramvay verisi',
+          'Son tramvay kule önünden 01.56’da geçmiş. Konum kaydı, bağımsız hat sunucusundan alınmış.'),
+      MysteryEvidence('Pano zaman çizelgesi',
+          'Vanayı açan komut 02.12’de verilmiş. Bu pano kendi saatini kullanıyor. Komut, bir sonraki güne kadar kendini silmeyen M-04 donanım anahtarıyla imzalı.'),
+    ],
+    question: 'Kamera kaydı Nermin’i neden vanayı açan kişi olarak gösteremez?',
+    answers: [
+      'Nermin kuleyi hiç ziyaret etmedi.',
+      'Tramvay arşiviyle vana panosu aynı cihazda tutuluyor.',
+      'Kamera 18 dakika ileride. Görüntü, açma komutundan önce çekildi.'
+    ],
+    solution: 2,
+    reconstruction:
+        'Görüntü Nermin’i 01.56’da gösteriyordu. Asıl iz, kopyalanması zor M-04 anahtarıydı. Pano kablosunu duvar boyunca izleyince hattın vakıf galası için kiralanan misafirhaneye uzandığını gördük.',
+  ),
+  MysteryChapter(
+    number: 4,
+    title: 'Misafirhanede Bir Ses',
+    scenes: [
+      'Misafirhanenin pencereleri denize bakıyordu. O gece gala konuklarına ayrılmış 6 numaralı odada şömine yanmış, bir köşede projektör fanı duvar kâğıdını karartmıştı. Görevli Meryem, Selim’in bir ay önce kendisine ses kaydedici verdiğini söyledi. “Bana bir şey olursa, önce Derya’ya dinlet,” demiş.',
+      'Kayıtta Selim, on sekiz yıl önceki taşkından söz ediyordu. “Tahliye listesinin iki kopyası var,” dedi. “Asıl emir, silt tabakası kurumuş eski işletme defterinde. Ben ona Silt Defteri diyorum.” Ardından kapı açıldı. İçeri giren kişinin yüzü yoktu ama kulaklıkta, müzikten daha yakında duran bir ses vardı: şöminenin kapanan demir kapağı.',
+    ],
+    evidence: [
+      MysteryEvidence('Galadan canlı yayın',
+          'İhsan 02.12’de ekranda. Çekim geniş salonda gibi görünüyor, fakat kahkaha ve alkış aynı biçimde 14 saniye sonra tekrarlanıyor.'),
+      MysteryEvidence('Meryem’in ses kaydı',
+          'Şömine kapağı sesinin hemen ardından İhsan’ın sesi duyuluyor. Selim, kaydın başında konumu ve tarihi yüksek sesle söylüyor. Bu kayıt cinayetten bir gün önce alınmış.'),
+      MysteryEvidence('Projektör günlüğü',
+          '6 numaralı odadaki oynatıcı 02.06’da bir video döngüsü başlatmış. Aynı cihazın ağ adresi gala yayınına kaynak olmuş.'),
+    ],
+    question: 'Gala yayınıyla ilgili neyi kanıtlayabiliyoruz?',
+    answers: [
+      'Yayın önceden kaydedilmiş; İhsan’ın o saatte salonda olduğunu kanıtlamıyor.',
+      'Ses kaydı, İhsan’ın cinayet anında odada olduğunu kanıtlıyor.',
+      'Gala salonundaki herkes işin içinde.'
+    ],
+    solution: 0,
+    reconstruction:
+        'İhsan’ın mazereti çöktü, ancak mazeretin sahte olması henüz katili belirlemiyordu. Selim’in sözünü ettiği tahliye listesinin ikinci kopyasını bulmak için misafirhanenin eski kiracısı olan gazeteci Leyla’yı aradım.',
+  ),
+  MysteryChapter(
+    number: 5,
+    title: 'Tahliye Listesi',
+    scenes: [
+      'Leyla matbaayı kapatmamış, yalnızca tabelasını indirmişti. Kurşun harf kasalarının arasında eski bir belediye bülteni uzattı. İlk sayfada kıyı taşkınından önce boşaltıldığı söylenen evler vardı. Sonraki sayfada vakfın o evleri kaç paraya satın aldığı yazıyordu. İki sayfanın arasında iki gün değil, iki saat vardı.',
+      'İkinci listeyi önüme serdiğinde Ali’nin soyadı yoktu. Bir süre bunun yanlış liste olduğunu düşündüm. Leyla kâğıdı çevirdi. Arka yüzde bir çocuğun avucu kadar küçük bir el izi ve bir not vardı: “Ali’yi annesine götürmek istedim. Sokağa polis dizmişlerdi. Kuzey Feneri’ne götürdüm. — N.”',
+    ],
+    evidence: [
+      MysteryEvidence('İmzalı tahliye kopyası',
+          'On bir kişi planlı su bırakımından önce çıkarılmamış. Resmî nüshada aynı haneler boş gösterilmiş.'),
+      MysteryEvidence('Kıyı ihale haritası',
+          'Su basan parseller, taşkın planı onaylanmadan önce vakfın satın alma listesine alınmış.'),
+      MysteryEvidence('Kuzey Feneri nöbet çizelgesi',
+          'Nermin’in babası Nihat, taşkın gecesi 03.40’ta yaralı bir çocuğu içeri aldığını kaydetmiş. Çocuk için ad yazmamış.'),
+    ],
+    question: 'Belgelerin birlikte ortaya çıkardığı düzen ne?',
+    answers: [
+      'Vakıf, taşkından sonra tesadüfen boş arazileri satın aldı.',
+      'İskelede kimsenin yaşamadığı kaydı doğruydu.',
+      'Taşkın önceden planlandı ve boşaltılmayan evler kayıtlarda boş gösterildi.'
+    ],
+    solution: 2,
+    reconstruction:
+        'Selim cinayeti araştırırken aynı düzeni bulmuştu: vana, arazi alımı, sahte kayıt. Ali’nin öldüğünü gösteren bir belge yoktu. Kuzey Feneri’ne giden ilk minibüse bindim.',
+  ),
+  MysteryChapter(
+    number: 6,
+    title: 'Kuzey Feneri',
+    scenes: [
+      'Fenerin merceği yıllardır dönmüyordu. Yine de bekçi, her akşam onu temizliyordu. Mutfak duvarındaki çocuk fotoğraflarından birinde çizgili bir kazak gördüm. O kazağın kolunu annem örmüş, benimkinden bir sıra kısa bırakmıştı. Fotoğrafın altında “Arda, yeni okul günü” yazıyordu.',
+      'Bekçi başka bir dosya çıkardı. Nihat çocuğu kurtardıktan sonra, Cem’in imzaladığı ölüm tutanağının bir kopyasını almış. Kıyıdaki diğer aileleri tehdit eden adamlardan çocuğu saklamak için onu ablasının yanına göndermiş. Ali’nin hayatta olmasını on sekiz yıl dilemiştim. Dileğim gerçekleşince ilk hissettiğim şey sevinç değil, bunca yılın ağırlığı oldu.',
+    ],
+    evidence: [
+      MysteryEvidence('Fener fotoğrafı',
+          'Çocuğun sol kulak altında yanık izi var. Ali’nin aile fotoğrafında aynı yerde iz görünüyor.'),
+      MysteryEvidence('Hastane kaydı',
+          'Nihat’ın teslim ettiği çocuk, eski kırık ve doğum işareti bakımından Ali’nin pediatri kaydıyla eşleşiyor. “Arda” adı daha sonraki okul naklinde kullanılmış.'),
+      MysteryEvidence('Yakın tarihli mektup',
+          'Arda, Nihat’ın sakladığı ses bandını duyduğunu yazmış. Selim’e doğrudan ulaşamayıp bandı tuz fabrikasının 9 numaralı dolabına koymuş.'),
+    ],
+    question: 'Ali konusunda hangi sonuca dayanarak ilerleyebiliriz?',
+    answers: [
+      'Yalnızca kazak fotoğrafına bakarak çocuğun kimliğini kesinleştirdik.',
+      'Bağımsız hastane ve fener kayıtları, Ali’nin sağ kurtulan çocuk olduğunu destekliyor.',
+      'Ölüm tutanağı varsa diğer kayıtların önemi yok.'
+    ],
+    solution: 1,
+    reconstruction:
+        'Ali hayatta kalmıştı. Kardeşimle görüşmeyi istemem onun beni görmeye hazır olduğu anlamına gelmiyordu. Önce mektubunda istediğini yaptım ve bandın peşine düştüm.',
+  ),
+  MysteryChapter(
+    number: 7,
+    title: 'Dokuz Numaralı Dolap',
+    scenes: [
+      'Tuz fabrikasında üretim durmuştu ama çatıdaki rüzgâr santrifüjleri çeviriyordu. Dokuz numaralı dolap açıktı. Rafın tozunda boş bir kasetin izi duruyordu. Bir alt rafta, suyu emmek için konmuş bezin altında bir fiş bulduk. Kaseti alan kişi aceleyle gitmişti.',
+      'Cem fişe baktığında cebindeki telefonu susturdu. Arayan Leyla’ydı. “Rauf arşivden çıktı,” dedi. “Bana kayıp kasetle ilgili konuşmak istediğini söyledi. Kaseti çaldığını düşünmemi istiyor. Ama fişin tarihi ne?”',
+    ],
+    evidence: [
+      MysteryEvidence('Aktarım fişi',
+          'Selim, cinayetten üç gün önce özgün bandı bağımsız ses laboratuvarına teslim etmiş. Fişte makaraya işlenmiş seri numarası var.'),
+      MysteryEvidence('Dolap görüntüsü',
+          'Rauf, cinayetten sonraki sabah boş kaset kutusunu alıyor. Kameranın saati fabrika vardiya verisiyle uyuşuyor.'),
+      MysteryEvidence('Laboratuvar tutanağı',
+          'Özgün makaraya ait seri numarası fişle aynı. Mühür, teslimden beri açılmamış.'),
+    ],
+    question: 'Kanıt zincirini nasıl korursun?',
+    answers: [
+      'Rauf’un aldığı kutuyu özgün kayıt kabul ederim.',
+      'Kaset boş olduğuna göre bandı hiç aramam.',
+      'Fiş ve mühürlü laboratuvar tutanağıyla özgün makarayı resmî olarak teslim alırım.'
+    ],
+    solution: 2,
+    reconstruction:
+        'Kutunun çalınması izi kesmek içindi. Özgün bantta, eski taşkın emrini veren ses ve belediye telsizinin çağrı kodu vardı. Cem kaydı bitirmeden kulaklığını çıkardı. Kodu tanımıştı.',
+  ),
+  MysteryChapter(
+    number: 8,
+    title: 'Cem’in Tutanakları',
+    scenes: [
+      'Cem bütün gece istasyonun merdivenlerinde oturdu. Sabah bana eski telsizini getirdi. “Kıyı yolunu kapatmamı söylediler. Evler tahliye edildi dediler. Üç çocuğun adını ilk defa tutanağı imzalarken gördüm.” Arka cebinden bir zarf çıkardı. İmzasının yanında bir de başka imza vardı.',
+      'Bana yardım etmek için değil, Selim’e borcunu kapatmak için konuştuğunu söyledi. Ondan hangisinin daha doğru olduğunu sormadım. Zarfın içindeki erişim kaydında M-04 anahtarının kime verildiği ve kim tarafından iade edildiği yazıyordu. İlk kez, bir kuşkuyu iki bağımsız kanıtla doğrulayabileceğimiz yere gelmiştik.',
+    ],
+    evidence: [
+      MysteryEvidence('Telsiz çağrı defteri',
+          'Taşkın gecesi duyulan 04 çağrı kodu, o gece mühendis İhsan Meral’e atanmış. Ses uzmanı bandın kesintisiz olduğunu raporlamış.'),
+      MysteryEvidence('Donanım anahtarı zimmeti',
+          'M-04 cinayet gecesi İhsan’a verilmiş. İade sabahı mühür sağlam. Anahtarın komut imzası pano kaydıyla aynı.'),
+      MysteryEvidence('Rauf’un erişim kaydı',
+          'Rauf galanın video döngüsünü hazırlamış. Cinayet saatinde liman turnikesinden geçmiş, fakat onun adına atanmış anahtar M-02.'),
+    ],
+    question:
+        'Vana komutunu kimin verdiğine en doğrudan hangi kanıt işaret ediyor?',
+    answers: [
+      'Rauf’un gala videosunu düzenlemiş olması.',
+      'Komutu imzalayan M-04 ile İhsan’ın zimmet kaydının eşleşmesi.',
+      'Cem’in eski tutanağı imzalamış olması.'
+    ],
+    solution: 1,
+    reconstruction:
+        'Cem’in eski örtbası, Rauf’un sahte mazereti ve İhsan’ın komutu ayrı ayrı kayda geçti. Savcıya erişim kayıtlarını verdik. O sırada fenerdeki alıcıya yeni bir uyarı düştü: doğu havuzu, bir kez daha uzaktan açılmak üzereydi.',
+  ),
+  MysteryChapter(
+    number: 9,
+    title: 'İkinci Gelgit',
+    scenes: [
+      'Fırtına yükselirken alıcı iki kez öttü. Doğu havuzu açılırsa alt tünelden arşive su dolacak, 6. İskele’de hâlâ oturanların yolu kesilecekti. Nermin ana istasyondan vana panosuna bağlanmaya çalıştı. Ekranda “komut kuyruğa alındı” yazdı. Şebekeyi kesmek için elimi şaltere uzattım.',
+      'Nermin bileğimi tuttu. “O kapağı elektrik kapalı tutuyor.” Yağmurun altında bana üç sayfalık bir bakım föyü uzattı. Her seçeneğin altında tek bir insanın yazabileceği kadar kısa bir not vardı. Babasının yazısıydı. Çizimde, bir zamanlar çocukların denize taş attığı basamaklardan geçen bir tahliye yolu görünüyordu.',
+    ],
+    evidence: [
+      MysteryEvidence('Vana güvenlik föyü',
+          'Ana şalter inerse kumanda düşer ve doğu vanası açık konuma geçer. Kuyruktaki komut, ağ kesilince silinmez.'),
+      MysteryEvidence('Mekanik kilit çizimi',
+          'Önce kuzey taşma hattı açılırsa basınç düşer. Bundan sonra doğu kapağının mekanik pimi kapanır.'),
+      MysteryEvidence('İskele nöbetçisinin raporu',
+          'Kuzey hattının çıkışı boş. Doğu tünelinde tahliye ekibi ve iki sivil var.'),
+    ],
+    question: 'İnsanları ve arşivi korumak için önce ne yaparsın?',
+    answers: [
+      'Kuzey taşma hattını açar, ardından doğu kapağını mekanik olarak kilitlerim.',
+      'Ana şalteri indiririm.',
+      'Ağ kablosunu kesip komutun silinmesini beklerim.'
+    ],
+    solution: 0,
+    reconstruction:
+        'Kuzey hattı açılınca basınç düştü. Nermin pimi yerine vurdu, ben tahliye ekibinin dışarı çıktığını telsizden duydum. Su yükselmedi. Savcı, arşivin alt rafında, kapağı taşkın tortusuyla sertleşmiş işletme defterini buldu. Selim, sayfa kıvrımına o geceki vana emrinin numarasını not etmişti. Artık elimizde emrin kendisi de vardı.',
+  ),
+  MysteryChapter(
+    number: 10,
+    title: 'Silt Defteri',
+    scenes: [
+      'Mahkeme salonuna Silt Defteri su geçirmez bir çantanın içinde getirildi. İhsan, avukatının omzunun üstünden deftere baktı. İlk taşkının emrindeki imza ona aitti. Kondüktör de o sabah yeniden ifade verdi. Depodan gelen hamalı tanımıştı. “Rauf bana hastaneye giden bir yolcu taşıdığımı söyledi,” dedi hamal. Savcı, o geceyi yeniden kurmak için üç delil grubunu masaya koydu.',
+      'Arka sırada bir adam oturuyordu. Mahkeme görevlisinin kalemini yerden alıp uzattı. Bileğini uzatırken gömleğinin kolu sıyrıldı. Onu fotoğraftaki çocuk gibi hayal etmeyi bıraktım. Teneffüste yanına oturup adını sordum. “Arda,” dedi. Bir süre sonra ekledi: “Ali’yi de hatırlıyorum. Önce davayı bitirelim.”',
+    ],
+    evidence: [
+      MysteryEvidence('Yer, zaman ve yöntem',
+          'Doğu havuzunun tuzlu suyu ve boyası, Selim’in adli örnekleriyle eşleşti. Debi kaydı ölüm aralığını doğruladı. Tren bileti, cesedin sonra taşındığını gösterdi.'),
+      MysteryEvidence('Komut ve sahte mazeret',
+          'Pano komutu İhsan’ın M-04 anahtarına bağlı. Rauf kayıtlı gala yayınını hazırladı. Depo taşıma fişinde de onun imzası vardı; hamalın ifadesi fişle uyuştu.'),
+      MysteryEvidence('Güdü ve saklanan geçmiş',
+          'Tahliye listesi, ihale haritası ve özgün telsiz bandı vakfın ilk taşkından çıkar sağladığını gösteriyor. Selim üç belgeyi birlikte açıklamak üzereydi.'),
+    ],
+    question: 'Savcının hangi anlatımı bütün kanıtlarla ayakta kalır?',
+    answers: [
+      'Cem eski tutanağı imzaladı, bu yüzden cinayet emrini de onun verdiği kesin.',
+      'Rauf sahte yayını hazırladı; bu, vanayı kendi açtığını kanıtlıyor.',
+      'İhsan Selim’i susturmak için doğu vanasını açtı. Rauf, sahte mazeret ve delil gizleme yoluyla ona yardım etti.'
+    ],
+    solution: 2,
+    reconstruction:
+        'Mahkeme İhsan’ı Selim’in öldürülmesinden, Rauf’u delilleri gizlemekten mahkûm etti. Cem’in imzaladığı tutanak ayrı dosyaya alındı. İlk taşkında öldüğü kayda geçen ve kaybolan insanların adları, bu kez aileleriyle birlikte okundu. İsimlerin en altına Selim Işık eklendi. Onun bulduğu ikinci tahliye listesi, kıyı davalarının yeniden açılmasını sağladı.\n\nDuruşmadan sonra Arda’yla 6. İskele’ye yürüdük. Çocukken yaptığımız gibi üç düz taş topladı. Birini denize attı, ikincisini bana verdi. Üçüncüsünü cebine koydu. “Seneye de gelir miyiz?” dedi. “Seneye de,” dedim. Bu defa bir tutanak tutmadım.',
+  ),
+];

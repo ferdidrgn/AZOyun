@@ -106,5 +106,5 @@ const Map<String, String> kQuickGameTitles = {
   'soupback': 'Geri Sar Çorba',
   'hairleaf': 'Saçtaki Yaprak',
   'slipperflip': 'Tek Terlik',
-  'mysterycase1': 'Gece Ekspresi Cinayeti',
+  'mysterycase1': 'Dedektif Dosyaları',
 };
