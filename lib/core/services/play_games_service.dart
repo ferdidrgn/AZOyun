@@ -24,8 +24,8 @@ class PlayGamesService extends ChangeNotifier {
     'twenty_wins': String.fromEnvironment('PGS_ACHIEVEMENT_TWENTY_WINS', defaultValue: 'CgkIxOrNg4kPEAIQDQ'),
     'win_streak_3': String.fromEnvironment('PGS_ACHIEVEMENT_WIN_STREAK_3', defaultValue: 'CgkIxOrNg4kPEAIQDw'),
     'try_them_all': String.fromEnvironment('PGS_ACHIEVEMENT_TRY_THEM_ALL', defaultValue: 'CgkIxOrNg4kPEAIQCg'),
-    'hundred_games': String.fromEnvironment('PGS_ACHIEVEMENT_HUNDRED_GAMES'),
-    'ten_game_types': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAME_TYPES'),
+    'hundred_games': String.fromEnvironment('PGS_ACHIEVEMENT_HUNDRED_GAMES', defaultValue: 'CgkIxOrNg4kPEAIQEQ'),
+    'ten_game_types': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAME_TYPES', defaultValue: 'CgkIxOrNg4kPEAIQEg'),
   };
 
   String? _playerId;
