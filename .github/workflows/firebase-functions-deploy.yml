@@ -1,0 +1,32 @@
+name: Firebase oda temizliğini yayınla
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bağımlılıklar ve kurallar
+        run: |
+          npm ci --prefix functions
+          npm --prefix functions test
+      - name: Firebase kimliğini hazırla
+        env:
+          FIREBASE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AZOYUN }}
+        run: |
+          test -n "$FIREBASE_ACCOUNT"
+          printf '%s' "$FIREBASE_ACCOUNT" > "$RUNNER_TEMP/firebase-account.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-account.json" >> "$GITHUB_ENV"
+      - name: Zamanlanmış oda temizliğini yayınla
+        run: npx --yes firebase-tools deploy --only functions:legacy-rooms --project azoyun-569b2 --non-interactive
+      - name: Geçici kimliği kaldır
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-account.json"
