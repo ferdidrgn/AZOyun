@@ -686,17 +686,34 @@ class _DamaGameState extends State<DamaGameScreen> {
           return Center(child: Container(
             width: side + 16,
             height: side + 16,
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: const Color(0xFF5C4A3D),
-              borderRadius: BorderRadius.circular(10),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFB9844B),
+                  Color(0xFF704322),
+                  Color(0xFF3D2619),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFD9AD75), width: 1.2),
               boxShadow: const [
-                BoxShadow(color: Colors.black87, blurRadius: 20, spreadRadius: 1, offset: Offset(0, 10)),
-                BoxShadow(color: Color(0x33FFFFFF), blurRadius: 1, spreadRadius: -1, offset: Offset(0, -1)),
+                BoxShadow(color: Color(0x99000000), blurRadius: 20, spreadRadius: 1, offset: Offset(0, 10)),
+                BoxShadow(color: Color(0x44FFE0AF), blurRadius: 8, offset: Offset(-3, -3)),
               ],
             ),
-            child: SizedBox(width: side, height: side,
-            child: GridView.builder(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFF242019),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0x88351F11), width: 2),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(width: side, height: side,
+                child: GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
               itemCount: 64,
@@ -711,18 +728,73 @@ class _DamaGameState extends State<DamaGameScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 100),
                     decoration: BoxDecoration(
-                      color: isSel
-                          ? AZColors.orange
+                      gradient: isSel
+                          ? const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFFFFD263), Color(0xFFB87822)],
+                            )
                           : isTarget
-                          ? AZColors.green
-                          : isDark ? const Color(0xFF5F4A38) : const Color(0xFFE6DBC7),
+                              ? const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [Color(0xFF83E2B7), Color(0xFF278660)],
+                                )
+                              : isDark
+                                  ? const LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [Color(0xFF44735F), Color(0xFF244B3B)],
+                                    )
+                                  : const LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [Color(0xFFEAD7B2), Color(0xFFC8A875)],
+                                    ),
+                      border: Border.all(
+                        color: isSel
+                            ? const Color(0xFFFFE08A)
+                            : isTarget
+                                ? const Color(0xFFB4F5D1)
+                                : Colors.black.withAlpha(30),
+                        width: isSel || isTarget ? 1.7 : .55,
+                      ),
+                      boxShadow: [
+                        if (isSel)
+                          const BoxShadow(
+                            color: Color(0x88FFCA50),
+                            blurRadius: 10,
+                            spreadRadius: -2,
+                          ),
+                      ],
                     ),
-                    child: Center(child: piece == 0 ? null : _PieceWidget(piece: piece)),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (isTarget && piece == 0)
+                          Center(
+                            child: Container(
+                              width: side * .026,
+                              height: side * .026,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF155B42).withAlpha(190),
+                                shape: BoxShape.circle,
+                                boxShadow: const [
+                                  BoxShadow(color: Color(0x77000000), blurRadius: 4),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (piece != 0)
+                          Center(child: _PieceWidget(piece: piece)),
+                      ],
+                    ),
                   ),
                 );
               },
             ),
-          )));
+          ))),
+          ));
         })),
 
         // Mesaj
@@ -764,13 +836,50 @@ class _PieceWidget extends StatelessWidget {
         ),
         border: Border.all(color: isWhite ? Colors.grey.shade400 : Colors.grey.shade700, width: 2),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(140), blurRadius: 5, offset: const Offset(0, 3)),
+          BoxShadow(color: Colors.black.withAlpha(175), blurRadius: 6, offset: const Offset(0, 4)),
+          BoxShadow(color: (isWhite ? Colors.white : const Color(0xFF9BA8A8)).withAlpha(90), blurRadius: 2, offset: const Offset(-1, -2)),
         ],
       ),
-      child: isKing
-          ? Center(child: Text('♛',
-              style: TextStyle(fontSize: 18, color: isWhite ? Colors.amber : Colors.yellow.shade600)))
-          : null,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Container(
+            margin: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: (isWhite ? Colors.white : const Color(0xFFB8C2C2))
+                    .withAlpha(85),
+                width: 1,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withAlpha(isWhite ? 80 : 36),
+                  Colors.transparent,
+                  Colors.black.withAlpha(55),
+                ],
+              ),
+            ),
+          ),
+          if (isKing)
+            Center(
+              child: Icon(
+                Icons.workspace_premium_rounded,
+                size: 20,
+                color: const Color(0xFFFFCE55),
+                shadows: const [
+                  Shadow(
+                    color: Colors.black87,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

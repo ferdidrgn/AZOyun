@@ -190,44 +190,245 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          AspectRatio(
-            aspectRatio: 1,
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 9,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8),
-              itemBuilder: (_, i) {
-                final mark = _board[i];
-                final isWinCell = _winningLine?.contains(i) ?? false;
-                return GestureDetector(
-                  onTap: () => _play(i),
+          Expanded(
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001)
+                    ..rotateX(-0.07),
                   child: Container(
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: isWinCell
-                          ? Colors.white
-                          : const Color(0x26FFFFFF),
-                      borderRadius: BorderRadius.circular(AZRadius.md),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFB9844B),
+                          Color(0xFF704322),
+                          Color(0xFF3D2619),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFD9AD75), width: 1.2),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0xAA000000),
+                          blurRadius: 24,
+                          offset: Offset(0, 14),
+                        ),
+                        BoxShadow(
+                          color: Color(0x44FFE0AF),
+                          blurRadius: 8,
+                          offset: Offset(-3, -3),
+                        ),
+                      ],
                     ),
-                    child: Center(
-                      child: Text(
-                        mark ?? '',
-                        style: TextStyle(
-                          fontSize: 52,
-                          fontWeight: FontWeight.bold,
-                          color: isWinCell
-                              ? AZColors.purple
-                              : (mark == 'X' ? Colors.white : AZColors.accentGoldSoft),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF242019),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0x88351F11), width: 2),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: GridView.builder(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: 9,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 3,
+                                    crossAxisSpacing: 8,
+                                    mainAxisSpacing: 8,
+                                  ),
+                                  itemBuilder: (_, i) {
+                                    final mark = _board[i];
+                                    final isWinCell = _winningLine?.contains(i) ?? false;
+                                    return GestureDetector(
+                                      onTap: () => _play(i),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 220),
+                                        decoration: BoxDecoration(
+                                          gradient: isWinCell
+                                              ? const LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    Color(0xFFFFFFFF),
+                                                    Color(0xFFE7DDFB),
+                                                    Color(0xFFCFC0EA),
+                                                  ],
+                                                )
+                                              : const LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    Color(0x463D314B),
+                                                    Color(0x26302739),
+                                                  ],
+                                                ),
+                                          borderRadius: BorderRadius.circular(AZRadius.md),
+                                          border: Border.all(
+                                            color: isWinCell
+                                                ? const Color(0xFFDCCBFF)
+                                                : const Color(0x558B79A8),
+                                            width: isWinCell ? 1.5 : .8,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: isWinCell
+                                                  ? const Color(0xAA9C79E7)
+                                                  : const Color(0x44000000),
+                                              blurRadius: isWinCell ? 14 : 5,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                            if (!isWinCell)
+                                              const BoxShadow(
+                                                color: Color(0x33FFFFFF),
+                                                blurRadius: 2,
+                                                offset: Offset(-1, -1),
+                                              ),
+                                          ],
+                                        ),
+                                        child: Center(
+                                          child: mark == null
+                                              ? null
+                                              : _TicTacToeMark(
+                                                  mark: mark,
+                                                  winning: isWinCell,
+                                                ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                            if (_winningLine != null)
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: CustomPaint(
+                                    painter: _WinningLinePainter(_winningLine!),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ),
         ]),
       ),
     );
   }
+}
+
+class _TicTacToeMark extends StatelessWidget {
+  const _TicTacToeMark({required this.mark, required this.winning});
+
+  final String mark;
+  final bool winning;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        mark,
+        style: TextStyle(
+          fontSize: 52,
+          height: 1,
+          fontWeight: FontWeight.w900,
+          color: winning
+              ? AZColors.purple
+              : mark == 'X'
+                  ? Colors.white
+                  : AZColors.accentGoldSoft,
+          shadows: [
+            Shadow(
+              color: Colors.black.withAlpha(180),
+              blurRadius: 5,
+              offset: const Offset(0, 4),
+            ),
+            Shadow(
+              color: mark == 'X'
+                  ? const Color(0x889D8CE0)
+                  : const Color(0x88FFC857),
+              blurRadius: winning ? 18 : 7,
+              offset: const Offset(-1, -1),
+            ),
+            Shadow(
+              color: Colors.white.withAlpha(winning ? 150 : 70),
+              blurRadius: 2,
+              offset: const Offset(-1, -2),
+            ),
+          ],
+        ),
+      );
+}
+
+class _WinningLinePainter extends CustomPainter {
+  const _WinningLinePainter(this.line);
+
+  final List<int> line;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const inset = 6.0;
+    const gap = 8.0;
+    final boardSize = size.width - inset * 2;
+    final cellSize = (boardSize - gap * 2) / 3;
+    Offset centerOf(int index) {
+      final row = index ~/ 3;
+      final column = index % 3;
+      return Offset(
+        inset + cellSize / 2 + column * (cellSize + gap),
+        inset + cellSize / 2 + row * (cellSize + gap),
+      );
+    }
+
+    final first = centerOf(line.first);
+    final last = centerOf(line.last);
+    final shadow = Paint()
+      ..color = const Color(0xBB17131F)
+      ..strokeWidth = 11
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    canvas.drawLine(first.translate(0, 3), last.translate(0, 3), shadow);
+
+    final glow = Paint()
+      ..color = const Color(0xCC80E6B0)
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9);
+    canvas.drawLine(first, last, glow);
+
+    final linePaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFFFFF2B2), Color(0xFF76E7A7), Color(0xFFF3D88A)],
+      ).createShader(Offset.zero & size)
+      ..strokeWidth = 6
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(first, last, linePaint);
+
+    canvas.drawLine(
+      first,
+      last,
+      Paint()
+        ..color = Colors.white.withAlpha(210)
+        ..strokeWidth = 1.3
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_WinningLinePainter oldDelegate) => oldDelegate.line != line;
 }

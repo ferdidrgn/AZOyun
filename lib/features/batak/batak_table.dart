@@ -7,6 +7,45 @@ import 'batak_match.dart';
 const _cream = Color(0xfffff0cc);
 const _gold = Color(0xffedbc65);
 
+class _TableFeltPainter extends CustomPainter {
+  const _TableFeltPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final medallion = Rect.fromCenter(
+        center: center, width: size.width * .48, height: size.height * .54);
+    canvas.drawOval(medallion, Paint()
+      ..color = const Color(0x14D5E4CB)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2);
+    canvas.drawOval(medallion.deflate(7), Paint()
+      ..color = const Color(0x0CFFFFFF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = .8);
+
+    final stitch = Paint()..color = const Color(0x0FFFFFFF);
+    for (var row = 0; row < 13; row++) {
+      for (var column = 0; column < 19; column++) {
+        final x = size.width * (column + .5) / 19;
+        final y = size.height * (row + .5) / 13;
+        if (((row * 5 + column * 3) % 4) == 0) {
+          canvas.drawCircle(Offset(x, y), .65, stitch);
+        }
+      }
+    }
+
+    final seam = Paint()
+      ..color = const Color(0x1CD6E5CF)
+      ..strokeWidth = .8;
+    canvas.drawArc(medallion.inflate(8), math.pi * .12, math.pi * .76, false, seam);
+    canvas.drawArc(medallion.inflate(8), math.pi * 1.12, math.pi * .76, false, seam);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TableFeltPainter oldDelegate) => false;
+}
+
 class BatakCard extends StatelessWidget {
   const BatakCard(
       {super.key,
@@ -32,9 +71,11 @@ class BatakCard extends StatelessWidget {
       child: Opacity(
         opacity: enabled ? 1 : .46,
         child: Material(
-          elevation: 3,
+          elevation: 5,
+          shadowColor: ink.withAlpha(90),
           color: const Color(0xfffffcf2),
           borderRadius: BorderRadius.circular(6),
+          clipBehavior: Clip.antiAlias,
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
             onTap: enabled ? onPlay : null,
@@ -43,8 +84,16 @@ class BatakCard extends StatelessWidget {
               height: width * 1.43,
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xffffffff), Color(0xfffffcf2), Color(0xffefe5ce)],
+                ),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xffc0ae86)),
+                border: Border.all(color: const Color(0xffbba77d)),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x55ffffff), blurRadius: 3, offset: Offset(-1, -1)),
+                ],
               ),
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,6 +111,9 @@ class BatakCard extends StatelessWidget {
                                 style: TextStyle(
                                     fontSize: width * .55,
                                     color: ink,
+                                    shadows: const [
+                                      Shadow(color: Color(0x33000000), blurRadius: 3, offset: Offset(1, 2)),
+                                    ],
                                     height: 1)))),
                     Align(
                         alignment: Alignment.bottomRight,
@@ -109,22 +161,38 @@ class BatakTable extends StatelessWidget {
             child: DecoratedBox(
                 decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(42),
-          border: Border.all(color: const Color(0xff79492e), width: 9),
-          gradient: const RadialGradient(
-              colors: [Color(0xff237864), Color(0xff123f35)]),
+          border: Border.all(color: const Color(0xffe1b47b), width: 2),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xffa8734a), Color(0xff65402d), Color(0xff3c281f)],
+          ),
           boxShadow: const [
-            BoxShadow(
-                color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))
+            BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, 9)),
+            BoxShadow(color: Color(0x55fff0cc), blurRadius: 2, offset: Offset(0, -1)),
           ],
         ))),
         Positioned.fill(
             child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: DecoratedBox(
-                    decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(29),
-                  border: Border.all(color: const Color(0xffa0bca1), width: .5),
-                )))),
+          padding: const EdgeInsets.all(15),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(29),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(29),
+                border: Border.all(color: const Color(0xffa0bca1), width: .7),
+                gradient: const RadialGradient(
+                  colors: [Color(0xff287c67), Color(0xff174c40), Color(0xff10372f)],
+                  radius: .92,
+                ),
+              ),
+              child: CustomPaint(
+                painter: const _TableFeltPainter(),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        )),
         Align(
             alignment: Alignment.center,
             child: Padding(
@@ -219,10 +287,23 @@ class BatakTable extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(11),
-        color: active ? const Color(0xff815f27) : const Color(0xff123d33),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: active
+              ? const [Color(0xffa47732), Color(0xff65451e)]
+              : const [Color(0xff225346), Color(0xff0e342d)],
+        ),
         border: Border.all(
             color: active ? _gold : const Color(0xff577b63),
             width: active ? 2 : 1),
+        boxShadow: [
+          BoxShadow(
+            color: active ? const Color(0x99edbc65) : Colors.black38,
+            blurRadius: active ? 11 : 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text('${player['name'] ?? id}${id == seat ? ' · Sen' : ''}',

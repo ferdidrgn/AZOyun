@@ -655,22 +655,90 @@ class _TurkishKeyboard extends StatelessWidget {
                   duration: const Duration(milliseconds: 220),
                   width: 28, height: 36, margin: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: correct ? _kGreen
-                        : wrong ? Colors.grey.shade200 : Colors.white,
+                    gradient: correct
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF9FC393), Color(0xFF77916F), Color(0xFF4E694B)],
+                          )
+                        : wrong
+                            ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Colors.grey.shade300, Colors.grey.shade200],
+                              )
+                            : const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFFFFFFFF), Color(0xFFF1EEE8), Color(0xFFD6D0C8)],
+                              ),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                        color: correct ? _kGreen : Colors.grey.shade300),
-                    boxShadow: used ? [] : const [
-                      BoxShadow(color: Color(0x14000000),
-                          blurRadius: 2, offset: Offset(0, 1))
+                      color: correct
+                          ? const Color(0xFFBBD9A9)
+                          : wrong
+                              ? Colors.grey.shade300
+                              : const Color(0xFFFFFFFF),
+                      width: 1,
+                    ),
+                    boxShadow: wrong
+                        ? const []
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(correct ? 55 : 35),
+                              blurRadius: correct ? 3 : 2,
+                              offset: const Offset(0, 2),
+                            ),
+                            if (correct)
+                              const BoxShadow(
+                                color: Color(0x5577B568),
+                                blurRadius: 5,
+                                spreadRadius: -1,
+                              ),
+                            if (!used)
+                              const BoxShadow(
+                                color: Color(0x77FFFFFF),
+                                blurRadius: 2,
+                                offset: Offset(-1, -1),
+                              ),
+                          ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (!wrong)
+                        Align(
+                          alignment: Alignment.topCenter,
+                          child: Container(
+                            height: 5,
+                            margin: const EdgeInsets.fromLTRB(4, 2, 4, 0),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(correct ? 35 : 115),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ),
+                      Text(letter,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: correct
+                                ? Colors.white
+                                : wrong
+                                    ? Colors.grey.shade400
+                                    : Colors.black87,
+                            shadows: correct || !wrong
+                                ? const [
+                                    Shadow(
+                                      color: Color(0x55000000),
+                                      blurRadius: 2,
+                                      offset: Offset(0, 1),
+                                    ),
+                                  ]
+                                : null,
+                          )),
                     ],
                   ),
-                  child: Center(child: Text(letter,
-                      style: TextStyle(
-                          fontSize: 11, fontWeight: FontWeight.bold,
-                          color: correct ? Colors.white
-                              : wrong ? Colors.grey.shade400
-                              : Colors.black87))),
                 ),
               );
             }).toList(),
@@ -691,22 +759,56 @@ class _HangmanPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size s) {
-    final g = Paint()
-      ..color = const Color(0xFF5C4A3D)
-      ..strokeWidth = 5 ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
+    final baseStart = Offset(s.width * .10, s.height * .95);
+    final baseEnd = Offset(s.width * .55, s.height * .95);
+    final postBottom = Offset(s.width * .22, s.height * .95);
+    final postTop = Offset(s.width * .22, s.height * .04);
+    final beamEnd = Offset(s.width * .68, s.height * .04);
+    final ropeTop = Offset(s.width * .68, s.height * .18);
 
-    canvas.drawLine(Offset(s.width*.10, s.height*.95), Offset(s.width*.55, s.height*.95), g);
-    canvas.drawLine(Offset(s.width*.22, s.height*.95), Offset(s.width*.22, s.height*.04), g);
-    canvas.drawLine(Offset(s.width*.22, s.height*.04), Offset(s.width*.68, s.height*.04), g);
-    canvas.drawLine(Offset(s.width*.68, s.height*.04), Offset(s.width*.68, s.height*.18), g);
+    _drawWoodBeam(canvas, baseStart, baseEnd, width: 8);
+    _drawWoodBeam(canvas, postBottom, postTop, width: 8);
+    _drawWoodBeam(canvas, postTop, beamEnd, width: 8);
+    _drawWoodBeam(canvas, beamEnd, ropeTop, width: 6);
+    _drawWoodBeam(
+      canvas,
+      Offset(s.width * .22, s.height * .16),
+      Offset(s.width * .31, s.height * .04),
+      width: 5,
+    );
+
+    for (final bolt in [postTop, beamEnd, postBottom]) {
+      canvas.drawCircle(
+        bolt,
+        2.5,
+        Paint()
+          ..shader = const RadialGradient(
+            center: Alignment(-.35, -.4),
+            colors: [Color(0xFFFFE3A5), Color(0xFF88623B), Color(0xFF3C2A1D)],
+          ).createShader(Rect.fromCircle(center: bolt, radius: 2.5)),
+      );
+    }
 
     final b = Paint()
       ..color = const Color(0xFF37474F)
       ..strokeWidth = 4 ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    if (wrong >= 1) canvas.drawCircle(Offset(s.width*.68, s.height*.26), s.height*.08, b);
+    if (wrong >= 1) {
+      final head = Offset(s.width * .68, s.height * .26);
+      final headRadius = s.height * .08;
+      canvas.drawCircle(head, headRadius, b);
+      _drawRope(
+        canvas,
+        ropeTop,
+        Offset(head.dx, head.dy - headRadius * .78),
+      );
+      canvas.drawCircle(
+        ropeTop,
+        2,
+        Paint()..color = const Color(0xFF513A29),
+      );
+    }
     if (wrong >= 2) canvas.drawLine(Offset(s.width*.68, s.height*.34), Offset(s.width*.68, s.height*.60), b);
     if (wrong >= 3) canvas.drawLine(Offset(s.width*.68, s.height*.42), Offset(s.width*.52, s.height*.53), b);
     if (wrong >= 4) canvas.drawLine(Offset(s.width*.68, s.height*.42), Offset(s.width*.84, s.height*.53), b);
@@ -718,6 +820,67 @@ class _HangmanPainter extends CustomPainter {
       canvas.drawLine(Offset(cx-6, cy-6), Offset(cx+6, cy+6), d);
       canvas.drawLine(Offset(cx+6, cy-6), Offset(cx-6, cy+6), d);
     }
+  }
+
+  void _drawWoodBeam(Canvas canvas, Offset a, Offset b, {required double width}) {
+    final shadow = Paint()
+      ..color = const Color(0x66301F17)
+      ..strokeWidth = width + 2
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+    canvas.drawLine(a.translate(2, 3), b.translate(2, 3), shadow);
+
+    canvas.drawLine(
+      a,
+      b,
+      Paint()
+        ..color = const Color(0xFF4A3324)
+        ..strokeWidth = width + 1.5
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      a,
+      b,
+      Paint()
+        ..color = const Color(0xFF9A7048)
+        ..strokeWidth = width - 1.2
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      a.translate(-.7, -.8),
+      b.translate(-.7, -.8),
+      Paint()
+        ..color = const Color(0xCCDEB88A)
+        ..strokeWidth = max(1, width * .16)
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  void _drawRope(Canvas canvas, Offset a, Offset b) {
+    canvas.drawLine(
+      a.translate(1.5, 1.5),
+      b.translate(1.5, 1.5),
+      Paint()
+        ..color = const Color(0x77502B1D)
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      a,
+      b,
+      Paint()
+        ..color = const Color(0xFF6F4B2D)
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      a.translate(-.6, 0),
+      b.translate(-.6, 0),
+      Paint()
+        ..color = const Color(0xFFE5BF83)
+        ..strokeWidth = .8
+        ..strokeCap = StrokeCap.round,
+    );
   }
 
   @override bool shouldRepaint(_HangmanPainter o) => o.wrong != wrong;

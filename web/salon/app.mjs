@@ -108,9 +108,10 @@ function openMirror() {
   main.innerHTML = `<div class="room-title"><h1>Ayna Odası</h1><a class="button outline" href="/#oyunlar">Oyun salonu</a></div>
     <section class="surface stack"><p>Işıklara bak, sonra işaretlere aynı sırayla dokun.</p>
     <p id="mirror-status" role="status">Başlamak için hazır ol.</p>
+    <p id="mirror-help">Bilgisayarda işaretleri seçmek için 1–4 tuşlarını kullanabilirsin. Tab ile işaretlere geçip Enter veya Boşluk tuşuna da basabilirsin.</p>
     <div class="illusion-board" aria-label="Ayna işaretleri">
-      <button data-sign="0" aria-label="Yıldız">✦</button><button data-sign="1" aria-label="Daire">●</button>
-      <button data-sign="2" aria-label="Üçgen">▲</button><button data-sign="3" aria-label="Elmas">◆</button>
+      <button data-sign="0" aria-label="Yıldız" aria-describedby="mirror-help" aria-keyshortcuts="1" title="1 tuşu">✦</button><button data-sign="1" aria-label="Daire" aria-describedby="mirror-help" aria-keyshortcuts="2" title="2 tuşu">●</button>
+      <button data-sign="2" aria-label="Üçgen" aria-describedby="mirror-help" aria-keyshortcuts="3" title="3 tuşu">▲</button><button data-sign="3" aria-label="Elmas" aria-describedby="mirror-help" aria-keyshortcuts="4" title="4 tuşu">◆</button>
     </div><div><button class="button primary" id="mirror-start">Başla</button></div></section>`;
   const tiles = [...main.querySelectorAll("[data-sign]")];
   const status = main.querySelector("#mirror-status");
@@ -119,6 +120,14 @@ function openMirror() {
   let cursor = 0;
   let phase = "idle";
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  main.addEventListener("keydown", (event) => {
+    if (phase !== "input" || event.altKey || event.ctrlKey || event.metaKey) return;
+    const index = Number(event.key) - 1;
+    if (!Number.isInteger(index) || index < 0 || index >= tiles.length) return;
+    event.preventDefault();
+    tiles[index].focus({ preventScroll: true });
+    tiles[index].click();
+  });
   async function nextRound() {
     phase = "show";
     cursor = 0;

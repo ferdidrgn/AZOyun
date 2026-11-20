@@ -88,6 +88,7 @@ class _TripleSessionState extends State<_TripleSession> {
   ]..shuffle(Random());
   List<String> _tray = [];
   bool _over = false;
+  int _matchSerial = 0;
 
   int get _cleared => 18 - _board.length - _tray.length;
 
@@ -96,7 +97,11 @@ class _TripleSessionState extends State<_TripleSession> {
       return;
     }
     final tile = _board.removeAt(index);
-    _tray = clearTriples([..._tray, tile]);
+    final nextTray = clearTriples([..._tray, tile]);
+    if (nextTray.length < _tray.length + 1) {
+      _matchSerial++;
+    }
+    _tray = nextTray;
     if (_board.isEmpty || _tray.length >= 7) {
       _over = true;
       widget.onFinished(_cleared);
@@ -117,8 +122,70 @@ class _TripleSessionState extends State<_TripleSession> {
           ),
         ),
         const SizedBox(height: AZSpacing.sm),
-        SizedBox(
-          height: 56,
+        TweenAnimationBuilder<double>(
+          key: ValueKey(_matchSerial),
+          tween: Tween(begin: 1, end: 0),
+          duration: const Duration(milliseconds: 650),
+          builder: (context, pulse, child) {
+            final glow = _matchSerial == 0 ? 0.0 : pulse * pulse;
+            return Container(
+              height: 56,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AZRadius.md),
+                border: Border.all(
+                  color: const Color(0xFFFFD76A).withOpacity(0.75 * glow),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFC83D).withOpacity(0.42 * glow),
+                    blurRadius: 18 * glow,
+                    spreadRadius: 2 * glow,
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(child: child!),
+                  if (glow > 0.02)
+                    Positioned(
+                      right: 7,
+                      top: 5,
+                      child: IgnorePointer(
+                        child: Opacity(
+                          opacity: glow.clamp(0.0, 1.0).toDouble(),
+                          child: Transform.scale(
+                            scale: .88 + .12 * glow,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFFFF0A8), Color(0xFFFFC43D), Color(0xFFDB8124)],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white, width: 1),
+                                boxShadow: const [
+                                  BoxShadow(color: Color(0xAAFFB72D), blurRadius: 10, offset: Offset(0, 2)),
+                                ],
+                              ),
+                              child: const Text(
+                                'TRIPLE!',
+                                style: TextStyle(
+                                  color: Color(0xFF60340C),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: .7,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
@@ -128,8 +195,25 @@ class _TripleSessionState extends State<_TripleSession> {
                   margin: const EdgeInsets.only(right: 4),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFFEF7), Color(0xFFE8E1D2)],
+                    ),
                     borderRadius: BorderRadius.circular(AZRadius.sm),
+                    border: Border.all(color: const Color(0xFFB6AA94)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x660D1730),
+                        offset: Offset(0, 3),
+                        blurRadius: 4,
+                      ),
+                      BoxShadow(
+                        color: Color(0xCCFFFFFF),
+                        offset: Offset(-1, -1),
+                        blurRadius: 1,
+                      ),
+                    ],
                   ),
                   child: Text(tile, style: const TextStyle(fontSize: 24)),
                 ),
@@ -138,19 +222,88 @@ class _TripleSessionState extends State<_TripleSession> {
         ),
         const SizedBox(height: AZSpacing.sm),
         Expanded(
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 6,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
+          child: Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              gradient: const RadialGradient(
+                center: Alignment(-.5, -.65),
+                radius: 1.35,
+                colors: [Color(0xFF394B71), Color(0xFF222D4B), Color(0xFF141B32)],
+              ),
+              borderRadius: BorderRadius.circular(AZRadius.lg),
+              border: Border.all(color: Colors.white.withOpacity(.24), width: 1.4),
+              boxShadow: const [
+                BoxShadow(color: Color(0x99071020), blurRadius: 18, offset: Offset(0, 9)),
+                BoxShadow(color: Color(0x334A8BDA), blurRadius: 12, offset: Offset(0, 1)),
+              ],
             ),
-            itemCount: _board.length,
-            itemBuilder: (context, index) => Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(AZRadius.sm),
-              child: InkWell(
-                onTap: () => _take(index),
-                child: Center(child: Text(_board[index], style: const TextStyle(fontSize: 22))),
+            child: GridView.builder(
+              padding: const EdgeInsets.all(3),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 6,
+                mainAxisSpacing: 9,
+                crossAxisSpacing: 9,
+              ),
+              itemCount: _board.length,
+              itemBuilder: (context, index) => Material(
+                color: const Color(0xFFD7CBB5),
+                elevation: 4.5 + (index % 3).toDouble(),
+                shadowColor: const Color(0xCC071020),
+                borderRadius: BorderRadius.circular(AZRadius.sm + 2.0),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFFFFF), Color(0xFFF4F0E6), Color(0xFFD7CBB5)],
+                    ),
+                    borderRadius: BorderRadius.circular(AZRadius.sm + 2.0),
+                    border: Border.all(color: const Color(0xFFFFFEF5), width: 1.4),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(AZRadius.sm + 2.0),
+                    onTap: () => _take(index),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          left: 2,
+                          right: 2,
+                          top: 2,
+                          height: 7,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.white.withOpacity(.85), Colors.white.withOpacity(0)],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 5,
+                          right: 5,
+                          bottom: 2,
+                          height: 4,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF9E9079),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        Center(
+                          child: Text(
+                            _board[index],
+                            style: const TextStyle(
+                              fontSize: 24,
+                              shadows: [Shadow(color: Color(0x550D1730), blurRadius: 4, offset: Offset(0, 2))],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

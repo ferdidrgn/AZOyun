@@ -1,5 +1,18 @@
 # AZOyun devam noktası
 
+## PC/web çalışması — 20 Kasım 2026
+
+- `web/salon/style.css` içinde klasik tek kişilik oyun paneli, tahta, canvas ve yeniden başlatma düğmeleri geniş ekranda ortalandı. 2048 ekranına yön tuşu ipucu eklendi. İlgili ilerleme maddeleri `PROGRESS.md` başında.
+- Futbol `CustomPainter` sahasında perspektif yan çizgiler/çim şeritleri, yamuk ceza alanı ve topun derinliğe göre ölçeklenmesi eklendi. Bu hâlâ 2.5D çizimdir; fiziksel cihaz incelemesi ve tam 3D kamera işi tamamlanmadı.
+- Bu oturumdaki düzenleme henüz commit edilmedi veya yayımlanmadı. `.git` yazma izni engelleniyor; GitHub yazma API'si 403 döndürdü.
+- Yerel `codex/web-oyun-salonu` HEAD'i `96825a4`; uzaktaki `main` önceki kontrolde `29c55e0` idi. Mevcut geniş çalışma ağacını doğrudan göndermekten önce main ile farkı karşılaştır; eski değişikliklerin çoğu zaten main'de bulunuyor.
+- PC/web tarafındaki sonraki yazılım işi: kalan tek kişilik oyun HUD/sonuç, profil ve ayar ekranlarında ortak düzeni gözden geçir. Cihaz/hesap isteyen maddeleri gerçek test olarak işaretleme.
+
+## Bu oturumda devam — 21 Kasım 2026
+
+- Çocuk oyunlarının kalan ekranları ve Parti Zarı görsel olarak incelendi. Ters Mama seçenekleri kısa ekranda taşmadan kullanılabilsin diye iki sütunlu, yükseltilmiş dokunma kartlarına alındı; oyun kuralları değişmedi.
+- Katalog çapında son kategori taraması, Flutter/cihaz turu ve yayın adımları hâlâ açık. Yerel ChatGPT sohbet geçmişi şu an hız sınırı nedeniyle okunamadı; kod çalışması bu depodaki notlar ve dosyalar üzerinden sürdürüldü.
+
 Önce `PROGRESS.md`, `docs/RELEASE_CHECKLIST.md` ve bu dosyayı oku. Öncelik aile masa oyunları. Kullanıcı Firebase odalarını istiyor ve tamamlanan değişikliklerin main'e gönderilmesini yetkilendirdi.
 
 ## Kod
@@ -30,14 +43,14 @@
 
 ## Main'e gönderim
 
-Oyun kodları main'e `77809cc094fe18af15cc3d9e75e2a7a892900090` ile gönderildi. QR telefon düzeltmesi `d8a327278a6e9889a240a6c12fee67944bc2b76c` ile main'de. [Web yayını](https://github.com/ferdidrgn/AZOyun/actions/runs/44665021186) başarılı. Son Play Games kimlikleri `b214ea53b6ede35bc94a589a6958fe0fb101920e` ile main'e gönderildi. [İmzalı AAB dahili kanal işi](https://github.com/ferdidrgn/AZOyun/actions/runs/44666860253) başlatıldı. Actions sonucunu kontrol et; testin geçmesi mağaza yüklemesinin tamamlandığı anlamına gelmez.
+Oyun kodları main'e `77809cc094fe18af15cc3d9e75e2a7a892900090` ile gönderildi. QR telefon düzeltmesi `d8a327278a6e9889a240a6c12fee67944bc2b76c` ile main'de. [Web yayını](https://github.com/ferdidrgn/AZOyun/actions/runs/44665021186) başarılı. Son Play Games kimlikleri `b214ea53b6ede35bc94a589a6958fe0fb101920e` ile main'e gönderildi. [İmzalı AAB dahili kanal işi](https://github.com/ferdidrgn/AZOyun/actions/runs/44666860253) tamamlandı: test/derleme ve artifact saklama başarılı; Play yüklemesi `The caller does not have permission` ile başarısız. Artifact ID `14598192802`, SHA-256 `6508d1ff2d4754740529bc06b7f2761e3bbad1b8c46d4a60f83d0d91bb0312c8`.
 
-Yerel kaynak dalının `.git` dizini bu oturumda salt okunur; yerel `gh` oturumu da geçersiz. GitHub bağlantısı yazımları HTTP 403 ile reddettiği için kod, kullanıcının açık GitHub web oturumu ve geçici `codex/release21-transfer` aktarım dalından çalışan Actions işiyle main'e taşındı. Bu aktarım dalındaki eski bundle main'den geridedir; yeniden main üzerine gönderme. Yeni sohbette main'i temel al ve yereldeki kaynak değişikliklerini silmeden karşılaştır. Kurtarma bundle'ı `build/release21/azoyun-release21.bundle` içinde, son QR/Play Games düzeltmelerini içermez.
+Son oyun/UI çalışmaları `71182cf` ile `codex/web-oyun-salonu` dalında saklı. `codex/release21-transfer` yalnızca tek seferlik AAB doğrulama iş akışı ve eski bir Git bundle içerir; çalışan kaynak değişiklikleri main'de ayrıca bulunduğundan o dalı main'e birleştirme. Yerel kurtarma kopyası `build/release21/azoyun-release21.bundle` içinde tutulur; son QR/Play Games düzeltmelerini içermez.
 
 ## Bekleyen sonraki adımlar
 
 1. HTTPS API, GitHub `FAMILY_API_URL`, web yapılandırması ve Firebase temizlik fonksiyonunun üretim yayınını tamamla.
-2. İmzalı AAB'nin dahili kanal sonucunu kontrol et. İki cihazla Saved Games, XP tablosu ve Play App Signing SHA-1 eşleşmesini doğrula. Dokuz başarımın kimlikleri artık kodda tanımlı.
+2. Play servis hesabına AZGame için sürüm yayınlama yetkisi tanımlandıktan sonra dahili AAB yüklemesini yeniden çalıştır. Sonra iki cihazla Saved Games, XP tablosu ve Play App Signing SHA-1 eşleşmesini doğrula. Dokuz başarımın kimlikleri artık kodda tanımlı.
 3. Android TV form faktörü eklendi; gerçek TV mağaza ekran görüntüleri ve ardından inceleme/dağıtımı etkinleştirme adımı bekliyor. Chromecast HD `google boreal` ARM32 ve Kaydolunmadı durumunda; eski test kanallarının fake touch zorunluluğu `e1ec469` ile kaldırıldı. RK3326 ve sgo tüm cihaz aramasında bulunamadı. Son AAB işi `44666860253`; `scripts/check-android-bundle.py` ile ABI, 16 KB ve derlenmiş manifest kontrol raporunu incele. Eski yerel AAB kanıt sayılmaz.
 4. Bütün oyunların QR, dolu oda, eşzamanlı katılım, zayıf ağ, arka plan, sonuç ve rövanş cihaz turunu tamamla. Tekli oyunlarda çevrimdışı, büyük yazı, duraklatma ve yeniden deneme turunu yap.
 5. Ortak UI'nin kalan HUD/sonuç/profil/ayarlar/tekli oyun ekranlarına yayılmasını ve açık/koyu tema görsel turunu sürdür.

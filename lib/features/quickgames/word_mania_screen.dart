@@ -204,21 +204,91 @@ class _GuessRow extends StatelessWidget {
         children: [
           for (var i = 0; i < 5; i++)
             Expanded(
-              child: Container(
-                height: 48,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                alignment: Alignment.center,
-                color: marks[i] == 2
-                    ? AZColors.green
-                    : marks[i] == 1
-                        ? AZColors.orange
-                        : AZColors.surfaceDark,
-                child: Text(
-                  guess[i],
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
-                ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _GuessTile(letter: guess[i], mark: marks[i]),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GuessTile extends StatelessWidget {
+  const _GuessTile({required this.letter, required this.mark});
+
+  final String letter;
+  final int mark;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = switch (mark) {
+      2 => const [Color(0xFF58C98A), Color(0xFF1F8054), Color(0xFF14583B)],
+      1 => const [Color(0xFFFFC05D), Color(0xFFD68C2B), Color(0xFF96561D)],
+      _ => const [Color(0xFF687078), Color(0xFF414951), Color(0xFF293039)],
+    };
+    final rim = switch (mark) {
+      2 => const Color(0xFF9AF0B7),
+      1 => const Color(0xFFFFD88A),
+      _ => const Color(0xFF87929C),
+    };
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 240),
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: rim.withAlpha(190), width: 1.1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x88000000),
+            blurRadius: 6,
+            offset: Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Color(0x33FFFFFF),
+            blurRadius: 2,
+            offset: Offset(-1, -1),
+          ),
+        ],
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Align(
+            alignment: Alignment.topCenter,
+            child: Container(
+              height: 7,
+              margin: const EdgeInsets.fromLTRB(5, 3, 5, 0),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(30),
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          Center(
+            child: Text(
+              letter,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                shadows: [
+                  Shadow(
+                    color: Color(0x88000000),
+                    blurRadius: 3,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

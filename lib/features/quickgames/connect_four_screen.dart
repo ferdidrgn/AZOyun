@@ -231,28 +231,18 @@ class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
                 color: const Color(0x1FFFFFFF),
                 borderRadius: BorderRadius.circular(AZRadius.md),
               ),
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _rows * _cols,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: _cols, crossAxisSpacing: 4, mainAxisSpacing: 4),
-                itemBuilder: (_, i) {
-                  final r = i ~/ _cols;
-                  final c = i % _cols;
-                  final v = _board[r][c];
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white10,
-                      shape: BoxShape.circle,
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: _cols / _rows,
+                  child: CustomPaint(
+                    painter: _ConnectFourBoardPainter(
+                      board: _board,
+                      red: _color('R'),
+                      gold: _color('Y'),
                     ),
-                    child: v == null
-                        ? null
-                        : Container(
-                            margin: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(color: _color(v), shape: BoxShape.circle),
-                          ),
-                  );
-                },
+                    child: const SizedBox.expand(),
+                  ),
+                ),
               ),
             ),
           ),
@@ -260,4 +250,186 @@ class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
       ),
     );
   }
+}
+
+class _ConnectFourBoardPainter extends CustomPainter {
+  const _ConnectFourBoardPainter({
+    required this.board,
+    required this.red,
+    required this.gold,
+  });
+
+  final List<List<String?>> board;
+  final Color red;
+  final Color gold;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const rows = 6;
+    const cols = 7;
+    final w = size.width;
+    final h = size.height;
+
+    // Narrow the far edge to give the board and its sockets depth without
+    // changing the underlying row/column mapping or any game rule.
+    Offset project(double u, double v) {
+      final taper = .035 * (1 - v);
+      return Offset(w * (.045 + taper + u * (.91 - taper * 2)),
+          h * (.035 + v * .91));
+    }
+
+    Path boardPath(double inset, {double drop = 0}) {
+      final points = [
+        project(inset, inset).translate(0, drop),
+        project(1 - inset, inset).translate(0, drop),
+        project(1 - inset, 1 - inset).translate(0, drop),
+        project(inset, 1 - inset).translate(0, drop),
+      ];
+      return Path()..addPolygon(points, true);
+    }
+
+    final face = boardPath(0);
+    final rim = boardPath(.022);
+    final inner = boardPath(.048);
+
+    canvas.drawPath(
+      boardPath(0, drop: h * .025),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF193E83), Color(0xFF091A44)],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawPath(
+      face.shift(Offset(0, h * .012)),
+      Paint()
+        ..color = Colors.black.withAlpha(115)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+    canvas.drawPath(
+      face,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF8EC0FF), Color(0xFF397BE0), Color(0xFF174AAB)],
+          stops: [0, .52, 1],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawPath(
+      rim,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF4F91F1), Color(0xFF1C58BC), Color(0xFF124091)],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawPath(
+      rim,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = Colors.white.withAlpha(125),
+    );
+
+    canvas.save();
+    canvas.clipPath(inner);
+    canvas.drawPath(
+      inner,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF235EBE), Color(0xFF17499F), Color(0xFF10377D)],
+        ).createShader(Offset.zero & size),
+    );
+
+    for (var row = 0; row < rows; row++) {
+      for (var col = 0; col < cols; col++) {
+        final u = (col + .5) / cols;
+        final v = (row + .5) / rows;
+        final center = project(u, v);
+        final boardWidthAtDepth = .91 - .07 * (1 - v);
+        final depthScale = .78 + v * .22;
+        final radius = w / cols * boardWidthAtDepth * .38 * depthScale;
+        final hole = Rect.fromCircle(center: center, radius: radius);
+
+        // A shadowed, recessed well with a bright bevel around its edge.
+        canvas.drawCircle(center.translate(0, radius * .14), radius * 1.08,
+            Paint()..color = const Color(0xFF071D48).withAlpha(185));
+        canvas.drawCircle(
+          center,
+          radius,
+          Paint()
+            ..shader = RadialGradient(
+              colors: [const Color(0xFF06152F), const Color(0xFF0B2C65)],
+            ).createShader(hole),
+        );
+        canvas.drawCircle(
+          center,
+          radius * .96,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = radius * .085
+            ..color = const Color(0xFF9EC9FF).withAlpha(165),
+        );
+
+        final mark = board[row][col];
+        if (mark == null) continue;
+        final color = mark == 'R' ? red : gold;
+        final token = Rect.fromCircle(center: center, radius: radius * .8);
+        final dark = Color.lerp(color, Colors.black, .25)!;
+
+        canvas.drawCircle(
+          center.translate(radius * .04, radius * .27),
+          radius * .83,
+          Paint()
+            ..color = Colors.black.withAlpha(165)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        );
+        canvas.drawCircle(center.translate(0, radius * .1), radius * .84,
+            Paint()..color = dark);
+        canvas.drawCircle(
+          center,
+          radius * .8,
+          Paint()
+            ..shader = RadialGradient(
+              center: const Alignment(-.42, -.52),
+              radius: 1.1,
+              colors: [Colors.white, color, dark],
+              stops: const [0, .48, 1],
+            ).createShader(token),
+        );
+        canvas.drawCircle(
+          center,
+          radius * .66,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = radius * .055
+            ..color = Colors.white.withAlpha(140),
+        );
+        canvas.drawCircle(
+          center.translate(-radius * .24, -radius * .27),
+          radius * .13,
+          Paint()..color = Colors.white.withAlpha(205),
+        );
+      }
+    }
+    canvas.restore();
+
+    canvas.drawPath(
+      inner,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = Colors.white.withAlpha(170),
+    );
+  }
+
+  // The game mutates the same nested board list on each move, so identity
+  // comparison would miss updates. Repaint on every parent rebuild.
+  @override
+  bool shouldRepaint(covariant _ConnectFourBoardPainter oldDelegate) => true;
 }

@@ -791,18 +791,28 @@ h2 {
 }
 .classic-stage {
   max-width: 740px;
+  margin-inline: auto;
+}
+.classic-stage > .actions {
+  justify-content: center;
 }
 .classic-status {
   color: var(--gold);
   font-weight: 700;
   margin-bottom: 12px;
 }
+.classic-hint {
+  margin: 0 auto 9px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.9rem;
+}
 .classic-grid {
   display: grid;
   grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
   max-width: 510px;
   gap: clamp(3px, 1.2vw, 8px);
-  margin: 0 0 8px;
+  margin: 0 auto 8px;
 }
 .classic-grid > * {
   min-width: 0;
@@ -830,13 +840,14 @@ h2 {
 }
 .classic-arrows {
   margin-bottom: 9px;
+  justify-content: center;
 }
 .classic-canvas {
   display: block;
   max-width: 100%;
   height: auto;
   border-radius: 9px;
-  margin: 12px 0;
+  margin: 12px auto;
 }
 .classic-canvas.drawing {
   background: #f7ebd6;

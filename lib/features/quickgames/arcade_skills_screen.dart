@@ -141,39 +141,42 @@ class _ArcadeSkillRoundState extends State<_ArcadeSkillRound>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18),
                 child: Stack(fit: StackFit.expand, children: [
-                  const ColoredBox(color: Color(0xff142b32)),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xff1d4148),
+                          Color(0xff142b32),
+                          Color(0xff0c1b24),
+                        ],
+                      ),
+                    ),
+                  ),
                   if (_aim)
-                    for (final (diameter, color) in [
-                      (68.0, scheme.primary),
-                      (48.0, Colors.white),
-                      (24.0, const Color(0xffb54f35))
-                    ])
-                      Positioned(
-                          left: target.dx - diameter / 2,
-                          top: target.dy - diameter / 2,
-                          width: diameter,
-                          height: diameter,
-                          child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                  shape: BoxShape.circle, color: color))),
+                    Positioned(
+                      left: target.dx - 34,
+                      top: target.dy - 34,
+                      width: 68,
+                      height: 68,
+                      child: _AimTarget(primary: scheme.primary),
+                    ),
                   if (!_aim) ...[
                     Positioned(
-                        top: 0,
-                        bottom: 0,
-                        left: (_lane - .10) * size.width,
-                        width: size.width * .20,
-                        child: const ColoredBox(color: Color(0xff457d55))),
+                      top: 0,
+                      bottom: 0,
+                      left: (_lane - .10) * size.width,
+                      width: size.width * .20,
+                      child: const _BalanceLane(),
+                    ),
                     Positioned(
                         left: (_ball * size.width - 15)
                             .clamp(0.0, math.max(0.0, size.width - 30)),
                         top: size.height * .62,
                         width: 30,
                         height: 30,
-                        child: const DecoratedBox(
-                            decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xffffd47e),
-                        ))),
+                        child: const _BalanceBall()),
                   ],
                 ]),
               ),
@@ -187,4 +190,166 @@ class _ArcadeSkillRoundState extends State<_ArcadeSkillRound>
       ],
     );
   }
+}
+
+class _AimTarget extends StatelessWidget {
+  const _AimTarget({required this.primary});
+
+  final Color primary;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            center: const Alignment(-.35, -.4),
+            colors: [primary.withOpacity(.9), primary, primary.withOpacity(.55)],
+          ),
+          border: Border.all(color: Colors.white.withOpacity(.88), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: primary.withOpacity(.62),
+              blurRadius: 22,
+              spreadRadius: 2,
+            ),
+            const BoxShadow(
+              color: Color(0xBB000000),
+              blurRadius: 12,
+              offset: Offset(0, 7),
+            ),
+            const BoxShadow(
+              color: Color(0x77FFFFFF),
+              blurRadius: 5,
+              offset: Offset(-3, -3),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(9),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const RadialGradient(
+                center: Alignment(-.35, -.4),
+                colors: [Color(0xFFFFFFFF), Color(0xFFE2E8E7), Color(0xFF9DAEAF)],
+              ),
+              border: Border.all(color: const Color(0xFFD1E0DF), width: 1.5),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0xAA000000),
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    center: Alignment(-.3, -.4),
+                    colors: [Color(0xFFFF9978), Color(0xFFC84F38), Color(0xFF7C2C25)],
+                  ),
+                  border: Border.all(color: const Color(0xFFFFC2A9), width: 1),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0xAA35110E),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class _BalanceLane extends StatelessWidget {
+  const _BalanceLane();
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [Color(0xAA275337), Color(0xE65DAD68), Color(0xAA275337)],
+          ),
+          border: Border.symmetric(
+            vertical: BorderSide(color: const Color(0xCCB5F4AE), width: 2),
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x665EEA87),
+              blurRadius: 18,
+              spreadRadius: 2,
+            ),
+            BoxShadow(
+              color: Color(0x99000000),
+              blurRadius: 14,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Colors.transparent,
+                Colors.white.withOpacity(.16),
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _BalanceBall extends StatelessWidget {
+  const _BalanceBall();
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const RadialGradient(
+            center: Alignment(-.4, -.5),
+            colors: [Color(0xFFFFF2C4), Color(0xFFFFD47E), Color(0xFFDB862F)],
+          ),
+          border: Border.all(color: const Color(0xFFFFE6AA), width: 1),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0xBB000000),
+              blurRadius: 9,
+              offset: Offset(0, 6),
+            ),
+            BoxShadow(
+              color: Color(0x88FFE4A5),
+              blurRadius: 8,
+              offset: Offset(-2, -2),
+            ),
+          ],
+        ),
+        child: Align(
+          alignment: const Alignment(-.35, -.45),
+          child: FractionallySizedBox(
+            widthFactor: .25,
+            heightFactor: .25,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(.8),
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(color: Colors.white, blurRadius: 4, spreadRadius: 1),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 }

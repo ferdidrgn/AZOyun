@@ -117,9 +117,28 @@ class _PuzzleSessionState extends State<_PuzzleSession> {
         child: AspectRatio(
           aspectRatio: 1,
           child: Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-                color: const Color(0x1FFFFFFF), borderRadius: BorderRadius.circular(AZRadius.md)),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF7CB1FF), Color(0xFF2864C5), Color(0xFF12377B)],
+              ),
+              borderRadius: BorderRadius.circular(AZRadius.md),
+              border: Border.all(color: Colors.white.withAlpha(150), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(120),
+                  blurRadius: 16,
+                  offset: const Offset(0, 9),
+                ),
+                BoxShadow(
+                  color: AZColors.blueDk.withAlpha(100),
+                  blurRadius: 22,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
             child: GridView.builder(
               physics: const NeverScrollableScrollPhysics(),
               itemCount: 16,
@@ -129,17 +148,61 @@ class _PuzzleSessionState extends State<_PuzzleSession> {
                 final v = _board[i];
                 return GestureDetector(
                   onTap: () => _tap(i),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: v == 0 ? Colors.transparent : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    curve: Curves.easeOut,
+                    decoration: v == 0
+                        ? BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF102F69), Color(0xFF174486), Color(0xFF0D285A)],
+                            ),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(color: Colors.white.withAlpha(30)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(90),
+                                blurRadius: 5,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          )
+                        : BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFFFFFFFF), Color(0xFFEAF3FF), Color(0xFFC9DDF8)],
+                              stops: [0, .58, 1],
+                            ),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(color: Colors.white, width: 1.2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withAlpha(105),
+                                blurRadius: 5,
+                                offset: const Offset(0, 4),
+                              ),
+                              BoxShadow(
+                                color: AZColors.blueDk.withAlpha(45),
+                                blurRadius: 3,
+                                offset: const Offset(0, -1),
+                              ),
+                            ],
+                          ),
                     alignment: Alignment.center,
                     child: v == 0
                         ? null
                         : Text('$v',
                             style: const TextStyle(
-                                color: AZColors.blueDk, fontSize: 20, fontWeight: FontWeight.bold)),
+                              color: AZColors.blueDk,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              shadows: [
+                                Shadow(color: Colors.white, blurRadius: 2, offset: Offset(0, 1)),
+                                Shadow(color: Color(0x5580A5D7), blurRadius: 2, offset: Offset(0, 2)),
+                              ],
+                            )),
                   ),
                 );
               },

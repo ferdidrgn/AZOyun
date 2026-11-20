@@ -159,10 +159,11 @@ class _DotsBoxesGameScreenState extends State<DotsBoxesGameScreen> {
         dotRow.add(_dotWidget());
         dotRow.add(GestureDetector(
           onTap: () => _tapH(r, c),
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
             width: _box,
             height: _edgeThickness,
-            color: _h[r][c] ? Colors.white : const Color(0x33FFFFFF),
+            decoration: _edgeDecoration(_h[r][c]),
           ),
         ));
       }
@@ -174,38 +175,156 @@ class _DotsBoxesGameScreenState extends State<DotsBoxesGameScreen> {
         for (var c = 0; c <= _cols; c++) {
           edgeRow.add(GestureDetector(
             onTap: () => _tapV(r, c),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
               width: _edgeThickness,
               height: _box,
-              color: _v[r][c] ? Colors.white : const Color(0x33FFFFFF),
+              decoration: _edgeDecoration(_v[r][c]),
             ),
           ));
           if (c < _cols) {
             final owner = _owner[r][c];
-            edgeRow.add(Container(
+            edgeRow.add(AnimatedContainer(
+              duration: const Duration(milliseconds: 260),
               width: _box,
               height: _box,
               alignment: Alignment.center,
-              color: owner == null
-                  ? Colors.transparent
-                  : kPlayerColors[owner % kPlayerColors.length].withAlpha(140),
+              decoration: owner == null
+                  ? BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0x1420140D), Color(0x3320140D)],
+                      ),
+                      border: Border.all(color: Colors.white.withAlpha(20), width: .6),
+                    )
+                  : BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          kPlayerColors[owner % kPlayerColors.length].withAlpha(205),
+                          kPlayerColors[owner % kPlayerColors.length].withAlpha(125),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withAlpha(110),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kPlayerColors[owner % kPlayerColors.length]
+                              .withAlpha(100),
+                          blurRadius: 8,
+                          spreadRadius: -2,
+                        ),
+                      ],
+                    ),
               child: owner == null
                   ? null
                   : Text(widget.players[owner].name.substring(0, 1),
                       style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        shadows: [
+                          Shadow(color: Colors.black87, blurRadius: 5, offset: Offset(0, 2)),
+                        ],
+                      )),
             ));
           }
         }
         rowsWidgets.add(Row(mainAxisSize: MainAxisSize.min, children: edgeRow));
       }
     }
-    return Column(mainAxisSize: MainAxisSize.min, children: rowsWidgets);
+    return Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()
+        ..setEntry(3, 2, 0.0012)
+        ..rotateX(-0.075),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFB9844B),
+              Color(0xFF704322),
+              Color(0xFF3D2619),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFD9AD75), width: 1.2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0xAA000000),
+              blurRadius: 24,
+              offset: Offset(0, 14),
+            ),
+            BoxShadow(
+              color: Color(0x44FFE0AF),
+              blurRadius: 8,
+              offset: Offset(-3, -3),
+            ),
+          ],
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFF242019),
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(color: const Color(0x88351F11), width: 2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(5),
+            child: Column(mainAxisSize: MainAxisSize.min, children: rowsWidgets),
+          ),
+        ),
+      ),
+    );
   }
+
+  BoxDecoration _edgeDecoration(bool active) => BoxDecoration(
+        gradient: active
+            ? const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFFFF6D9), Color(0xFFD7B976), Color(0xFF8B6333)],
+              )
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x665B4B37), Color(0x44372C21), Color(0x6635281C)],
+              ),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(
+          color: active ? const Color(0xFFFFE7A4) : const Color(0x555C4A35),
+          width: active ? 1 : .6,
+        ),
+        boxShadow: active
+            ? const [
+                BoxShadow(color: Color(0x99000000), blurRadius: 3, offset: Offset(0, 2)),
+                BoxShadow(color: Color(0x66FFF0C3), blurRadius: 4),
+              ]
+            : const [
+                BoxShadow(color: Color(0x55000000), blurRadius: 2, offset: Offset(0, 1)),
+              ],
+      );
 
   Widget _dotWidget() => Container(
         width: _dot,
         height: _dot,
-        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const RadialGradient(
+            center: Alignment(-.35, -.4),
+            colors: [Color(0xFFFFFFFF), Color(0xFFD9C5A3), Color(0xFF7E5835)],
+          ),
+          border: Border.all(color: const Color(0xFFFFF0D1), width: .7),
+          boxShadow: const [
+            BoxShadow(color: Color(0xAA000000), blurRadius: 3, offset: Offset(0, 2)),
+            BoxShadow(color: Color(0x55FFFFFF), blurRadius: 2, offset: Offset(-1, -1)),
+          ],
+        ),
       );
 }

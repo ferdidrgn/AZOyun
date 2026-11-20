@@ -20,6 +20,56 @@ class CountNumbersLobbyScreen extends StatelessWidget {
       );
 }
 
+class _NumberChoice extends StatelessWidget {
+  const _NumberChoice({required this.value, required this.onPressed});
+
+  final int value;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF81E6E6), Color(0xFF32B7CB), Color(0xFF187A9C)],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFB8FFFF), width: 1.4),
+          boxShadow: const [
+            BoxShadow(color: Color(0x66000000), blurRadius: 9, offset: Offset(0, 6)),
+            BoxShadow(color: Color(0x668DF4F2), blurRadius: 10, offset: Offset(-2, -2)),
+          ],
+        ),
+        child: Tooltip(
+          message: 'Seçenek $value',
+          child: FilledButton(
+            onPressed: onPressed,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shadowColor: Colors.transparent,
+              elevation: 0,
+              overlayColor: Colors.white.withOpacity(.16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            ),
+            child: Text(
+              '$value',
+              style: const TextStyle(
+                fontSize: 28,
+                height: 1,
+                fontWeight: FontWeight.w900,
+                shadows: [
+                  Shadow(color: Color(0x990B425A), blurRadius: 4, offset: Offset(0, 3)),
+                  Shadow(color: Color(0x99FFFFFF), blurRadius: 2, offset: Offset(-1, -1)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
 class CountNumbersGameScreen extends StatelessWidget {
   const CountNumbersGameScreen({super.key, required this.players});
 
@@ -93,31 +143,89 @@ class _CountSessionState extends State<_CountSession> {
           ),
         ),
         const SizedBox(height: AZSpacing.md),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: AZSpacing.sm,
-          runSpacing: AZSpacing.sm,
-          children: [
-            for (var i = 0; i < round.count; i++)
-              const Text('⭐', style: TextStyle(fontSize: 32)),
-          ],
-        ),
-        const SizedBox(height: AZSpacing.lg),
-        for (final option in round.options)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AZSpacing.sm),
-            child: SizedBox(
-              height: 52,
-              child: FilledButton(
-                onPressed: () => _pick(option),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AZColors.textPrimary,
+        Semantics(
+          container: true,
+          label: 'Sayılacak yıldız sayısı: ${round.count}',
+          child: ExcludeSemantics(
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 150),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF287E91), Color(0xFF14566D), Color(0xFF103C54)],
                 ),
-                child: Text('$option', style: const TextStyle(fontSize: 20)),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0x778EEBEE), width: 1.3),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, 9)),
+                  BoxShadow(color: Color(0x448DF8F2), blurRadius: 15, offset: Offset(-4, -4)),
+                ],
+              ),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (var i = 0; i < round.count; i++)
+                    Transform.rotate(
+                      angle: sin(i * 2.1) * .06,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          gradient: const RadialGradient(
+                            center: Alignment(-.35, -.45),
+                            colors: [Color(0xFFFFFFD0), Color(0xFFFFD45E), Color(0xFFD98731)],
+                          ),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFFFF1B4), width: 1.2),
+                          boxShadow: const [
+                            BoxShadow(color: Color(0x66000000), blurRadius: 5, offset: Offset(0, 4)),
+                            BoxShadow(color: Color(0x66FFF0A0), blurRadius: 5, offset: Offset(-2, -2)),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.star_rounded,
+                          size: 26,
+                          color: Color(0xFFAC6B28),
+                          shadows: [Shadow(color: Color(0xAAFFF1B5), blurRadius: 3, offset: Offset(-1, -1))],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
+        ),
+        const SizedBox(height: AZSpacing.md),
+        const Text(
+          'Yıldızları say ve sayıyı seç',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        const SizedBox(height: AZSpacing.sm),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final tileWidth = (constraints.maxWidth - AZSpacing.sm) / 2;
+            return Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AZSpacing.sm,
+              runSpacing: AZSpacing.sm,
+              children: [
+                for (final option in round.options)
+                  SizedBox(
+                    width: tileWidth,
+                    height: 72,
+                    child: _NumberChoice(value: option, onPressed: () => _pick(option)),
+                  ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }

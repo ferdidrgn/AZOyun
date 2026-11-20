@@ -981,6 +981,17 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
 
             // Vuruş yedim kırmızı vinyet parlaması — hasar aldığımda ekranın
             // kenarlarından hızlıca kırmızı bir flaş geçer, sonra söner.
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _FighterArenaPainter(
+                  myColor: widget.fighter.color,
+                  opponentColor: oppF.color,
+                  shielded: _shieldOn,
+                  impact: _showHit,
+                ),
+              ),
+            ),
+
             IgnorePointer(child: AnimatedBuilder(
               animation: _myHitCtrl,
               builder: (_, __) => Opacity(
@@ -1007,10 +1018,14 @@ class _FGameState extends State<FighterGameScreen> with TickerProviderStateMixin
               child: AnimatedBuilder(
                 animation: _hitFlash,
                 builder: (_, __) => Column(children: [
-                  Text(oppF.emoji, style: TextStyle(fontSize: 76,
+                  Transform.scale(
+                    scale: 0.88 + _hitFlash.value * 0.14,
+                    child: Text(oppF.emoji, style: TextStyle(fontSize: 76,
                       shadows: _showHit ? [Shadow(
                           color: Colors.red.withAlpha((220 * _hitFlash.value).toInt()),
-                          blurRadius: 20 * _hitFlash.value)] : [])),
+                          blurRadius: 20 * _hitFlash.value),
+                        const Shadow(color: Colors.black87, blurRadius: 12, offset: Offset(0, 14))] : [])),
+                  ),
                   // Durum ikonları
                   Row(mainAxisSize: MainAxisSize.min, children: [
                     if (oppShield) const Text('🛡️', style: TextStyle(fontSize: 16)),
@@ -1277,4 +1292,146 @@ class _FightBtn extends StatelessWidget {
       ]),
     ),
   ));
+}
+
+/// A compact perspective arena composed with Flutter's canvas.
+/// It keeps the Firebase combat model and swipe controls untouched while
+/// making the existing character sprites read as opponents on a lit stage.
+class _FighterArenaPainter extends CustomPainter {
+  const _FighterArenaPainter({
+    required this.myColor,
+    required this.opponentColor,
+    required this.shielded,
+    required this.impact,
+  });
+
+  final Color myColor;
+  final Color opponentColor;
+  final bool shielded;
+  final bool impact;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final horizon = h * .34;
+    final floor = Path()
+      ..moveTo(w * .13, horizon)
+      ..lineTo(w * .87, horizon)
+      ..lineTo(w * 1.08, h)
+      ..lineTo(-w * .08, h)
+      ..close();
+
+    canvas.drawPath(
+      floor,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF39233E), Color(0xFF201629), Color(0xFF130F1B)],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.save();
+    canvas.clipPath(floor);
+
+    for (var row = 0; row < 8; row++) {
+      final t0 = row / 8;
+      final t1 = (row + 1) / 8;
+      final y0 = horizon + (h - horizon) * t0 * t0;
+      final y1 = horizon + (h - horizon) * t1 * t1;
+      final alpha = row.isEven ? 13 : 25;
+      canvas.drawRect(
+        Rect.fromLTRB(0, y0, w, y1),
+        Paint()..color = const Color(0xFFEF6D86).withAlpha(alpha),
+      );
+    }
+
+    final gridPaint = Paint()
+      ..color = Colors.white.withAlpha(24)
+      ..strokeWidth = 1;
+    for (var i = -6; i <= 6; i++) {
+      canvas.drawLine(Offset(w * .5 + i * w * .026, horizon),
+          Offset(w * .5 + i * w * .19, h), gridPaint);
+    }
+    for (var i = 1; i <= 6; i++) {
+      final t = i / 7;
+      final y = horizon + (h - horizon) * t * t;
+      canvas.drawLine(Offset(w * .02, y), Offset(w * .98, y), gridPaint);
+    }
+
+    final ring = Rect.fromCenter(
+      center: Offset(w * .5, h * .66),
+      width: w * .82,
+      height: h * .30,
+    );
+    canvas.drawOval(ring.shift(Offset(0, h * .025)),
+        Paint()..color = Colors.black.withAlpha(115));
+    canvas.drawOval(ring,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF59364F), Color(0xFF24182F)],
+          ).createShader(ring));
+    canvas.drawOval(
+      ring,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = const Color(0xFFFF7185).withAlpha(155),
+    );
+    canvas.drawOval(
+      ring.deflate(w * .035),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = Colors.white.withAlpha(45),
+    );
+    canvas.restore();
+
+    // Colored spotlights converge at the back of the ring.
+    _drawBeam(canvas, size, Offset(w * .04, 0), Offset(w * .32, h * .64),
+        myColor.withAlpha(shielded ? 62 : 35));
+    _drawBeam(canvas, size, Offset(w * .96, 0), Offset(w * .70, h * .53),
+        opponentColor.withAlpha(impact ? 92 : 42));
+
+    final edgePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..color = const Color(0xFFFF9C79).withAlpha(95);
+    canvas.drawLine(Offset(w * .13, horizon), Offset(-w * .08, h), edgePaint);
+    canvas.drawLine(Offset(w * .87, horizon), Offset(w * 1.08, h), edgePaint);
+
+    final centerGlow = Paint()
+      ..shader = RadialGradient(
+        colors: [const Color(0xFFFFC36B).withAlpha(impact ? 80 : 30), Colors.transparent],
+      ).createShader(Rect.fromCircle(center: Offset(w * .5, h * .49), radius: w * .48));
+    canvas.drawRect(Offset.zero & size, centerGlow);
+  }
+
+  void _drawBeam(Canvas canvas, Size size, Offset top, Offset foot, Color color) {
+    final w = size.width;
+    final path = Path()
+      ..moveTo(top.dx - w * .09, top.dy)
+      ..lineTo(top.dx + w * .09, top.dy)
+      ..lineTo(foot.dx + w * .24, foot.dy)
+      ..lineTo(foot.dx - w * .24, foot.dy)
+      ..close();
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = LinearGradient(
+          colors: [color.withAlpha(0), color],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ).createShader(Offset.zero & size),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FighterArenaPainter oldDelegate) =>
+      oldDelegate.myColor != myColor ||
+      oldDelegate.opponentColor != opponentColor ||
+      oldDelegate.shielded != shielded ||
+      oldDelegate.impact != impact;
 }

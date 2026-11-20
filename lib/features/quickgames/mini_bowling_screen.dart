@@ -184,23 +184,59 @@ class _BowlingSessionState extends State<_BowlingSession> {
                 borderRadius: BorderRadius.circular(AZRadius.md),
               ),
               child: Stack(children: [
+                Positioned.fill(child: CustomPaint(painter: _LanePainter())),
                 for (var i = 0; i < 10; i++)
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 300),
-                    left: (0.5 + _pinX[i] * 0.5) * w - 9,
-                    top: _pinY[i] * h - 9,
-                    child: AnimatedOpacity(
+                  Builder(builder: (context) {
+                    final scale = 0.82 + _pinY[i] * 0.55;
+                    final pinWidth = 28 * scale;
+                    final pinHeight = 40 * scale;
+                    return AnimatedPositioned(
                       duration: const Duration(milliseconds: 300),
-                      opacity: _pinsDown[i] ? 0.15 : 1,
-                      child: const Text('🎳', style: TextStyle(fontSize: 18)),
-                    ),
-                  ),
+                      left: (0.5 + _pinX[i] * 0.5) * w - pinWidth / 2,
+                      top: _pinY[i] * h - pinHeight / 2,
+                      child: SizedBox(
+                        width: pinWidth,
+                        height: pinHeight,
+                        child: Stack(
+                          children: [
+                            AnimatedOpacity(
+                              duration: const Duration(milliseconds: 300),
+                              opacity: _pinsDown[i] ? 0.62 : 1,
+                              child: Transform.rotate(
+                                angle: _pinsDown[i] ? 1.12 : 0,
+                                child: CustomPaint(
+                                  size: Size(pinWidth, pinHeight),
+                                  painter: _PinPainter(),
+                                ),
+                              ),
+                            ),
+                            if (_pinsDown[i])
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: TweenAnimationBuilder<double>(
+                                    key: ValueKey('pin-hit-$i'),
+                                    tween: Tween(begin: 0, end: 1),
+                                    duration: const Duration(milliseconds: 420),
+                                    builder: (context, progress, child) => CustomPaint(
+                                      painter: _PinHitPainter(progress),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 550),
                   curve: Curves.easeOut,
-                  left: (0.5 + _ballX * 0.5) * w - 10,
-                  top: _ballY * h - 10,
-                  child: const Text('🔴', style: TextStyle(fontSize: 20)),
+                  left: (0.5 + _ballX * 0.5) * w - (18 + (1 - _ballY) * 9) / 2,
+                  top: _ballY * h - (18 + (1 - _ballY) * 9) / 2,
+                  child: CustomPaint(
+                    size: Size.square(18 + (1 - _ballY) * 9),
+                    painter: _BowlingBallPainter(),
+                  ),
                 ),
               ]),
             ),
@@ -243,4 +279,246 @@ class _BowlingSessionState extends State<_BowlingSession> {
       ]),
     );
   }
+}
+
+class _LanePainter extends CustomPainter {
+  const _LanePainter();
+
+  Path _lane(Size size) => Path()
+    ..moveTo(size.width * 0.27, 0)
+    ..lineTo(size.width * 0.73, 0)
+    ..lineTo(size.width * 0.89, size.height)
+    ..lineTo(size.width * 0.11, size.height)
+    ..close();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final lane = _lane(size);
+    canvas.drawPath(
+      lane,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFE8C88C), Color(0xFFD3A56A), Color(0xFFA97545)],
+        ).createShader(Offset.zero & size),
+    );
+
+    final leftGutter = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width * 0.27, 0)
+      ..lineTo(size.width * 0.11, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    final rightGutter = Path()
+      ..moveTo(size.width * 0.73, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(size.width * 0.89, size.height)
+      ..close();
+    final gutterPaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFF573B2B), Color(0xFF1D2428)],
+      ).createShader(Offset.zero & size);
+    canvas.drawPath(leftGutter, gutterPaint);
+    canvas.drawPath(rightGutter, gutterPaint);
+
+    for (var i = 1; i < 8; i++) {
+      final fraction = i / 8;
+      final topX = size.width * (0.27 + 0.46 * fraction);
+      final bottomX = size.width * (0.11 + 0.78 * fraction);
+      canvas.drawLine(
+        Offset(topX, size.height * 0.015),
+        Offset(bottomX, size.height * 0.99),
+        Paint()
+          ..color = const Color(0x33733E22)
+          ..strokeWidth = i.isEven ? 1.1 : 0.65,
+      );
+    }
+    for (var i = 1; i <= 5; i++) {
+      final y = size.height * (0.16 + i * 0.14);
+      final halfWidth = size.width * (0.23 + i * 0.043);
+      canvas.drawLine(
+        Offset(size.width / 2 - halfWidth, y),
+        Offset(size.width / 2 + halfWidth, y),
+        Paint()..color = const Color(0x1EFFF3D5)..strokeWidth = 1,
+      );
+    }
+
+    final laneEdge = Paint()
+      ..color = const Color(0xAAFFE4AF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawPath(lane, laneEdge);
+
+    final arrowsY = size.height * 0.58;
+    for (final x in [0.39, 0.445, 0.5, 0.555, 0.61]) {
+      final arrow = Path()
+        ..moveTo(size.width * x, arrowsY - 7)
+        ..lineTo(size.width * x - 4, arrowsY + 2)
+        ..lineTo(size.width * x + 4, arrowsY + 2)
+        ..close();
+      canvas.drawPath(arrow, Paint()..color = const Color(0x77FFF6DB));
+    }
+
+    final light = Rect.fromLTWH(
+      size.width * 0.2,
+      0,
+      size.width * 0.6,
+      size.height,
+    );
+    canvas.drawRect(
+      light,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Colors.transparent, Color(0x16FFFFFF), Colors.transparent],
+        ).createShader(light),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _LanePainter oldDelegate) => false;
+}
+
+class _PinPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final body = Path()
+      ..moveTo(size.width * 0.5, size.height * 0.08)
+      ..cubicTo(size.width * 0.3, size.height * 0.08, size.width * 0.29,
+          size.height * 0.28, size.width * 0.4, size.height * 0.4)
+      ..cubicTo(size.width * 0.28, size.height * 0.57, size.width * 0.2,
+          size.height * 0.7, size.width * 0.22, size.height * 0.82)
+      ..cubicTo(size.width * 0.24, size.height * 0.98, size.width * 0.76,
+          size.height * 0.98, size.width * 0.78, size.height * 0.82)
+      ..cubicTo(size.width * 0.8, size.height * 0.7, size.width * 0.72,
+          size.height * 0.57, size.width * 0.6, size.height * 0.4)
+      ..cubicTo(size.width * 0.71, size.height * 0.28, size.width * 0.7,
+          size.height * 0.08, size.width * 0.5, size.height * 0.08)
+      ..close();
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.5, size.height * 0.92),
+        width: size.width * 0.92,
+        height: size.height * 0.16,
+      ),
+      Paint()
+        ..color = const Color(0x880D171A)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+    canvas.drawPath(
+      body.shift(const Offset(0, 1.5)),
+      Paint()..color = const Color(0xFF9AA3A8),
+    );
+    canvas.drawPath(
+      body,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0xFF9AA6AC), Color(0xFFFFFFFF), Color(0xFFEAF0F2), Color(0xFF8C999F)],
+          stops: [0, 0.28, 0.7, 1],
+        ).createShader(Offset.zero & size),
+    );
+    final stripe = Path()
+      ..moveTo(size.width * 0.32, size.height * 0.36)
+      ..quadraticBezierTo(size.width * 0.5, size.height * 0.43,
+          size.width * 0.68, size.height * 0.36);
+    canvas.drawPath(
+      stripe,
+      Paint()
+        ..color = const Color(0xFFE23E4F)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.1
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.39, size.height * 0.22),
+        width: size.width * 0.1,
+        height: size.height * 0.18,
+      ),
+      Paint()..color = const Color(0xCCFFFFFF),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PinPainter oldDelegate) => false;
+}
+
+class _BowlingBallPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bounds = Offset.zero & size;
+    canvas.drawCircle(
+      Offset(size.width * 0.53, size.height * 0.58),
+      size.width * 0.48,
+      Paint()
+        ..color = const Color(0x77081425)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.48),
+      size.width * 0.46,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(-0.4, -0.55),
+          radius: 1.1,
+          colors: [Color(0xFFB8F6FF), Color(0xFF2694D2), Color(0xFF123B83)],
+          stops: [0, 0.42, 1],
+        ).createShader(bounds),
+    );
+    final holes = Paint()..color = const Color(0xAA092653);
+    canvas.drawCircle(Offset(size.width * 0.42, size.height * 0.4), size.width * 0.055, holes);
+    canvas.drawCircle(Offset(size.width * 0.55, size.height * 0.37), size.width * 0.055, holes);
+    canvas.drawCircle(Offset(size.width * 0.49, size.height * 0.51), size.width * 0.055, holes);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.35, size.height * 0.28),
+        width: size.width * 0.18,
+        height: size.height * 0.09,
+      ),
+      Paint()..color = const Color(0xAAFFFFFF),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BowlingBallPainter oldDelegate) => false;
+}
+
+class _PinHitPainter extends CustomPainter {
+  const _PinHitPainter(this.progress);
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final fade = (1 - progress).clamp(0.0, 1.0).toDouble();
+    for (var i = 0; i < 8; i++) {
+      final angle = i * pi / 4;
+      final direction = Offset(cos(angle), sin(angle));
+      final start = center + direction * (5 + progress * 4);
+      final end = center + direction * (12 + progress * 14);
+      canvas.drawLine(
+        start,
+        end,
+        Paint()
+          ..color = const Color(0xFFFFE17D).withOpacity(fade)
+          ..strokeWidth = i.isEven ? 2.5 : 1.5
+          ..strokeCap = StrokeCap.round,
+      );
+      canvas.drawCircle(
+        end,
+        (i.isEven ? 2.5 : 1.5) * fade,
+        Paint()..color = const Color(0xFFFFF1B3).withOpacity(fade),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PinHitPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }

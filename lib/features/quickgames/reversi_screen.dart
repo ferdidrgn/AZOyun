@@ -243,52 +243,155 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _n * _n,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: _n, crossAxisSpacing: 2, mainAxisSpacing: 2),
-                itemBuilder: (_, i) {
-                  final r = i ~/ _n;
-                  final c = i % _n;
-                  final v = _board[r][c];
-                  final isHint = validForCurrent.any((m) => m[0] == r && m[1] == c);
-                  return GestureDetector(
-                    onTap: () => _tap(r, c),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AZColors.greenDk,
-                        border: Border.all(color: Colors.black26, width: 0.5),
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFB9844B),
+                        Color(0xFF704322),
+                        Color(0xFF3D2619),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFFD9AD75), width: 1.2),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x99000000),
+                        blurRadius: 20,
+                        offset: Offset(0, 12),
                       ),
-                      child: Center(
-                        child: v != null
-                            ? Container(
-                                margin: const EdgeInsets.all(3),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: v == 'B' ? Colors.black : Colors.white,
+                      BoxShadow(
+                        color: Color(0x44FFE0AF),
+                        blurRadius: 8,
+                        offset: Offset(-3, -3),
+                      ),
+                    ],
+                  ),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF242019),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0x88351F11), width: 2),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _n * _n,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: _n,
+                          crossAxisSpacing: 2,
+                          mainAxisSpacing: 2,
+                        ),
+                        itemBuilder: (_, i) {
+                          final r = i ~/ _n;
+                          final c = i % _n;
+                          final v = _board[r][c];
+                          final isHint = validForCurrent.any((m) => m[0] == r && m[1] == c);
+                          return GestureDetector(
+                            onTap: () => _tap(r, c),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [Color(0xFF36765B), Color(0xFF1D4F3C)],
                                 ),
-                              )
-                            : (isHint
-                                ? Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.white.withAlpha(120),
-                                    ),
-                                  )
-                                : null),
+                                border: Border.all(color: Colors.black.withAlpha(38), width: .6),
+                              ),
+                              child: Center(
+                                child: v != null
+                                    ? _ReversiDisk(black: v == 'B')
+                                    : (isHint
+                                        ? Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: const Color(0xFFD5F5E0).withAlpha(180),
+                                              boxShadow: const [
+                                                BoxShadow(
+                                                  color: Color(0x77000000),
+                                                  blurRadius: 4,
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : null),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ),
         ]),
+      ),
+    );
+  }
+}
+
+class _ReversiDisk extends StatelessWidget {
+  const _ReversiDisk({required this.black});
+
+  final bool black;
+
+  @override
+  Widget build(BuildContext context) {
+    final edge = black ? const Color(0xFF050A0B) : const Color(0xFF9FA7A2);
+    return Container(
+      margin: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          center: const Alignment(-.35, -.4),
+          radius: .92,
+          colors: black
+              ? const [Color(0xFF626F71), Color(0xFF242D2F), Color(0xFF080D0E)]
+              : const [Color(0xFFFFFFFF), Color(0xFFE4E7E0), Color(0xFFB7BEB8)],
+        ),
+        border: Border.all(color: edge, width: 1.3),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0xAA000000),
+            blurRadius: 5,
+            offset: Offset(0, 3),
+          ),
+          BoxShadow(
+            color: Color(0x44FFFFFF),
+            blurRadius: 2,
+            offset: Offset(-1, -1),
+          ),
+        ],
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: (black ? Colors.white : const Color(0xFF596460)).withAlpha(60),
+            width: .8,
+          ),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withAlpha(black ? 44 : 100),
+              Colors.transparent,
+              Colors.black.withAlpha(black ? 80 : 24),
+            ],
+          ),
+        ),
       ),
     );
   }

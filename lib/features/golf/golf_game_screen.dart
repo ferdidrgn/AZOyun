@@ -446,6 +446,7 @@ class _GolfGameScreenState extends State<GolfGameScreen>
             child: Stack(children: [
               CustomPaint(size: size, painter: _GolfFieldPainter(
                   ball: _ball, holePos: _holePos,
+                  ballVelocity: _vel,
                   obstacles: _obstacles, walls: _walls,
                   dragStart: _myDone ? null : _dragStart,
                   dragCurrent: _dragCurrent, moving: _moving)),
@@ -551,99 +552,235 @@ class _ScoreBar extends StatelessWidget {
 class _GolfFieldPainter extends CustomPainter {
   const _GolfFieldPainter({
     required this.ball, required this.holePos,
+    required this.ballVelocity,
     required this.obstacles, required this.walls,
     this.dragStart, this.dragCurrent, required this.moving,
   });
-  final Offset ball, holePos;
+  final Offset ball, holePos, ballVelocity;
   final List<_Obstacle> obstacles;
   final List<_Wall> walls;
   final Offset? dragStart, dragCurrent;
   final bool moving;
   static const _ballR = 0.026;
 
+  double _depth(double y) => 0.66 + y.clamp(0.0, 1.0).toDouble() * 0.50;
+
+  Offset _project(Offset point, Size size) {
+    final y = point.dy.clamp(0.0, 1.0).toDouble();
+    final perspectiveX = _depth(y);
+    final perspectiveY = 0.055 +
+        0.91 * (1 - pow(1 - y, 1.12).toDouble());
+    return Offset(size.width * (0.5 + (point.dx - 0.5) * perspectiveX),
+        size.height * perspectiveY);
+  }
+
+  Path _fieldBand(Size size, double y0, double y1) {
+    final left0 = _project(Offset(0, y0), size);
+    final right0 = _project(Offset(1, y0), size);
+    final left1 = _project(Offset(0, y1), size);
+    final right1 = _project(Offset(1, y1), size);
+    return Path()
+      ..moveTo(left0.dx, left0.dy)
+      ..lineTo(right0.dx, right0.dy)
+      ..lineTo(right1.dx, right1.dy)
+      ..lineTo(left1.dx, left1.dy)
+      ..close();
+  }
+
   @override
   void paint(Canvas canvas, Size s) {
-    canvas.drawRect(Rect.fromLTWH(0, 0, s.width, s.height),
-        Paint()..color = AZColors.green);
-    final stripe = Paint()..color = const Color(0x0A000000);
-    for (var i = 0; i < 10; i++) {
-      if (i.isOdd) canvas.drawRect(
-          Rect.fromLTWH(0, s.height * i / 10, s.width, s.height / 10), stripe);
+    final width = s.width;
+    final height = s.height;
+    canvas.drawRect(Offset.zero & s, Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF397A59), Color(0xFF174C38)],
+      ).createShader(Offset.zero & s));
+    final field = Path()
+      ..moveTo(width * .27, height * .055)
+      ..lineTo(width * .73, height * .055)
+      ..lineTo(width * .96, height * .965)
+      ..lineTo(width * .04, height * .965)
+      ..close();
+    canvas.drawPath(field, Paint()..color = const Color(0xFF26734F));
+    canvas.save();
+    canvas.clipPath(field);
+    for (var i = 0; i < 12; i++) {
+      if (i.isOdd) {
+        canvas.drawPath(_fieldBand(s, i / 12, (i + 1) / 12), Paint()
+          ..color = const Color(0x12203B2B));
+      }
     }
+    final center = _project(const Offset(.5, .5), s);
+    final leftCenter = _project(const Offset(0, .5), s);
+    final rightCenter = _project(const Offset(1, .5), s);
+    final fieldLine = Paint()
+      ..color = Colors.white.withAlpha(76)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    canvas.drawLine(leftCenter, rightCenter, fieldLine);
+    canvas.drawOval(Rect.fromCenter(center: center,
+        width: width * .20, height: height * .10), fieldLine);
+    canvas.drawCircle(center, width * .005,
+        Paint()..color = Colors.white.withAlpha(90));
+    canvas.restore();
+
+    final rail = Paint()
+      ..color = const Color(0xFFB99A69)
+      ..strokeWidth = width * .025
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(Offset(width * .27, height * .055),
+        Offset(width * .04, height * .965), rail);
+    canvas.drawLine(Offset(width * .73, height * .055),
+        Offset(width * .96, height * .965), rail);
+
     final wallPaint = Paint()
-      ..color = const Color(0xFF7A6552) ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round ..style = PaintingStyle.stroke;
+      ..strokeWidth = width * .018
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
     for (final w in walls) {
-      canvas.drawLine(Offset(w.a.dx * s.width, w.a.dy * s.height),
-          Offset(w.b.dx * s.width, w.b.dy * s.height), wallPaint);
+      final a = _project(w.a, s);
+      final b = _project(w.b, s);
+      canvas.drawLine(a.translate(0, width * .010), b.translate(0, width * .010),
+          Paint()..color = Colors.black.withAlpha(80)
+            ..strokeWidth = width * .025 ..strokeCap = StrokeCap.round
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
+      wallPaint.color = const Color(0xFF654B35);
+      canvas.drawLine(a, b, wallPaint);
+      canvas.drawLine(a.translate(0, -width * .007), b.translate(0, -width * .007),
+          Paint()..color = const Color(0xFFD2B78A)
+            ..strokeWidth = width * .006 ..strokeCap = StrokeCap.round);
     }
     for (final o in obstacles) {
+      final center = _project(o.center, s);
+      final depth = _depth(o.center.dy);
       final rect = Rect.fromCenter(
-          center: Offset(o.center.dx * s.width, o.center.dy * s.height),
-          width: o.w * s.width, height: o.h * s.height);
-      final rr = RRect.fromRectAndRadius(rect, const Radius.circular(6));
-      canvas.drawRRect(rr.shift(const Offset(2, 3)),
-          Paint()..color = Colors.black26
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
-      canvas.drawRRect(rr, Paint()..color = const Color(0xFF8C7863));
+          center: center,
+          width: o.w * width * depth,
+          height: o.h * height * depth);
+      final rr = RRect.fromRectAndRadius(
+          rect, Radius.circular(width * .012 * depth));
+      final extrusion = Offset(width * .008 * depth, height * .012 * depth);
+      canvas.drawRRect(rr.shift(extrusion), Paint()
+        ..color = Colors.black.withAlpha(90)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+      final side = Path()
+        ..moveTo(rect.left, rect.bottom)
+        ..lineTo(rect.right, rect.bottom)
+        ..lineTo(rect.right + extrusion.dx, rect.bottom + extrusion.dy)
+        ..lineTo(rect.left + extrusion.dx, rect.bottom + extrusion.dy)
+        ..close();
+      canvas.drawPath(side, Paint()..color = const Color(0xFF4F493F));
       canvas.drawRRect(rr, Paint()
-          ..color = const Color(0x24FFFFFF) ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.2);
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFC7AF8A), Color(0xFF806B55)],
+        ).createShader(rect));
+      canvas.drawRRect(rr, Paint()
+        ..color = const Color(0x70FFFFFF)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width * .003);
     }
-    final hx = holePos.dx * s.width; final hy = holePos.dy * s.height;
-    final hr = s.width * 0.024;
-    canvas.drawCircle(Offset(hx + 2, hy + 2), hr,
-        Paint()..color = Colors.black26
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
-    canvas.drawCircle(Offset(hx, hy), hr, Paint()..color = Colors.black87);
-    canvas.drawLine(Offset(hx, hy), Offset(hx, hy - s.height * 0.075),
-        Paint()..color = Colors.white ..strokeWidth = 2.5 ..strokeCap = StrokeCap.round);
+    final hole = _project(holePos, s);
+    final holeDepth = _depth(holePos.dy);
+    final hr = width * .027 * holeDepth;
+    canvas.drawOval(Rect.fromCenter(
+        center: hole.translate(width * .004, hr * .35),
+        width: hr * 2.7, height: hr * 1.15), Paint()
+      ..color = Colors.black.withAlpha(90)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
+    canvas.drawOval(Rect.fromCenter(center: hole,
+        width: hr * 2.6, height: hr * 1.35),
+        Paint()..color = const Color(0xFFB39B71));
+    canvas.drawOval(Rect.fromCenter(center: hole.translate(0, hr * .12),
+        width: hr * 1.72, height: hr * .94),
+        Paint()..color = const Color(0xFF090D0B));
+    final poleHeight = height * .075 * holeDepth;
+    canvas.drawLine(hole, hole.translate(0, -poleHeight),
+        Paint()..color = const Color(0xFFE9E2D0)
+          ..strokeWidth = width * .0045 * holeDepth
+          ..strokeCap = StrokeCap.round);
     final flag = Path()
-      ..moveTo(hx, hy - s.height * 0.075)
-      ..lineTo(hx + s.width * 0.048, hy - s.height * 0.056)
-      ..lineTo(hx, hy - s.height * 0.037) ..close();
+      ..moveTo(hole.dx, hole.dy - poleHeight)
+      ..lineTo(hole.dx + width * .048 * holeDepth,
+          hole.dy - poleHeight + height * .018 * holeDepth)
+      ..lineTo(hole.dx, hole.dy - poleHeight + height * .037 * holeDepth)
+      ..close();
     canvas.drawPath(flag, Paint()..color = AZColors.red);
 
     if (dragStart != null && dragCurrent != null && !moving) {
-      final bx    = ball.dx * s.width; final by = ball.dy * s.height;
-      final dx    = (dragStart!.dx - dragCurrent!.dx) * s.width;
-      final dy    = (dragStart!.dy - dragCurrent!.dy) * s.height;
+      final ballPoint = _project(ball, s);
+      final dx = dragStart!.dx - dragCurrent!.dx;
+      final dy = dragStart!.dy - dragCurrent!.dy;
       final dist  = sqrt(dx * dx + dy * dy);
-      final power = (dist / (s.width * 0.25)).clamp(0.0, 1.0);
-      final tx    = bx + dx * 1.4; final ty = by + dy * 1.4;
-      canvas.drawLine(Offset(bx, by), Offset(tx, ty),
+      final power = (dist / (width * 0.25)).clamp(0.0, 1.0).toDouble();
+      final target = _project(Offset(
+          (ball.dx + dx / width * 1.4).clamp(0.0, 1.0).toDouble(),
+          (ball.dy + dy / height * 1.4).clamp(0.0, 1.0).toDouble()), s);
+      canvas.drawLine(ballPoint, target,
           Paint()
             ..color = Color.lerp(Colors.white.withAlpha(217),
                 AZColors.red.withAlpha(217), power)!
-            ..strokeWidth = 3.5 ..strokeCap = StrokeCap.round);
+            ..strokeWidth = width * .008
+            ..strokeCap = StrokeCap.round
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2));
       for (var i = 1; i <= 5; i++) {
+        final point = Offset.lerp(ballPoint, target, i / 6)!;
         canvas.drawCircle(
-            Offset(bx + dx * 1.4 * i / 6, by + dy * 1.4 * i / 6), 5,
+            point, width * .006 * (1 - i / 6 * .35),
             Paint()..color = AZColors.orange
                 .withAlpha(power > i / 5.0 ? 230 : 51));
       }
-      canvas.drawCircle(Offset(bx, by), s.width * 0.034,
+      canvas.drawCircle(ballPoint, width * 0.034 * _depth(ball.dy),
           Paint()
             ..color = Color.lerp(Colors.white38,
                 AZColors.red.withAlpha(153), power)!
-            ..style = PaintingStyle.stroke ..strokeWidth = 2.5);
+            ..style = PaintingStyle.stroke ..strokeWidth = width * .005);
     }
 
-    final bx = ball.dx * s.width; final by = ball.dy * s.height;
-    final br = s.width * _ballR;
-    canvas.drawCircle(Offset(bx + 2, by + 3), br * 0.88,
-        Paint()..color = Colors.black38
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7));
-    canvas.drawCircle(Offset(bx, by), br, Paint()..color = Colors.white);
-    final dimple = Paint()..color = const Color(0x1A000000);
+    final ballPoint = _project(ball, s);
+    final ballDepth = _depth(ball.dy);
+    final br = width * _ballR * ballDepth;
+    final speed = ballVelocity.distance;
+    if (moving && speed > .015) {
+      final direction = ballVelocity / speed;
+      for (var i = 4; i >= 1; i--) {
+        final tail = Offset(
+          (ball.dx - direction.dx * i * .018).clamp(0.0, 1.0).toDouble(),
+          (ball.dy - direction.dy * i * .018).clamp(0.0, 1.0).toDouble(),
+        );
+        final point = _project(tail, s);
+        final fade = (70 * (1 - i / 5) * (speed / .35).clamp(0.0, 1.0))
+            .round().clamp(0, 70).toInt();
+        canvas.drawCircle(point,
+            br * (1.65 - i * .16), Paint()
+              ..color = const Color(0xFFE8F8ED).withAlpha(fade)
+              ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
+      }
+    }
+    canvas.drawOval(Rect.fromCenter(
+        center: ballPoint.translate(br * .25, br * .62),
+        width: br * 2.3, height: br * .80), Paint()
+      ..color = Colors.black.withAlpha(90)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+    canvas.drawCircle(ballPoint.translate(0, -br * .12), br * 1.08, Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-.35, -.45),
+        colors: [Colors.white, const Color(0xFFE2E5E2), const Color(0xFF9CA8A0)],
+      ).createShader(Rect.fromCircle(center: ballPoint, radius: br * 1.08)));
+    final dimple = Paint()..color = const Color(0x26000000);
     for (var i = 0; i < 5; i++) {
       final a = i * 2 * pi / 5 - pi / 2;
       canvas.drawCircle(
-          Offset(bx + cos(a) * br * 0.52, by + sin(a) * br * 0.52),
-          br * 0.18, dimple);
+          Offset(ballPoint.dx + cos(a) * br * 0.52,
+              ballPoint.dy - br * .12 + sin(a) * br * 0.52),
+          br * 0.17, dimple);
     }
-    canvas.drawCircle(Offset(bx, by), br * 0.2, dimple);
-    canvas.drawCircle(Offset(bx - br * 0.36, by - br * 0.36), br * 0.30,
+    canvas.drawCircle(ballPoint.translate(0, -br * .12), br * .2, dimple);
+    canvas.drawCircle(ballPoint.translate(-br * .36, -br * .48), br * .30,
         Paint()..color = const Color(0xAAFFFFFF));
   }
 

@@ -25,10 +25,8 @@ import '../batak/batak_screen.dart';
 import '../family/firebase_table_menu.dart';
 import '../family/family_screen.dart';
 import '../football/football_quiz_screen.dart';
-import '../football/football_shot_screen.dart';
 import '../sprint/sprint_rules.dart';
 import '../sprint/sprint_screen.dart';
-import '../arcade3d/native_arcade_screen.dart';
 import '../arcade3d/three_arcade_screen.dart';
 import '../okey/okey_screens.dart';
 import '../profile/profile_screen.dart';
@@ -324,14 +322,14 @@ class _QuickGamesTab extends StatelessWidget {
       _sectionHeader('3D OYUNLAR'),
       _grid(context, [
         _QuickTile(
-          emoji: '🏎️', title: NativeArcadeGame.runway.title,
+          emoji: '🏎️', title: ThreeArcadeGame.runway.title,
           subtitle: 'Engellerden kaç · Enerji topla', gradient: _arcadeGrad,
-          onTap: () => _push(context, const NativeArcadeScreen(game: NativeArcadeGame.runway)),
+          onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.runway)),
         ),
         _QuickTile(
-          emoji: '📡', title: NativeArcadeGame.drones.title,
+          emoji: '📡', title: ThreeArcadeGame.drones.title,
           subtitle: 'Dronları yakala · Refleks', gradient: _arcadeGrad,
-          onTap: () => _push(context, const NativeArcadeScreen(game: NativeArcadeGame.drones)),
+          onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.drones)),
         ),
         _QuickTile(
           emoji: '🚀', title: ThreeArcadeGame.orbit.title,
@@ -343,17 +341,22 @@ class _QuickGamesTab extends StatelessWidget {
           subtitle: 'Kristalleri bul · Labirent', gradient: _strategyGrad,
           onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.maze)),
         ),
+        _QuickTile(
+          emoji: '🎳', title: ThreeArcadeGame.bowling.title,
+          subtitle: 'Hedef al • Üç atışta skor yap', gradient: _arcadeGrad,
+          onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.bowling)),
+        ),
       ]),
       const SizedBox(height: 26),
 
       _sectionHeader('⚽  FUTBOL ATÖLYESİ'),
       _grid(context, [
-        _QuickTile(emoji: '⚽', title: ShotMode.freeKick.title,
+        _QuickTile(emoji: '⚽', title: ThreeArcadeGame.freeKick.title,
           subtitle: 'Baraj · Falso · 6 vuruş', gradient: _strategyGrad,
-          onTap: () => _push(context, const FootballShotScreen(mode: ShotMode.freeKick))),
-        _QuickTile(emoji: '🥅', title: ShotMode.penalty.title,
+          onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.freeKick))),
+        _QuickTile(emoji: '🥅', title: ThreeArcadeGame.penalty.title,
           subtitle: 'Kaleciyi geç · 6 vuruş', gradient: _strategyGrad,
-          onTap: () => _push(context, const FootballShotScreen(mode: ShotMode.penalty))),
+          onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.penalty))),
         _QuickTile(emoji: '👟', title: FootballQuizMode.player.title,
           subtitle: 'Kariyer ipuçları · 6 soru', gradient: _arcadeGrad,
           onTap: () => _push(context, const FootballQuizScreen(mode: FootballQuizMode.player))),

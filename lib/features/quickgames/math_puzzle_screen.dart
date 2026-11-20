@@ -112,34 +112,144 @@ class _MathSessionState extends State<_MathSession> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AZFrostCard(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF4A78B8), Color(0xFF294E82), Color(0xFF1C355E)],
+            ),
+            borderRadius: BorderRadius.circular(AZRadius.lg),
+            border: Border.all(color: Colors.white.withAlpha(100), width: 1.3),
+            boxShadow: const [
+              BoxShadow(color: Color(0x55000000), blurRadius: 12, offset: Offset(0, 6)),
+              BoxShadow(color: Color(0x334A9EFF), blurRadius: 10, offset: Offset(0, 1)),
+            ],
+          ),
           child: Text(
             '${widget.player.name}  ${_index + 1}/8  $_score puan',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-        ),
-        const SizedBox(height: AZSpacing.lg),
-        Text(
-          item.text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: AZSpacing.lg),
-        for (final option in item.options)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AZSpacing.sm),
-            child: SizedBox(
-              height: 52,
-              child: FilledButton(
-                onPressed: () => _pick(option),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AZColors.textPrimary,
-                ),
-                child: Text('$option', style: const TextStyle(fontSize: 18)),
-              ),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              shadows: [Shadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 2))],
             ),
           ),
+        ),
+        const SizedBox(height: AZSpacing.lg),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(scale: Tween<double>(begin: .94, end: 1).animate(animation), child: child),
+          ),
+          child: Container(
+            key: ValueKey(_index),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF477FBA), Color(0xFF24527F), Color(0xFF12344F)],
+              ),
+              borderRadius: BorderRadius.circular(AZRadius.lg),
+              border: Border.all(color: Colors.white.withAlpha(130), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Color(0x77000000), blurRadius: 18, offset: Offset(0, 9)),
+                BoxShadow(color: Color(0x443AABFF), blurRadius: 18, offset: Offset(0, 1)),
+              ],
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 2,
+                  right: 2,
+                  top: -22,
+                  child: Container(
+                    height: 24,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.white.withAlpha(34), Colors.transparent],
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    item.text,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                      shadows: [Shadow(color: Colors.black45, blurRadius: 7, offset: Offset(0, 3))],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AZSpacing.lg),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOutCubic,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, .04), end: Offset.zero).animate(animation),
+              child: child,
+            ),
+          ),
+          child: Column(
+            key: ValueKey('options-$_index'),
+            children: [
+              for (final option in item.options)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AZSpacing.sm),
+                  child: SizedBox(
+                    height: 58,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF183759),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x66000000), blurRadius: 9, offset: Offset(0, 5)),
+                          BoxShadow(color: Color(0x443C9BE8), blurRadius: 8, offset: Offset(0, 1)),
+                        ],
+                      ),
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: SizedBox.expand(
+                        child: FilledButton(
+                          onPressed: () => _pick(option),
+                          style: FilledButton.styleFrom(
+                            elevation: 3,
+                            shadowColor: Colors.black54,
+                            backgroundColor: const Color(0xFFF7FBFF),
+                            foregroundColor: AZColors.textPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              side: const BorderSide(color: Color(0xFFB8DDF7), width: 1.2),
+                            ),
+                          ),
+                          child: Text(
+                            '$option',
+                            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }

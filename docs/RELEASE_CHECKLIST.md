@@ -6,6 +6,7 @@ Bu dosya 20 Kasım 2026 tarihinde kontrol edilen hesap durumunu ve cihazda tamam
 
 - Firebase projesi `azoyun-569b2`. Console proje özetinde Spark planı, Functions ekranında ilk yayının beklendiği görüldü. Zamanlanmış temizlik için Blaze planı ve faturalandırma gerekir. Üretimde temizlik fonksiyonu henüz doğrulanmadı.
 - Play Games projesi `517819561284`. Saved Games etkin ve yayınlanmış. Android kimlik bilgisinin paket adı `com.ferdidrgn.azgame` ve durumu yayınlanmış.
+- 21 Kasım 2026 Play Console kontrolü: Play Games Android OAuth kimlik bilgisi `com.ferdidrgn.azgame` paketine bağlı ve yayımlanmış. SHA-1 `A6:C4:BD:55:E3:A7:DF:8E:5B:E2:EA:FF:6A:98:B9:58:B3:10:8E:17`; Play App Signing sertifikasıyla eşleşme bu oturumda doğrulanamadı.
 - `Total XP` tablosu `CgkIxOrNg4kPEAIQEA` kimliğiyle yayınlandı. Sayı biçimi tam sayı, sıralaması büyükten küçüğe. Play Games yayın ekranında işlemin ardından yayınlanacak değişiklik kalmadığı görüldü. Cihazda skor gönderme ve listeyi açma testi bekliyor.
 - Dokuz başarım yayınlandı. `hundred_games` için 100 Matches kimliği `CgkIxOrNg4kPEAIQEQ`, `ten_game_types` için Game Explorer kimliği `CgkIxOrNg4kPEAIQEg`. Kod varsayılanları gerçek kimlikleri kullanıyor; boş CI değişkenleri bu değerleri ezmiyor.
 - Oyun kodları main'e `77809cc`, QR telefon düzeltmesi `d8a3272` ile gönderildi. Web yayını başarılı; 19 API/web testi gerçek HTTP soketleriyle, beş temizlik testi ve 61 Flutter testi GitHub Linux CI'da geçti. Dahili AAB işi ayrıca izlenmeli.
@@ -49,7 +50,7 @@ Paket kontrolü için `scripts/check-android-bundle.py`, imzalı AAB'yi ve `bund
 
 ## Dahili kanal ve iki cihazda Saved Games
 
-1. Main'e gönderilen kod `1.0.0+21` AAB üretir. Varsayılan Play kanalı `internal`. Servis hesabının dahili sürüm yayınlama izni gerekir. Başarısız yüklemede imzalı AAB, Actions'ın `azoyun-signed-aab` çıktısından alınabilir.
+1. Main'deki `1.0.0+21` ARM32/ARM64 AAB üretimi ve test adımları geçti; Actions çıktısı `14598192802` (`azoyun-signed-aab`, 54.6 MB), SHA-256 `6508d1ff2d4754740529bc06b7f2761e3bbad1b8c46d4a60f83d0d91bb0312c8`. Play Console dahili test yüklemesi `The caller does not have permission` hatasıyla başarısız oldu. GitHub Actions'taki Play servis hesabına AZGame için en düşük gerekli **Release apps to testing tracks** izni verilmeden mağaza testi başlamaz; üretim yayınlama izni gerekmez. Bu AAB'nin Play'den indirilmiş test kurulumu veya gerçek cihaz testi sayılmaz. [Google Play izinleri](https://support.google.com/googleplay/android-developer/answer/9844686?hl=en)
 2. Play Console → Dahili test bölümüne iki test hesabını ekle. Play Games → Test kullanıcıları altında da bu hesapların yetkili olduğunu doğrula.
 3. Bir test cihazında temiz kurulum, diğerinde mevcut mağaza sürümünden yükseltme yap. Uygulama verilerini temizleme testini kişisel ana cihaz yerine test cihazında uygula.
 4. Birinci cihazda Play Games'e bağlan. Maç bitirip XP, seviye ve başarımları kaydet. Profilde bulut eşitlemesinin tamamlandığını gör.
@@ -64,6 +65,7 @@ Paket kontrolü için `scripts/check-android-bundle.py`, imzalı AAB'yi ve `bund
 | --- | --- | --- |
 | Bütün çevrimiçi oyunlar | Kod, QR, dolu/kapalı oda, eşzamanlı katılım, zayıf ağ, Geri, arka plan, sonuç, rövanş | Otomatik testler var, her oyunun fiziksel cihaz turu bekliyor |
 | Tekli oyunlar | Küçük ekran, büyük yazı, çevrimdışı açılış, duraklatma, tekrar deneme | Tam katalog cihaz turu bekliyor |
+| PC/web oyunları | Masaüstü yerleşimi, 2048 yön tuşları, odak görünümü ve tahta/eylem hizası | Yerleşim ve klavye ipucu güncellendi; tarayıcı doğrulaması bekliyor |
 | Yeni aile oyunları | Gizli veri projeksiyonu, sekiz kişilik rol katılımı, kelime kuralları, oylar ve sonuç | 19 API/web testi GitHub Linux CI'da gerçek HTTP bağlantılarıyla geçti |
 | Firebase odaları | Canlı oyuncuyu koruma, yeniden bağlanma, boş/biten oda ömrü | Beş politika testi geçti, üretim yayını bekliyor |
 | Sahne motoru | Mini Golf kare süreleri, yarış/dövüşte ortak döngü ihtiyacı, Flame karşılaştırması | Düşük donanımlı fiziksel Android ölçümü bekliyor |

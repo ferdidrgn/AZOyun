@@ -41,14 +41,18 @@ class MahalleBoard extends StatelessWidget {
     return AspectRatio(
       aspectRatio: 1,
       child: Container(
-        padding: const EdgeInsets.all(5),
+        padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: const Color(0xff8a583a),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xffd2a16a), Color(0xff815033), Color(0xff503122)],
+          ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xffca9764), width: 2),
+          border: Border.all(color: const Color(0xffe1b47b), width: 2),
           boxShadow: const [
-            BoxShadow(
-                color: Colors.black38, blurRadius: 10, offset: Offset(0, 5))
+            BoxShadow(color: Colors.black45, blurRadius: 14, offset: Offset(0, 8)),
+            BoxShadow(color: Color(0x66f3d1a0), blurRadius: 2, offset: Offset(0, -1)),
           ],
         ),
         child: ClipRRect(
@@ -63,7 +67,9 @@ class MahalleBoard extends StatelessWidget {
                     colors: [Color(0xff326653), Color(0xff183e34)],
                     radius: .88,
                   )),
-                  child: Center(
+                  child: CustomPaint(
+                    painter: const _CityCenterPainter(),
+                    child: Center(
                       child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -138,6 +144,109 @@ class MahalleBoard extends StatelessWidget {
   }
 }
 
+class _CityCenterPainter extends CustomPainter {
+  const _CityCenterPainter();
+
+  void _building(Canvas canvas, Rect rect, Color color) {
+    final lift = rect.height * .20;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.shift(Offset(0, lift)), const Radius.circular(3)),
+      Paint()..color = Colors.black.withAlpha(60)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    final front = Path()
+      ..moveTo(rect.left, rect.top + lift)
+      ..lineTo(rect.right - lift * .45, rect.top + lift)
+      ..lineTo(rect.right - lift * .45, rect.bottom)
+      ..lineTo(rect.left, rect.bottom)
+      ..close();
+    final side = Path()
+      ..moveTo(rect.right - lift * .45, rect.top + lift)
+      ..lineTo(rect.right, rect.top)
+      ..lineTo(rect.right, rect.bottom - lift * .55)
+      ..lineTo(rect.right - lift * .45, rect.bottom)
+      ..close();
+    final roof = Path()
+      ..moveTo(rect.left, rect.top + lift)
+      ..lineTo(rect.left + lift * .55, rect.top)
+      ..lineTo(rect.right, rect.top)
+      ..lineTo(rect.right - lift * .45, rect.top + lift)
+      ..close();
+    canvas.drawPath(front, Paint()..color = color);
+    canvas.drawPath(side, Paint()..color = Color.lerp(color, Colors.black, .28)!);
+    canvas.drawPath(roof, Paint()..color = Color.lerp(color, Colors.white, .22)!);
+    final window = Paint()..color = const Color(0xFFFFE4A0).withAlpha(185);
+    final windowW = rect.width * .12;
+    final windowH = rect.height * .12;
+    for (var row = 0; row < 2; row++) {
+      for (var col = 0; col < 2; col++) {
+        canvas.drawRRect(RRect.fromRectAndRadius(
+          Rect.fromLTWH(rect.left + rect.width * (.20 + col * .32),
+              rect.top + lift + rect.height * (.35 + row * .32), windowW, windowH),
+          const Radius.circular(1)), window);
+      }
+    }
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final unit = w / 5;
+    final street = Paint()..color = const Color(0xFF344A43);
+    final curb = Paint()..color = const Color(0xFF9B9B7E);
+    final horizontal = Rect.fromLTWH(w * .205, h * .442, w * .59, h * .116);
+    final vertical = Rect.fromLTWH(w * .442, h * .205, w * .116, h * .59);
+    canvas.drawRRect(RRect.fromRectAndRadius(horizontal.inflate(2), const Radius.circular(5)), curb);
+    canvas.drawRRect(RRect.fromRectAndRadius(vertical.inflate(2), const Radius.circular(5)), curb);
+    canvas.drawRRect(RRect.fromRectAndRadius(horizontal, const Radius.circular(4)), street);
+    canvas.drawRRect(RRect.fromRectAndRadius(vertical, const Radius.circular(4)), street);
+
+    final dash = Paint()
+      ..color = const Color(0x99E7D39F)
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+    for (var x = w * .24; x < w * .76; x += unit * .24) {
+      canvas.drawLine(Offset(x, h * .5), Offset(x + unit * .11, h * .5), dash);
+    }
+    for (var y = h * .24; y < h * .76; y += unit * .24) {
+      canvas.drawLine(Offset(w * .5, y), Offset(w * .5, y + unit * .11), dash);
+    }
+
+    final blocks = [
+      Rect.fromLTWH(w * .245, h * .245, unit * .78, unit * .72),
+      Rect.fromLTWH(w * .60, h * .245, unit * .78, unit * .72),
+      Rect.fromLTWH(w * .245, h * .605, unit * .78, unit * .72),
+      Rect.fromLTWH(w * .60, h * .605, unit * .78, unit * .72),
+    ];
+    const colors = [
+      Color(0xFFD58E59), Color(0xFF9C788E),
+      Color(0xFFCCB06F), Color(0xFF77947A),
+    ];
+    for (var i = 0; i < blocks.length; i++) {
+      _building(canvas, blocks[i], colors[i]);
+    }
+
+    final park = Rect.fromCenter(center: Offset(w * .5, h * .5),
+        width: w * .12, height: h * .12);
+    canvas.drawOval(park.shift(Offset(0, unit * .045)),
+        Paint()..color = Colors.black.withAlpha(70));
+    canvas.drawOval(park, Paint()..color = const Color(0xFF4F8A58));
+    for (final point in [
+      Offset(w * .475, h * .49), Offset(w * .525, h * .49),
+      Offset(w * .475, h * .525), Offset(w * .525, h * .525),
+    ]) {
+      canvas.drawCircle(point.translate(0, 2), unit * .035,
+          Paint()..color = Colors.black.withAlpha(70));
+      canvas.drawCircle(point.translate(0, -unit * .008), unit * .032,
+          Paint()..color = const Color(0xFF78A968));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CityCenterPainter oldDelegate) => false;
+}
+
 class _Lot extends StatelessWidget {
   const _Lot(
       {required this.district,
@@ -155,17 +264,36 @@ class _Lot extends StatelessWidget {
     final level = deed['level'] as int? ?? 0;
     return Material(
       color: selected ? const Color(0xffffe7b3) : const Color(0xfff8edd5),
+      elevation: selected ? 5 : 1.2,
+      shadowColor: selected ? const Color(0xAAE69134) : Colors.black45,
+      borderRadius: BorderRadius.circular(4),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
+        borderRadius: BorderRadius.circular(4),
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: selected
+                    ? const [Color(0xfffff1cf), Color(0xfff2dca9)]
+                    : const [Color(0xfffff9e9), Color(0xffe8d9bb)],
+              ),
               border: Border.all(
             color: selected ? const Color(0xfff39e44) : const Color(0xff8d7958),
             width: selected ? 2 : .7,
           )),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Container(height: 6, color: _groups[district.group]),
+            SizedBox(
+              height: 6,
+              child: Row(children: [
+                Expanded(child: ColoredBox(color: _groups[district.group])),
+                if (owner != null)
+                  SizedBox(width: 12, child: ColoredBox(color: mahalleSeatColor(owner))),
+              ]),
+            ),
             Expanded(
                 child: Padding(
               padding: const EdgeInsets.fromLTRB(2, 2, 2, 0),
@@ -196,12 +324,79 @@ class _Lot extends StatelessWidget {
                               fontWeight: FontWeight.w700)),
                   ]),
             )),
-            const SizedBox(height: 13),
+            SizedBox(
+              height: 13,
+              child: CustomPaint(
+                painter: _PropertyBuildingPainter(
+                  level: level,
+                  color: owner == null ? _groups[district.group] : mahalleSeatColor(owner),
+                ),
+              ),
+            ),
           ]),
         ),
       ),
     );
   }
+}
+
+class _PropertyBuildingPainter extends CustomPainter {
+  const _PropertyBuildingPainter({required this.level, required this.color});
+  final int level;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final count = level.clamp(0, 4).toInt();
+    if (count == 0 || size.width <= 0) return;
+    final buildingWidth = (size.width / (count * 2.1)).clamp(4.0, 9.0).toDouble();
+    final buildingHeight = size.height * .72;
+    final gap = buildingWidth * .30;
+    final total = count * buildingWidth + (count - 1) * gap;
+    final startX = (size.width - total) / 2;
+    final frontColor = Color.lerp(color, Colors.white, .12)!;
+    final sideColor = Color.lerp(color, Colors.black, .30)!;
+    final roofColor = Color.lerp(color, Colors.white, .38)!;
+    for (var i = 0; i < count; i++) {
+      final left = startX + i * (buildingWidth + gap);
+      final top = size.height - buildingHeight;
+      final rect = Rect.fromLTWH(left, top, buildingWidth, buildingHeight);
+      final bevel = buildingWidth * .20;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect.translate(0, 1.2), const Radius.circular(1)),
+        Paint()..color = Colors.black.withAlpha(70),
+      );
+      final front = Path()
+        ..moveTo(rect.left, rect.top + bevel)
+        ..lineTo(rect.right - bevel * .45, rect.top + bevel)
+        ..lineTo(rect.right - bevel * .45, rect.bottom)
+        ..lineTo(rect.left, rect.bottom)
+        ..close();
+      final side = Path()
+        ..moveTo(rect.right - bevel * .45, rect.top + bevel)
+        ..lineTo(rect.right, rect.top)
+        ..lineTo(rect.right, rect.bottom - bevel * .45)
+        ..lineTo(rect.right - bevel * .45, rect.bottom)
+        ..close();
+      final roof = Path()
+        ..moveTo(rect.left, rect.top + bevel)
+        ..lineTo(rect.left + bevel * .5, rect.top)
+        ..lineTo(rect.right, rect.top)
+        ..lineTo(rect.right - bevel * .45, rect.top + bevel)
+        ..close();
+      canvas.drawPath(front, Paint()..color = frontColor);
+      canvas.drawPath(side, Paint()..color = sideColor);
+      canvas.drawPath(roof, Paint()..color = roofColor);
+      final window = Paint()..color = const Color(0xFFFFE7AD).withAlpha(210);
+      canvas.drawRect(Rect.fromLTWH(rect.left + buildingWidth * .24,
+          rect.top + bevel + buildingHeight * .46, buildingWidth * .12,
+          buildingHeight * .14), window);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PropertyBuildingPainter oldDelegate) =>
+      oldDelegate.level != level || oldDelegate.color != color;
 }
 
 class _DiceFace extends StatelessWidget {

@@ -826,23 +826,105 @@ class _SoccerFieldPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, W, H));
     canvas.drawRect(Rect.fromLTWH(0, 0, W, H), grassPaint);
 
-    // Çim şeritleri
-    for (var i = 0; i < 10; i++) {
-      if (i.isOdd) {
-        canvas.drawRect(
-            Rect.fromLTWH(0, H * i / 10, W, H / 10),
-            Paint()..color = const Color(0x0C000000));
+    double fieldLeft(double y) => W * 0.11 * (1 - y / H);
+    double fieldRight(double y) => W - fieldLeft(y);
+    final standBottom = H * .22;
+    final standPath = Path()
+      ..moveTo(0, 0)
+      ..lineTo(W, 0)
+      ..lineTo(fieldRight(standBottom), standBottom)
+      ..lineTo(fieldLeft(standBottom), standBottom)
+      ..close();
+    canvas.save();
+    canvas.clipPath(standPath);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, W, standBottom),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF111D2B), Color(0xFF334154), Color(0xFF172A35)],
+        ).createShader(Rect.fromLTWH(0, 0, W, standBottom)),
+    );
+    for (var row = 0; row < 5; row++) {
+      final y = H * (.035 + row * .032);
+      for (var col = 0; col < 32; col++) {
+        final x = W * (col + .5) / 32;
+        final tint = ((row * 17 + col * 13) % 5);
+        final colors = const [
+          Color(0xFF8FA9AF), Color(0xFFD0B987), Color(0xFF78918E),
+          Color(0xFF6D7D93), Color(0xFFAF7566),
+        ];
+        canvas.drawCircle(
+          Offset(x, y),
+          W * .0034,
+          Paint()..color = colors[tint].withAlpha(130 + (col % 3) * 30),
+        );
       }
     }
+    for (final side in [W * .055, W * .945]) {
+      final beam = Path()
+        ..moveTo(side - W * .035, H * .18)
+        ..lineTo(side + W * .035, H * .18)
+        ..lineTo(side + W * .018, H * .045)
+        ..lineTo(side - W * .018, H * .045)
+        ..close();
+      canvas.drawPath(beam, Paint()..color = Colors.white.withAlpha(20));
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(side, H * .045), width: W * .065, height: H * .018),
+        Paint()
+          ..color = const Color(0xFFFFF4C7).withAlpha(210)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+      );
+    }
+    canvas.restore();
+
+    // Çim şeritleri
+    final fieldPath = Path()
+      ..moveTo(fieldLeft(0), 0)
+      ..lineTo(fieldRight(0), 0)
+      ..lineTo(W, H)
+      ..lineTo(0, H)
+      ..close();
+    canvas.save();
+    canvas.clipPath(fieldPath);
+    for (var i = 0; i < 10; i++) {
+      if (i.isOdd) {
+        final y0 = H * i / 10;
+        final y1 = H * (i + 1) / 10;
+        final band = Path()
+          ..moveTo(fieldLeft(y0), y0)
+          ..lineTo(fieldRight(y0), y0)
+          ..lineTo(fieldRight(y1), y1)
+          ..lineTo(fieldLeft(y1), y1)
+          ..close();
+        canvas.drawPath(band, Paint()..color = const Color(0x0C000000));
+      }
+    }
+    canvas.restore();
 
     // ── Orta çizgi & çember ──────────────────────────────────────────────
     final linePaint = Paint()
       ..color = Colors.white.withAlpha(70)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
-    canvas.drawLine(Offset(0, H * 0.5), Offset(W, H * 0.5), linePaint);
-    canvas.drawCircle(Offset(W * 0.5, H * 0.5), W * 0.12, linePaint);
-    canvas.drawCircle(Offset(W * 0.5, H * 0.5), 4,
+    canvas.drawLine(Offset(fieldLeft(0), 0), Offset(0, H), linePaint);
+    canvas.drawLine(Offset(fieldRight(0), 0), Offset(W, H), linePaint);
+    final centerY = H * 0.55;
+    canvas.drawLine(
+      Offset(fieldLeft(centerY), centerY),
+      Offset(fieldRight(centerY), centerY),
+      linePaint,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(W * 0.5, centerY),
+        width: W * 0.24,
+        height: H * 0.11,
+      ),
+      linePaint,
+    );
+    canvas.drawCircle(Offset(W * 0.5, centerY), 4,
         Paint()..color = Colors.white.withAlpha(70));
 
     // ── Kale çizgisi & alan ───────────────────────────────────────────────
@@ -851,12 +933,24 @@ class _SoccerFieldPainter extends CustomPainter {
     final goalY     = H * _kGoalBottom;
 
     // Ceza sahası
-    canvas.drawRect(
-        Rect.fromLTRB(W * 0.08, 0, W * 0.92, H * 0.30),
-        Paint()
-          ..color = Colors.white.withAlpha(25)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.2);
+    final penaltyPath = Path()
+      ..moveTo(W * 0.25, goalY + H * 0.015)
+      ..lineTo(W * 0.75, goalY + H * 0.015)
+      ..lineTo(W * 0.88, H * 0.39)
+      ..lineTo(W * 0.12, H * 0.39)
+      ..close();
+    canvas.drawPath(
+      penaltyPath,
+      Paint()
+        ..color = Colors.white.withAlpha(42)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+    canvas.drawCircle(
+      Offset(W * 0.5, H * 0.30),
+      W * 0.006,
+      Paint()..color = Colors.white.withAlpha(90),
+    );
 
     // ── Kale ağı (3D görünüm) ─────────────────────────────────────────────
     final netDepth = H * _kNetDepth;
@@ -957,7 +1051,17 @@ class _SoccerFieldPainter extends CustomPainter {
     }
 
     // ── Top ──────────────────────────────────────────────────────────────
-    _drawBall(canvas, ball.dx * W, ball.dy * H, W * _kBallRadius, spin, ballVel);
+    final ballDepth = (0.68 + ball.dy.clamp(0.0, 1.0) * 0.48)
+        .clamp(0.68, 1.16)
+        .toDouble();
+    _drawBall(
+      canvas,
+      ball.dx * W,
+      ball.dy * H,
+      W * _kBallRadius * ballDepth,
+      spin,
+      ballVel,
+    );
   }
 
   /// Kale direği

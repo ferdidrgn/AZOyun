@@ -1,18 +1,39 @@
 # AZOyun oyun geliştirme ve ilerleme takibi
 
+## 20 Kasım 2026 · 3D oyun görsel turu
+
+- [x] Ortak Three.js motoruna Neon Pist, Sinyal Avı, Yörünge Pilotu, Kristal Labirent, Mini Bowling, Frikik ve Penaltı modları bağlandı. Ortak HUD, duraklatma, yüksek skor, mobil dokunma ve gölge/ışık profili kullanılıyor.
+- [x] Flutter oyun sahnelerinde perspektif/gölge/hacim turu: Satranç, Dama, Reversi, Karambol, Dörtlü Diz, Çizgi Doldurma, Sürgülü Bulmaca, Taş Alma, Pac Labirent, Tiger Run, Şerit Yarışı, Mini Golf, Mahalleler, Futbol ve Dövüş. Oyun kuralları ve girişler korundu; çoğu sahne Three.js değil, 2.5D/izometrik CustomPainter çizimi.
+- [x] 3D/2.5D görsel turu genişletildi: Renk Hafızası, Balon Patlatma, Maymun Dokunuşu, Çizip Parçalama, Yılan, Tırnak Salonu, Adam Asmaca, Hıçkırık Kulesi, Matematik Bulmacası, Farkı Bul, Scuba Sweep, Refleks Çarpışması, Üçlü Eşle, Sayı Sayma, Mini Bowling, mobil ve web Taş-Kâğıt-Makas, web Zar Oyunu ve Ayna Odası klavye kontrolleri. Oyun kuralları, skor ve giriş akışları korundu.
+- [x] Zar Partisi zarlarına perspektifli yuvarlanma, bevel, parlak yüzey ve tutulu zar vurgusu; çocuk oyunlarına özel sahne çizimleri eklendi. Ters Mama seçenekleri kısa ekranlara sığan iki sütunlu, yükseltilmiş dokunma kartlarıyla sunuluyor.
+- [ ] Katalogdaki bütün oyunları kategori kategori son kez gözden geçir. Gerçek Three.js kamera dönüşümü bütün oyunlara uygulanmadı; Flutter sahnelerinin çoğu 2.5D/CustomPainter çizimidir.
+- [ ] Flutter derlemesi ve PC/Android/iOS gerçek cihaz turu yapılmadı. Three.js WebGL performansı, ekran oranları, dokunma ve bağlam geri yükleme cihazlarda doğrulanmalı.
+
+## 20 Kasım 2026 · PC/web devamı
+
+- [x] Tek kişilik web oyunlarında ortak oyun paneli, tahta, canvas ve yeniden başlatma eylemi masaüstünde ortalandı.
+- [x] 2048 PC/web oyununa derinlikli taş görünümü, bevel/ışık/gölge, içe çöken boş hücreler ve puan göstergeleri eklendi; yön tuşu kontrol ipucu korundu.
+- [x] Ayna Odası web oyununda 1–4 tuşlarıyla işaret seçimi, kısa klavye yönergesi, odak aktarımı ve erişilebilir kısayol etiketleri eklendi; Tab/Enter/Boşluk davranışı korundu.
+- [x] Zar Oyunu web sürümüne hacimli zarlar, zar atma animasyonu ve eldeki puan/son olay paneli eklendi; tur ve puan kuralları korundu.
+- [x] Web Taş-Kâğıt-Makas'ta seçim taşları, kazanan vurgusu ve tur özeti derinlikli görsel düzene geçirildi; tıklama akışı korundu.
+- [x] Futbol sahnesine daralan ufuk çizgileri, perspektif ceza alanı ve konuma göre ölçeklenen top eklendi; gerçek cihazdaki görsel tur ve tam 3D kamera çalışması hâlâ açık.
+- [ ] Değişiklik GitHub'a gönderildikten sonra PC tarayıcısında ve CI'da doğrula.
+
 ## 20 Kasım 2026 · Aile oyunları ve yayın hazırlığı
 
 - [x] Kelime Tahtası eklendi. 2–4 telefon, yedi gizli harf, 11×11 ortak tahta, sınırlı Türkçe aile sözlüğü, çapraz kelime doğrulaması, puan, harf değişimi, pas ve sonuç var.
 - [x] Gizli Rol eklendi. 4–8 oyuncu, sabotajcı/gözcü/koruyucu/köylü, gizli gece görevleri, gündüz tartışması, açıklanan oylar, elenme ve takım sonucu var.
 - [x] Yeni oyunlar mevcut Aile Masası API'sinde çalışıyor. TV ve izleyiciye özel eller, roller ve gece hedefleri gönderilmiyor. Mobil ve web menüleri eklendi. Rövanş yeni maç kimliğiyle açılıyor.
 - [x] GitHub Linux CI'da 19 API/web senaryosu gerçek HTTP bağlantılarıyla, beş Firebase temizlik testi ve 61 Flutter testi geçti. Web sürümü Firebase Hosting'e yayınlandı.
-- [x] Sürüm `1.0.0+21` hazırlandı. Main iş akışı ARM 32/64 bit imzalı AAB'yi dahili test kanalına gönderecek şekilde değiştirildi. AAB ayrıca Actions çıktısı olarak saklanıyor.
+- [x] Sürüm `1.0.0+21` için ARM 32/64 bit imzalı AAB üretildi ve Actions çıktısına kaydedildi. Dahili test kanalına yükleme, Play servis hesabı izin hatası (`The caller does not have permission`) nedeniyle tamamlanmadı; mağazadaki sürüm hâlâ 20.
 - [x] Play Console'da Saved Games'in ve yedi başarımın yayınlanmış olduğu görüldü. Uygulamadaki yedi başarımın gerçek kimlikleri eşlendi. Total XP tablosu `CgkIxOrNg4kPEAIQEA` kimliğiyle yayınlandı. Play Games yayın ekranında bekleyen değişiklik kalmadığı doğrulandı.
 - [x] 100 Matches (`CgkIxOrNg4kPEAIQEQ`) ve Game Explorer (`CgkIxOrNg4kPEAIQEg`) başarımları oluşturuldu ve yayınlandı. Dokuz başarımın kod varsayılanları gerçek kimliklerle tamamlandı.
 - [ ] Aynı hesapla iki fiziksel Android cihazında bulut geri yüklemeyi, başarımları ve XP tablosunu açmayı test et.
 - [ ] Üretim HTTPS API'si ve temizlik fonksiyonunu yayınla. Firebase Console'da proje Spark planında ve ilk Functions yayını bekleniyor. Blaze/faturalandırma adımı tamamlanmalı veya HTTPS API için mevcut bir kalıcı sunucu kullanılmalı.
 - [x] Oyun değişiklikleri main'e `77809cc` ile gönderildi. Telefon katılım alanlarının gizlenmesi ve güvenli depolama beklemesi `d8a3272` ile düzeltildi; 61 Flutter testi geçti. [Doğrulama](https://github.com/ferdidrgn/AZOyun/actions/runs/44665962774).
 - [x] Hesap, HTTPS, Android TV, 16 KB, AAB, test kanalı ve cihaz kontrolleri [yayın kontrol dosyasında](docs/RELEASE_CHECKLIST.md) toplandı.
+- [x] Play Console'da Chromecast HD'nin kaydolunmamış TV durumu ve eski test kanallarının `android.hardware.faketouch` zorunluluğu görüldü. Özellik isteğe bağlı yapıldı (`e1ec469`). Android TV form faktörü eklendi; ekran görüntüleri ve inceleme adımları bekliyor. RK3326/sgo tüm cihaz aramalarında bulunamadı.
+- [x] İmzalı AAB için ABI, ARM64 ELF/RELRO 16 KB hizalama ve derlenmiş TV manifest denetimi `scripts/check-android-bundle.py` içine eklendi. Yeni AAB üzerinde çalıştırılıp raporu saklanacak.
 
 ## Aile oyunları ve Firebase odaları
 
@@ -33,8 +54,8 @@
 - [x] Batak eklenmiş Flutter web sürümü başarıyla derlendi.
 - [ ] Batak’ı dört telefonla canlı Firebase üzerinde dene. TV’de QR katılımı, kumandayla başlatma, dört dağıtım ve bağlantı kesilip geri gelme senaryolarını tamamla.
 - [ ] Mahalleler’i iki ve dört cihazla canlı Firebase üzerinde dene. Özellikle ihale sırası, piyon hareketi ve Android TV ile telefon arasındaki QR katılımı.
-- [ ] Futbolda kale, oyuncu ve topa derinlik veren 3D kamera ve şut sahnesi. Bu çalışma masa oyunlarından sonraki aşamada.
-- [ ] Futbol tahmin ekranlarını ve katalogdaki diğer soru temelli oyunları ayrı oynanışlara dönüştür.
+- [x] Frikik Ustası ve Penaltı Antrenmanı için Three.js ile 3D kale, kaleci, baraj, top uçuşu ve altı vuruş akışı eklendi. Çevrimiçi Futbol oyunu ayrı 2.5D sahne; cihaz kontrolü bekliyor.
+- [x] Futbolcuyu Bil ipucu/tek tahmin, Takımı Bul ise renkli armalı kart eleme ve ek ipucu akışı kullanıyor. Hedef Atışı ve Denge Hattı da soru ekranı yerine refleks/top kontrolü oynanışına sahip. Katalogdaki diğer soru oyunları ayrıca taranmalı.
 
 ## 18 Kasım 2026 · Çevrimiçi oyunların onarımı
 
@@ -49,7 +70,7 @@
 - [ ] Penaltı Düellosu ve Serbest Vuruş’u iki fiziksel Android cihazında QR davetinden maç sonucuna kadar test et. Penaltı’da rövanşı ve Serbest Vuruş’ta ağ kesintisi sonrası skor tekrarını doğrula.
 - [ ] Play Console’da Play Games Android kimlik bilgisinin `com.ferdidrgn.azgame` ve **Play App Signing** sertifikasının SHA-1 değeriyle eşleştiğini doğrula. Play Games Services yapılandırması yayınlanmadıysa dahili test hesabına erişim ver. Oyunu Play Store test kanalından kurup giriş ve Saved Games geri yüklemesini doğrula. [Android Developers](https://developer.android.com/games/pgs/android/troubleshooting)
 - [x] Aile Masası mobil ve TV ekranı, API adresini yayınlanan web yapılandırmasından okuyabiliyor. Özel sunucular için elle adres girişi var. HTTPS sunucusu ve kalıcı oda/profil dosyaları için Docker Compose eklendi.
-- [ ] Aile Masası API’sini gerçek HTTPS adresine yayınla, GitHub `FAMILY_API_URL` değişkenini ayarla ve web yapılandırmasını yayınla. Mağazadaki sürüm için HTTPS adresini elle girerek test et.
+- [ ] Aile Masası API’sini gerçek HTTPS adresine yayınla, GitHub `FAMILY_API_URL` değişkenini ayarla ve web yapılandırmasını yayınla. Mağazadaki sürüm için HTTPS adresini elle girerek test et. Yayınlanabilir VPS/domain henüz sağlanmadı; Firebase projesi Spark planında.
 - [ ] Play Console Android TV form faktörü, mağaza varlıkları, TV incelemesi ve Cihaz Kataloğu’ndaki Chromecast HD / RK3326 uyumsuzluk nedenleri. 32/64 bit AAB, 16 KB sayfa uyumu ve kumandayla gerçek cihaz testi. [Yayın adımları](docs/FAMILY_TABLE.md#chromecast-with-google-tv-hd)
 
 ## Oyun geliştirme sırası
