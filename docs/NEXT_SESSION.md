@@ -45,7 +45,7 @@
 
 Oyun kodları main'e `77809cc094fe18af15cc3d9e75e2a7a892900090` ile gönderildi. QR telefon düzeltmesi `d8a327278a6e9889a240a6c12fee67944bc2b76c` ile main'de. [Web yayını](https://github.com/ferdidrgn/AZOyun/actions/runs/44665021186) başarılı. Son Play Games kimlikleri `b214ea53b6ede35bc94a589a6958fe0fb101920e` ile main'e gönderildi. [İmzalı AAB dahili kanal işi](https://github.com/ferdidrgn/AZOyun/actions/runs/44666860253) tamamlandı: test/derleme ve artifact saklama başarılı; Play yüklemesi `The caller does not have permission` ile başarısız. Artifact ID `14598192802`, SHA-256 `6508d1ff2d4754740529bc06b7f2761e3bbad1b8c46d4a60f83d0d91bb0312c8`.
 
-Son oyun/UI çalışmaları `71182cf` ile `codex/web-oyun-salonu` dalında saklı. `codex/release21-transfer` yalnızca tek seferlik AAB doğrulama iş akışı ve eski bir Git bundle içerir; çalışan kaynak değişiklikleri main'de ayrıca bulunduğundan o dalı main'e birleştirme. Yerel kurtarma kopyası `build/release21/azoyun-release21.bundle` içinde tutulur; son QR/Play Games düzeltmelerini içermez.
+Son oyun/UI çalışmaları `71182cf` commit'iyle `a2ddc1d` merge commit'i üzerinden main'e alındı. Eski çalışma ve aktarım branch'leri main'e alındıktan sonra silindi. Tek seferlik AAB aktarımına ait eski Git bundle `build/release21/azoyun-release21.bundle` yolunda yerel yedek olarak tutulur; bu dosya main'e eklenmez ve son QR/Play Games düzeltmelerini içermez.
 
 ## Bekleyen sonraki adımlar
 
