@@ -30,6 +30,10 @@ Console → Functions içinde `sweepLegacyGameRooms` görünmeli. Cloud Schedule
 
 ## Android TV ve Cihaz Kataloğu
 
+20 Kasım Console kontrolü: `google boreal` (Chromecast Google TV HD) Android 14, `armeabi-v7a, armeabi` ABI ve 1,4–1,5 GB RAM ile listelendi. Genel durum **Kaydolunmadı**. Üretim kanalı manifest açısından **Destekleniyor**, açık/kapalı/dahili eski test kanallarının gerekçesi **Gerekli özellik desteklenmiyor: android.hardware.faketouch**. Manifestte fake touch `required=false` yapıldı ve `e1ec469` ile main'e gönderildi. Bu düzeltmenin mağazaya ulaşması ve cihazda denenmesi gerekir.
+
+Android TV form faktörü Console'a eklendi. **Tüm mağaza girişleri için Android TV ekran görüntüleri yükleyin** görevi bekliyor; dağıtımı etkinleştirme ve inceleme politikasını kabul etme adımı bu yüzden kilitli. TV dağıtımı veya inceleme onayı tamamlandı sayılmamalı. `RK3326` ve `sgo` aramaları tüm cihazlarda sonuç vermedi; bu cihaz için gerçek model/varyant veya cihazdaki Play Protect sertifika durumu görülmeden gerekçe atanamaz.
+
 1. Play Console'da AZGame uygulamasını seç. **Gelişmiş ayarlar → Form faktörleri** altında Android TV'nin ekli ve inceleme sonucunun onaylı olduğunu kontrol et. Paneldeki arama kutusuna `Form faktörleri` yazılarak da bulunabilir.
 2. Mağaza girişinde en az bir gerçek Android TV ekran görüntüsü ve TV banner'ı ekle. Uygulama açıklamasında Android TV desteğini anlat. Launcher banner'ı için 320×180 kaynak bulunmalı.
 3. **İzleyin ve geliştirin → Erişim ve cihazlar → Cihaz kataloğu** yolunu aç. `Chromecast` ve `RK3326` aramalarını ayrı yap. Tam marka, cihaz kodu ve varyantı seç.
@@ -38,6 +42,8 @@ Console → Functions içinde `sweepLegacyGameRooms` görünmeli. Cloud Schedule
 6. AAB'den üretilen APK'yı Android Studio'da **Build → Analyze APK** ile aç. `lib` altındaki `.so` dosyalarının **Alignment** sütununda 16 KB uyarısı bulunmamalı. Paket hizalamasını ayrıca `bundletool dump config --bundle=app-release.aab` çıktısında `PAGE_ALIGNMENT_16K` ile kontrol et.
 7. 16 KB sistem görüntülü Android emülatöründe `adb shell getconf PAGE_SIZE` sonucu `16384` olmalı. Uygulamayı burada da çalıştır. 4 KB kullanan bir TV'deki başarılı açılış 16 KB testinin yerine geçmez.
 8. Fiziksel TV kumandasıyla yönler, OK ve Geri tuşlarını dene. Oyun seçimi, oda kurma, başlatma, sonuç, diyalog kapatma ve reklamdan çıkma akışlarında odak görünür olmalı. Telefon kumandası için QR'yı okut ve tam maç bitir.
+
+Paket kontrolü için `scripts/check-android-bundle.py`, imzalı AAB'yi ve `bundletool dump config` / `bundletool dump manifest --module=base` çıktılarını alır. Her iki ARM ABI'sini, ARM64 ELF LOAD/RELRO hizalamasını, 16 KB paket isteğini, isteğe bağlı dokunma/kamera özelliklerini ve TV launcher girişini raporlar. Bu sonuç gerçek cihazda çalışma testi yerine geçmez.
 
 [TV dağıtımı](https://developer.android.com/training/tv/publishing/distribute) · [TV kalite kuralları](https://developer.android.com/docs/quality-guidelines/tv-app-quality) · [Cihaz kataloğu](https://support.google.com/googleplay/android-developer/answer/7353455?hl=tr) · [16 KB kontrolü](https://developer.android.com/guide/practices/page-sizes)
 

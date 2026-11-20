@@ -30,7 +30,7 @@
 
 ## Main'e gönderim
 
-Oyun kodları main'e `77809cc094fe18af15cc3d9e75e2a7a892900090` ile gönderildi. QR telefon düzeltmesi `d8a327278a6e9889a240a6c12fee67944bc2b76c` ile main'de. [Web yayını](https://github.com/ferdidrgn/AZOyun/actions/runs/44665021186) başarılı. Son Play Games kimlikleri `b214ea53b6ede35bc94a589a6958fe0fb101920e` ile main'e gönderildi. [İmzalı AAB dahili kanal işi](https://github.com/ferdidrgn/AZOyun/actions/runs/44666456640) başlatıldı. Actions sonucunu kontrol et; testin geçmesi mağaza yüklemesinin tamamlandığı anlamına gelmez.
+Oyun kodları main'e `77809cc094fe18af15cc3d9e75e2a7a892900090` ile gönderildi. QR telefon düzeltmesi `d8a327278a6e9889a240a6c12fee67944bc2b76c` ile main'de. [Web yayını](https://github.com/ferdidrgn/AZOyun/actions/runs/44665021186) başarılı. Son Play Games kimlikleri `b214ea53b6ede35bc94a589a6958fe0fb101920e` ile main'e gönderildi. [İmzalı AAB dahili kanal işi](https://github.com/ferdidrgn/AZOyun/actions/runs/44666860253) başlatıldı. Actions sonucunu kontrol et; testin geçmesi mağaza yüklemesinin tamamlandığı anlamına gelmez.
 
 Yerel kaynak dalının `.git` dizini bu oturumda salt okunur; yerel `gh` oturumu da geçersiz. GitHub bağlantısı yazımları HTTP 403 ile reddettiği için kod, kullanıcının açık GitHub web oturumu ve geçici `codex/release21-transfer` aktarım dalından çalışan Actions işiyle main'e taşındı. Bu aktarım dalındaki eski bundle main'den geridedir; yeniden main üzerine gönderme. Yeni sohbette main'i temel al ve yereldeki kaynak değişikliklerini silmeden karşılaştır. Kurtarma bundle'ı `build/release21/azoyun-release21.bundle` içinde, son QR/Play Games düzeltmelerini içermez.
 
@@ -38,7 +38,7 @@ Yerel kaynak dalının `.git` dizini bu oturumda salt okunur; yerel `gh` oturumu
 
 1. HTTPS API, GitHub `FAMILY_API_URL`, web yapılandırması ve Firebase temizlik fonksiyonunun üretim yayınını tamamla.
 2. İmzalı AAB'nin dahili kanal sonucunu kontrol et. İki cihazla Saved Games, XP tablosu ve Play App Signing SHA-1 eşleşmesini doğrula. Dokuz başarımın kimlikleri artık kodda tanımlı.
-3. Android TV form faktörü ve gerçek Chromecast HD / RK3326 Cihaz Kataloğu gerekçelerini aç. Güncel AAB'nin ABI ve 16 KB uyumunu ölç. Yerel eski AAB güncel sürümün kanıtı sayılmaz.
+3. Android TV form faktörü eklendi; gerçek TV mağaza ekran görüntüleri ve ardından inceleme/dağıtımı etkinleştirme adımı bekliyor. Chromecast HD `google boreal` ARM32 ve Kaydolunmadı durumunda; eski test kanallarının fake touch zorunluluğu `e1ec469` ile kaldırıldı. RK3326 ve sgo tüm cihaz aramasında bulunamadı. Son AAB işi `44666860253`; `scripts/check-android-bundle.py` ile ABI, 16 KB ve derlenmiş manifest kontrol raporunu incele. Eski yerel AAB kanıt sayılmaz.
 4. Bütün oyunların QR, dolu oda, eşzamanlı katılım, zayıf ağ, arka plan, sonuç ve rövanş cihaz turunu tamamla. Tekli oyunlarda çevrimdışı, büyük yazı, duraklatma ve yeniden deneme turunu yap.
 5. Ortak UI'nin kalan HUD/sonuç/profil/ayarlar/tekli oyun ekranlarına yayılmasını ve açık/koyu tema görsel turunu sürdür.
 6. Masa oyunlarından sonra futbol/frikikte 3D kamera ve hareketi iyileştir. Mini Golf Ticker/CustomPainter temelini koruyarak yarış/dövüşte tekrarlanan döngüler için Flame prototipini düşük donanımlı Android kare süresiyle karşılaştır.
