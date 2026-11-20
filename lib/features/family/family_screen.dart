@@ -138,7 +138,8 @@ class _FamilyScreenState extends State<FamilyScreen> {
       _code = null;
       _token = null;
       if (!_host && widget.initialCode != null) {
-        final name = await StorageService.instance.getPlayerName();
+        final name = await StorageService.instance.getPlayerName()
+            .timeout(const Duration(seconds: 2));
         if (!mounted || _busy || _code != null) return;
         if (_name.text.isEmpty) _name.text = name ?? '';
         if (_name.text.trim().isNotEmpty) await _connect();
@@ -472,7 +473,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
               ? 'Bir oyun seç. Oyuncular TV’deki QR kodunu telefonuyla okutsun.'
               : 'Bu ekran elini, bakiyeni ve hamlelerini gösterir.'),
           const SizedBox(height: 20),
-          if (_host)
+          if (_host) ...[
             for (final (index, entry) in _games.entries.indexed)
               if (widget.initialGame == null || widget.initialGame == entry.key)
               Padding(
@@ -485,7 +486,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
                       child: Text(entry.value)),
                 ),
               )
-          else ...[
+          ] else ...[
             TextField(
                 controller: _name,
                 maxLength: 24,
