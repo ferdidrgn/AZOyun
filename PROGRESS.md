@@ -5,12 +5,13 @@
 - [x] Kelime Tahtası eklendi. 2–4 telefon, yedi gizli harf, 11×11 ortak tahta, sınırlı Türkçe aile sözlüğü, çapraz kelime doğrulaması, puan, harf değişimi, pas ve sonuç var.
 - [x] Gizli Rol eklendi. 4–8 oyuncu, sabotajcı/gözcü/koruyucu/köylü, gizli gece görevleri, gündüz tartışması, açıklanan oylar, elenme ve takım sonucu var.
 - [x] Yeni oyunlar mevcut Aile Masası API'sinde çalışıyor. TV ve izleyiciye özel eller, roller ve gece hedefleri gönderilmiyor. Mobil ve web menüleri eklendi. Rövanş yeni maç kimliğiyle açılıyor.
-- [x] 19 API/web senaryosu ve beş Firebase temizlik testi geçti. Yerel ortam localhost bağlantılarını engellediği için HTTP senaryoları geçici bir süreç içi aktarım üzerinden çalıştırıldı. Yeni Flutter web sürümü derlendi.
+- [x] GitHub Linux CI'da 19 API/web senaryosu gerçek HTTP bağlantılarıyla, beş Firebase temizlik testi ve 61 Flutter testi geçti. Web sürümü Firebase Hosting'e yayınlandı.
 - [x] Sürüm `1.0.0+21` hazırlandı. Main iş akışı ARM 32/64 bit imzalı AAB'yi dahili test kanalına gönderecek şekilde değiştirildi. AAB ayrıca Actions çıktısı olarak saklanıyor.
 - [x] Play Console'da Saved Games'in ve yedi başarımın yayınlanmış olduğu görüldü. Uygulamadaki yedi başarımın gerçek kimlikleri eşlendi. Total XP tablosu `CgkIxOrNg4kPEAIQEA` kimliğiyle yayınlandı. Play Games yayın ekranında bekleyen değişiklik kalmadığı doğrulandı.
-- [ ] Yüz Maç ve Oyun Gezgini başarımlarını tamamla. Aynı hesapla iki fiziksel Android cihazında bulut geri yüklemeyi ve XP tablosunu açmayı test et.
+- [x] 100 Matches (`CgkIxOrNg4kPEAIQEQ`) ve Game Explorer (`CgkIxOrNg4kPEAIQEg`) başarımları oluşturuldu ve yayınlandı. Dokuz başarımın kod varsayılanları gerçek kimliklerle tamamlandı.
+- [ ] Aynı hesapla iki fiziksel Android cihazında bulut geri yüklemeyi, başarımları ve XP tablosunu açmayı test et.
 - [ ] Üretim HTTPS API'si ve temizlik fonksiyonunu yayınla. Firebase Console'da proje Spark planında ve ilk Functions yayını bekleniyor. Blaze/faturalandırma adımı tamamlanmalı veya HTTPS API için mevcut bir kalıcı sunucu kullanılmalı.
-- [ ] Main'e gönderim ve CI sonuçlarını doğrula. Yerel Git bağlantısı DNS hatası verdi. GitHub bağlantısındaki Git ağacı ve dal yazımları HTTP 403 ile reddedildi.
+- [x] Oyun değişiklikleri main'e `77809cc` ile gönderildi. Telefon katılım alanlarının gizlenmesi ve güvenli depolama beklemesi `d8a3272` ile düzeltildi; 61 Flutter testi geçti. [Doğrulama](https://github.com/ferdidrgn/AZOyun/actions/runs/44665962774).
 - [x] Hesap, HTTPS, Android TV, 16 KB, AAB, test kanalı ve cihaz kontrolleri [yayın kontrol dosyasında](docs/RELEASE_CHECKLIST.md) toplandı.
 
 ## Aile oyunları ve Firebase odaları
