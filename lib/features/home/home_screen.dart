@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/cosmetic_service.dart';
 import '../../core/services/iap_service.dart';
 import '../../core/navigation/join_router.dart';
+import '../../core/widgets/room_qr_scanner.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/theme/felt.dart';
@@ -19,6 +20,9 @@ import '../hangman/hangman_lobby_screen.dart';
 import '../impostor/impostor_screens.dart';
 import '../liar/liar_screens.dart';
 import '../mystery/mystery_case_screen.dart';
+import '../mahalleler/mahalle_screen.dart';
+import '../batak/batak_screen.dart';
+import '../family/firebase_table_menu.dart';
 import '../family/family_screen.dart';
 import '../football/football_quiz_screen.dart';
 import '../football/football_shot_screen.dart';
@@ -38,7 +42,7 @@ import '../quickgames/count_numbers_screen.dart';
 import '../quickgames/dice_party_screen.dart';
 import '../quickgames/dots_boxes_screen.dart';
 import '../quickgames/draw_smash_screen.dart';
-import '../quickgames/elite_quiz_screen.dart';
+import '../quickgames/arcade_skills_screen.dart';
 import '../quickgames/game_2048_screen.dart';
 import '../quickgames/jump_dash_screen.dart';
 import '../quickgames/kid_party_screens.dart';
@@ -60,7 +64,6 @@ import '../quickgames/spot_diff_screen.dart';
 import '../quickgames/tic_tac_toe_screen.dart';
 import '../quickgames/tiger_run_screen.dart';
 import '../quickgames/triple_match_screen.dart';
-import '../quickgames/trivia_screen.dart';
 import '../quickgames/word_mania_screen.dart';
 import '../racing/racing_screens.dart';
 import '../settings/settings_screen.dart';
@@ -422,10 +425,10 @@ class _QuickGamesTab extends StatelessWidget {
               game: (p) => ReflexTapGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🧠❓', title: 'Kim Bilir?', subtitle: '1-6 Kişi · Skor', gradient: _partyGrad,
+          emoji: '🎯', title: 'Hedef Atışı', subtitle: '1–6 kişi · Hareketli hedef', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
-              lobby: const TriviaLobbyScreen(),
-              game: (p) => TriviaGameScreen(players: p)),
+              lobby: ArcadeSkill.aim.lobby(),
+              game: ArcadeSkill.aim.game),
         ),
         _QuickTile(
           emoji: '🔢🕵️', title: 'Sayı Tahmin Düellosu', subtitle: '1-6 Kişi · Skor', gradient: _partyGrad,
@@ -446,10 +449,10 @@ class _QuickGamesTab extends StatelessWidget {
               game: (p) => DicePartyGameScreen(players: p)),
         ),
         _QuickTile(
-          emoji: '🎯', title: 'Quiz Eliti', subtitle: '1-6 kişi, jokerli', gradient: _partyGrad,
+          emoji: '🟢', title: 'Denge Hattı', subtitle: '1–6 kişi · Top kontrolü', gradient: _partyGrad,
           onTap: () => _openQuickGame(context,
-              lobby: const EliteQuizLobbyScreen(),
-              game: (p) => EliteQuizGameScreen(players: p)),
+              lobby: ArcadeSkill.balance.lobby(),
+              game: ArcadeSkill.balance.game),
         ),
         _QuickTile(
           emoji: '➗', title: 'Matematik Bulmaca', subtitle: '1-6 kişi', gradient: _partyGrad,
@@ -605,6 +608,8 @@ class _OnlineGamesTab extends StatelessWidget {
   Widget build(BuildContext context) => SingleChildScrollView(
     padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const RoomQrButton(),
+      const SizedBox(height: 16),
       _sectionHeader('⚽  SPOR'),
       AZGameCard(
         emoji: '🥅', title: SprintMode.penalty.title,
@@ -778,16 +783,23 @@ class _TableTab extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         FilledButton.icon(
-          onPressed: () => _push(context, const FamilyScreen(host: true)),
+          onPressed: () => _push(context, const FirebaseTableMenu()),
           icon: const Icon(Icons.tv),
           label: const Text('Aile Masası aç'),
         ),
         const SizedBox(height: 10),
         OutlinedButton.icon(
-          onPressed: () => _push(context, const FamilyScreen(host: false)),
-          icon: const Icon(Icons.qr_code_rounded),
-          label: const Text('Aile Masası’na katıl'),
+          onPressed: () => _push(context, const OkeyLobbyScreen(mode: '101')),
+          icon: const Icon(Icons.tag_rounded),
+          label: const Text('101 Okey · Oda koduyla katıl'),
         ),
+        OutlinedButton.icon(
+          onPressed: () => _push(context, const OkeyLobbyScreen()),
+          icon: const Icon(Icons.tag_rounded),
+          label: const Text('Klasik Okey · Oda koduyla katıl'),
+        ),
+        const SizedBox(height: 10),
+        const RoomQrButton(),
         const SizedBox(height: 20),
         SizedBox(
           height: 56,
@@ -800,10 +812,22 @@ class _TableTab extends StatelessWidget {
             child: Text('Pişti masasına geç', style: feltUi(FeltColors.ivory, 16, weight: FontWeight.w700)),
           ),
         ),
-        const SizedBox(height: 28),
-        Text(
-          'Diğer online odaların kodunun altında da aynı QR vardır. Oyun, kodu açan her cihazda başlar.',
-          style: feltUi(palette.muted, 14),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => _push(context, const MahalleLobbyScreen()),
+          icon: const Icon(Icons.location_city_rounded),
+          label: const Text('Mahalleler · Zar, mülk ve kira'),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => _push(context, const BatakLobbyScreen()),
+          icon: const Icon(Icons.style_rounded),
+          label: const Text('Batak · İhale, koz ve el alma'),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => _push(context, const FamilyScreen(host: false)),
+          icon: const Icon(Icons.groups_rounded),
+          label: const Text('Kelime Tahtası / Gizli Rol · Odaya katıl'),
         ),
       ],
     );

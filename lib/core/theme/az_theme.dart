@@ -42,7 +42,7 @@ abstract class AZColors {
 
   // Metin
   static const textPrimary   = Color(0xFF3A342C);
-  static const textSecondary = Color(0xFF8C8378);
+  static const textSecondary = Color(0xFF675E54);
 
   // Koyu tema yüzeyleri
   static const bgDark          = Color(0xFF161C29);
@@ -186,7 +186,15 @@ abstract class AZTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      colorScheme: scheme,
+      colorScheme: scheme.copyWith(
+        surface: surface,
+        surfaceContainerLowest: bg,
+        surfaceContainerLow: surface,
+        surfaceContainer: surfaceHi,
+        surfaceContainerHigh: surfaceHi,
+        onSurface: textPrimary,
+        onSurfaceVariant: textSecondary,
+      ),
       scaffoldBackgroundColor: bg,
       textTheme: GoogleFonts.figtreeTextTheme(
         ThemeData(brightness: brightness).textTheme,

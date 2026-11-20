@@ -1,5 +1,29 @@
 # Aile Masası kurulumu
 
+Güncel hesap durumu ve üretim kontrolleri [yayın kontrol dosyasında](RELEASE_CHECKLIST.md) tutulur. Kelime Tahtası ve Gizli Rol, oyuncuya özel API görünümüyle çalışır. **Masa → Aile Masası aç** menüsünden seçilir. Oyuncular QR veya **Masa → Kelime Tahtası / Gizli Rol → Odaya katıl** üzerinden bağlanır. Bu iki oyun için HTTPS Aile Masası API'si çalışıyor olmalı.
+
+## Firebase üzerinden ortak ekran
+
+Android TV’de **AZOyun**, telefonda veya tablette **Masa → Aile Masası aç** menüsünü aç. Buradan **101 Okey**, **Klasik Okey**, **Pişti**, **Batak** veya **Mahalleler** seç. Masadaki QR kodunu oyuncular telefonlarından **Masa → QR ile odaya katıl** ile okutur. İlgili lobiye altı karakterli kod da girilebilir.
+
+Bu oyunlar mevcut Firebase Realtime Database projesini kullanır. Ortak ekran için ayrı adres girişi gerekmez. Telefon lobisinden oda açan kişi de oyuncu olur. TV modunda Okey’e dört, Mahalleler’e iki ile dört oyuncu telefonla katılır.
+
+Yeni Okey masalarında ortak ekran ve oyuncu telefonları güncel AZOyun sürümünü kullanmalı.
+
+## İhaleli Batak masası
+
+**Masa → Batak** ile telefondan oda açılabilir. Ortak ekran menüsündeki Batak odasına dört oyuncu telefonlarından katılır. Her oyuncuya rastgele 13 kart dağıtılır. İhale en az 5 ile açılır. Pas diyen tekrar teklif veremez. Herkes pas derse dağıtıcının sağındaki ilk oyuncuya 4 kalır. İhaleci kozu seçer ve eli açar. Renge uyulur ve mümkünse yerdeki kart büyütülür. O renk yoksa koz atılır ve mümkünse koz büyütülür. El kozla kesilmişse renge uymak yeterlidir. Koz kırılana kadar diğer renklerle açılır. Elde yalnızca koz kalmışsa kozla açılabilir.
+
+Oynanabilir kartlar aydınlık görünür. Kartı dokunarak veya masaya sürükleyerek oyna. Dört kart masada kısa süre kalır. Kazanan oyuncunun telefonu eli otomatik toplar ve sonraki eli o oyuncu açar. Otomatik ilerleme aksarsa **Eli topla ve devam et** düğmesi kullanılabilir. Son el ayrıca açılır bölümden görülebilir.
+
+İhaleci hedefini tutturamazsa ihale kadar eksi alır. Diğer oyuncular hiç el alamazsa aynı cezayı alır. Başarılı oyuncular aldıkları el sayısı kadar puan kazanır. Bu sürümde aile maçı dört dağıtım sürer. Herkes bir kez dağıtıcı olur. En yüksek puan eşitse galibiyet paylaşılır. Yazboz her dağıtımın el sayılarını ve puanlarını saklar.
+
+İhale ve zorunlu kart kuralları için oyun işletmecisinin açıklaması incelendi. Dört dağıtımlık maç ve eşitlikte ortak galibiyet bu uygulamanın masa ayarlarıdır. [Joker Games Batak kuralları](https://joker.games/support-center/ihaleli-batak-oyun-kurallari/)
+
+Firebase oda işlemleri diğer kart oyunlarıyla aynı projeyi kullanır. Aynı cihazdan oda kodunu yeniden girince mevcut koltuk ve kartlar korunur. Katılımın yeniden denenmesi ikinci bir koltuk ayırmaz. Uygulamanın yerel verileri silinirse cihaz kimliği de silinir. Canlı dört telefon ve Android TV kumandası doğrulaması bekliyor.
+
+Aşağıdaki HTTPS ayarları eski tarayıcı masası içindir.
+
 ## Ev ağında tarayıcıyla
 
 1. Proje dizininde `node scripts/build-web.mjs` çalıştır. HTML, CSS ve JavaScript salonu `build/salon` dizinine hazırlanır.
@@ -8,9 +32,9 @@
 4. TV'de oyunu seç. Oyuncular QR kodunu okutup tarayıcıdan adlarını yazsın. TV'de **Başlat** düğmesine bas.
 5. TV ortak masayı gösterir. Oyuncular taş çekme, taş atma, zar atma, alım ve teklif gibi hamleleri telefonlarından yapar. Telefon sayfası yeniden açılırsa aynı tarayıcıdaki oturumla koltuğu geri yükler.
 
-## Android TV, telefon ve tablet
+## Eski Flutter web masası
 
-Android TV ana ekranındaki **AZOyun** simgesi doğrudan Aile Masası'nı açar. Menüde yön tuşları ve OK kullanılır. Telefon veya tablette **Masa → Aile Masası aç** ya da **Aile Masası’na katıl** seçilir. Kurulumda sunucunun HTTPS adresi girilebilir. Bir yayın için APK ve AAB'yi `--dart-define=FAMILY_API_URL=https://masa.ornek.com` ile oluştur. QR başka bir web adresine gidecekse ayrıca `--dart-define=FAMILY_WEB_URL=https://oyun.ornek.com` ekle.
+Tarayıcıdaki eski Mahalleler masası varsayılan API adresini `https://azoyun.web.app/salon/family-api.json` üzerinden okuyabilir. Eski mağaza sürümlerinde adres **Sunucu ayarı** alanına elle girilebilir. Bu yolu test ederken `FAMILY_API_URL` ile API adresi ve gerekirse `FAMILY_WEB_URL` ile QR’ın web adresi seçilir.
 
 Geliştirici Android emülatöründe `flutter build apk --debug --dart-define=FAMILY_API_URL=http://10.0.2.2:8780 --dart-define=FAMILY_WEB_URL=http://BILGISAYAR_IP:8780` kullanabilir. Release uygulamasında sunucu için HTTPS kullan. iPhone ve iPad'de Flutter web katılımı tarayıcıdan yapılabilir.
 
@@ -25,3 +49,14 @@ Geliştirici Android emülatöründe `flutter build apk --debug --dart-define=FA
 - Okey dört oyuncuyla, Mahalleler iki ila dört oyuncuyla başlar. Klasik Okey tek el ve yedi çift bitişi içerir. 101 tek el oynanır. İlk açılış 101 puan veya beş çifttir ve daha sonra masaya taş işlenebilir. Mahalleler on turda veya bir oyuncu ayakta kalınca sona erer.
 
 Samsung Tizen ve LG webOS için giriş, JavaScript modülleri ve Fetch API destekleyen cihaz tarayıcısından veya TV’ye bağlı bir bilgisayardan yapılır. Android TV için yerel başlatıcı girişi de bulunur. Google Play TV dağıtımı için Play Console’da Android TV form faktörüne katılım ve TV kalite incelemesi gerekir.
+
+### Canlı API’yi ayağa kaldırma
+
+1. Docker Compose bulunan bir sunucuya masa alan adının DNS kaydını yönlendir. HTTPS için TCP 80 ve 443’ü aç.
+2. Proje kökünden `node scripts/build-web.mjs` çalıştır. Ardından `FAMILY_HOST=masa.ornek.com docker compose -f family-server/compose.yaml up -d --build` çalıştır. Aile Masası bir servis örneğinde çalışır. Oda ve profil dosyaları Docker volume’da, HTTPS sertifikaları ayrı bir volume’da tutulur.
+3. `curl -fsS https://masa.ornek.com/api/family/health` çıktısında `{"ok":true}` gör. Üretim salonu için GitHub’daki `FAMILY_API_URL` değişkenine `https://masa.ornek.com` yaz ve Firebase Hosting iş akışını çalıştır.
+4. Web yapılandırması yayınlandıktan sonra `/salon/family-api.json` dosyasının doğru adresi verdiğini kontrol et. Google TV’de Klasik Okey veya 101 Okey aç, dört ayrı telefonla QR okut, eldeki taşların yalnızca kendi telefonda göründüğünü ve sıranın TV’ye yansıdığını doğrula.
+
+### Chromecast with Google TV HD
+
+Play Console’da **Gelişmiş ayarlar → Form faktörleri → Android TV** ekle. Android TV ekran görüntüsü ve TV banner’ını mağaza sayfasına koy. TV destekli AAB yükle ve inceleme durumunu kontrol et. Cihaz hâlâ uyumsuz görünürse **Cihaz Kataloğu**’nda Chromecast HD ve RK3326 için sürüm, cihaz dışlama ve manifest filtrelerinin gösterdiği nedeni ayrı kontrol et. Android TV sürümünde 32/64 bit ABI ve 16 KB sayfa uyumu da doğrulanmalı. [Android TV dağıtımı](https://developer.android.com/training/tv/publishing/distribute) · [Android TV kalite kriterleri](https://developer.android.com/develop/adaptive-apps/quality-guidelines/tv-app-quality)

@@ -42,6 +42,10 @@
     ],
     "headers": [
       {
+        "source": "/salon/family-api.json",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      },
+      {
         "regex": "^[/\\\\]\\.well-known[/\\\\](assetlinks\\.json|apple-app-site-association)$",
         "headers": [
           { "key": "Content-Type", "value": "application/json" },

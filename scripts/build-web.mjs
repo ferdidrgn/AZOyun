@@ -7,8 +7,9 @@ const arcade = new URL("../assets/arcade3d/", import.meta.url);
 const api = process.env.FAMILY_API_URL?.trim() || "";
 if (api) {
   const address = new URL(api);
-  if (address.protocol !== "https:" || address.username || address.password) {
-    throw new Error("FAMILY_API_URL must be an HTTPS address.");
+  if (address.protocol !== "https:" || address.username || address.password ||
+      address.pathname !== "/" || address.search || address.hash) {
+    throw new Error("FAMILY_API_URL must be an HTTPS origin.");
   }
 }
 await mkdir(output, { recursive: true });
@@ -26,4 +27,6 @@ await writeFile(
   "export const familyApi = " + JSON.stringify(api) + ";\n" +
     "export const adsEnabled = " + (process.env.WEB_ADS_ENABLED === "true") + ";\n",
 );
+await writeFile(new URL("salon/family-api.json", output),
+  JSON.stringify({ origin: api ? new URL(api).origin : null }) + "\n");
 console.log("Web salonu hazır: build/salon");

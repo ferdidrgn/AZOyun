@@ -887,3 +887,6 @@ h2 {
 .profile-goals li, .profile-ranks li { padding-block: 8px; }
 .profile-goals li span, .profile-ranks li span { display: block; color: var(--muted); }
 @media (max-width: 760px) { .profile-layout { grid-template-columns: 1fr; } }
+.word-board { display: grid; grid-template-columns: repeat(11,minmax(0,1fr)); gap: 3px; max-width: 660px; margin-block: 16px; }
+.word-cell { aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--line,#9eac99); border-radius: 4px; background: #eee6d1; color: #203b32; font-weight: 800; font-size: clamp(12px,2.4vw,24px); cursor: pointer; }
+.word-cell:focus-visible { outline: 3px solid #d38a31; outline-offset: 1px; }

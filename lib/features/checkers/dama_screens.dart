@@ -188,7 +188,10 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
 
   Future<void> _load() async {
     final n = await _storage.getPlayerName(); if (!mounted) return;
-    if (n != null && n.isNotEmpty) setState(() => _name = n); else _ask();
+    if (n != null && n.isNotEmpty) setState(() => _name = n); else await _ask();
+    if (mounted && widget.initialCode != null && _name != null && !_loading) {
+      await _join();
+    }
   }
   Future<void> _ask() async {
     final n = await showNameDialog(context, current: _name, accentColor: const Color(0xFF5C4A3D));

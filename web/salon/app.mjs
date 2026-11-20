@@ -91,7 +91,7 @@ function markPrivate() {
 }
 
 function showAppInvite(game, code) {
-  const supported = /^(golf|soccer|hangman|city|word|vampire|liar|okey|okey101|fighter|racing|dama|impostor|deck|sonkart|istasyon90|penaltiduello)$/.test(game);
+  const supported = /^(golf|soccer|hangman|city|mahalle|batak|word|vampire|liar|okey|okey101|fighter|racing|dama|impostor|deck|sonkart|istasyon90|penaltiduello)$/.test(game);
   document.title = "Oda Daveti · AZ Oyun";
   main.className = "shell room-page";
   main.innerHTML = `<div class="room-title"><h1>Oda daveti</h1></div>

@@ -5,6 +5,7 @@ import { extname, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { applyAction, games, view } from './game.mjs';
+import { partyLimits } from './party-games.mjs';
 import { createProgression } from './progression.mjs';
 
 const lifetime = 8 * 60 * 60 * 1000;
@@ -31,6 +32,7 @@ async function body(request) {
 
 export function familyServer({
   webRoot = 'build/salon', stateFile, progressionStateFile, origins = [], clock = Date.now,
+  trustProxy = false,
 } = {}) {
   const root = resolve(webRoot);
   const rooms = new Map(stateFile && existsSync(stateFile)
@@ -124,7 +126,7 @@ export function familyServer({
     return {
       code,
       ...view(room, authenticated ? seat : -2),
-      ...(authenticated && { seat }),
+      ...(authenticated && { seat, completed: room.completed === true }),
       ...(seat >= 0 && authenticated && { matchId: room.matchId, completed: room.completed === true }),
     };
   }
@@ -164,7 +166,9 @@ export function familyServer({
         const input = method === 'POST' ? await body(request) : {};
         const now = clock();
         if (method === 'POST' && (!code || operation === 'join')) {
-          const address = request.socket.remoteAddress ?? '';
+          const forwarded = request.headers['x-forwarded-for'];
+          const address = (trustProxy && typeof forwarded === 'string'
+            ? forwarded.split(',').at(-1).trim() : null) || request.socket.remoteAddress || '';
           const entry = attempts.get(address) ?? { until: now + 60_000, count: 0 };
           if (entry.until <= now) {
             entry.until = now + 60_000;
@@ -194,7 +198,7 @@ export function familyServer({
         const seat = bearer === room.host ? -1 : room.players.findIndex((player) => player.token === bearer);
         const authenticated = bearer === room.host || seat >= 0;
         if (operation === 'join' && method === 'POST') {
-          if (room.status !== 'lobby' || room.players.length >= 4) {
+          if (room.status !== 'lobby' || room.players.length >= (partyLimits[room.game]?.[1] ?? 4)) {
             return json(409, { error: 'Masa dolu veya oyun başlamış.' });
           }
           const name = typeof input.name === 'string' ? input.name.trim().slice(0, 24) : '';
@@ -229,6 +233,9 @@ export function familyServer({
             next.players.splice(seat, 1);
           } else {
             applyAction(next, seat, input);
+          }
+          if (room.status === 'finished' && next.status === 'playing') {
+            next.matchId = randomUUID();
           }
           if (room.status !== 'finished' && next.status === 'finished') {
             next.finishedAt = now;
@@ -286,5 +293,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   familyServer({ webRoot: process.env.FAMILY_WEB_ROOT, stateFile: process.env.FAMILY_STATE_FILE,
     progressionStateFile: process.env.PROGRESSION_STATE_FILE,
     origins: (process.env.FAMILY_ORIGINS || '').split(',').filter(Boolean),
+    trustProxy: process.env.FAMILY_TRUST_PROXY === 'true',
   }).listen(port, process.env.HOST || '0.0.0.0', () => console.log('Aile Masası portu: ' + port));
 }

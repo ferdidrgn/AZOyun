@@ -54,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _connectingPlayGames = false;
       _connectError = ok
           ? null
-          : 'Bağlanılamadı — Play Games henüz yapılandırılmamış olabilir';
+          : PlayGamesService.instance.signInError ?? 'Play Games bağlantısı kurulamadı.';
     });
     if (!ok && mounted) {
       ScaffoldMessenger.of(context)

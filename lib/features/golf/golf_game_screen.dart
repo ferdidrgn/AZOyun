@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
@@ -10,6 +11,7 @@ import '../../core/services/room_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
+import 'golf_match.dart';
 
 class _Obstacle {
   const _Obstacle({required this.center, required this.w, required this.h});
@@ -38,6 +40,9 @@ class _GolfGameScreenState extends State<GolfGameScreen>
   Map<String, dynamic> _room = {};
   bool _finalShown = false;
   bool _roomGone = false;
+  bool _advancing = false;
+  bool _savingScore = false;
+  bool _scoreNeedsRetry = false;
 
   int    _lastSeed = -1;
   int    _lastHole = 0;
@@ -54,21 +59,21 @@ class _GolfGameScreenState extends State<GolfGameScreen>
   Offset? _dragStart;
   Offset? _dragCurrent;
 
-  late AnimationController _physicsCtrl;
+  late final Ticker _physicsTicker;
+  Duration _previousFrame = Duration.zero;
+  double _physicsTime = 0;
   late AnimationController _celebrateCtrl;
   late Animation<double>   _celebrateScale;
   bool _celebrating = false;
 
   static const double _ballRadius = 0.026;
-  static const double _dt         = 0.018;
+  static const double _dt = 1 / 120;
 
   @override
   void initState() {
     super.initState();
     _ref = _db.child('${GamePaths.golf}/${widget.roomId}');
-    _physicsCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 16))
-      ..addListener(_physicsTick);
+    _physicsTicker = createTicker(_physicsFrame);
     _celebrateCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900));
     _celebrateScale = Tween(begin: 0.3, end: 1.0).animate(
@@ -78,7 +83,7 @@ class _GolfGameScreenState extends State<GolfGameScreen>
 
   @override
   void dispose() {
-    _physicsCtrl.dispose(); _celebrateCtrl.dispose(); _sub?.cancel();
+    _physicsTicker.dispose(); _celebrateCtrl.dispose(); _sub?.cancel();
     super.dispose();
   }
 
@@ -99,29 +104,25 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     final holeNo = (data['currentHole'] as int?) ?? 1;
     final seed   = (data['holeSeed']   as int?) ?? 0;
     if (holeNo != _lastHole || seed != _lastSeed) _initHole(holeNo, seed);
+    if (data['players']?[widget.myKey]?['done'] == true) {
+      _myDone = true;
+      _scoreNeedsRetry = false;
+    }
     if (data['status'] == 'finished' && !_finalShown) {
       _finalShown = true;
       AdService.instance.onGameEnd();
       Future.delayed(const Duration(milliseconds: 500), _showFinalDialog);
     }
-    // Bir oyuncu kendi topunu diğerlerinden ÖNCE bitirmiş olabilir — o an
-    // _onGoal() içindeki _hostAdvance() çağrısı "herkes bitirmedi" deyip
-    // dönmüş olur. Son oyuncu bitirdiğinde bunu yeniden kontrol eden başka
-    // bir tetikleyici yoktu; bu da oyunun "Diğerleri bekleniyor..."
-    // ekranında sonsuza kadar takılı kalmasına yol açıyordu. Eskiden bu
-    // kontrol SADECE 'p1' (host) tarafından yapılıyordu — host ayrılır ya
-    // da bağlantısı koparsa hiç kimse ilerlemeyi tetiklemiyordu.
-    // _hostAdvance() canlı veriyi tekrar okuyup kendi kendini koruduğu için
-    // (hepsi bitmemişse hiçbir şey yapmaz) artık HERKESİN tetiklemesi güvenli.
-    if (data['status'] != 'finished') {
-      final players = Map<String, dynamic>.from((data['players'] as Map?) ?? {});
-      if (players.isNotEmpty && players.values.every((p) => p['done'] == true)) {
-        _hostAdvance();
-      }
+    // A departure can leave only players who have already scored.
+    if (advanceGolfRoom(data, holeNo) != null) {
+      unawaited(_advanceAfterDeparture(holeNo));
     }
   }
 
   void _initHole(int holeNo, int seed) {
+    _physicsTicker.stop();
+    _celebrating = false;
+    _scoreNeedsRetry = false;
     _lastHole = holeNo; _lastSeed = seed;
     final rng = Random(seed);
     _ball = Offset(0.2 + rng.nextDouble() * 0.6, 0.70 + rng.nextDouble() * 0.14);
@@ -157,108 +158,129 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     setState(() {});
   }
 
-  void _physicsTick() {
-    if (!_moving) return;
+  void _physicsFrame(Duration elapsed) {
+    final seconds = (elapsed - _previousFrame).inMicroseconds / 1000000;
+    _previousFrame = elapsed;
+    _physicsTime += seconds.clamp(0, 0.05);
     setState(() {
-      _ball += _vel * _dt;
-      _vel  *= 0.975;
-
-      void bounceX(double x) {
-        _ball = Offset(x, _ball.dy);
-        _vel  = Offset(-_vel.dx * 0.58, _vel.dy);
-      }
-      void bounceY(double y) {
-        _ball = Offset(_ball.dx, y);
-        _vel  = Offset(_vel.dx, -_vel.dy * 0.58);
-      }
-
-      if (_ball.dx < _ballRadius) bounceX(_ballRadius);
-      if (_ball.dx > 1 - _ballRadius) bounceX(1 - _ballRadius);
-      if (_ball.dy < _ballRadius) bounceY(_ballRadius);
-      if (_ball.dy > 1 - _ballRadius) bounceY(1 - _ballRadius);
-
-      for (final o in _obstacles) {
-        final hw = o.w / 2 + _ballRadius;
-        final hh = o.h / 2 + _ballRadius;
-        final dx = _ball.dx - o.center.dx;
-        final dy = _ball.dy - o.center.dy;
-        if (dx.abs() < hw && dy.abs() < hh) {
-          if (dx.abs() / hw < dy.abs() / hh) {
-            _ball = Offset(_ball.dx, o.center.dy + (dy > 0 ? hh : -hh));
-            _vel  = Offset(_vel.dx * 0.85, -_vel.dy * 0.55);
-          } else {
-            _ball = Offset(o.center.dx + (dx > 0 ? hw : -hw), _ball.dy);
-            _vel  = Offset(-_vel.dx * 0.55, _vel.dy * 0.85);
-          }
-        }
-      }
-
-      for (final wall in _walls) {
-        final wx  = (wall.a.dx + wall.b.dx) / 2;
-        final wy  = (wall.a.dy + wall.b.dy) / 2;
-        final ww  = (wall.b.dx - wall.a.dx).abs().clamp(0.02, 1.0);
-        final wh  = (wall.b.dy - wall.a.dy).abs().clamp(0.02, 1.0);
-        final hw2 = ww / 2 + _ballRadius;
-        final hh2 = wh / 2 + _ballRadius;
-        final dx  = _ball.dx - wx;
-        final dy  = _ball.dy - wy;
-        if (dx.abs() < hw2 && dy.abs() < hh2) {
-          if (ww > wh) {
-            _ball = Offset(_ball.dx, wy + (dy > 0 ? hh2 : -hh2));
-            _vel  = Offset(_vel.dx * 0.90, -_vel.dy * 0.55);
-          } else {
-            _ball = Offset(wx + (dx > 0 ? hw2 : -hw2), _ball.dy);
-            _vel  = Offset(-_vel.dx * 0.55, _vel.dy * 0.90);
-          }
-        }
-      }
-
-      if (_vel.distance < 0.006) {
-        _vel = Offset.zero; _moving = false;
-        _physicsCtrl.stop(); _checkHoleIn();
+      while (_moving && _physicsTime >= _dt) {
+        _physicsTime -= _dt;
+        _physicsStep();
       }
     });
   }
 
-  void _checkHoleIn() {
-    if ((_ball - _holePos).distance < 0.05) _onGoal();
+  void _physicsStep() {
+    _ball += _vel * _dt;
+    _vel *= 0.987;
+
+    void bounceX(double x) {
+      _ball = Offset(x, _ball.dy);
+      _vel  = Offset(-_vel.dx * 0.58, _vel.dy);
+    }
+    void bounceY(double y) {
+      _ball = Offset(_ball.dx, y);
+      _vel  = Offset(_vel.dx, -_vel.dy * 0.58);
+    }
+
+    if (_ball.dx < _ballRadius) bounceX(_ballRadius);
+    if (_ball.dx > 1 - _ballRadius) bounceX(1 - _ballRadius);
+    if (_ball.dy < _ballRadius) bounceY(_ballRadius);
+    if (_ball.dy > 1 - _ballRadius) bounceY(1 - _ballRadius);
+
+    for (final o in _obstacles) {
+      final hw = o.w / 2 + _ballRadius;
+      final hh = o.h / 2 + _ballRadius;
+      final dx = _ball.dx - o.center.dx;
+      final dy = _ball.dy - o.center.dy;
+      if (dx.abs() < hw && dy.abs() < hh) {
+        if (dx.abs() / hw < dy.abs() / hh) {
+          _ball = Offset(_ball.dx, o.center.dy + (dy > 0 ? hh : -hh));
+          _vel  = Offset(_vel.dx * 0.85, -_vel.dy * 0.55);
+        } else {
+          _ball = Offset(o.center.dx + (dx > 0 ? hw : -hw), _ball.dy);
+          _vel  = Offset(-_vel.dx * 0.55, _vel.dy * 0.85);
+        }
+      }
+    }
+
+    for (final wall in _walls) {
+      final wx  = (wall.a.dx + wall.b.dx) / 2;
+      final wy  = (wall.a.dy + wall.b.dy) / 2;
+      final ww  = (wall.b.dx - wall.a.dx).abs().clamp(0.02, 1.0);
+      final wh  = (wall.b.dy - wall.a.dy).abs().clamp(0.02, 1.0);
+      final hw2 = ww / 2 + _ballRadius;
+      final hh2 = wh / 2 + _ballRadius;
+      final dx  = _ball.dx - wx;
+      final dy  = _ball.dy - wy;
+      if (dx.abs() < hw2 && dy.abs() < hh2) {
+        if (ww > wh) {
+          _ball = Offset(_ball.dx, wy + (dy > 0 ? hh2 : -hh2));
+          _vel  = Offset(_vel.dx * 0.90, -_vel.dy * 0.55);
+        } else {
+          _ball = Offset(wx + (dx > 0 ? hw2 : -hw2), _ball.dy);
+          _vel  = Offset(-_vel.dx * 0.55, _vel.dy * 0.90);
+        }
+      }
+    }
+
+    final inCup = (_ball - _holePos).distance < 0.036 &&
+        _vel.distance < 0.95;
+    if (inCup || _vel.distance < 0.006) {
+      _vel = Offset.zero; _moving = false;
+      _physicsTicker.stop();
+      if (inCup) {
+        _ball = _holePos;
+        _myDone = true;
+        _celebrating = true;
+        _celebrateCtrl.forward(from: 0).whenComplete(() {
+          if (mounted) setState(() => _celebrating = false);
+        });
+        HapticFeedback.heavyImpact();
+        unawaited(_saveScore());
+      }
+    }
   }
 
-  Future<void> _onGoal() async {
-    if (_myDone) return;
-    _myDone = true;
-    setState(() => _celebrating = true);
-    _celebrateCtrl.forward(from: 0);
-    HapticFeedback.heavyImpact();
-    await Future.delayed(const Duration(milliseconds: 1600));
-    if (mounted) setState(() => _celebrating = false);
-    final holeNo  = (_room['currentHole'] as int?) ?? 1;
-    final prevTot = (_room['players']?[widget.myKey]?['totalShots'] as int?) ?? 0;
-    await _ref.update({
-      'players/${widget.myKey}/done':              true,
-      'players/${widget.myKey}/holeShots/$holeNo': _myShots,
-      'players/${widget.myKey}/totalShots':        prevTot + _myShots,
+  Future<void> _saveScore() async {
+    if (_savingScore) return;
+    final hole = _lastHole;
+    final shots = _myShots;
+    setState(() {
+      _savingScore = true;
+      _scoreNeedsRetry = false;
     });
-    await _hostAdvance();
+    try {
+      await _rooms.transactRoom(
+        gamePath: GamePaths.golf,
+        roomId: widget.roomId,
+        update: (room) => scoreGolfHole(
+            room, seat: widget.myKey, hole: hole, shots: shots),
+      ).timeout(const Duration(seconds: 10));
+    } catch (error) {
+      debugPrint('Mini Golf skor kaydı: $error');
+      if (mounted && _lastHole == hole &&
+          _room['players']?[widget.myKey]?['done'] != true) {
+        setState(() => _scoreNeedsRetry = true);
+      }
+    } finally {
+      if (mounted) setState(() => _savingScore = false);
+    }
   }
 
-  // Artık "host" değil, "kendi kendini koruyan ilerletici" — canlı players
-  // verisini tazeden okur ve hepsi bitmemişse hiçbir şey yapmaz, bu yüzden
-  // herhangi bir oyuncunun (sadece p1'in değil) çağırması güvenlidir.
-  Future<void> _hostAdvance() async {
-    final snap = await _ref.child('players').get();
-    if (!snap.exists) return;
-    final players = Map<String, dynamic>.from(snap.value as Map);
-    if (!players.values.every((p) => p['done'] == true)) return;
-    final hole  = (_room['currentHole'] as int?) ?? 1;
-    final total = (_room['holeCount']   as int?) ?? 5;
-    if (hole >= total) {
-      await _ref.update({'status': 'finished'});
-    } else {
-      final newSeed = DateTime.now().millisecondsSinceEpoch;
-      final updates = <String, dynamic>{'currentHole': hole + 1, 'holeSeed': newSeed};
-      for (final k in players.keys) updates['players/$k/done'] = false;
-      await _ref.update(updates);
+  Future<void> _advanceAfterDeparture(int hole) async {
+    if (_advancing) return;
+    _advancing = true;
+    try {
+      await _rooms.transactRoom(
+        gamePath: GamePaths.golf,
+        roomId: widget.roomId,
+        update: (room) => advanceGolfRoom(room, hole),
+      );
+    } catch (error) {
+      debugPrint('Mini Golf sıradaki delik: $error');
+    } finally {
+      _advancing = false;
     }
   }
 
@@ -289,7 +311,9 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       _vel = dir * power; _moving = true; _myShots++;
       _dragStart = null; _dragCurrent = null;
     });
-    _physicsCtrl.repeat();
+    _physicsTime = 0;
+    _previousFrame = Duration.zero;
+    _physicsTicker.start();
     HapticFeedback.selectionClick();
   }
 
@@ -335,7 +359,9 @@ class _GolfGameScreenState extends State<GolfGameScreen>
         actions: [FilledButton(
           style: FilledButton.styleFrom(backgroundColor: AZColors.green),
           onPressed: () async {
-            await _db.child('${GamePaths.golf}/${widget.roomId}').remove();
+            await _rooms.unregisterPresence(
+                gamePath: GamePaths.golf, roomId: widget.roomId,
+                playerKey: widget.myKey);
             if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
           },
           child: const Text('Ana Menü'),
@@ -354,7 +380,6 @@ class _GolfGameScreenState extends State<GolfGameScreen>
     } else {
       await _rooms.removePlayer(
           gamePath: GamePaths.golf, roomId: widget.roomId, playerKey: widget.myKey);
-      await _hostAdvance();
     }
     if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
   }
@@ -385,6 +410,11 @@ class _GolfGameScreenState extends State<GolfGameScreen>
       body: SafeArea(child: Column(children: [
         _ScoreBar(players: players, myKey: widget.myKey,
             holeNo: holeNo, maxHole: maxHole, onLeave: _confirmLeave),
+        if (_scoreNeedsRetry)
+          FilledButton.tonal(
+            onPressed: _saveScore,
+            child: const Text('Skoru yeniden gönder'),
+          ),
         AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           decoration: BoxDecoration(
@@ -395,7 +425,8 @@ class _GolfGameScreenState extends State<GolfGameScreen>
           ),
           padding: const EdgeInsets.symmetric(vertical: 7),
           child: Center(child: Text(
-            _myDone   ? '✅ Deliğe girdi! Diğerleri bekleniyor...'
+            _savingScore ? 'Skor gönderiliyor…'
+                : _myDone ? 'Deliğe girdi. Diğer oyuncular bekleniyor…'
                 : _moving ? '🎱 Top gidiyor...'
                 : '🏌️  Topa dokun, çek, bırak!  (vuruş: $_myShots)',
             style: const TextStyle(color: Colors.white,
@@ -408,6 +439,10 @@ class _GolfGameScreenState extends State<GolfGameScreen>
             onPanStart:  (d) => _onPanStart(d, size),
             onPanUpdate: (d) => _onPanUpdate(d, size),
             onPanEnd:    (d) => _onPanEnd(d, size),
+            onPanCancel: () => setState(() {
+              _dragStart = null;
+              _dragCurrent = null;
+            }),
             child: Stack(children: [
               CustomPaint(size: size, painter: _GolfFieldPainter(
                   ball: _ball, holePos: _holePos,

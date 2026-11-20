@@ -134,7 +134,7 @@ class _DeckRoomScreenState extends State<DeckRoomScreen> {
       return;
     }
     setState(() => _busy = true);
-    final error = await _repo.start(widget.roomId, room);
+    final error = await _repo.start(widget.roomId, widget.myKey, room['dealStartedAt']);
     if (!mounted) {
       return;
     }

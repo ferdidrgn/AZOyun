@@ -1,7 +1,7 @@
 name: AZOyun
 description: Çok oyunculu (multiplayer) oyun platformu
 publish_to: 'none'
-version: 1.0.0+20
+version: 1.0.0+21
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -60,6 +60,7 @@ dependencies:
   games_services: ^4.1.1
 
   qr_flutter: ^4.1.0
+  mobile_scanner: ^7.4.0
 
   # Hızlı oyunlar için yerel profil/XP/liderlik depolama
   shared_preferences: ^2.3.3

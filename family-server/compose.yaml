@@ -1,0 +1,38 @@
+services:
+  family:
+    build:
+      context: ..
+      dockerfile: family-server/Dockerfile
+    restart: unless-stopped
+    environment:
+      FAMILY_STATE_FILE: /app/state/rooms.json
+      PROGRESSION_STATE_FILE: /app/state/players.json
+      FAMILY_ORIGINS: https://azoyun.web.app
+      FAMILY_TRUST_PROXY: "true"
+    volumes:
+      - family-state:/app/state
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8780/api/family/health').then(r => { if (!r.ok) process.exitCode = 1 }).catch(() => { process.exitCode = 1 })"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  https:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    command: ["caddy", "reverse-proxy", "--from", "${FAMILY_HOST:?Set FAMILY_HOST to the public DNS name}", "--to", "family:8780"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - tls-state:/data
+    depends_on:
+      family:
+        condition: service_healthy
+
+volumes:
+  family-state:
+  tls-state:

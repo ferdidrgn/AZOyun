@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
+import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/az_widgets.dart';
 import 'soccer_room_screen.dart';
+import 'soccer_match.dart';
 
 class SoccerLobbyScreen extends StatefulWidget {
   const SoccerLobbyScreen({super.key, this.initialCode});
@@ -15,38 +17,40 @@ class SoccerLobbyScreen extends StatefulWidget {
   State<SoccerLobbyScreen> createState() => _SoccerLobbyScreenState();
 }
 
-class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
-    with SingleTickerProviderStateMixin {
-  final _rooms    = RoomService.instance;
-  final _storage  = StorageService.instance;
+class _SoccerLobbyScreenState extends State<SoccerLobbyScreen> {
+  final _rooms = RoomService.instance;
+  final _storage = StorageService.instance;
   final _codeCtrl = TextEditingController();
 
   String? _playerName;
-  bool    _loading = false;
-
-  late final AnimationController _bounce;
-  late final Animation<double>   _bounceY;
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
     seedRoomCode(_codeCtrl, widget.initialCode);
-    _bounce = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 700))
-      ..repeat(reverse: true);
-    _bounceY = Tween(begin: 0.0, end: -14.0)
-        .animate(CurvedAnimation(parent: _bounce, curve: Curves.easeInOut));
     _loadName();
   }
 
   @override
-  void dispose() { _bounce.dispose(); _codeCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _codeCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _loadName() async {
     final n = await _storage.getPlayerName();
     if (!mounted) return;
-    if (n != null && n.isNotEmpty) setState(() => _playerName = n);
-    else                           _askName();
+    if (n != null && n.isNotEmpty)
+      setState(() => _playerName = n);
+    else
+      await _askName();
+    if (mounted &&
+        widget.initialCode != null &&
+        _playerName != null &&
+        !_loading) {
+      await _joinRoom();
+    }
   }
 
   Future<void> _askName() async {
@@ -54,22 +58,27 @@ class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
         current: _playerName, accentColor: AZColors.orange);
     if (name == null || !mounted) return;
     await _storage.setPlayerName(name);
-    setState(() => _playerName = name);
+    if (mounted) setState(() => _playerName = name);
   }
 
   Future<void> _createRoom() async {
-    if (_playerName == null) { await _askName(); if (_playerName == null) return; }
+    if (_loading) return;
+    if (_playerName == null) {
+      await _askName();
+      if (_playerName == null) return;
+    }
+    if (!mounted || _loading) return;
     setState(() => _loading = true);
     try {
       final code = _rooms.generateCode();
-      final id   = await _rooms.createRoom(
+      final id = await _rooms.createRoom(
         gamePath: GamePaths.soccer,
         data: {
-          'code':          code,
-          'status':        'waiting',
-          'createdAt':     ServerValue.timestamp,
-          'currentRound':  1,
-          'totalRounds':   5,
+          'code': code,
+          'status': 'waiting',
+          'createdAt': ServerValue.timestamp,
+          'currentRound': 1,
+          'totalRounds': 5,
           'currentPlayer': 'p1',
           'players': {
             'p1': {'name': _playerName, 'isHost': true, 'score': 0}
@@ -77,99 +86,71 @@ class _SoccerLobbyScreenState extends State<SoccerLobbyScreen>
         },
       );
       if (!mounted) return;
-      _navigate(SoccerRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!));
-    } catch (e) { context.snack('Oda oluşturulamadı: $e'); }
-    finally     { if (mounted) setState(() => _loading = false); }
+      _navigate(
+          SoccerRoomScreen(roomId: id, myKey: 'p1', myName: _playerName!));
+    } catch (error) {
+      debugPrint('Serbest Vuruş oda oluşturma: $error');
+      if (mounted) context.snack('Oda oluşturulamadı. Bağlantını kontrol et.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _joinRoom() async {
-    if (_playerName == null) { await _askName(); if (_playerName == null) return; }
+    if (_loading) return;
+    if (_playerName == null) {
+      await _askName();
+      if (_playerName == null) return;
+    }
+    if (!mounted || _loading) return;
     final code = _codeCtrl.text.trim().toUpperCase();
-    if (code.length != 6) { context.snack('6 haneli kodu girin'); return; }
+    if (code.length != 6) {
+      context.snack('6 haneli kodu girin');
+      return;
+    }
     setState(() => _loading = true);
     try {
       final r = await _rooms.findByCode(gamePath: GamePaths.soccer, code: code);
-      if (r == null)                     { context.snack('Oda bulunamadı'); return; }
-      if (r.data['status'] != 'waiting') { context.snack('Oyun başlamış'); return; }
-      final players = Map.from((r.data['players'] as Map?) ?? {});
-      if (players.length >= 2)           { context.snack('Oda dolu (max 2)'); return; }
-      await _rooms.updateRoom(
-        gamePath: GamePaths.soccer, roomId: r.id,
-        updates: {'players/p2': {'name': _playerName, 'isHost': false, 'score': 0}},
+      if (!mounted) return;
+      if (r == null) {
+        context.snack('Oda bulunamadı');
+        return;
+      }
+      final joined = await _rooms.transactRoom(
+        gamePath: GamePaths.soccer,
+        roomId: r.id,
+        update: (room) => joinSoccerRoom(room, _playerName!),
       );
       if (!mounted) return;
-      _navigate(SoccerRoomScreen(roomId: r.id, myKey: 'p2', myName: _playerName!));
-    } catch (e) { context.snack('Katılınamadı: $e'); }
-    finally     { if (mounted) setState(() => _loading = false); }
+      if (!joined.committed || !joined.snapshot.exists) {
+        context.snack('Oda dolu, kapanmış veya maç başlamış.');
+        return;
+      }
+      _navigate(
+          SoccerRoomScreen(roomId: r.id, myKey: 'p2', myName: _playerName!));
+    } catch (error) {
+      debugPrint('Serbest Vuruş oda katılımı: $error');
+      if (mounted) context.snack('Odaya katılınamadı. Bağlantını kontrol et.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   void _navigate(Widget s) =>
       Navigator.push(context, MaterialPageRoute(builder: (_) => s));
 
   @override
-  Widget build(BuildContext context) {
-    return AZGradientScaffold(
-      gradient: AZColors.gradOrange,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(children: [
-          Align(alignment: Alignment.centerLeft,
-            child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context))),
-          const SizedBox(height: 8),
-          AnimatedBuilder(
-            animation: _bounceY,
-            builder: (_, __) => Transform.translate(
-              offset: Offset(0, _bounceY.value),
-              child: const Text('⚽', style: TextStyle(fontSize: 72)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text('SERBEST VURUŞ',
-              style: TextStyle(color: Colors.white, fontSize: 26,
-                  fontWeight: FontWeight.bold, letterSpacing: 2)),
-          const SizedBox(height: 4),
-          const Text('2 Oyuncu · 5 Vuruş · En çok gol atan kazanır',
-              style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 28),
-
-          AZNameChip(name: _playerName, onTap: _askName),
-          const SizedBox(height: 36),
-
-          AZButton(
-            label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-            onPressed: _createRoom, color: AZColors.orange,
-            loading: _loading, width: 300,
-          ),
-          const SizedBox(height: 28),
-          const Text('— veya —', style: TextStyle(color: Colors.white54)),
-          const SizedBox(height: 28),
-
-          AZFrostCard(child: Column(children: [
-            AZCodeField(controller: _codeCtrl),
-            const SizedBox(height: 14),
-            AZJoinButton(onPressed: _joinRoom, loading: _loading),
-          ])),
-          const SizedBox(height: 32),
-
-          AZFrostCard(
-            opacity: 0.08,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-              Text('⚽  Nasıl oynanır?',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-              SizedBox(height: 10),
-              Text(
-                '• Parmağını sürükle → yön ve güç ayarla → bırak\n'
-                '• Kalecin rastgele hareket eder\n'
-                '• 5 vuruş sonunda en çok gol atan kazanır\n'
-                '• Her tur sıra değişir',
-                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65),
-              ),
-            ]),
-          ),
-          const SizedBox(height: 24),
-        ]),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AZOnlineLobby(
+        title: 'Serbest Vuruş',
+        icon: Icons.sports_soccer,
+        summary: '2 oyuncu · Kişi başı 5 vuruş',
+        instructions:
+            'Topa dokunup geriye çek. Bıraktığında şut çekersin. Kaleyi ve kalecinin hareketini takip et.',
+        playerName: _playerName,
+        codeController: _codeCtrl,
+        loading: _loading,
+        onRename: _askName,
+        onCreate: _createRoom,
+        onJoin: _joinRoom,
+      );
 }

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:games_services/games_services.dart';
 
 class PlayGamesService extends ChangeNotifier {
@@ -7,18 +10,20 @@ class PlayGamesService extends ChangeNotifier {
 
   static const profileSlot = 'azoyun_profile_v2';
   static const _requestTimeout = Duration(seconds: 8);
+  static const _interactiveTimeout = Duration(minutes: 2);
+  static const _channel = MethodChannel('azoyun/play_games');
   static const _defaultLeaderboardId = 'CgkIxOrNg4kPEAIQAQ';
   static const xpLeaderboardId =
-      String.fromEnvironment('PGS_XP_LEADERBOARD_ID');
+      String.fromEnvironment('PGS_XP_LEADERBOARD_ID', defaultValue: 'CgkIxOrNg4kPEAIQEA');
 
   static const _achievementIds = {
     'first_step': 'CgkIxOrNg4kPEAIQAw',
-    'ten_games': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAMES'),
-    'fifty_games': String.fromEnvironment('PGS_ACHIEVEMENT_FIFTY_GAMES'),
-    'five_wins': String.fromEnvironment('PGS_ACHIEVEMENT_FIVE_WINS'),
-    'twenty_wins': String.fromEnvironment('PGS_ACHIEVEMENT_TWENTY_WINS'),
-    'win_streak_3': String.fromEnvironment('PGS_ACHIEVEMENT_WIN_STREAK_3'),
-    'try_them_all': String.fromEnvironment('PGS_ACHIEVEMENT_TRY_THEM_ALL'),
+    'ten_games': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAMES', defaultValue: 'CgkIxOrNg4kPEAIQCw'),
+    'fifty_games': String.fromEnvironment('PGS_ACHIEVEMENT_FIFTY_GAMES', defaultValue: 'CgkIxOrNg4kPEAIQDg'),
+    'five_wins': String.fromEnvironment('PGS_ACHIEVEMENT_FIVE_WINS', defaultValue: 'CgkIxOrNg4kPEAIQDA'),
+    'twenty_wins': String.fromEnvironment('PGS_ACHIEVEMENT_TWENTY_WINS', defaultValue: 'CgkIxOrNg4kPEAIQDQ'),
+    'win_streak_3': String.fromEnvironment('PGS_ACHIEVEMENT_WIN_STREAK_3', defaultValue: 'CgkIxOrNg4kPEAIQDw'),
+    'try_them_all': String.fromEnvironment('PGS_ACHIEVEMENT_TRY_THEM_ALL', defaultValue: 'CgkIxOrNg4kPEAIQCg'),
     'hundred_games': String.fromEnvironment('PGS_ACHIEVEMENT_HUNDRED_GAMES'),
     'ten_game_types': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAME_TYPES'),
   };
@@ -26,9 +31,12 @@ class PlayGamesService extends ChangeNotifier {
   String? _playerId;
   String? _playerName;
   Future<void>? _sessionRequest;
+  bool _interactiveRequest = false;
+  String? _signInError;
 
   String? get playerId => _playerId;
   String? get playerName => _playerName;
+  String? get signInError => _signInError;
   bool get isSignedIn => _playerId != null;
   bool get isSupported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -40,10 +48,15 @@ class PlayGamesService extends ChangeNotifier {
     if (!isSupported) return;
     final pending = _sessionRequest;
     if (pending != null) {
+      final pendingIsInteractive = _interactiveRequest;
       await pending;
-      if (!interactive || isSignedIn) return;
+      if (interactive && !pendingIsInteractive && !isSignedIn) {
+        await _updateSession(interactive: true);
+      }
+      return;
     }
-    final request = _readSession(interactive);
+    _interactiveRequest = interactive;
+    final request = _updatePlayer(interactive);
     _sessionRequest = request;
     try {
       await request;
@@ -52,25 +65,39 @@ class PlayGamesService extends ChangeNotifier {
     }
   }
 
-  Future<void> _readSession(bool interactive) async {
+  Future<Map<String, String>?> _readPlayer({bool interactive = false}) =>
+      _channel.invokeMapMethod<String, String>('player', {
+        'interactive': interactive,
+      }).timeout(interactive ? _interactiveTimeout : _requestTimeout);
+
+  Future<void> _updatePlayer(bool interactive) async {
     try {
-      if (interactive &&
-          !await GamesServices.isSignedIn.timeout(_requestTimeout)) {
-        await GamesServices.signIn();
+      final player = await _readPlayer(interactive: interactive);
+      final id = player?['id'];
+      final connected = id != null && id.isNotEmpty;
+      if (interactive) {
+        _signInError =
+            connected ? null : 'Play Games hesabını seçip tekrar dene.';
       }
-      if (!await GamesServices.isSignedIn.timeout(_requestTimeout)) {
-        _setPlayer(null, null);
-        return;
-      }
-      final id = await GamesServices.getPlayerID().timeout(_requestTimeout);
-      String? name;
-      try {
-        name = await GamesServices.getPlayerName().timeout(_requestTimeout);
-      } catch (_) {
-        // The account ID is sufficient when the profile name is unavailable.
-      }
-      _setPlayer(id?.isNotEmpty == true ? id : null, name);
+      _setPlayer(connected ? id : null, player?['name']);
     } catch (error) {
+      if (interactive) {
+        _signInError = switch (error) {
+          TimeoutException() =>
+            'Play Games zamanında yanıt vermedi. Tekrar dene.',
+          PlatformException(code: 'services_unavailable') =>
+            'Google Play Hizmetleri kullanılamıyor. Cihazındaki Play Hizmetleri’ni güncelle.',
+          PlatformException(details: 7) =>
+            'Play Games’e erişilemedi. İnternet bağlantını kontrol edip tekrar dene.',
+          PlatformException(details: 10) =>
+            'Bu AZOyun sürümü Play Games ile doğrulanamadı (kod 10).',
+          PlatformException(details: 16) => 'Play Games girişi iptal edildi.',
+          PlatformException(details: final int code) =>
+            'Play Games bağlantısı kurulamadı (kod $code).',
+          _ => 'Play Games bağlantısı kurulamadı. Tekrar dene.',
+        };
+      }
+      _setPlayer(null, null);
       debugPrint('[PlayGamesService] oturum okunamadı: $error');
     }
   }
@@ -88,8 +115,7 @@ class PlayGamesService extends ChangeNotifier {
   }
 
   Future<void> _verifyPlayer(String id) async {
-    if (playerId != id ||
-        await GamesServices.getPlayerID().timeout(_requestTimeout) != id) {
+    if (playerId != id || (await _readPlayer())?['id'] != id) {
       throw StateError('Play Games hesabı değişti.');
     }
   }

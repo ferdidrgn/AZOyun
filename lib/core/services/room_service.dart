@@ -95,6 +95,18 @@ class RoomService {
   }) =>
       _ref(gamePath, roomId).update(updates);
 
+  Future<TransactionResult> transactRoom({
+    required String gamePath,
+    required String roomId,
+    required Map<String, dynamic>? Function(Map<String, dynamic>) update,
+  }) =>
+      _ref(gamePath, roomId).runTransaction((value) {
+        if (value == null) return Transaction.success(null);
+        if (value is! Map) return Transaction.abort();
+        final next = update(Map<String, dynamic>.from(value));
+        return next == null ? Transaction.abort() : Transaction.success(next);
+      }, applyLocally: false);
+
   Future<void> addPlayer({
     required String gamePath,
     required String roomId,

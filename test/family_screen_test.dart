@@ -68,7 +68,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
       expect(find.text('ABC234'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).at(1), 'Ada');
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'Oyuncu adı'),
+        'Ada',
+      );
       await tester.tap(find.text('Katıl'));
       await tester.pumpAndSettle();
       expect(find.text('TV’de masanın başlatılmasını bekle.'), findsOneWidget);
