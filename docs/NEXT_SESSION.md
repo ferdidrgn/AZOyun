@@ -15,11 +15,10 @@
 
 ## Test sonuçları
 
-- On dokuz API/web testi, geçici süreç içi HTTP taşımasıyla geçti. Bu ortam `127.0.0.1` bağlantılarına `EACCES` veriyor. Üretim sunucusu üzerinde test edilmiş gibi işaretleme.
-- Beş Firebase temizlik politikası testi geçti.
+- GitHub Linux CI'da 19 API/web testi gerçek HTTP soketleriyle, beş Firebase temizlik politikası testi ve 61 Flutter testi geçti. [Tam Flutter doğrulaması](https://github.com/ferdidrgn/AZOyun/actions/runs/44665962774).
 - Flutter web derlemesi tamamlandı. Kod analizinde yeni hatalar çıkmadı. Şehir/Adam Asmaca'da iki kullanılmayan metot ve `main.dart` içinde önceden bulunan bir uyarı var.
 - Önceki aşamada Okey'in altı, Mahalleler'in beş, Batak'ın on bir Dart senaryosu geçti. Batak testleri yirmi tam maçı kapsıyor.
-- Flutter standart test koşucusu bu ortamda localhost soket hatası veriyor. CI'daki gerçek `flutter test` sonucu ayrıca doğrulanmalı.
+- Yerel Flutter test koşucusu localhost soket hatası veriyor; gerçek test sonucu GitHub Linux koşucusunda doğrulandı. QR telefon katılım alanlarının gizlenmesi ve güvenli depolamada sınırsız bekleme giderildi.
 
 ## Hesap durumu
 
@@ -27,30 +26,18 @@
 - Play Console geliştirici hesabı `8029085725143571520`, uygulama `4975804818976454127`, paket `com.ferdidrgn.azgame`.
 - Play Games projesi `517819561284`. Saved Games ve Android kimlik bilgisi zaten yayınlanmış.
 - Yedi mevcut başarımın gerçek kimlikleri `PlayGamesService` içindeki varsayılanlarla eşlendi. Boş CI değişkenleri bu varsayılanları ezmeyecek şekilde build argümanları düzeltildi.
-- Total XP tablosu `CgkIxOrNg4kPEAIQEA` kimliğiyle yayınlandı. Play Games yayın ekranında bekleyen değişiklik kalmadığı doğrulandı. Yüz Maç ve Oyun Gezgini için kayıtlar tamamlanmalı. İki fiziksel Android cihazıyla bulut geri yükleme henüz denenmedi.
-- CUA dosya yüklemesi sekme/oturum eşleşme hatası verdi. Bir başarım formu dolduruldu ama kaydedildiği varsayılmamalı. Yeni kaydı oluşturmadan önce Console'daki mevcut kayıtları kontrol et.
+- Total XP `CgkIxOrNg4kPEAIQEA`, 100 Matches `CgkIxOrNg4kPEAIQEQ` ve Game Explorer `CgkIxOrNg4kPEAIQEg` yayınlandı. Play Games yayın ekranında bekleyen değişiklik kalmadığı doğrulandı. İki fiziksel Android cihazıyla bulut geri yükleme henüz denenmedi.
 
 ## Main'e gönderim
 
-Yerel `gh` oturumu geçersiz. GitHub bağlantısı depoyu okuyabiliyor fakat Git ağacı ve dal oluşturma isteklerini HTTP 403 ile reddetti. Normal Git push, `getaddrinfo() thread failed to start` hatası verdi. Main'in güncellendiğini varsayma.
+Oyun kodları main'e `77809cc094fe18af15cc3d9e75e2a7a892900090` ile gönderildi. QR telefon düzeltmesi `d8a327278a6e9889a240a6c12fee67944bc2b76c` ile main'de. [Web yayını](https://github.com/ferdidrgn/AZOyun/actions/runs/44665021186) başarılı. Son Play Games kimlikleri `b214ea53b6ede35bc94a589a6958fe0fb101920e` ile main'e gönderildi. [İmzalı AAB dahili kanal işi](https://github.com/ferdidrgn/AZOyun/actions/runs/44666456640) başlatıldı. Actions sonucunu kontrol et; testin geçmesi mağaza yüklemesinin tamamlandığı anlamına gelmez.
 
-Değişiklikler ayrı, yazılabilir bir geçici checkout'ta commitlendi. Geçici checkout yolu `build/release21/checkout.txt` içinde. Kaybolmaya karşı commit nesneleri `build/release21/azoyun-release21.bundle` dosyasına aktarıldı. Kaynak çalışma dizinindeki dosyalar da duruyor.
-
-Geçerli GitHub oturumu ve ağ bağlantısı olan PowerShell'de, proje kökünden aşağıdaki komutlar çalışma dosyalarını değiştirmeden hazır commit'i main'e gönderebilir. Uzak main ilerlemişse normal Git kontrolü gönderimi reddeder ve değişiklikler önce birleştirilir.
-
-```powershell
-git bundle verify ./build/release21/azoyun-release21.bundle
-git fetch ./build/release21/azoyun-release21.bundle HEAD:refs/heads/release21-ready
-git log -1 release21-ready
-git push origin release21-ready:main
-```
-
-Push sonrasında web CI ve Play dahili kanal iş akışları izlenmeli. Yerel commit oluşması, GitHub'a push veya mağaza yayını tamamlandığı anlamına gelmez.
+Yerel kaynak dalının `.git` dizini bu oturumda salt okunur; yerel `gh` oturumu da geçersiz. GitHub bağlantısı yazımları HTTP 403 ile reddettiği için kod, kullanıcının açık GitHub web oturumu ve geçici `codex/release21-transfer` aktarım dalından çalışan Actions işiyle main'e taşındı. Bu aktarım dalındaki eski bundle main'den geridedir; yeniden main üzerine gönderme. Yeni sohbette main'i temel al ve yereldeki kaynak değişikliklerini silmeden karşılaştır. Kurtarma bundle'ı `build/release21/azoyun-release21.bundle` içinde, son QR/Play Games düzeltmelerini içermez.
 
 ## Bekleyen sonraki adımlar
 
 1. HTTPS API, GitHub `FAMILY_API_URL`, web yapılandırması ve Firebase temizlik fonksiyonunun üretim yayınını tamamla.
-2. Total XP ve eksik iki başarımı yayınla. İki cihazla Saved Games ve Play App Signing SHA-1 eşleşmesini doğrula.
+2. İmzalı AAB'nin dahili kanal sonucunu kontrol et. İki cihazla Saved Games, XP tablosu ve Play App Signing SHA-1 eşleşmesini doğrula. Dokuz başarımın kimlikleri artık kodda tanımlı.
 3. Android TV form faktörü ve gerçek Chromecast HD / RK3326 Cihaz Kataloğu gerekçelerini aç. Güncel AAB'nin ABI ve 16 KB uyumunu ölç. Yerel eski AAB güncel sürümün kanıtı sayılmaz.
 4. Bütün oyunların QR, dolu oda, eşzamanlı katılım, zayıf ağ, arka plan, sonuç ve rövanş cihaz turunu tamamla. Tekli oyunlarda çevrimdışı, büyük yazı, duraklatma ve yeniden deneme turunu yap.
 5. Ortak UI'nin kalan HUD/sonuç/profil/ayarlar/tekli oyun ekranlarına yayılmasını ve açık/koyu tema görsel turunu sürdür.

@@ -7,8 +7,8 @@ Bu dosya 20 Kasım 2026 tarihinde kontrol edilen hesap durumunu ve cihazda tamam
 - Firebase projesi `azoyun-569b2`. Console proje özetinde Spark planı, Functions ekranında ilk yayının beklendiği görüldü. Zamanlanmış temizlik için Blaze planı ve faturalandırma gerekir. Üretimde temizlik fonksiyonu henüz doğrulanmadı.
 - Play Games projesi `517819561284`. Saved Games etkin ve yayınlanmış. Android kimlik bilgisinin paket adı `com.ferdidrgn.azgame` ve durumu yayınlanmış.
 - `Total XP` tablosu `CgkIxOrNg4kPEAIQEA` kimliğiyle yayınlandı. Sayı biçimi tam sayı, sıralaması büyükten küçüğe. Play Games yayın ekranında işlemin ardından yayınlanacak değişiklik kalmadığı görüldü. Cihazda skor gönderme ve listeyi açma testi bekliyor.
-- Yedi mevcut başarım yayınlanmış. Uygulamanın `PlayGamesService` eşlemeleri Console'da görülen kimliklerle güncellendi. `hundred_games` ve `ten_game_types` için yeni kayıtların tamamlanması bekliyor.
-- Yerel `gh auth status` geçersiz GitHub oturumu bildirdi. GitHub bağlantısı okuma yapabildi, yeni Git ağacı ve dal yazımlarını HTTP 403 ile reddetti. Main'e gönderme bu erişim sorunu çözülmeden tamamlandı sayılmamalı.
+- Dokuz başarım yayınlandı. `hundred_games` için 100 Matches kimliği `CgkIxOrNg4kPEAIQEQ`, `ten_game_types` için Game Explorer kimliği `CgkIxOrNg4kPEAIQEg`. Kod varsayılanları gerçek kimlikleri kullanıyor; boş CI değişkenleri bu değerleri ezmiyor.
+- Oyun kodları main'e `77809cc`, QR telefon düzeltmesi `d8a3272` ile gönderildi. Web yayını başarılı; 19 API/web testi gerçek HTTP soketleriyle, beş temizlik testi ve 61 Flutter testi GitHub Linux CI'da geçti. Dahili AAB işi ayrıca izlenmeli.
 
 ## HTTPS Aile Masası
 
@@ -49,7 +49,7 @@ Console → Functions içinde `sweepLegacyGameRooms` görünmeli. Cloud Schedule
 4. Birinci cihazda Play Games'e bağlan. Maç bitirip XP, seviye ve başarımları kaydet. Profilde bulut eşitlemesinin tamamlandığını gör.
 5. İkinci cihazda aynı Play Games hesabıyla giriş yap. XP, oynanan maçlar, rozetler ve seviye ilk cihazla eşleşmeli. İki cihazda ayrı maçlar bitirip senkronize et. Aynı maç sonucu iki kez XP vermemeli.
 6. Play Games → Skor tabloları bölümünde yayınlanan Total XP tablosunun cihazda açıldığını doğrula. Kaydedilmiş oyunlar özelliği zaten etkin. Android kimlik bilgisindeki SHA-1, **Uygulama bütünlüğü → Play Uygulama İmzalama** sertifikasıyla eşleşmeli.
-7. Play Games → Hedefler bölümünde Yüz Maç ve Oyun Gezgini başarımlarını tamamla. Üretilen gerçek kimlikleri `PGS_ACHIEVEMENT_HUNDRED_GAMES` ve `PGS_ACHIEVEMENT_TEN_GAME_TYPES` depo değişkenlerine yaz.
+7. Play Games → Hedefler bölümünde yayınlanan 100 Matches ve Game Explorer başarımlarını cihazda aç. Kod gerçek kimlikleri varsayılan olarak içeriyor; isteğe bağlı `PGS_ACHIEVEMENT_HUNDRED_GAMES` ve `PGS_ACHIEVEMENT_TEN_GAME_TYPES` değişkenleri yalnızca aynı projedeki geçerli kimliklerle kullanılmalı.
 8. Üretim kanalını gerçek cihaz sonuçları tamamlandıktan sonra manuel iş akışında seç.
 
 ## Oyun test matrisi
@@ -58,7 +58,7 @@ Console → Functions içinde `sweepLegacyGameRooms` görünmeli. Cloud Schedule
 | --- | --- | --- |
 | Bütün çevrimiçi oyunlar | Kod, QR, dolu/kapalı oda, eşzamanlı katılım, zayıf ağ, Geri, arka plan, sonuç, rövanş | Otomatik testler var, her oyunun fiziksel cihaz turu bekliyor |
 | Tekli oyunlar | Küçük ekran, büyük yazı, çevrimdışı açılış, duraklatma, tekrar deneme | Tam katalog cihaz turu bekliyor |
-| Yeni aile oyunları | Gizli veri projeksiyonu, sekiz kişilik rol katılımı, kelime kuralları, oylar ve sonuç | 19 API/web testi süreç içi HTTP aktarımıyla geçti |
+| Yeni aile oyunları | Gizli veri projeksiyonu, sekiz kişilik rol katılımı, kelime kuralları, oylar ve sonuç | 19 API/web testi GitHub Linux CI'da gerçek HTTP bağlantılarıyla geçti |
 | Firebase odaları | Canlı oyuncuyu koruma, yeniden bağlanma, boş/biten oda ömrü | Beş politika testi geçti, üretim yayını bekliyor |
 | Sahne motoru | Mini Golf kare süreleri, yarış/dövüşte ortak döngü ihtiyacı, Flame karşılaştırması | Düşük donanımlı fiziksel Android ölçümü bekliyor |
 | Ortak UI | Lobiler, HUD, sonuç, profil, ayarlar, tekli oyunlar, açık/koyu tema | Ortak tema ve lobi bileşenleri var, bütün ekranların görsel turu bekliyor |
