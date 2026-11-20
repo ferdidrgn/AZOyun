@@ -70,7 +70,10 @@ class _CityLobbyScreenState extends State<CityLobbyScreen> {
     final n = await _storage.getPlayerName();
     if (!mounted) return;
     if (n != null && n.isNotEmpty) setState(() => _playerName = n);
-    else _askName();
+    else await _askName();
+    if (mounted && widget.initialCode != null && _playerName != null && !_loading) {
+      await _joinRoom();
+    }
   }
 
   Future<void> _askName() async {

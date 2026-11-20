@@ -134,11 +134,102 @@ class _NailRow extends StatelessWidget {
             width: 52,
             height: 72,
             child: Material(
-              color: colors[i],
-              borderRadius: BorderRadius.circular(AZRadius.lg),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(AZRadius.lg),
-                onTap: onTap == null ? null : () => onTap!(i),
+              color: Colors.transparent,
+              child: Ink(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AZRadius.lg),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFFFE3D7), Color(0xFFE6AFA0), Color(0xFFB86F70)],
+                    stops: [0, .54, 1],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF471D37).withOpacity(.22),
+                      blurRadius: 9,
+                      offset: const Offset(0, 5),
+                    ),
+                    const BoxShadow(
+                      color: Color(0x55FFFFFF),
+                      blurRadius: 3,
+                      offset: Offset(-2, -2),
+                    ),
+                  ],
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AZRadius.lg),
+                  onTap: onTap == null ? null : () => onTap!(i),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned(
+                        bottom: 5,
+                        child: Container(
+                          width: 27,
+                          height: 9,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: const Color(0xFF9D5E62).withOpacity(.26),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 32,
+                        height: 49,
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(17),
+                            bottom: Radius.circular(12),
+                          ),
+                          gradient: LinearGradient(
+                            begin: const Alignment(-.8, -.9),
+                            end: const Alignment(.8, .9),
+                            colors: [
+                              Color.lerp(colors[i], Colors.white, .42)!,
+                              colors[i],
+                              Color.lerp(colors[i], Colors.black, .28)!,
+                            ],
+                            stops: const [0, .42, 1],
+                          ),
+                          border: Border.all(
+                            color: Color.lerp(colors[i], Colors.white, .6)!,
+                            width: 1.4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color.lerp(colors[i], Colors.black, .48)!
+                                  .withOpacity(.38),
+                              blurRadius: 5,
+                              offset: const Offset(1.5, 3),
+                            ),
+                            const BoxShadow(
+                              color: Color(0x88FFFFFF),
+                              blurRadius: 3,
+                              offset: Offset(-1.5, -1.5),
+                            ),
+                          ],
+                        ),
+                        child: Align(
+                          alignment: const Alignment(-.48, -.52),
+                          child: Container(
+                            width: 4,
+                            height: 23,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(.72),
+                                  Colors.white.withOpacity(.04),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

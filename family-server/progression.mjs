@@ -43,7 +43,7 @@ export function createProgression({ stateFile, now = Date.now } = {}) {
     const players = new Map();
     room.players.forEach((player, index) => {
       if (state.players[player.profileId]) {
-        players.set(player.profileId, players.get(player.profileId) || room.winner === index);
+        players.set(player.profileId, players.get(player.profileId) || room.winner === index || room.winners?.includes(index) === true);
       }
     });
     if (!players.size) return;

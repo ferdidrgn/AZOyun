@@ -4,8 +4,13 @@ import 'three_view_native.dart'
     if (dart.library.js_interop) 'three_view_web.dart';
 
 enum ThreeArcadeGame {
+  runway('Neon Pist'),
+  drones('Sinyal Avı'),
   orbit('Yörünge Pilotu'),
-  maze('Kristal Labirent');
+  maze('Kristal Labirent'),
+  bowling('3D Mini Bowling'),
+  freeKick('Frikik Ustası'),
+  penalty('Penaltı Antrenmanı');
 
   const ThreeArcadeGame(this.title);
   final String title;

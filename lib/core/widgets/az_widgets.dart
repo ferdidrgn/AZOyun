@@ -60,7 +60,7 @@ class AZCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: padding,
     decoration: BoxDecoration(
-      color: AZColors.surface,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(AZRadius.xl),
       boxShadow: AZShadow.soft(AZShadow.lightTint),
     ),
@@ -342,44 +342,72 @@ class AZRoomCode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final link = inviteGame == null ? null : DeepLinkService.webInvite(inviteGame!, code);
+    final scheme = Theme.of(context).colorScheme;
+    final ready = RegExp(r'^[A-Z0-9]{6}$').hasMatch(code);
+    final link = inviteGame == null || !ready
+        ? null
+        : DeepLinkService.webInvite(inviteGame!, code);
     return AZCard(
       child: Column(children: [
         Text('Oda kodu',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
         const SizedBox(height: 6),
         Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(code,
-              style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 8,
-                  color: accentColor)),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(code,
+                  style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 5,
+                      color: scheme.onSurface)),
+            ),
+          ),
           IconButton(
+            tooltip: 'Oda kodunu kopyala',
             icon: Icon(Icons.copy_rounded, color: accentColor),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: link ?? code));
+            onPressed: !ready ? null : () {
+              Clipboard.setData(ClipboardData(text: code));
               ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Davet kopyalandı')));
+                  const SnackBar(content: Text('Oda kodu kopyalandı')));
             },
           ),
         ]),
-        if (link != null) ...[
-          const SizedBox(height: 8),
-          ColoredBox(
-            color: Colors.white,
-            child: QrImageView(data: link, size: 168, backgroundColor: Colors.white),
+        if (link != null)
+          OutlinedButton.icon(
+            icon: const Icon(Icons.qr_code_rounded),
+            label: const Text('QR daveti'),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Odaya davet et'),
+                scrollable: true,
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    QrImageView(data: link, size: 184, backgroundColor: Colors.white),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Arkadaşın Çevrimiçi → QR ile odaya katıl seçeneğinden bu kodu okutabilir.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Kapat'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () => Share.share('AZOyun oda daveti: $code\n$link'),
+                    icon: const Icon(Icons.share_rounded),
+                    label: const Text('Paylaş'),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 8),
-          Text('TV, bilgisayar veya telefonda aç',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-          TextButton(
-            onPressed: () => Share.share('AZ Oyun odasına katıl. Kod: $code\n$link'),
-            child: const Text('Daveti paylaş'),
-          ),
-        ] else
-          Text('Arkadaşına gönder',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
       ]),
     );
   }
@@ -766,7 +794,9 @@ class AZLeaveGuard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: false,
-    onPopInvoked: (_) => onLeave(),
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) onLeave();
+    },
     child: child,
   );
 }

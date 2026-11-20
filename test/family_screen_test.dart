@@ -4,6 +4,7 @@ import 'package:AZOyun/features/family/family_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -12,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   testWidgets('TV invite opens a phone lobby with the room code',
       (tester) async {
+    FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({
       'az_family_server': 'https://masa.example.test',
     });
@@ -68,7 +70,12 @@ void main() {
       ));
       await tester.pumpAndSettle();
       expect(find.text('ABC234'), findsOneWidget);
-      await tester.enterText(find.byType(TextField).at(1), 'Ada');
+      await tester.enterText(
+        find.byWidgetPredicate((widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'Oyuncu adı'),
+        'Ada',
+      );
       await tester.tap(find.text('Katıl'));
       await tester.pumpAndSettle();
       expect(find.text('TV’de masanın başlatılmasını bekle.'), findsOneWidget);

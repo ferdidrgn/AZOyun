@@ -1,9 +1,12 @@
 import { qrcode } from "./qrcode.mjs";
 import { familyApi } from "./config.mjs";
 import { profileKey } from "./profile.mjs";
+import { partyBoard, partyControls } from "./party-tables.mjs";
 
-const games = { okey: "Klasik Okey", okey101: "101 Okey", city: "Mahalleler" };
+const games = { okey: "Klasik Okey", okey101: "101 Okey", city: "Mahalleler", words: "Kelime Tahtası", roles: "Gizli Rol" };
 const gameDetails = {
+  words: "2–4 oyuncu · Yedi gizli harfle ortak tahtada kelimeler kur.",
+  roles: "4–8 oyuncu · Gece görevini tamamla, gündüz sabotajcıları bul.",
   city: "2–4 oyuncu · Mülk al, kira topla ve özel takas yap.",
   okey: "4 oyuncu · Serileri veya yedi çifti tamamla.",
   okey101: "4 oyuncu · 101 puanla ya da beş çiftle aç.",
@@ -287,14 +290,16 @@ export function openTable(main, params) {
         ? [active.dataset.action, active.dataset.value]
         : null;
     const formActive =
-      view.contains(active) && active.closest('form[data-form="trade"]');
-    const oldTrade = view.querySelector('form[data-form="trade"]');
+      view.contains(active) && active.closest('form[data-form]:not([data-form="setup"])');
+    const formType = formActive?.dataset.form;
+    const oldTrade = formActive;
     const lobby = room.status === "lobby";
     const city = room.game === "city";
+    const party = ["words", "roles"].includes(room.game);
     const playing = room.status === "playing";
     const privateView = !host && playing && room.private;
     const invite = host && lobby ? inviteUrl() : "";
-    const message = playing
+    const message = playing && room.turn != null
       ? `<p class="turn">Sıra ${playerName(room, room.turn)} oyuncusunda</p>`
       : "";
     const roster = `<ul class="roster" aria-label="Oyuncular">${room.players
@@ -304,23 +309,24 @@ export function openTable(main, params) {
       )
       .join("")}</ul>`;
     const controls = privateView
-      ? `<section class="surface stack">${city ? cityControls(room) : rackControls(room)}</section>`
+      ? `<section class="surface stack">${party ? partyControls(room, escape) : city ? cityControls(room) : rackControls(room)}</section>`
       : "";
     view.innerHTML = `<div class="room-layout ${privateView ? "phone-controls" : !invite ? "room-full" : ""}">
       <section class="surface"><h2>${games[room.game]}</h2>${message}
       ${room.status === "finished" && room.winner != null ? '<p class="turn">' + playerName(room, room.winner) + " kazandı</p>" : ""}
       <p class="quiet">${escape(room.message || (lobby ? "Oyuncular bekleniyor." : ""))}</p>${roster}
-      ${city ? cityBoard(room) : lobby ? "" : tileBoard(room)}
+      ${party ? partyBoard(room, escape, host) : city ? cityBoard(room) : lobby ? "" : tileBoard(room)}
       ${room.status === "finished" ? '<div class="actions">' + button("reset", "Masa seçimine dön") +
         (!host && profileKey(server) ? '<a class="button outline" href="/?profil">XP ve rozetlerini gör</a>' : "") + "</div>" : ""}
       ${host && playing ? '<div class="actions">' + button("close", "Masayı kapat") + "</div>" : ""}
+      ${host && party && room.status === "finished" ? '<div class="actions">' + button("rematch", "Aynı oyuncularla rövanş") + '</div>' : ''}
       ${!host && lobby ? '<p class="quiet">TV’de oyunun başlamasını bekle.</p><div class="actions">' + button("leave", "Masadan ayrıl") + "</div>" : ""}
       </section>
       ${
         invite
           ? `<aside class="surface qr-panel stack"><div id="table-qr"></div><p class="code">${code}</p>
         <a class="button outline" href="${escape(invite)}" target="_blank" rel="noopener">Katılım bağlantısı</a>
-        <button class="button primary" data-action="start" ${room.players.length < (city ? 2 : 4) ? "disabled" : ""}>Başlat · ${escape(room.players.length)}/4</button>
+        <button class="button primary" data-action="start" ${room.players.length < (room.minPlayers ?? (city ? 2 : 4)) ? "disabled" : ""}>Başlat · ${escape(room.players.length)}/${room.maxPlayers ?? 4}</button>
         ${button("close", "Masayı kapat")}</aside>`
           : ""
       }
@@ -344,9 +350,9 @@ export function openTable(main, params) {
     if (
       formActive &&
       oldTrade &&
-      view.querySelector('form[data-form="trade"]')
+      view.querySelector(`form[data-form="${formType}"]`)
     ) {
-      view.querySelector('form[data-form="trade"]').replaceWith(oldTrade);
+      view.querySelector(`form[data-form="${formType}"]`).replaceWith(oldTrade);
       active.focus({ preventScroll: true });
     } else if (focus) {
       [...view.querySelectorAll("[data-action]")]
@@ -602,6 +608,12 @@ export function openTable(main, params) {
     const form = new FormData(event.target);
     if (event.target.dataset.form === "setup")
       run(() => connect(form), event.submitter);
+    else if (event.target.dataset.form === "word")
+      run(() => submitAction("placeWord", {word: form.get("word"), row: Number(form.get("row"))-1,
+        col: Number(form.get("col"))-1, vertical: form.get("direction")==="vertical"}), event.submitter);
+    else if (event.target.dataset.form === "role")
+      run(() => submitAction(room.phase==="night"?"nightChoice":"roleVote", {
+        target: form.get("target")===""?null:Number(form.get("target"))}), event.submitter);
     else
       run(
         () =>
@@ -625,6 +637,11 @@ export function openTable(main, params) {
     if (!control || busy) return;
     const { action, value } = control.dataset;
     const number = Number(value);
+    if (action === "wordCell") {
+      const form = view.querySelector('form[data-form="word"]');
+      if (form) { form.elements.row.value = Math.floor(number/11)+1; form.elements.col.value = number%11+1; }
+      return;
+    }
     if (action === "reset") return reset();
     if (action === "select") {
       if (selected.includes(number))

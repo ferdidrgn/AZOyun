@@ -1,0 +1,72 @@
+# AZOyun yayın ve gerçek cihaz kontrolü
+
+Bu dosya 20 Kasım 2026 tarihinde kontrol edilen hesap durumunu ve cihazda tamamlanacak adımları saklar. Yerel kural testi, mağazadan kurulum ve fiziksel TV testi ayrı sonuçlardır.
+
+## Mevcut hesap durumu
+
+- Firebase projesi `azoyun-569b2`. Console proje özetinde Spark planı, Functions ekranında ilk yayının beklendiği görüldü. Zamanlanmış temizlik için Blaze planı ve faturalandırma gerekir. Üretimde temizlik fonksiyonu henüz doğrulanmadı.
+- Play Games projesi `517819561284`. Saved Games etkin ve yayınlanmış. Android kimlik bilgisinin paket adı `com.ferdidrgn.azgame` ve durumu yayınlanmış.
+- 21 Kasım 2026 Play Console kontrolü: Play Games Android OAuth kimlik bilgisi `com.ferdidrgn.azgame` paketine bağlı ve yayımlanmış. SHA-1 `A6:C4:BD:55:E3:A7:DF:8E:5B:E2:EA:FF:6A:98:B9:58:B3:10:8E:17`; Play App Signing sertifikasıyla eşleşme bu oturumda doğrulanamadı.
+- `Total XP` tablosu `CgkIxOrNg4kPEAIQEA` kimliğiyle yayınlandı. Sayı biçimi tam sayı, sıralaması büyükten küçüğe. Play Games yayın ekranında işlemin ardından yayınlanacak değişiklik kalmadığı görüldü. Cihazda skor gönderme ve listeyi açma testi bekliyor.
+- Dokuz başarım yayınlandı. `hundred_games` için 100 Matches kimliği `CgkIxOrNg4kPEAIQEQ`, `ten_game_types` için Game Explorer kimliği `CgkIxOrNg4kPEAIQEg`. Kod varsayılanları gerçek kimlikleri kullanıyor; boş CI değişkenleri bu değerleri ezmiyor.
+- Oyun kodları main'e `77809cc`, QR telefon düzeltmesi `d8a3272` ile gönderildi. Web yayını başarılı; 19 API/web testi gerçek HTTP soketleriyle, beş temizlik testi ve 61 Flutter testi GitHub Linux CI'da geçti. Dahili AAB işi ayrıca izlenmeli.
+
+## HTTPS Aile Masası
+
+Klasik Okey, 101, Pişti, Batak ve mobil Mahalleler Firebase Realtime Database odalarını kullanır. Kelime Tahtası, Gizli Rol ve tarayıcı masası, telefonlara özel veri gönderen `family-server` API'sini kullanır.
+
+1. `docs/FAMILY_TABLE.md` içindeki Docker Compose adımlarıyla kalıcı diski ve HTTPS'i olan tek sunucu örneğini yayınla. Örnek alan adını gerçek alan adıyla değiştir.
+2. PowerShell'de `Invoke-RestMethod https://GERCEK-ALAN-ADI/api/family/health` çalıştır. Sonuçta `ok` alanı `true` olmalı. HTML dönüyorsa o adreste API çalışmıyordur.
+3. GitHub deposunda **Settings → Secrets and variables → Actions → Variables → New repository variable** yolundan `FAMILY_API_URL` değişkenini yalnızca HTTPS kök adresiyle kaydet. Örneğin `https://masa.alanadiniz.com`. Sonuna `/api/family` ekleme.
+4. **Actions → CI ve web yayını → Run workflow → main** çalıştır. `deploy` işi başarılı olmalı.
+5. `https://azoyun.web.app/salon/family-api.json` dosyasında `origin` alanı gerçek API adresini göstermeli. Dosyayı tarayıcıda açarak kontrol et.
+6. Mağazadaki eski sürümde **Sunucu ayarı** alanına aynı HTTPS adresini yaz. Oda kur, başka bir ağdaki telefonla QR veya kod üzerinden katıl. Yeni sürümde Kelime Tahtası ve Gizli Rol menüleri bulunur.
+7. Sunucuyu yeniden başlat. Odanın, oyuncu koltuğunun ve profilin kalıcı dosyalardan geri geldiğini kontrol et.
+
+## Firebase temizliği
+
+Blaze etkinleştirildikten sonra **Actions → Firebase oda temizliğini yayınla → Run workflow** kullanılabilir. GitHub'daki mevcut `FIREBASE_SERVICE_ACCOUNT_AZOYUN` hesabının Functions, Scheduler ve ilgili dağıtım kaynakları için gereken yetkileri bulunmalı. İş akışı yetki hatası verirse hata mesajındaki izin yönetici hesabında düzeltilir.
+
+Console → Functions içinde `sweepLegacyGameRooms` görünmeli. Cloud Scheduler işi beş dakikada bir çalışmalı. Deneme odasında tüm oyuncuları çıkar. On dakikalık boş oda toleransı ve sonraki tarama sonrasında oda silinmeli. Biten odalar iki saat korunur. Bir oyuncu geri dönerse boş oda süresi iptal olmalı. Canlı ve eski sürüm odalarının silinmediğini de doğrula.
+
+## Android TV ve Cihaz Kataloğu
+
+20 Kasım Console kontrolü: `google boreal` (Chromecast Google TV HD) Android 14, `armeabi-v7a, armeabi` ABI ve 1,4–1,5 GB RAM ile listelendi. Genel durum **Kaydolunmadı**. Üretim kanalı manifest açısından **Destekleniyor**, açık/kapalı/dahili eski test kanallarının gerekçesi **Gerekli özellik desteklenmiyor: android.hardware.faketouch**. Manifestte fake touch `required=false` yapıldı ve `e1ec469` ile main'e gönderildi. Bu düzeltmenin mağazaya ulaşması ve cihazda denenmesi gerekir.
+
+Android TV form faktörü Console'a eklendi. **Tüm mağaza girişleri için Android TV ekran görüntüleri yükleyin** görevi bekliyor; dağıtımı etkinleştirme ve inceleme politikasını kabul etme adımı bu yüzden kilitli. TV dağıtımı veya inceleme onayı tamamlandı sayılmamalı. `RK3326` ve `sgo` aramaları tüm cihazlarda sonuç vermedi; bu cihaz için gerçek model/varyant veya cihazdaki Play Protect sertifika durumu görülmeden gerekçe atanamaz.
+
+1. Play Console'da AZGame uygulamasını seç. **Gelişmiş ayarlar → Form faktörleri** altında Android TV'nin ekli ve inceleme sonucunun onaylı olduğunu kontrol et. Paneldeki arama kutusuna `Form faktörleri` yazılarak da bulunabilir.
+2. Mağaza girişinde en az bir gerçek Android TV ekran görüntüsü ve TV banner'ı ekle. Uygulama açıklamasında Android TV desteğini anlat. Launcher banner'ı için 320×180 kaynak bulunmalı.
+3. **İzleyin ve geliştirin → Erişim ve cihazlar → Cihaz kataloğu** yolunu aç. `Chromecast` ve `RK3326` aramalarını ayrı yap. Tam marka, cihaz kodu ve varyantı seç.
+4. Cihazın **Desteklenmiyor** veya **Hariç tutuldu** gerekçesini, seçili AAB sürüm koduyla birlikte kaydet. `ABI`, zorunlu donanım, minimum Android sürümü ve elle/RAM/SoC kurallarıyla dışlama nedenlerini kontrol et. Donanımda 64 bit işlemci bulunması cihazın işletim sistemi ABI'sini tek başına belirlemez.
+5. Yüklenen AAB'de hem `base/lib/armeabi-v7a/` hem `base/lib/arm64-v8a/` olmalı. ZIP aracıyla açıp her iki klasördeki `.so` dosyalarını incele. CI her iki ARM mimarisiyle AAB üretir.
+6. AAB'den üretilen APK'yı Android Studio'da **Build → Analyze APK** ile aç. `lib` altındaki `.so` dosyalarının **Alignment** sütununda 16 KB uyarısı bulunmamalı. Paket hizalamasını ayrıca `bundletool dump config --bundle=app-release.aab` çıktısında `PAGE_ALIGNMENT_16K` ile kontrol et.
+7. 16 KB sistem görüntülü Android emülatöründe `adb shell getconf PAGE_SIZE` sonucu `16384` olmalı. Uygulamayı burada da çalıştır. 4 KB kullanan bir TV'deki başarılı açılış 16 KB testinin yerine geçmez.
+8. Fiziksel TV kumandasıyla yönler, OK ve Geri tuşlarını dene. Oyun seçimi, oda kurma, başlatma, sonuç, diyalog kapatma ve reklamdan çıkma akışlarında odak görünür olmalı. Telefon kumandası için QR'yı okut ve tam maç bitir.
+
+Paket kontrolü için `scripts/check-android-bundle.py`, imzalı AAB'yi ve `bundletool dump config` / `bundletool dump manifest --module=base` çıktılarını alır. Her iki ARM ABI'sini, ARM64 ELF LOAD/RELRO hizalamasını, 16 KB paket isteğini, isteğe bağlı dokunma/kamera özelliklerini ve TV launcher girişini raporlar. Bu sonuç gerçek cihazda çalışma testi yerine geçmez.
+
+[TV dağıtımı](https://developer.android.com/training/tv/publishing/distribute) · [TV kalite kuralları](https://developer.android.com/docs/quality-guidelines/tv-app-quality) · [Cihaz kataloğu](https://support.google.com/googleplay/android-developer/answer/7353455?hl=tr) · [16 KB kontrolü](https://developer.android.com/guide/practices/page-sizes)
+
+## Dahili kanal ve iki cihazda Saved Games
+
+1. Main'deki `1.0.0+21` ARM32/ARM64 AAB üretimi ve test adımları geçti; Actions çıktısı `14598192802` (`azoyun-signed-aab`, 54.6 MB), SHA-256 `6508d1ff2d4754740529bc06b7f2761e3bbad1b8c46d4a60f83d0d91bb0312c8`. Play Console dahili test yüklemesi `The caller does not have permission` hatasıyla başarısız oldu. GitHub Actions'taki Play servis hesabına AZGame için en düşük gerekli **Release apps to testing tracks** izni verilmeden mağaza testi başlamaz; üretim yayınlama izni gerekmez. Bu AAB'nin Play'den indirilmiş test kurulumu veya gerçek cihaz testi sayılmaz. [Google Play izinleri](https://support.google.com/googleplay/android-developer/answer/9844686?hl=en)
+2. Play Console → Dahili test bölümüne iki test hesabını ekle. Play Games → Test kullanıcıları altında da bu hesapların yetkili olduğunu doğrula.
+3. Bir test cihazında temiz kurulum, diğerinde mevcut mağaza sürümünden yükseltme yap. Uygulama verilerini temizleme testini kişisel ana cihaz yerine test cihazında uygula.
+4. Birinci cihazda Play Games'e bağlan. Maç bitirip XP, seviye ve başarımları kaydet. Profilde bulut eşitlemesinin tamamlandığını gör.
+5. İkinci cihazda aynı Play Games hesabıyla giriş yap. XP, oynanan maçlar, rozetler ve seviye ilk cihazla eşleşmeli. İki cihazda ayrı maçlar bitirip senkronize et. Aynı maç sonucu iki kez XP vermemeli.
+6. Play Games → Skor tabloları bölümünde yayınlanan Total XP tablosunun cihazda açıldığını doğrula. Kaydedilmiş oyunlar özelliği zaten etkin. Android kimlik bilgisindeki SHA-1, **Uygulama bütünlüğü → Play Uygulama İmzalama** sertifikasıyla eşleşmeli.
+7. Play Games → Hedefler bölümünde yayınlanan 100 Matches ve Game Explorer başarımlarını cihazda aç. Kod gerçek kimlikleri varsayılan olarak içeriyor; isteğe bağlı `PGS_ACHIEVEMENT_HUNDRED_GAMES` ve `PGS_ACHIEVEMENT_TEN_GAME_TYPES` değişkenleri yalnızca aynı projedeki geçerli kimliklerle kullanılmalı.
+8. Üretim kanalını gerçek cihaz sonuçları tamamlandıktan sonra manuel iş akışında seç.
+
+## Oyun test matrisi
+
+| Alan | Kontroller | Mevcut durum |
+| --- | --- | --- |
+| Bütün çevrimiçi oyunlar | Kod, QR, dolu/kapalı oda, eşzamanlı katılım, zayıf ağ, Geri, arka plan, sonuç, rövanş | Otomatik testler var, her oyunun fiziksel cihaz turu bekliyor |
+| Tekli oyunlar | Küçük ekran, büyük yazı, çevrimdışı açılış, duraklatma, tekrar deneme | Tam katalog cihaz turu bekliyor |
+| PC/web oyunları | Masaüstü yerleşimi, 2048 yön tuşları, odak görünümü ve tahta/eylem hizası | Yerleşim ve klavye ipucu güncellendi; tarayıcı doğrulaması bekliyor |
+| Yeni aile oyunları | Gizli veri projeksiyonu, sekiz kişilik rol katılımı, kelime kuralları, oylar ve sonuç | 19 API/web testi GitHub Linux CI'da gerçek HTTP bağlantılarıyla geçti |
+| Firebase odaları | Canlı oyuncuyu koruma, yeniden bağlanma, boş/biten oda ömrü | Beş politika testi geçti, üretim yayını bekliyor |
+| Sahne motoru | Mini Golf kare süreleri, yarış/dövüşte ortak döngü ihtiyacı, Flame karşılaştırması | Düşük donanımlı fiziksel Android ölçümü bekliyor |
+| Ortak UI | Lobiler, HUD, sonuç, profil, ayarlar, tekli oyunlar, açık/koyu tema | Ortak tema ve lobi bileşenleri var, bütün ekranların görsel turu bekliyor |

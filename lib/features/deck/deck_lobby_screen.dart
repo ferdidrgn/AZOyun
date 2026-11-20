@@ -7,9 +7,10 @@ import 'deck_repository.dart';
 import 'deck_room_screen.dart';
 
 class DeckLobbyScreen extends StatefulWidget {
-  const DeckLobbyScreen({super.key, this.initialCode});
+  const DeckLobbyScreen({super.key, this.initialCode, this.table = false});
 
   final String? initialCode;
+  final bool table;
 
   @override
   State<DeckLobbyScreen> createState() => _DeckLobbyScreenState();
@@ -28,6 +29,10 @@ class _DeckLobbyScreenState extends State<DeckLobbyScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.table) {
+      _name = 'Ortak ekran';
+      return;
+    }
     final code = widget.initialCode;
     if (code != null && code.isNotEmpty) {
       _codeCtrl.text = code.toUpperCase();
@@ -42,7 +47,7 @@ class _DeckLobbyScreenState extends State<DeckLobbyScreen> {
       return;
     }
     final size = MediaQuery.sizeOf(context);
-    _asTable = size.width >= 840;
+    _asTable = widget.table || (widget.initialCode == null && size.width >= 840);
   }
 
   @override
@@ -60,6 +65,9 @@ class _DeckLobbyScreenState extends State<DeckLobbyScreen> {
       setState(() => _name = stored);
     } else {
       await _askName();
+    }
+    if (mounted && widget.initialCode != null && _name != null && !_loading) {
+      await _join();
     }
   }
 

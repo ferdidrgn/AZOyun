@@ -6,7 +6,11 @@ import '../../core/services/room_service.dart';
 import 'deck_engine.dart';
 
 class DeckSeat {
-  const DeckSeat({required this.key, required this.name, required this.role, required this.isHost});
+  const DeckSeat(
+      {required this.key,
+      required this.name,
+      required this.role,
+      required this.isHost});
 
   final String key;
   final String name;
@@ -58,78 +62,87 @@ class DeckRepository {
     if (found == null) {
       throw DeckRoomException('Oda bulunamadı');
     }
-    if (found.data['status'] != 'waiting') {
-      throw DeckRoomException('Oyun başlamış');
-    }
-    final players = Map<String, dynamic>.from((found.data['players'] as Map?) ?? {});
-    if (asTable) {
-      final existing = found.data['tableKey']?.toString() ?? '';
-      if (existing.isNotEmpty && players.containsKey(existing)) {
-        throw DeckRoomException('Bu odada zaten bir masa ekranı var');
-      }
-      await _rooms.updateRoom(
-        gamePath: GamePaths.deck,
-        roomId: found.id,
-        updates: {
-          'tableKey': 'table',
-          'players/table': {
-            'name': name,
-            'role': 'table',
-            'isHost': false,
-          },
-        },
-      );
-      return (roomId: found.id, myKey: 'table');
-    }
-    final seated = players.entries.where((entry) {
-      final value = entry.value;
-      if (value is! Map) {
-        return false;
-      }
-      return value['role'] != 'table';
-    }).length;
-    if (seated >= 4) {
-      throw DeckRoomException('Masa dolu');
-    }
-    var myKey = '';
-    for (var n = 1; n <= 4; n++) {
-      if (!players.containsKey('p$n')) {
-        myKey = 'p$n';
-        break;
-      }
-    }
-    if (myKey.isEmpty) {
-      throw DeckRoomException('Masa dolu');
-    }
-    await _rooms.addPlayer(
+    String? seat;
+    var rejection = 'Oda dolu veya kapanmış';
+    final result = await _rooms.transactRoom(
       gamePath: GamePaths.deck,
       roomId: found.id,
-      playerKey: myKey,
-      playerData: {
-        'name': name,
-        'role': 'player',
-        'isHost': false,
+      update: (current) {
+        seat = null;
+        if (current['status'] != 'waiting') {
+          rejection = 'Oyun başlamış';
+          return null;
+        }
+        final players =
+            Map<String, dynamic>.from((current['players'] as Map?) ?? {});
+        if (asTable) {
+          final existing = current['tableKey'];
+          if (players.containsKey('table') || players.containsKey(existing)) {
+            rejection = 'Bu odada zaten bir masa ekranı var';
+            return null;
+          }
+          seat = 'table';
+        } else {
+          for (var number = 1; number <= 4; number++) {
+            final candidate = 'p$number';
+            if (!players.containsKey(candidate)) {
+              seat = candidate;
+              break;
+            }
+          }
+          if (seat == null || playerSeats(current).length >= 4) {
+            rejection = 'Masa dolu';
+            return null;
+          }
+        }
+        return {
+          ...current,
+          if (asTable) 'tableKey': 'table',
+          'players': {
+            ...players,
+            seat!: {
+              'name': name,
+              'role': asTable ? 'table' : 'player',
+              'isHost': false
+            },
+          },
+        };
       },
     );
-    return (roomId: found.id, myKey: myKey);
+    final joinedSeat = seat;
+    if (!result.committed || !result.snapshot.exists || joinedSeat == null) {
+      throw DeckRoomException(rejection);
+    }
+    return (roomId: found.id, myKey: joinedSeat);
   }
 
-  Future<String?> start(String roomId, Map<String, dynamic> room) async {
-    final seats = playerSeats(room);
-    if (seats.length < 2) {
-      return 'En az iki oyuncu gerekli';
-    }
-    final game = PistiGame.deal(seats, Random());
+  Future<String?> start(
+      String roomId, String hostKey, Object? previousDeal) async {
+    final seed = Random.secure().nextInt(1 << 30);
     try {
-      await _rooms.updateRoom(
+      final result = await _rooms.transactRoom(
         gamePath: GamePaths.deck,
         roomId: roomId,
-        updates: {
-          'status': 'playing',
-          'dealStartedAt': ServerValue.timestamp,
-          'game': game.toMap(),
+        update: (current) {
+          if (!seatsOf(current)
+                  .any((seat) => seat.key == hostKey && seat.isHost) ||
+              current['dealStartedAt'] != previousDeal) return null;
+          final oldGame = current['game'];
+          final canDeal = current['status'] == 'waiting' ||
+              (oldGame is Map && oldGame['phase'] == 'scored');
+          final seats = playerSeats(current);
+          if (!canDeal || seats.length < 2) return null;
+          return {
+            ...current,
+            'status': 'playing',
+            'dealStartedAt': ServerValue.timestamp,
+            'game': PistiGame.deal(seats, Random(seed)).toMap(),
+          };
         },
       );
+      if (!result.committed || !result.snapshot.exists) {
+        return 'Masa değişti. İki oyuncu hazır olduğunda tekrar dene.';
+      }
     } on Object {
       return 'El dağıtılamadı. Bağlantını kontrol edip tekrar dene.';
     }
@@ -184,10 +197,27 @@ class DeckRepository {
       );
       return;
     }
-    await _rooms.removePlayer(
+    await _rooms.unregisterPresence(
+        gamePath: GamePaths.deck, roomId: roomId, playerKey: playerKey);
+    await _rooms.transactRoom(
       gamePath: GamePaths.deck,
       roomId: roomId,
-      playerKey: playerKey,
+      update: (current) {
+        final players =
+            Map<String, dynamic>.from((current['players'] as Map?) ?? {});
+        if (players.remove(playerKey) == null) return null;
+        final game = current['game'];
+        final interrupted = game is Map && game['phase'] == 'play';
+        return {
+          ...current,
+          'players': players,
+          if (interrupted) ...{
+            'status': 'waiting',
+            'game': null,
+            'dealStartedAt': null
+          },
+        };
+      },
     );
   }
 

@@ -26,6 +26,12 @@ class RpsLobbyScreen extends StatelessWidget {
 const _kGestureEmoji = {'rock': '🪨', 'paper': '📄', 'scissors': '✂️'};
 const _kGestureLabel = {'rock': 'TAŞ', 'paper': 'KAĞIT', 'scissors': 'MAKAS'};
 
+const _kGestureColors = {
+  'rock': Color(0xFF9DAFC3),
+  'paper': Color(0xFF77D5E4),
+  'scissors': Color(0xFFFFB765),
+};
+
 enum _Phase { handoff, choosing, reveal }
 
 class RpsGameScreen extends StatefulWidget {
@@ -184,6 +190,7 @@ class _RpsGameScreenState extends State<RpsGameScreen> {
                 _GestureButton(
                   emoji: _kGestureEmoji[g]!,
                   label: _kGestureLabel[g]!,
+                  color: _kGestureColors[g]!,
                   onTap: () => _choose(g),
                 ),
             ],
@@ -192,42 +199,9 @@ class _RpsGameScreenState extends State<RpsGameScreen> {
 
       case _Phase.reveal:
         return _CenterCard(children: [
-          if (_roundWasTie) ...[
-            const Text('🤝', style: TextStyle(fontSize: 48)),
-            const SizedBox(height: 12),
-            const Text('Berabere! Tur tekrar oynanıyor',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-          ] else ...[
-            const Text('SONUÇLAR',
-                style: TextStyle(
-                    color: Colors.white70, fontSize: 12, letterSpacing: 1.5)),
-          ],
+          _roundResultBanner(),
           const SizedBox(height: 18),
-          for (final p in _active)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: AZFrostCard(
-                opacity: _roundEliminated.contains(p) ? 0.06 : 0.18,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Row(children: [
-                  Text(_kGestureEmoji[_choices[p]] ?? '❓',
-                      style: const TextStyle(fontSize: 26)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(p.name,
-                        style: TextStyle(
-                            color: _roundEliminated.contains(p)
-                                ? Colors.white38
-                                : Colors.white,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                  if (_roundEliminated.contains(p))
-                    const Text('ELENDİ', style: TextStyle(color: Colors.white38, fontSize: 11)),
-                ]),
-              ),
-            ),
+          for (final p in _active) _buildPlayerResult(p),
           const SizedBox(height: 12),
           AZButton(
             label: 'DEVAM',
@@ -237,6 +211,137 @@ class _RpsGameScreenState extends State<RpsGameScreen> {
           ),
         ]);
     }
+  }
+
+  Widget _roundResultBanner() {
+    final title = _roundWasTie ? 'BERABERE' : 'BU TURUN KAZANANLARI';
+    final subtitle = _roundWasTie
+        ? 'Ayni tur yeniden oynanacak'
+        : '${_active.length - _roundEliminated.length} oyuncu turu gecti';
+    final color = _roundWasTie ? const Color(0xFFFFCF64) : const Color(0xFF6CF0B1);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _roundWasTie
+              ? const [Color(0xFF86642A), Color(0xFF543E24), Color(0xFF30251D)]
+              : const [Color(0xFF27865B), Color(0xFF18513F), Color(0xFF12332F)],
+        ),
+        borderRadius: BorderRadius.circular(AZRadius.lg),
+        border: Border.all(color: color.withAlpha(190), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: color.withAlpha(75), blurRadius: 20, offset: const Offset(0, 7)),
+          const BoxShadow(color: Color(0x66000000), blurRadius: 4, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                center: const Alignment(-.4, -.5),
+                colors: [Colors.white.withAlpha(225), color, color.withAlpha(130)],
+              ),
+              border: Border.all(color: Colors.white.withAlpha(180), width: 1.5),
+              boxShadow: [BoxShadow(color: color.withAlpha(110), blurRadius: 12, offset: const Offset(0, 3))],
+            ),
+            child: Icon(_roundWasTie ? Icons.sync_rounded : Icons.emoji_events_rounded,
+                color: const Color(0xFF182638), size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                const SizedBox(height: 3),
+                Text(subtitle, style: TextStyle(color: Colors.white.withAlpha(210), fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerResult(QPPlayer player) {
+    final eliminated = _roundEliminated.contains(player);
+    final gesture = _choices[player];
+    final color = _kGestureColors[gesture] ?? Colors.white;
+    final outcome = _roundWasTie ? 'TEKRAR' : (eliminated ? 'ELENDI' : 'TURU GECTI');
+    final accent = _roundWasTie
+        ? const Color(0xFFFFCF64)
+        : (eliminated ? const Color(0xFFFF8B87) : const Color(0xFF70F0B3));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: eliminated
+                ? const [Color(0xFF443B45), Color(0xFF292632)]
+                : const [Color(0xFF5A5368), Color(0xFF332F47), Color(0xFF242238)],
+          ),
+          borderRadius: BorderRadius.circular(AZRadius.md),
+          border: Border.all(color: accent.withAlpha(eliminated ? 90 : 180), width: eliminated ? 1 : 1.4),
+          boxShadow: [
+            BoxShadow(
+              color: eliminated ? Colors.black.withAlpha(35) : accent.withAlpha(45),
+              blurRadius: eliminated ? 5 : 12,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(color: Colors.white.withAlpha(18), blurRadius: 3, offset: const Offset(0, 1)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  center: const Alignment(-.4, -.5),
+                  colors: [Color.lerp(color, Colors.white, .5)!, color, Color.lerp(color, Colors.black, .35)!],
+                ),
+                border: Border.all(color: Colors.white.withAlpha(175), width: 1.3),
+                boxShadow: [BoxShadow(color: color.withAlpha(85), blurRadius: 9, offset: const Offset(0, 3))],
+              ),
+              child: Text(_kGestureEmoji[gesture] ?? '?', style: const TextStyle(fontSize: 23)),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Text(player.name,
+                  style: TextStyle(
+                      color: eliminated ? Colors.white60 : Colors.white,
+                      fontWeight: FontWeight.w800,
+                      shadows: const [Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 2))])),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: accent.withAlpha(eliminated ? 28 : 45),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: accent.withAlpha(eliminated ? 90 : 175)),
+              ),
+              child: Text(outcome,
+                  style: TextStyle(color: accent, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: .4)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -252,9 +357,10 @@ class _CenterCard extends StatelessWidget {
 }
 
 class _GestureButton extends StatelessWidget {
-  const _GestureButton({required this.emoji, required this.label, required this.onTap});
+  const _GestureButton({required this.emoji, required this.label, required this.color, required this.onTap});
 
   final String emoji, label;
+  final Color color;
   final VoidCallback onTap;
 
   @override
@@ -264,8 +370,38 @@ class _GestureButton extends StatelessWidget {
           Container(
             width: 76,
             height: 76,
-            decoration: const BoxDecoration(color: Color(0x33FFFFFF), shape: BoxShape.circle),
-            child: Center(child: Text(emoji, style: const TextStyle(fontSize: 36))),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                center: const Alignment(-.4, -.5),
+                colors: [Color.lerp(color, Colors.white, .55)!, color, Color.lerp(color, Colors.black, .4)!],
+              ),
+              border: Border.all(color: Colors.white.withAlpha(190), width: 2),
+              boxShadow: [
+                BoxShadow(color: color.withAlpha(145), blurRadius: 18, offset: const Offset(0, 7)),
+                const BoxShadow(color: Color(0x77000000), blurRadius: 5, offset: Offset(0, 4)),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned(
+                  top: 9,
+                  child: Container(
+                    width: 30,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(120),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+                Text(emoji,
+                    style: const TextStyle(
+                        fontSize: 36,
+                        shadows: [Shadow(color: Colors.black38, blurRadius: 5, offset: Offset(0, 3))])),
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           Text(label,

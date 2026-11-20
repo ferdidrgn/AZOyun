@@ -72,34 +72,62 @@ function lineGame({ paint, surface }, connect) {
   let turn = 0;
   let done = false;
   const marks = connect ? ["●", "○"] : ["X", "O"];
-  const render = (message = "Sıra " + marks[turn]) =>
-    paint(
-      (connect
-        ? grid(
-            width,
-            range(width)
-              .map((column) =>
-                btn("↓", column, `aria-label="${column + 1}. sütuna bırak"`),
-              )
-              .join(""),
-          )
-        : "") +
-        grid(
-          width,
-          board
-            .map((mark, index) =>
-              connect
-                ? `<span class="classic-cell">${mark}</span>`
-                : btn(
-                    mark || "·",
-                    index,
-                    `aria-label="${index + 1}. hücre ${mark || "boş"}" ${mark || done ? "disabled" : ""}`,
-                  ),
-            )
-            .join(""),
-        ),
-      message,
-    );
+  const render = (message = "Sıra " + marks[turn]) => {
+    const winCells = new Set();
+    if (done) {
+      const needed = connect ? 4 : 3;
+      for (let index = 0; index < board.length; index++) {
+        const mark = board[index];
+        if (!mark) continue;
+        const row = Math.floor(index / width);
+        const column = index % width;
+        for (const [dr, dc] of [[1, 0], [0, 1], [1, 1], [1, -1]]) {
+          const line = [index];
+          for (const sign of [-1, 1]) {
+            let r = row + dr * sign;
+            let c = column + dc * sign;
+            while (r >= 0 && r < height && c >= 0 && c < width && board[r * width + c] === mark) {
+              line.push(r * width + c);
+              r += dr * sign;
+              c += dc * sign;
+            }
+          }
+          if (line.length >= needed) for (const cell of line) winCells.add(cell);
+        }
+      }
+    }
+    const piece = (mark, index) => {
+      if (!mark) return "";
+      const first = marks.indexOf(mark) === 0;
+      const shades = connect
+        ? first ? ["#ffd1c5", "#ea514b", "#822f38"] : ["#fff1bd", "#e9b94a", "#86521d"]
+        : mark === "X" ? ["#d2fff4", "#35bfa5", "#176858"] : ["#fffdf1", "#ede6d4", "#8b816d"];
+      const won = winCells.has(index);
+      const glow = connect ? (first ? "255,91,75" : "255,208,93") : "126,255,219";
+      return `<span aria-hidden="true" style="display:grid;place-items:center;width:74%;aspect-ratio:1;border:1px solid rgba(255,255,255,.52);border-radius:50%;background:radial-gradient(circle at 30% 22%,${shades[0]} 0%,${shades[1]} 45%,${shades[2]} 100%);box-shadow:inset 0 2px 2px rgba(255,255,255,.5),inset 0 -4px 6px rgba(0,0,0,.25),0 3px 0 ${shades[2]},0 7px 10px rgba(0,0,0,.38)${won ? `,0 0 0 3px rgba(${glow},.55),0 0 18px 7px rgba(${glow},.72)` : ""};color:#fff;font-size:clamp(1.25rem,5vw,2.35rem);font-weight:900;text-shadow:0 2px 5px rgba(0,0,0,.4)">${mark}</span>`;
+    };
+    const dropRow = connect
+      ? `<div class="classic-grid" aria-label="Sütun seç" style="--columns:${width};width:100%;aspect-ratio:7 / 1;grid-auto-rows:minmax(0,1fr);gap:clamp(2px,.7vw,5px);margin:0 0 3px">${range(width).map((column) => btn("↓", column, `aria-label="${column + 1}. sütuna bırak" style="min-height:0;padding:0;aspect-ratio:1;border:1px solid rgba(255,255,255,.35);border-radius:clamp(4px,1vw,9px);background:linear-gradient(145deg,#e9c575,#946332 65%,#58391f);box-shadow:inset 0 2px 0 rgba(255,255,255,.45),0 3px 0 #4c301d,0 5px 8px rgba(0,0,0,.3);color:#fff2cc;text-shadow:0 2px 3px rgba(0,0,0,.6)`)).join("")}</div>`
+      : "";
+    const cells = board.map((mark, index) => {
+      const won = winCells.has(index);
+      if (connect) {
+        const glow = marks.indexOf(mark) === 0 ? "255,91,75" : "255,208,93";
+        const pieceView = mark
+          ? piece(mark, index)
+          : '<span aria-hidden="true" style="display:block;width:76%;aspect-ratio:1;border:1px solid rgba(255,255,255,.05);border-radius:50%;background:radial-gradient(circle at 35% 25%,#071d28,#0a2530 60%,#102f36);box-shadow:inset 0 4px 7px rgba(0,0,0,.6),inset 0 -1px 0 rgba(255,255,255,.05)"></span>';
+        return `<span class="classic-cell" aria-label="${mark ? `Taş ${mark}` : "Boş"}" style="min-height:0;padding:0;display:grid;place-items:center;aspect-ratio:1;border:1px solid rgba(190,229,193,.28);border-radius:clamp(4px,1vw,9px);background:${won ? `radial-gradient(circle,#39896d,#125b45 68%,#0b4137)` : "linear-gradient(145deg,#176448,#0c503e 58%,#073b32)"};box-shadow:inset 0 2px 0 rgba(255,255,255,.12),inset 0 -3px 0 rgba(0,0,0,.28)${won ? `,0 0 15px 4px rgba(${glow},.4)` : ""}">${pieceView}</span>`;
+      }
+      return btn(
+        mark ? piece(mark, index) : '<span aria-hidden="true" style="display:block;width:28%;aspect-ratio:1;border:1px solid rgba(208,242,223,.24);border-radius:50%;background:rgba(7,38,32,.32);box-shadow:inset 0 2px 5px rgba(0,0,0,.32)"></span>',
+        index,
+        `aria-label="${index + 1}. hücre ${mark || "boş"}" ${mark || done ? "disabled" : ""} style="min-height:0;padding:0;aspect-ratio:1;display:grid;place-items:center;border:1px solid rgba(198,230,202,.34);border-radius:clamp(5px,1.3vw,11px);background:${won ? "linear-gradient(145deg,#1e8062,#125d49 64%,#0a4338)" : "linear-gradient(145deg,#176448,#0c503e 58%,#073b32)"};box-shadow:inset 0 2px 0 rgba(255,255,255,.15),inset 0 -3px 0 rgba(0,0,0,.26),0 3px 0 #082f29,0 6px 9px rgba(0,0,0,.27)${won ? ";outline:2px solid #ffe18c;outline-offset:1px;box-shadow:0 0 17px 5px rgba(255,225,140,.72),inset 0 2px 0 rgba(255,255,255,.25)" : ""}`,
+      );
+    }).join("");
+    const cellBoard = `<div class="classic-grid" role="grid" aria-label="${connect ? "Dörtlü Diz" : "XOX"} tahtası" style="--columns:${width};width:100%;aspect-ratio:${width} / ${height};grid-auto-rows:minmax(0,1fr);gap:clamp(2px,.7vw,5px);padding:clamp(5px,1.2vw,9px);border:1px solid rgba(10,38,30,.8);border-radius:clamp(6px,1.3vw,11px);background:${connect ? "radial-gradient(ellipse at 38% 20%,#1b7050,#0c4b38 70%,#073729)" : "radial-gradient(ellipse at 38% 20%,#1c7452,#0b4b39 70%,#07382c)"};box-shadow:inset 0 3px 8px rgba(0,0,0,.46),inset 0 0 0 1px rgba(164,214,162,.18)">${cells}</div>`;
+    const boardView = `<div style="width:min(100%,510px);margin:0 auto;padding:clamp(8px,2vw,14px);border:1px solid rgba(255,224,174,.52);border-radius:clamp(12px,2vw,20px);background:linear-gradient(135deg,#a87543 0%,#684324 25%,#bd8955 52%,#56361f 78%,#8a5932 100%);box-shadow:inset 0 2px 0 rgba(255,241,214,.62),inset 0 -5px 8px rgba(36,20,12,.55),0 10px 20px rgba(0,0,0,.38);perspective:950px"><div style="transform:rotateX(6deg);transform-origin:center top">${dropRow}${cellBoard}</div></div>`;
+    paint(boardView, message);
+  };
   render();
   return click(surface, (move) => {
     if (done) return;
@@ -204,22 +232,23 @@ function reversi({ paint, surface }) {
         : [];
     });
   };
-  const render = (message = "Sıra " + (turn === 1 ? "siyah" : "beyaz")) =>
-    paint(
-      grid(
-        8,
-        board
-          .map((side, index) =>
-            btn(
-              ["·", "●", "○"][side],
-              index,
-              `aria-label="${index + 1}. hücre" ${turn && flips(index, turn).length ? "" : "disabled"}`,
-            ),
-          )
-          .join(""),
-      ),
-      message,
-    );
+  const render = (message = "Sıra " + (turn === 1 ? "siyah" : "beyaz")) => {
+    const cells = board.map((side, index) => {
+      const legal = !side && turn && flips(index, turn).length > 0;
+      const disk = side
+        ? `<span aria-hidden="true" style="display:block;width:73%;aspect-ratio:1;border-radius:50%;position:relative;background:${side === 1 ? "radial-gradient(circle at 30% 22%,#59616a 0%,#272d33 34%,#0b0f13 78%,#030507 100%)" : "radial-gradient(circle at 30% 22%,#ffffff 0%,#f4eedc 34%,#c9c0a9 78%,#908875 100%)"};border:1px solid ${side === 1 ? "rgba(255,255,255,.24)" : "rgba(68,57,36,.5)"};box-shadow:inset 0 2px 2px rgba(255,255,255,.36),inset 0 -4px 5px rgba(0,0,0,.28),0 3px 0 ${side === 1 ? "#05080a" : "#827b6b"},0 6px 8px rgba(0,0,0,.42);transform:translateY(-2px)"><span style="position:absolute;left:21%;top:15%;width:22%;height:12%;border-radius:50%;background:rgba(255,255,255,.62);filter:blur(1px)"></span></span>`
+        : legal
+          ? '<span aria-hidden="true" style="display:block;width:23%;aspect-ratio:1;border:2px solid rgba(255,226,151,.95);border-radius:50%;background:rgba(255,226,151,.24);box-shadow:0 0 10px rgba(255,219,132,.78),inset 0 0 5px rgba(255,255,255,.5)"></span>'
+          : "";
+      return btn(
+        disk,
+        index,
+        `aria-label="${index + 1}. hücre${legal ? ', yasal hamle' : ''}" ${legal ? 'data-legal="true"' : ''} ${legal ? '' : 'disabled'} style="min-height:0;padding:0;display:grid;place-items:center;aspect-ratio:1;border:1px solid rgba(210,244,206,.22);border-radius:clamp(3px,1vw,8px);background:linear-gradient(145deg,#176448,#0c503e 58%,#073b32);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 0 rgba(0,0,0,.22)"`,
+      );
+    }).join("");
+    const boardView = `<div style="width:min(100%,510px);margin:0 auto;padding:clamp(8px,2vw,15px);border:1px solid rgba(255,224,174,.52);border-radius:clamp(12px,2vw,20px);background:linear-gradient(135deg,#a87543 0%,#684324 25%,#bd8955 52%,#56361f 78%,#8a5932 100%);box-shadow:inset 0 2px 0 rgba(255,241,214,.62),inset 0 -5px 8px rgba(36,20,12,.55),0 10px 20px rgba(0,0,0,.38)"><div class="classic-grid" role="grid" aria-label="Reversi tahtası" style="--columns:8;width:100%;aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:2px;padding:clamp(5px,1.2vw,9px);border:1px solid rgba(10,38,30,.8);border-radius:clamp(6px,1.3vw,11px);background:radial-gradient(ellipse at 38% 20%,#1b7050,#0c4b38 70%,#073729);box-shadow:inset 0 3px 8px rgba(0,0,0,.46),inset 0 0 0 1px rgba(164,214,162,.18)">${cells}</div></div>`;
+    paint(boardView, message);
+  };
   render();
   return click(surface, (value) => {
     const index = Number(value);
@@ -255,18 +284,34 @@ function boxes({ paint, surface }) {
     const cells = range(49).map((n) => {
       const r = Math.floor(n / 7),
         c = n % 7;
-      if (!(r % 2) && !(c % 2)) return '<span class="classic-dot">•</span>';
-      if (r % 2 && c % 2)
-        return `<span class="classic-cell">${owners[(r >> 1) * 3 + (c >> 1)] || ""}</span>`;
+      if (!(r % 2) && !(c % 2))
+        return '<span class="classic-dot" aria-hidden="true" style="z-index:2;display:grid;place-items:center;min-height:0;padding:0;border:1px solid rgba(255,240,207,.78);border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff0bb,#d49a4c 48%,#805027 100%);box-shadow:inset 0 2px 2px rgba(255,255,255,.72),inset 0 -2px 3px rgba(68,38,14,.42),0 2px 0 #59391e,0 5px 8px rgba(0,0,0,.38)"><span style="width:35%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff8de,#e2b45e 80%);box-shadow:0 0 5px rgba(255,226,146,.72)"></span></span>';
+      if (r % 2 && c % 2) {
+        const owner = owners[(r >> 1) * 3 + (c >> 1)];
+        const colors = owner === 1
+          ? ["#c5e6dc", "#438d75", "#204d43"]
+          : ["#f7d9c9", "#bb6256", "#652f34"];
+        return owner
+          ? `<span class="classic-cell" aria-label="Oyuncu ${owner} kutusu" style="min-height:0;padding:0;display:grid;place-items:center;border:1px solid rgba(255,255,255,.32);border-radius:clamp(4px,1vw,9px);background:radial-gradient(circle at 35% 28%,${colors[0]},${colors[1]} 48%,${colors[2]} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.3),inset 0 -3px 5px rgba(0,0,0,.25),0 0 14px ${colors[1]}66;color:#fff7e9;font-size:clamp(1rem,3.6vw,1.8rem);font-weight:900;text-shadow:0 2px 4px rgba(0,0,0,.55)">${owner}</span>`
+          : '<span class="classic-cell" aria-hidden="true" style="min-height:0;padding:0;border:1px solid rgba(183,219,195,.08);border-radius:clamp(4px,1vw,9px);background:rgba(9,39,32,.23);box-shadow:inset 0 3px 7px rgba(0,0,0,.2)"></span>';
+      }
       const key = (r % 2 ? "v" : "h") + (r >> 1) + (c >> 1);
+      const horizontal = !(r % 2);
+      const claimed = used.has(key);
+      const line = `<span aria-hidden="true" style="display:block;position:relative;width:${horizontal ? "132%" : "18%"};height:${horizontal ? "18%" : "132%"};border-radius:999px;background:${claimed
+        ? "linear-gradient(180deg,#fff0b0 0%,#e3b65c 36%,#97602e 100%)"
+        : "linear-gradient(180deg,rgba(191,208,166,.42),rgba(89,127,102,.25))"};box-shadow:${claimed
+          ? "inset 0 1px 0 rgba(255,255,255,.8),0 2px 0 #694421,0 4px 8px rgba(0,0,0,.34),0 0 10px rgba(255,212,120,.48)"
+          : "inset 0 1px 0 rgba(255,255,255,.16),0 1px 2px rgba(0,0,0,.25)"};transform:${claimed ? "translateZ(5px)" : "translateZ(1px)"}"></span>`;
       return btn(
-        r % 2 ? "│" : "─",
+        line,
         key,
-        `aria-label="${r % 2 ? "Dikey" : "Yatay"} çizgi ${r + 1}, ${c + 1}" ${used.has(key) ? 'disabled data-claimed="true"' : ""}`,
+        `aria-label="${horizontal ? "Yatay" : "Dikey"} çizgi ${r + 1}, ${c + 1}" ${claimed ? 'disabled data-claimed="true"' : ""} style="min-height:0;padding:0;position:relative;z-index:1;display:grid;place-items:center;aspect-ratio:1;border:0;border-radius:4px;background:transparent;box-shadow:none;cursor:${claimed ? "default" : "pointer"};overflow:visible"`,
       );
-    });
+    }).join("");
+    const boardView = `<div style="width:min(100%,510px);margin:0 auto;padding:clamp(8px,2vw,14px);border:1px solid rgba(255,224,174,.52);border-radius:clamp(12px,2vw,20px);background:linear-gradient(135deg,#a87543 0%,#684324 25%,#bd8955 52%,#56361f 78%,#8a5932 100%);box-shadow:inset 0 2px 0 rgba(255,241,214,.62),inset 0 -5px 8px rgba(36,20,12,.55),0 10px 20px rgba(0,0,0,.38);perspective:950px"><div class="classic-grid boxes" role="grid" aria-label="Noktaları birleştir tahtası" style="--columns:7;width:100%;aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(2px,.7vw,5px);padding:clamp(5px,1.2vw,9px);border:1px solid rgba(10,38,30,.8);border-radius:clamp(6px,1.3vw,11px);background:radial-gradient(ellipse at 38% 20%,#1b7050,#0c4b38 70%,#073729);box-shadow:inset 0 3px 8px rgba(0,0,0,.46),inset 0 0 0 1px rgba(164,214,162,.18);transform:rotateX(6deg);transform-origin:center top">${cells}</div></div>`;
     paint(
-      grid(7, cells.join(""), "boxes"),
+      boardView,
       `Oyuncu 1: ${score[0]} · Oyuncu 2: ${score[1]} · ${owners.every(Boolean) ? "Oyun bitti." : "Sıra " + turn}`,
     );
   };
@@ -288,17 +333,50 @@ function boxes({ paint, surface }) {
 }
 function rps({ paint, surface }) {
   const choices = ["Taş", "Kağıt", "Makas"];
+  const icons = ["✊", "✋", "✌️"];
   const score = [0, 0];
-  paint(choices.map((choice, i) => btn(choice, i)).join(" "), "Hamleni seç.");
+  let lastRound;
+  const render = (message = "Hamleni seç.", done = false) => {
+    const summary = lastRound
+      ? `<div style="width:min(100%,510px);margin:0 auto 12px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px"><div style="padding:9px 7px;border:1px solid rgba(255,255,255,.28);border-radius:12px;background:linear-gradient(145deg,#394c5c,#1d2d3c);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 5px 10px rgba(0,0,0,.25);text-align:center;color:#fff"><span style="display:block;font-size:1.5rem">${icons[lastRound.player]}</span><strong style="font-size:.78rem">SEN</strong><small style="display:block;opacity:.85">${choices[lastRound.player]}</small></div><strong style="color:#f2d598;text-shadow:0 2px 8px rgba(242,213,152,.4)">VS</strong><div style="padding:9px 7px;border:1px solid rgba(255,255,255,.22);border-radius:12px;background:linear-gradient(145deg,#4a3945,#28242f);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 5px 10px rgba(0,0,0,.25);text-align:center;color:#fff"><span style="display:block;font-size:1.5rem">${icons[lastRound.bot]}</span><strong style="font-size:.78rem">RAKİP</strong><small style="display:block;opacity:.85">${choices[lastRound.bot]}</small></div></div>`
+      : "";
+    const cards = done ? "" : grid(3, choices.map((choice, index) => {
+      const selected = lastRound?.player === index;
+      const playerWon = selected && lastRound?.result === 1;
+      const botWon = lastRound?.bot === index && lastRound?.result === 2;
+      const won = playerWon || botWon;
+      const tied = selected && lastRound?.result === 0;
+      const colors = index === 0
+        ? ["#ffe2cf", "#cf684c", "#723c35"]
+        : index === 1
+          ? ["#d8fff2", "#56b89d", "#286c62"]
+          : ["#e5e0ff", "#8177bd", "#403c72"];
+      const effect = won
+        ? "outline:2px solid #ffe28b;outline-offset:2px;box-shadow:0 0 20px 5px rgba(255,220,117,.7),inset 0 2px 0 rgba(255,255,255,.5),0 5px 0 " + colors[2] + ",0 12px 18px rgba(0,0,0,.35);"
+        : tied
+          ? "outline:2px solid #f5e2a7;outline-offset:2px;box-shadow:0 0 16px 4px rgba(245,226,167,.45),inset 0 2px 0 rgba(255,255,255,.5),0 5px 0 " + colors[2] + ",0 12px 18px rgba(0,0,0,.35);"
+          : "box-shadow:inset 0 2px 0 rgba(255,255,255,.48),inset 0 -4px 7px rgba(0,0,0,.24),0 5px 0 " + colors[2] + ",0 12px 18px rgba(0,0,0,.35);";
+      const badge = lastRound?.bot === index
+        ? `<small style="position:absolute;top:6px;right:6px;padding:3px 5px;border-radius:99px;background:rgba(17,24,34,.72);color:#fff;font-size:.55rem;letter-spacing:.08em">RAKİP</small>`
+        : "";
+      const caption = won ? "KAZANDI" : tied ? "BERABERE" : selected ? "SEÇİMİN" : "SEÇ";
+      const content = `<span aria-hidden="true" style="position:relative;display:flex;min-height:100%;width:100%;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:10px 3px;border:1px solid rgba(255,255,255,.58);border-radius:clamp(8px,1.5vw,13px);background:linear-gradient(145deg,${colors[0]} 0%,${colors[1]} 52%,${colors[2]} 100%);${effect}color:#fff;font-size:clamp(.82rem,2.7vw,1.05rem);font-weight:800;text-shadow:0 2px 4px rgba(0,0,0,.38);transform:${selected ? "translateY(-3px) rotateX(3deg)" : "translateY(-1px)"};transition:transform 180ms ease,box-shadow 180ms ease"><span style="font-size:clamp(2rem,8vw,3.6rem);line-height:1.05;filter:drop-shadow(0 4px 3px rgba(0,0,0,.28))">${icons[index]}</span><strong>${choice}</strong><small style="font-size:.58rem;letter-spacing:.14em;opacity:.86">${caption}</small>${badge}</span>`;
+      return btn(content, index, `aria-label="${choice} seç" style="min-height:116px;padding:0;position:relative;aspect-ratio:.88;border:0;border-radius:clamp(8px,1.5vw,13px);background:transparent;perspective:800px;box-shadow:none;overflow:visible;cursor:pointer"`);
+    }).join(""), "classic-rps-cards");
+    const scoreBar = `<div style="width:min(100%,510px);margin:10px auto 0;padding:8px 12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:linear-gradient(145deg,#3c4b58,#202a35);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 9px rgba(0,0,0,.2);text-align:center;color:#f7ead2;font-variant-numeric:tabular-nums">SEN <strong>${score[0]}</strong><span style="padding:0 12px;color:#c8b78c">—</span><strong>${score[1]}</strong> RAKİP</div>`;
+    paint(summary + cards + scoreBar, message);
+  };
+  render();
   return click(surface, (move) => {
     const player = Number(move),
       bot = random(3);
     const result = (player - bot + 3) % 3;
     if (result) score[result - 1]++;
     const done = score.includes(3);
-    paint(
-      done ? "" : choices.map((choice, i) => btn(choice, i)).join(" "),
-      `Rakip ${choices[bot]} seçti. ${score[0]}–${score[1]}${done ? (score[0] === 3 ? " · Kazandın." : " · Rakip kazandı.") : ""}`,
+    lastRound = { player, bot, result };
+    render(
+      `Rakip ${choices[bot]} seçti. ${score[0]}-${score[1]}${done ? (score[0] === 3 ? " · Kazandın." : " · Rakip kazandı.") : ""}`,
+      done,
     );
   });
 }
@@ -306,32 +384,47 @@ function dice({ paint, surface }) {
   let turn = 0,
     pot = 0;
   const score = [0, 0];
-  const render = (message = "") =>
-    paint(
-      score.some((n) => n >= 40)
-        ? ""
-        : btn("Zar at", "roll") +
-            " " +
-            btn("Puanı kasaya al", "hold", pot ? "" : "disabled"),
-      `1. oyuncu ${score[0]} · 2. oyuncu ${score[1]} · ${message || "Sıra " + (turn + 1) + ", eldeki puan " + pot}`,
-    );
+  let lastRoll = null;
+  let lastEvent = "Zarını at ve puan biriktir.";
+  const faces = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
+  const render = (message = "", rolling = false) => {
+    const finished = score.some((n) => n >= 40);
+    const face = lastRoll ?? 5;
+    const pips = range(9)
+      .map((position) => `<span class="classic-die-pip${faces[face].includes(position) ? " is-on" : ""}"></span>`)
+      .join("");
+    const scoreCards = score
+      .map((points, player) => `<div class="classic-dice-player${turn === player && !finished ? " is-active" : ""}"><small>OYUNCU ${player + 1}</small><strong>${points}</strong><span>PUAN</span></div>`)
+      .join("");
+    const die = `<div class="classic-dice-stage"><div class="classic-die${rolling ? " is-rolling" : ""}" role="img" aria-label="Zar sonucu ${lastRoll ?? "henüz atılmadı"}">${pips}</div></div>`;
+    const panel = `<style>@keyframes classic-die-roll{0%{transform:rotateX(-18deg) rotateY(22deg) translateY(0) scale(1)}22%{transform:rotateX(115deg) rotateY(176deg) translateY(-16px) scale(1.08)}48%{transform:rotateX(235deg) rotateY(316deg) translateY(2px) scale(.96)}72%{transform:rotateX(335deg) rotateY(428deg) translateY(-7px) scale(1.03)}100%{transform:rotateX(342deg) rotateY(382deg) translateY(0) scale(1)}}.classic-dice-panel{width:min(100%,520px);margin:0 auto 14px;padding:14px;border:1px solid rgba(238,215,166,.25);border-radius:18px;background:radial-gradient(ellipse at 50% 0%,rgba(76,103,121,.58),transparent 70%),linear-gradient(145deg,#253646,#17232f);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 12px 24px rgba(0,0,0,.25);color:#fff}.classic-dice-score{display:grid;grid-template-columns:1fr 1fr;gap:10px}.classic-dice-player{display:grid;justify-items:center;gap:3px;padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:linear-gradient(145deg,#334655,#22313e);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 5px 9px rgba(0,0,0,.2);transition:transform .18s,border-color .18s,box-shadow .18s}.classic-dice-player.is-active{transform:translateY(-2px);border-color:#f0d48f;box-shadow:0 0 15px rgba(240,212,143,.2),inset 0 1px 0 rgba(255,255,255,.15),0 7px 12px rgba(0,0,0,.25)}.classic-dice-player small,.classic-dice-player span{font-size:.63rem;letter-spacing:.12em;opacity:.78}.classic-dice-player strong{font-size:1.6rem;font-variant-numeric:tabular-nums;color:#ffe7ad;text-shadow:0 2px 8px rgba(255,214,122,.22)}.classic-dice-round{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;padding:9px 11px;border-radius:10px;background:rgba(7,14,21,.35);font-size:.82rem}.classic-dice-round strong{color:#baf4dd;font-size:1rem;font-variant-numeric:tabular-nums}.classic-dice-stage{display:grid;place-items:center;min-height:126px;padding:8px 0 18px;perspective:600px}.classic-die{position:relative;display:grid;width:clamp(70px,18vw,94px);aspect-ratio:1;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:5px;padding:12px;border:1px solid #fff4db;border-radius:19px;background:linear-gradient(145deg,#fffef9 0%,#f5e9d1 54%,#dac8a7 100%);box-shadow:inset 2px 2px 5px #fff, inset -5px -6px 10px rgba(113,78,35,.2),0 8px 0 #927c5e,0 13px 18px rgba(0,0,0,.42);transform:rotateX(-18deg) rotateY(22deg);transform-style:preserve-3d}.classic-die:before{position:absolute;content:"";inset:0;border-radius:18px;transform:translateZ(-8px) translateY(8px);background:#8a7252;z-index:-1}.classic-die-pip{display:grid;place-items:center}.classic-die-pip.is-on:after{content:"";width:clamp(9px,2.4vw,13px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 28%,#687887,#1b2631 65%);box-shadow:inset 1px 1px 2px rgba(255,255,255,.32),0 1px 2px rgba(0,0,0,.35)}.classic-die.is-rolling{animation:classic-die-roll .56s cubic-bezier(.18,.75,.24,1)}.classic-dice-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:9px}.classic-dice-actions button{min-width:138px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 0 rgba(0,0,0,.22),0 7px 12px rgba(0,0,0,.2)}.classic-dice-actions button:disabled{opacity:.48;filter:saturate(.5);box-shadow:none}@media(prefers-reduced-motion:reduce){.classic-die.is-rolling{animation:none}}</style><section class="classic-dice-panel"><div class="classic-dice-score">${scoreCards}</div>${die}<div class="classic-dice-round"><span>${lastEvent}</span><strong>ELDE <b>${pot}</b></strong></div></section>`;
+    const actions = finished
+      ? ""
+      : `<div class="classic-dice-actions">${btn("Zar at", "roll")} ${btn("Puanı kasaya al", "hold", pot ? "" : "disabled")}</div>`;
+    paint(panel + actions, message || `1. oyuncu ${score[0]} · 2. oyuncu ${score[1]} · Sıra ${turn + 1}, eldeki puan ${pot}`);
+  };
   render();
   return click(surface, (move) => {
     if (move === "hold") {
-      score[turn] += pot;
-      if (score[turn] >= 40) return render(turn + 1 + ". oyuncu kazandı.");
+      const banked = pot;
+      score[turn] += banked;
       pot = 0;
+      lastEvent = `${turn + 1}. oyuncu ${banked} puanı kasaya aldı.`;
+      if (score[turn] >= 40) return render(turn + 1 + ". oyuncu kazandı.");
       turn ^= 1;
       return render();
     }
     const roll = 1 + random(6);
+    lastRoll = roll;
     if (roll === 1) {
+      lastEvent = `Bir geldi. Eldeki puan sıfırlandı; sıra ${turn + 2 > 2 ? 1 : turn + 2}. oyuncuda.`;
       pot = 0;
       turn ^= 1;
-      return render("Bir geldi. Sıra " + (turn + 1));
+      return render("Bir geldi. Sıra " + (turn + 1), true);
     }
     pot += roll;
-    render("Zar " + roll + " · Elde " + pot);
+    lastEvent = `Zar ${roll} geldi · eldeki puan ${pot}.`;
+    render("Zar " + roll + " · Elde " + pot, true);
   });
 }
 function memory({ paint, surface }, triple = false) {
@@ -343,29 +436,42 @@ function memory({ paint, surface }, triple = false) {
   let timer;
   let busy = false;
   let moves = 0;
-  const render = (message = "Hamle " + moves) =>
+  const previousFaceUp = new Set();
+  const render = (message = "Hamle " + moves) => {
+    const cards = deck.map((symbol, index) => {
+      const faceUp = triple || active.includes(index);
+      const matched = removed.has(index);
+      const disabled = matched || active.includes(index);
+      const label = matched ? "" : faceUp ? " " + symbol : "";
+      const turnStyle = faceUp !== previousFaceUp.has(index)
+        ? `animation:classic-memory-${faceUp ? "flip" : "unflip"} 460ms cubic-bezier(.2,.75,.25,1) ${Math.min(index, 5) * 16}ms both;`
+        : `transform:rotateY(${faceUp ? 180 : 0}deg);`;
+      const card = `<span style="position:absolute;inset:0;display:grid;place-items:center;border:1px solid rgba(255,255,255,.58);border-radius:clamp(7px,1.6vw,14px);backface-visibility:hidden;background:linear-gradient(145deg,#fff8df 0%,#f3dfb8 52%,#cfac7d 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.9),inset 0 -4px 7px rgba(95,62,34,.18),0 3px 0 #8f6945,0 8px 13px rgba(0,0,0,.3);color:#3b2b45;font-size:clamp(1.4rem,5.2vw,2.65rem);font-weight:800;text-shadow:0 2px 0 rgba(255,255,255,.65)">${matched ? "" : symbol}</span>`;
+      const cover = `<span style="position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(221,238,255,.6);border-radius:clamp(7px,1.6vw,14px);backface-visibility:hidden;background:radial-gradient(circle at 28% 18%,#586f9c 0%,#354b76 35%,#243555 76%,#18243d 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -5px 8px rgba(8,15,31,.5),0 3px 0 #111b30,0 8px 13px rgba(0,0,0,.34);color:#f4d895"><span style="display:grid;place-items:center;width:62%;aspect-ratio:1;border:1px solid rgba(255,228,170,.65);border-radius:50%;box-shadow:0 0 0 4px rgba(255,228,170,.1),inset 0 0 10px rgba(255,228,170,.22);font-size:clamp(1rem,3.5vw,1.55rem)">✦</span><small style="position:absolute;bottom:8%;font-size:.55rem;font-weight:800;letter-spacing:.18em;opacity:.78">AZOYUN</small></span>`;
+      const content = `<span aria-hidden="true" style="position:absolute;inset:0;transform-style:preserve-3d;${turnStyle}${matched ? "opacity:.12;" : ""}">${cover}<span style="position:absolute;inset:0;display:grid;place-items:center;transform:rotateY(180deg);backface-visibility:hidden">${card}</span></span>`;
+      return btn(
+        content,
+        index,
+        `aria-label="${index + 1}. kart${label}" ${disabled ? "disabled" : ""} style="min-height:0;padding:0;position:relative;aspect-ratio:.84;border:0;border-radius:clamp(7px,1.6vw,14px);background:transparent;perspective:900px;transform-style:preserve-3d;overflow:visible;box-shadow:none;cursor:${disabled ? "default" : "pointer"}"`,
+      );
+    }).join("");
+    previousFaceUp.clear();
+    deck.forEach((_, index) => {
+      if (triple || active.includes(index)) previousFaceUp.add(index);
+    });
+    const motion = '<style>@keyframes classic-memory-flip{0%{transform:rotateY(0deg) translateY(5px) scale(.96)}65%{transform:rotateY(195deg) translateY(-2px) scale(1.035)}100%{transform:rotateY(180deg) translateY(0) scale(1)}}@keyframes classic-memory-unflip{0%{transform:rotateY(180deg) translateY(0) scale(1)}55%{transform:rotateY(-15deg) translateY(-2px) scale(1.02)}100%{transform:rotateY(0deg) translateY(4px) scale(.96)}}@media(prefers-reduced-motion:reduce){.classic-memory-cards *{animation-duration:.01ms!important;animation-delay:0ms!important}}</style>';
     paint(
-      grid(
+      motion + grid(
         triple ? 6 : 4,
-        deck
-          .map((symbol, index) =>
-            btn(
-              removed.has(index)
-                ? " "
-                : triple || active.includes(index)
-                  ? symbol
-                  : "?",
-              index,
-              `aria-label="${index + 1}. kart${triple || active.includes(index) ? " " + symbol : ""}" ${removed.has(index) || active.includes(index) ? "disabled" : ""}`,
-            ),
-          )
-          .join(""),
+        cards,
+        "classic-memory-cards",
       ) +
         (triple
-          ? `<p>Tepsi (${active.length}/7) ${active.map((index) => deck[index]).join(" ")}</p>`
+          ? `<p style="text-align:center;margin:4px auto 10px;color:#e9d5ac">Tepsi (${active.length}/7) ${active.map((index) => deck[index]).join(" ")}</p>`
           : ""),
       message,
     );
+  };
   render();
   const clear = click(surface, (value) => {
     if (busy) return;
@@ -424,20 +530,28 @@ function puzzle({ paint, surface }, numbers = false) {
     }
   const render = (
     message = numbers ? "Sıradaki sayı " + next : "Hamle " + moves,
-  ) =>
-    paint(
-      grid(
-        width,
-        board
-          .map((n, i) =>
-            n
-              ? btn(n, i, numbers && n < next ? "disabled" : "")
-              : '<span class="classic-cell"></span>',
-          )
-          .join(""),
-      ),
-      message,
-    );
+  ) => {
+    const cells = board.map((n, index) => {
+      if (!n)
+        return '<span class="classic-cell" aria-hidden="true" style="min-height:0;padding:0;border:1px solid rgba(204,222,223,.1);border-radius:clamp(5px,1.3vw,11px);background:linear-gradient(145deg,#101d26,#172b35 65%,#20343a);box-shadow:inset 0 4px 8px rgba(0,0,0,.44),inset 0 -1px 0 rgba(255,255,255,.04)"></span>';
+      const complete = numbers && n < next;
+      const active = numbers && n === next;
+      const palettes = complete
+        ? ["#9ec5aa", "#416e57", "#244637", "#f1f8e9"]
+        : active
+          ? ["#fff0b4", "#e3ad4e", "#8f5425", "#fffce6"]
+          : ["#fff3d1", ["#d5a36a", "#bd8d5a", "#dfa967", "#c39160"][n % 4], "#765139", "#fff7e8"];
+      const [light, face, shadow, ink] = palettes;
+      const fontSize = String(n).length > 1 ? "clamp(1rem,4.1vw,1.8rem)" : "clamp(1.2rem,5vw,2.25rem)";
+      return btn(
+        `<span aria-hidden="true">${n}</span>`,
+        index,
+        `aria-label="${numbers ? 'Sayı ' : 'Taş '}${n}" ${numbers && n < next ? "disabled" : ""} style="min-height:0;padding:0;aspect-ratio:1;border:1px solid rgba(255,255,255,.52);border-radius:clamp(5px,1.3vw,11px);background:linear-gradient(145deg,${light} 0%,${face} 52%,${shadow} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.72),inset 0 -3px 0 rgba(45,27,16,.25),0 3px 0 ${shadow},0 7px 11px rgba(0,0,0,.34);color:${ink};font-size:${fontSize};font-weight:900;text-shadow:0 1px 0 rgba(55,35,22,.2);transform:translateY(-2px);cursor:${complete ? "default" : "pointer"};${active ? "outline:2px solid #fff0b4;outline-offset:1px;" : ""}`,
+      );
+    }).join("");
+    const boardView = `<div style="width:min(100%,510px);margin:0 auto;padding:clamp(8px,2vw,15px);border:1px solid rgba(255,224,174,.5);border-radius:clamp(12px,2vw,20px);background:linear-gradient(135deg,#a87543 0%,#684324 25%,#bd8955 52%,#56361f 78%,#8a5932 100%);box-shadow:inset 0 2px 0 rgba(255,241,214,.6),inset 0 -5px 8px rgba(36,20,12,.55),0 10px 20px rgba(0,0,0,.38)"><div class="classic-grid" role="grid" aria-label="${numbers ? 'Sayı bulmaca tahtası' : 'Kaydırmalı sayı tahtası'}" style="--columns:${width};width:100%;aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(3px,.9vw,7px);padding:clamp(5px,1.2vw,9px);border:1px solid rgba(10,38,30,.8);border-radius:clamp(6px,1.3vw,11px);background:radial-gradient(ellipse at 38% 20%,#354747,#1b2c31 70%,#132329);box-shadow:inset 0 3px 8px rgba(0,0,0,.46),inset 0 0 0 1px rgba(164,214,162,.1)">${cells}</div></div>`;
+    paint(boardView, message);
+  };
   render();
   return click(surface, (value) => {
     const i = Number(value),
@@ -460,22 +574,39 @@ function puzzle({ paint, surface }, numbers = false) {
 function merge2048({ paint, surface }) {
   const board = Array(16).fill(0);
   let score = 0;
+  const tileColors = {
+    2: ["#fff2cb", "#d7ab70", "#9b643d", "#fffaf0"],
+    4: ["#ffe5b3", "#e5a45f", "#a95c35", "#fff5df"],
+    8: ["#ffd5a0", "#f28b52", "#a9442d", "#fff8ed"],
+    16: ["#ffd2a3", "#ef704b", "#982e31", "#fff2e7"],
+    32: ["#ffc3a0", "#df554f", "#852c40", "#fff0ec"],
+    64: ["#ffc0a5", "#c83c50", "#6f263d", "#fff1ee"],
+    128: ["#fff1aa", "#e4bd42", "#876328", "#fffbe2"],
+    256: ["#fff0a3", "#d9a92f", "#805025", "#fff9d7"],
+    512: ["#fff0a7", "#c98832", "#6d4021", "#fff8df"],
+    1024: ["#fff1ad", "#b97835", "#633725", "#fff9e6"],
+    2048: ["#fff6c6", "#e8bd50", "#8c4d24", "#fffdf2"],
+  };
   function spawn() {
     const spaces = range(16).filter((i) => !board[i]);
     if (spaces.length)
       board[spaces[random(spaces.length)]] = random(10) ? 2 : 4;
   }
   function render(message = "Puan " + score) {
+    const highest = Math.max(...board);
+    const tiles = board.map((n, index) => {
+      if (!n)
+        return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, boş" data-number="0" style="min-height:0;padding:0;border:1px solid rgba(186,220,232,.12);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,#213847,#172a37 62%,#12232f);box-shadow:inset 0 3px 7px rgba(0,0,0,.36),inset 0 -1px 0 rgba(177,218,231,.06)"></span>`;
+      const [light, face, dark, ink] = tileColors[n] || tileColors[2048];
+      const size = n >= 1024 ? "clamp(.86rem,4vw,1.85rem)" : n >= 128 ? "clamp(1rem,4.8vw,2.15rem)" : "clamp(1.2rem,5.4vw,2.45rem)";
+      return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, ${n}" data-number="${n}" style="min-height:0;padding:0;border:1px solid rgba(255,255,255,.55);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,${light} 0%,${face} 48%,${dark} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.68),inset 0 -3px 0 rgba(26,19,28,.28),0 3px 0 ${dark},0 7px 12px rgba(0,0,0,.34);color:${ink};font-size:${size};font-weight:900;text-shadow:0 1px 0 rgba(45,29,26,.28),0 3px 7px rgba(34,19,25,.2);transform:translateY(-2px)">${n}</span>`;
+    }).join("");
+    const counters = `<div class="classic-2048-counters" style="width:min(100%,510px);display:flex;justify-content:flex-end;gap:8px;margin:0 auto 10px"><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:linear-gradient(145deg,#435367,#283646);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.8">PUAN</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${score.toLocaleString("tr-TR")}</strong></div><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:linear-gradient(145deg,#785c38,#40312d);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff3d5"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.85">EN BÜYÜK TAŞ</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${highest}</strong></div></div>`;
     paint(
-      grid(
-        4,
-        board
-          .map(
-            (n) =>
-              `<span class="classic-cell" data-number="${n}">${n || ""}</span>`,
-          )
-          .join(""),
-      ) + moveButtons,
+      counters +
+        `<div class="classic-grid classic-2048-board" role="grid" aria-label="2048 oyun tahtası" style="--columns:4;width:min(100%,510px);aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(5px,1.5vw,10px);padding:clamp(7px,2vw,12px);border:1px solid rgba(186,220,232,.2);border-radius:clamp(10px,2vw,18px);background:linear-gradient(145deg,#263e4d,#182b39 58%,#12222f);box-shadow:inset 0 2px 0 rgba(255,255,255,.08),inset 0 -8px 18px rgba(0,0,0,.24),0 12px 26px rgba(0,0,0,.34)">${tiles}</div>` +
+        '<p class="classic-hint">Yön tuşlarıyla da oynayabilirsin: ← ↑ → ↓</p>' +
+        moveButtons,
       message,
     );
   }

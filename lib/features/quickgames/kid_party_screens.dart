@@ -129,19 +129,39 @@ class _TersSessionState extends State<_TersSession> {
         const SizedBox(height: AZSpacing.md),
         const Text('🐱  Kedi bunları yer. Balık yasak.', style: TextStyle(color: Colors.white, fontSize: 18)),
         const SizedBox(height: AZSpacing.md),
-        for (final item in _plate)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AZSpacing.sm),
-            child: SizedBox(
-              height: 52,
-              child: FilledButton(
-                onPressed: _started ? () => _tap(item) : null,
-                style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AZColors.textPrimary),
-                child: Text(item, style: const TextStyle(fontSize: 28)),
-              ),
-            ),
+        Expanded(
+          child: GridView.count(
+            crossAxisCount: 2,
+            childAspectRatio: 2.15,
+            mainAxisSpacing: AZSpacing.sm,
+            crossAxisSpacing: AZSpacing.sm,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              for (var i = 0; i < _plate.length; i++)
+                FilledButton(
+                  onPressed: _started ? () => _tap(_plate[i]) : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: i.isEven
+                        ? const Color(0xFFFFF7E8)
+                        : const Color(0xFFEAF6F0),
+                    foregroundColor: AZColors.textPrimary,
+                    disabledBackgroundColor: Colors.white.withAlpha(235),
+                    elevation: _started ? 7 : 4,
+                    shadowColor: Colors.black.withAlpha(90),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(
+                        color: Colors.white.withAlpha(190),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  child: Text(_plate[i], style: const TextStyle(fontSize: 34)),
+                ),
+            ],
           ),
-        const Spacer(),
+        ),
+        const SizedBox(height: AZSpacing.sm),
         if (!_started)
           SizedBox(
             height: 52,
@@ -275,22 +295,168 @@ class _PancakePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final pulse = wave < 0 ? 0.0 : wave;
     final ring = 40.0 + pulse * 36;
+    final ringCenter = Offset(size.width / 2, 48);
     canvas.drawCircle(
-      Offset(size.width / 2, 48),
+      ringCenter.translate(0, 2),
       ring,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 6
-        ..color = FeltColors.brass,
+        ..strokeWidth = 12
+        ..color = const Color(0xAA25151A)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
     );
+    canvas.drawCircle(
+      ringCenter,
+      ring,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 14
+        ..color = FeltColors.brass.withOpacity(.42)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9),
+    );
+    canvas.drawCircle(
+      ringCenter,
+      ring,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 7
+        ..shader = const LinearGradient(
+          colors: [Color(0xFFFFF0B7), Color(0xFFE4A83E), Color(0xFF9D642A)],
+        ).createShader(Rect.fromCircle(center: ringCenter, radius: ring)),
+    );
+    canvas.drawCircle(
+      ringCenter.translate(-1, -1),
+      ring,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = const Color(0xCCFFF2C6),
+    );
+
+    final centerX = size.width / 2;
+    final plateY = size.height - 29;
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(centerX, plateY + 8),
+        width: 218,
+        height: 34,
+      ),
+      Paint()
+        ..color = const Color(0x88000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+
+    final plateTop = Rect.fromCenter(
+      center: Offset(centerX, plateY - 3),
+      width: 204,
+      height: 38,
+    );
+    final plateBottom = Rect.fromCenter(
+      center: Offset(centerX, plateY + 8),
+      width: 190,
+      height: 34,
+    );
+    canvas.drawOval(
+      plateBottom,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFF6B3637), Color(0xFF3A202B)],
+        ).createShader(plateBottom),
+    );
+    canvas.drawOval(
+      plateTop,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFFDFA4), Color(0xFFDB9860), Color(0xFF945342)],
+        ).createShader(plateTop),
+    );
+    canvas.drawOval(
+      plateTop.deflate(3),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = const Color(0xCCFFE9BD),
+    );
+
     for (var i = 0; i < count && i < 12; i++) {
+      final width = math.max(68.0, 132.0 - i * 3.8).toDouble();
+      final wobble =
+          (math.sin(wave * .8 + i * .72) * math.min(4.0, i * .42)).toDouble();
+      final center = Offset(centerX + wobble, size.height - 51 - i * 16);
+      final bounds = Rect.fromCenter(center: center, width: width, height: 25);
+      final under = bounds.shift(const Offset(0, 5));
+      final topPaint = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: i.isEven
+              ? const [Color(0xFFFFE8A8), Color(0xFFE6A64D), Color(0xFFC77935)]
+              : const [Color(0xFFFFD5A0), Color(0xFFD98C52), Color(0xFFA95B3D)],
+        ).createShader(bounds);
+
       canvas.drawOval(
-        Rect.fromCenter(
-          center: Offset(size.width / 2, size.height - 28 - i * 16),
-          width: 120 - i * 4,
-          height: 22,
-        ),
-        Paint()..color = i.isEven ? AZColors.orange : FeltColors.clay,
+        under,
+        Paint()
+          ..color = const Color(0x99000000)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+      canvas.drawOval(
+        under,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFB66D38), Color(0xFF75402F)],
+          ).createShader(under),
+      );
+      canvas.drawOval(bounds, topPaint);
+      canvas.drawOval(
+        bounds,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..color = const Color(0xAAFFF0C5),
+      );
+
+      // Small toasted spots add surface detail without changing stack geometry.
+      for (var spot = 0; spot < 4; spot++) {
+        final dx = (spot - 1.5) * width * .19 + math.sin(i * 2 + spot) * 4;
+        final dy = math.cos(i + spot * 1.7) * 4;
+        canvas.drawCircle(
+          center.translate(dx, dy),
+          1.5 + (spot % 2) * .5,
+          Paint()..color = const Color(0x55743B27),
+        );
+      }
+    }
+
+    if (count > 0) {
+      final butterCenter = Offset(centerX, size.height - 64 - (count - 1) * 16);
+      final butter = RRect.fromRectAndRadius(
+        Rect.fromCenter(center: butterCenter.translate(0, -8), width: 24, height: 10),
+        const Radius.circular(4),
+      );
+      canvas.drawRRect(
+        butter.shift(const Offset(0, 3)),
+        Paint()
+          ..color = const Color(0x88451F1A)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+      );
+      canvas.drawRRect(
+        butter,
+        Paint()
+          ..shader = const LinearGradient(
+            colors: [Color(0xFFFFF1A8), Color(0xFFFFC94F), Color(0xFFE79A35)],
+          ).createShader(butter.outerRect),
+      );
+      canvas.drawRRect(
+        butter,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = const Color(0xCCFFF2BD),
       );
     }
   }
@@ -409,12 +575,220 @@ class _SoupPainter extends CustomPainter {
   final double t;
   @override
   void paint(Canvas canvas, Size size) {
-    final bowl = Rect.fromCenter(center: Offset(size.width * 0.66, size.height * 0.62), width: 90, height: 48);
-    canvas.drawOval(bowl, Paint()..color = FeltColors.clay);
+    final center = Offset(size.width * 0.66, size.height * 0.62);
+    final bowl = Rect.fromCenter(center: center, width: 90, height: 48);
+    final widthScale = bowl.width / 90;
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center.translate(0, 40 * widthScale),
+        width: bowl.width * 1.3,
+        height: 24 * widthScale,
+      ),
+      Paint()
+        ..color = const Color(0x99000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+    );
+
+    final bowlBody = Path()
+      ..moveTo(center.dx - bowl.width * .49, center.dy - 4)
+      ..cubicTo(
+        center.dx - bowl.width * .44,
+        center.dy + bowl.height * .7,
+        center.dx - bowl.width * .28,
+        center.dy + bowl.height * .9,
+        center.dx,
+        center.dy + bowl.height * .9,
+      )
+      ..cubicTo(
+        center.dx + bowl.width * .28,
+        center.dy + bowl.height * .9,
+        center.dx + bowl.width * .44,
+        center.dy + bowl.height * .7,
+        center.dx + bowl.width * .49,
+        center.dy - 4,
+      )
+      ..close();
+    canvas.drawPath(
+      bowlBody.shift(const Offset(0, 5)),
+      Paint()
+        ..color = const Color(0xFF4C252B)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+
+    final leftHandle = Rect.fromCenter(
+      center: center.translate(-bowl.width * .48, 1),
+      width: 30 * widthScale,
+      height: 22 * widthScale,
+    );
+    final rightHandle = leftHandle.shift(Offset(bowl.width * .96, 0));
+    final handlePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 7 * widthScale
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFF8E4544);
+    canvas.drawOval(leftHandle, handlePaint);
+    canvas.drawOval(rightHandle, handlePaint);
+    final handleHighlight = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2 * widthScale
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xAAFFD3A6);
+    canvas.drawArc(leftHandle, -1.2, 2.4, false, handleHighlight);
+    canvas.drawArc(rightHandle, -1.2, 2.4, false, handleHighlight);
+
+    canvas.drawPath(
+      bowlBody,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [FeltColors.clay.withOpacity(.95), const Color(0xFFB65B49), const Color(0xFF632F39)],
+        ).createShader(bowl),
+    );
+
+    final foot = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: center.translate(0, bowl.height * .78),
+        width: bowl.width * .48,
+        height: 10 * widthScale,
+      ),
+      Radius.circular(5 * widthScale),
+    );
+    canvas.drawRRect(
+      foot,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFF8E4442), Color(0xFF532A33)],
+        ).createShader(foot.outerRect),
+    );
+
+    final soup = bowl.deflate(5 * widthScale).shift(Offset(0, -8 * widthScale));
+    canvas.drawOval(
+      soup,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(-.35, -.45),
+          colors: [Color(0xFFFFC76A), Color(0xFFE8873F), Color(0xFF9E482E)],
+        ).createShader(soup),
+    );
+    canvas.drawOval(
+      soup,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5 * widthScale
+        ..color = const Color(0xFFFFD89A),
+    );
+
+    for (var i = 0; i < 5; i++) {
+      final x = center.dx + (i - 2) * 11 * widthScale;
+      final y = center.dy - 9 * widthScale + sin(t * 8 + i * 1.7) * 3 * widthScale;
+      canvas.drawCircle(
+        Offset(x, y),
+        (i.isEven ? 2.2 : 1.5) * widthScale,
+        Paint()..color = i.isEven ? const Color(0xFFFFE7A9) : const Color(0xFF6C372A),
+      );
+    }
+
+    canvas.drawOval(
+      bowl,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 7 * widthScale
+        ..color = const Color(0xFF7E3D3D),
+    );
+    canvas.drawOval(
+      bowl.deflate(2 * widthScale),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2 * widthScale
+        ..color = const Color(0xFFFFD4A1),
+    );
+    canvas.drawArc(
+      bowl.deflate(3 * widthScale),
+      pi * 1.12,
+      pi * .74,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2 * widthScale
+        ..color = const Color(0x99FFFFFF),
+    );
+
+    for (var i = 0; i < 3; i++) {
+      final steamX = center.dx + (i - 1) * 18 * widthScale;
+      final steamPath = Path()
+        ..moveTo(steamX, center.dy - 27 * widthScale)
+        ..cubicTo(
+          steamX - 9 * widthScale,
+          center.dy - 39 * widthScale,
+          steamX + 9 * widthScale,
+          center.dy - 47 * widthScale,
+          steamX + sin(t * 5 + i) * 5 * widthScale,
+          center.dy - 61 * widthScale,
+        );
+      canvas.drawPath(
+        steamPath,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6 * widthScale
+          ..strokeCap = StrokeCap.round
+          ..color = const Color(0x3387E4DB)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+      );
+      canvas.drawPath(
+        steamPath,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5 * widthScale
+          ..strokeCap = StrokeCap.round
+          ..color = const Color(0xA8EAF8E6),
+      );
+    }
+
+    final spoon = Offset(size.width * (0.15 + t * 0.7), size.height * 0.42);
+    final handleEnd = spoon.translate(22 * widthScale, 23 * widthScale);
+    canvas.drawLine(
+      spoon.translate(5 * widthScale, 8 * widthScale),
+      handleEnd,
+      Paint()
+        ..color = const Color(0xAA241E22)
+        ..strokeWidth = 8 * widthScale
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawLine(
+      spoon.translate(5 * widthScale, 8 * widthScale),
+      handleEnd,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFFFFFFFF), Color(0xFFBCC8C6), Color(0xFF727E7F)],
+        ).createShader(Rect.fromPoints(spoon, handleEnd))
+        ..strokeWidth = 5 * widthScale
+        ..strokeCap = StrokeCap.round,
+    );
+    final spoonHead = Rect.fromCircle(center: spoon, radius: 16 * widthScale);
     canvas.drawCircle(
-      Offset(size.width * (0.15 + t * 0.7), size.height * 0.42),
-      16,
-      Paint()..color = FeltColors.ivory,
+      spoon.translate(0, 3 * widthScale),
+      16 * widthScale,
+      Paint()
+        ..color = const Color(0x88000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.drawOval(
+      spoonHead,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(-.35, -.4),
+          colors: [Color(0xFFFFFFFF), Color(0xFFE4ECE8), Color(0xFF899896)],
+        ).createShader(spoonHead),
+    );
+    canvas.drawOval(
+      spoonHead,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5 * widthScale
+        ..color = const Color(0xFFFFFFFF),
     );
   }
 

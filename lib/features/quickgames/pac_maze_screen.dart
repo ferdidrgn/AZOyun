@@ -258,21 +258,218 @@ class _MazePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cell = size.width / grid.length;
-    for (var y = 0; y < grid.length; y++) {
-      for (var x = 0; x < grid[y].length; x++) {
-        final rect = Rect.fromLTWH(x * cell, y * cell, cell, cell);
-        canvas.drawRect(
-          rect,
-          Paint()..color = grid[y][x] == '#' ? FeltColors.feltDeep : const Color(0xFF102028),
+    final rows = grid.length;
+    final columns = grid.first.length;
+    final top = size.height * .075;
+    final floorHeight = size.height * .84;
+    final cellHeight = floorHeight / rows;
+    final centerX = size.width / 2;
+    final farWidth = size.width * .57;
+    final nearWidth = size.width * .94;
+
+    double depth(double y) => (y / rows).clamp(0.0, 1.0).toDouble();
+    double scaleAt(double y) => .62 + depth(y) * .38;
+
+    Offset project(double x, double y, {double elevation = 0}) {
+      final t = depth(y);
+      final width = farWidth + (nearWidth - farWidth) * t;
+      return Offset(
+        centerX + (x / columns - .5) * width,
+        top + floorHeight * t - elevation * cellHeight * scaleAt(y),
+      );
+    }
+
+    Path cellPath(int x, int y, {double elevation = 0}) => Path()
+      ..moveTo(project(x.toDouble(), y.toDouble(), elevation: elevation).dx,
+          project(x.toDouble(), y.toDouble(), elevation: elevation).dy)
+      ..lineTo(project((x + 1).toDouble(), y.toDouble(), elevation: elevation).dx,
+          project((x + 1).toDouble(), y.toDouble(), elevation: elevation).dy)
+      ..lineTo(project((x + 1).toDouble(), (y + 1).toDouble(), elevation: elevation).dx,
+          project((x + 1).toDouble(), (y + 1).toDouble(), elevation: elevation).dy)
+      ..lineTo(project(x.toDouble(), (y + 1).toDouble(), elevation: elevation).dx,
+          project(x.toDouble(), (y + 1).toDouble(), elevation: elevation).dy)
+      ..close();
+
+    final backdrop = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xFF101927), Color(0xFF070C15)],
+      ).createShader(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, backdrop);
+
+    final boardPath = Path()
+      ..moveTo(project(0, 0).dx, project(0, 0).dy)
+      ..lineTo(project(columns.toDouble(), 0).dx, project(columns.toDouble(), 0).dy)
+      ..lineTo(project(columns.toDouble(), rows.toDouble()).dx,
+          project(columns.toDouble(), rows.toDouble()).dy)
+      ..lineTo(project(0, rows.toDouble()).dx, project(0, rows.toDouble()).dy)
+      ..close();
+    canvas.drawPath(
+      boardPath,
+      Paint()
+        ..color = const Color(0xFF13232E)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15),
+    );
+
+    // Draw the walkable floor from the far edge toward the player.
+    for (var y = 0; y < rows; y++) {
+      for (var x = 0; x < columns; x++) {
+        final isWall = grid[y][x] == '#';
+        if (isWall) continue;
+        canvas.drawPath(
+          cellPath(x, y),
+          Paint()
+            ..color = (x + y).isEven
+                ? const Color(0xFF142A36)
+                : const Color(0xFF10232E),
         );
-        if (grid[y][x] == '.') {
-          canvas.drawCircle(rect.center, 3, Paint()..color = FeltColors.brass);
-        }
+        canvas.drawPath(
+          cellPath(x, y),
+          Paint()
+            ..color = const Color(0xFF6BA5B5).withAlpha(18)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = .7,
+        );
       }
     }
-    canvas.drawCircle(Offset((px + 0.5) * cell, (py + 0.5) * cell), cell * 0.35, Paint()..color = FeltColors.brass);
-    canvas.drawCircle(Offset((gx + 0.5) * cell, (gy + 0.5) * cell), cell * 0.35, Paint()..color = AZColors.red);
+
+    // Raised wall blocks: shadow, front face, side face, then illuminated top.
+    for (var y = 0; y < rows; y++) {
+      for (var x = 0; x < columns; x++) {
+        if (grid[y][x] != '#') continue;
+        final base = [
+          project(x.toDouble(), y.toDouble()),
+          project((x + 1).toDouble(), y.toDouble()),
+          project((x + 1).toDouble(), (y + 1).toDouble()),
+          project(x.toDouble(), (y + 1).toDouble()),
+        ];
+        final lift = .48;
+        final elevated = [
+          project(x.toDouble(), y.toDouble(), elevation: lift),
+          project((x + 1).toDouble(), y.toDouble(), elevation: lift),
+          project((x + 1).toDouble(), (y + 1).toDouble(), elevation: lift),
+          project(x.toDouble(), (y + 1).toDouble(), elevation: lift),
+        ];
+        Path polygon(List<Offset> points) => Path()
+          ..moveTo(points.first.dx, points.first.dy)
+          ..addPolygon(points.skip(1).toList(), true);
+
+        canvas.drawPath(
+          polygon(base),
+          Paint()
+            ..color = Colors.black.withAlpha(105)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+        );
+        canvas.drawPath(
+          polygon([base[3], base[2], elevated[2], elevated[3]]),
+          Paint()..color = const Color(0xFF173E50),
+        );
+        canvas.drawPath(
+          polygon([base[1], base[2], elevated[2], elevated[1]]),
+          Paint()..color = const Color(0xFF0B202D),
+        );
+        canvas.drawPath(
+          polygon(elevated),
+          Paint()
+            ..shader = LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                FeltColors.feltDeep.withBlue(120),
+                const Color(0xFF20536A),
+              ],
+            ).createShader(Rect.fromPoints(elevated[0], elevated[2])),
+        );
+        canvas.drawPath(
+          polygon(elevated),
+          Paint()
+            ..color = const Color(0xFF78C7D4).withAlpha(100)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1,
+        );
+      }
+    }
+
+    // Small pellets shrink toward the back of the board.
+    for (var y = 0; y < rows; y++) {
+      for (var x = 0; x < columns; x++) {
+        if (grid[y][x] != '.') continue;
+        final center = project(x.toDouble() + .5, y.toDouble() + .5);
+        final radius = cellHeight * scaleAt(y + .5) * .075;
+        canvas.drawCircle(
+          center.translate(0, radius * .8),
+          radius * 1.45,
+          Paint()..color = Colors.black.withAlpha(70),
+        );
+        canvas.drawCircle(
+          center,
+          radius,
+          Paint()
+            ..shader = RadialGradient(
+              colors: [const Color(0xFFFFF1B2), FeltColors.brass],
+            ).createShader(Rect.fromCircle(center: center, radius: radius)),
+        );
+      }
+    }
+
+    void orb(int x, int y, Color color, {required bool ghost}) {
+      final center = project(x.toDouble() + .5, y.toDouble() + .5);
+      final radius = cellHeight * scaleAt(y + .5) * (ghost ? .32 : .34);
+      final shadow = Rect.fromCenter(
+        center: center.translate(radius * .12, radius * .72),
+        width: radius * 1.72,
+        height: radius * .64,
+      );
+      canvas.drawOval(
+        shadow,
+        Paint()
+          ..color = Colors.black.withAlpha(105)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+      );
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(-.35, -.45),
+            colors: [Color.lerp(color, Colors.white, .62)!, color, Color.lerp(color, Colors.black, .38)!],
+            stops: const [.04, .55, 1],
+          ).createShader(Rect.fromCircle(center: center, radius: radius)),
+      );
+      canvas.drawCircle(
+        center.translate(-radius * .28, -radius * .32),
+        radius * .13,
+        Paint()..color = Colors.white.withAlpha(190),
+      );
+      if (ghost) {
+        final eye = Paint()..color = const Color(0xFFF7F7FF);
+        canvas.drawOval(
+          Rect.fromCenter(center: center.translate(-radius * .25, -radius * .03),
+              width: radius * .28, height: radius * .42),
+          eye,
+        );
+        canvas.drawOval(
+          Rect.fromCenter(center: center.translate(radius * .25, -radius * .03),
+              width: radius * .28, height: radius * .42),
+          eye,
+        );
+        final pupil = Paint()..color = const Color(0xFF263553);
+        canvas.drawCircle(center.translate(-radius * .22, 0), radius * .08, pupil);
+        canvas.drawCircle(center.translate(radius * .28, 0), radius * .08, pupil);
+      }
+    }
+
+    orb(px, py, FeltColors.brass, ghost: false);
+    orb(gx, gy, AZColors.red, ghost: true);
+
+    canvas.drawPath(
+      boardPath,
+      Paint()
+        ..color = const Color(0xFF76B9C8).withAlpha(150)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4,
+    );
   }
 
   @override

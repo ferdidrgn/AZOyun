@@ -134,23 +134,134 @@ class _Grid extends StatelessWidget {
   final Set<int>? found;
   final void Function(int index)? onTap;
 
+  Widget _tile(int index) {
+    final isFound = found?.contains(index) ?? false;
+    return Material(
+      color: Colors.transparent,
+      elevation: isFound ? 5 : 2,
+      shadowColor: isFound ? const Color(0xAA39E58B) : const Color(0x77031020),
+      borderRadius: BorderRadius.circular(AZRadius.sm),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap == null ? null : () => onTap!(index),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isFound
+                  ? const [Color(0xFFB8F7CE), Color(0xFF45C98A)]
+                  : const [Colors.white, Color(0xFFE1EAF2)],
+            ),
+            borderRadius: BorderRadius.circular(AZRadius.sm),
+            border: Border.all(
+              color: isFound ? const Color(0xFFB7FFE0) : const Color(0xFFBDD0DF),
+              width: isFound ? 2 : 1,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x99FFFFFF),
+                offset: Offset(-1, -1),
+                blurRadius: 2,
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Center(child: Text(faces[index], style: const TextStyle(fontSize: 20))),
+              if (isFound)
+                const Positioned(
+                  top: 2,
+                  right: 2,
+                  child: Icon(
+                    Icons.check_circle,
+                    size: 13,
+                    color: Color(0xFF087F50),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 4,
-      mainAxisSpacing: 4,
-      crossAxisSpacing: 4,
-      children: [
-        for (var i = 0; i < faces.length; i++)
-          Material(
-            color: found != null && found!.contains(i) ? AZColors.green : Colors.white,
-            borderRadius: BorderRadius.circular(AZRadius.sm),
-            child: InkWell(
-              onTap: onTap == null ? null : () => onTap!(i),
-              child: Center(child: Text(faces[i], style: const TextStyle(fontSize: 20))),
-            ),
+    final isFindBoard = onTap != null;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isFindBoard
+              ? const [Color(0xFF426987), Color(0xFF18364E)]
+              : const [Color(0xFF54766E), Color(0xFF233F42)],
+        ),
+        borderRadius: BorderRadius.circular(AZRadius.md),
+        border: Border.all(color: const Color(0xBFFFFFFF), width: 1.4),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x70030D18),
+            offset: Offset(0, 8),
+            blurRadius: 14,
           ),
-      ],
+          BoxShadow(
+            color: Color(0x33FFFFFF),
+            offset: Offset(-2, -2),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Column(
+          children: [
+            Container(
+              height: 28,
+              margin: const EdgeInsets.only(bottom: 3),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isFindBoard
+                      ? const [Color(0xFF71B7D5), Color(0xFF397C9D)]
+                      : const [Color(0xFF83AE92), Color(0xFF527D69)],
+                ),
+                borderRadius: BorderRadius.circular(AZRadius.sm),
+                border: Border.all(color: const Color(0x66FFFFFF)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isFindBoard ? Icons.touch_app_rounded : Icons.visibility_rounded,
+                    size: 14,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isFindBoard ? 'FARKLARI BUL' : 'ÖRNEK PANOSU',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: GridView.count(
+                padding: const EdgeInsets.all(2),
+                crossAxisCount: 4,
+                mainAxisSpacing: 5,
+                crossAxisSpacing: 5,
+                children: [for (var i = 0; i < faces.length; i++) _tile(i)],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

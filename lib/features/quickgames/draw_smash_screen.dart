@@ -61,9 +61,11 @@ class _DrawSession extends StatefulWidget {
 class _DrawSessionState extends State<_DrawSession> {
   final _rng = Random();
   final _line = <Offset>[];
+  final _impactPositions = <Offset>[];
   late List<_Egg> _eggs = _lay();
   int _round = 1;
   int _score = 0;
+  int _impactSerial = 0;
   bool _drawing = false;
 
   List<_Egg> _lay() {
@@ -97,6 +99,8 @@ class _DrawSessionState extends State<_DrawSession> {
     for (final egg in _eggs) {
       if (!egg.hit && (egg.at - point).distance < 0.07) {
         egg.hit = true;
+        _impactPositions.add(egg.at);
+        _impactSerial++;
       }
     }
     setState(() {});
@@ -119,6 +123,7 @@ class _DrawSessionState extends State<_DrawSession> {
       _round++;
       _eggs = _lay();
       _line.clear();
+      _impactPositions.clear();
     });
   }
 
@@ -143,8 +148,19 @@ class _DrawSessionState extends State<_DrawSession> {
                 onPanEnd: (_) => _endDraw(),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AZRadius.lg),
-                  child: CustomPaint(
-                    painter: _SmashPainter(eggs: _eggs, line: _line),
+                  child: TweenAnimationBuilder<double>(
+                    key: ValueKey(_impactSerial),
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 480),
+                    builder: (context, progress, child) => CustomPaint(
+                      painter: _SmashPainter(
+                        eggs: _eggs,
+                        line: _line,
+                        impacts: _impactPositions,
+                        impactProgress: progress,
+                      ),
+                      child: child,
+                    ),
                     child: const SizedBox.expand(),
                   ),
                 ),
@@ -163,21 +179,124 @@ class _DrawSessionState extends State<_DrawSession> {
 }
 
 class _SmashPainter extends CustomPainter {
-  _SmashPainter({required this.eggs, required this.line});
+  _SmashPainter({
+    required this.eggs,
+    required this.line,
+    required this.impacts,
+    required this.impactProgress,
+  });
 
   final List<_Egg> eggs;
   final List<Offset> line;
+  final List<Offset> impacts;
+  final double impactProgress;
+
+  Path _eggPath(Offset center) => Path()
+    ..moveTo(center.dx, center.dy + 23)
+    ..cubicTo(center.dx - 16, center.dy + 12, center.dx - 19, center.dy - 5,
+        center.dx - 15, center.dy - 16)
+    ..cubicTo(center.dx - 11, center.dy - 29, center.dx + 11, center.dy - 29,
+        center.dx + 15, center.dy - 16)
+    ..cubicTo(center.dx + 19, center.dy - 5, center.dx + 16, center.dy + 12,
+        center.dx, center.dy + 23)
+    ..close();
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF16343A));
+    final bounds = Offset.zero & size;
+    canvas.drawRect(
+      bounds,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF265C62), Color(0xFF15363D), Color(0xFF0E282F)],
+        ).createShader(bounds),
+    );
+    canvas.drawRect(
+      bounds,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.65, -0.75),
+          radius: 1.25,
+          colors: [const Color(0x337EE5D8), Colors.transparent],
+        ).createShader(bounds),
+    );
+
     for (final egg in eggs) {
       final center = Offset(egg.at.dx * size.width, egg.at.dy * size.height);
+      final body = _eggPath(center);
+      final base = egg.good ? FeltColors.brass : AZColors.red;
+      final dark = egg.good ? const Color(0xFF8A5D16) : AZColors.redDk;
+
       canvas.drawOval(
-        Rect.fromCenter(center: center, width: 36, height: 48),
-        Paint()..color = egg.good ? FeltColors.brass : (egg.hit ? AZColors.redDk : AZColors.red),
+        Rect.fromCenter(
+          center: center + const Offset(2, 8),
+          width: 36,
+          height: 14,
+        ),
+        Paint()
+          ..color = const Color(0x77081620)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
       );
+      canvas.drawPath(
+        body.shift(const Offset(0, 3)),
+        Paint()..color = dark,
+      );
+      canvas.drawPath(
+        body,
+        Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(-0.48, -0.6),
+            radius: 1.15,
+            colors: egg.hit
+                ? [dark, dark, const Color(0xFF31151B)]
+                : [Colors.white, base.withOpacity(0.96), base, dark],
+            stops: egg.hit ? const [0, 0.25, 1] : const [0, 0.12, 0.7, 1],
+          ).createShader(Rect.fromCenter(center: center, width: 42, height: 56)),
+      );
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: center + const Offset(-6, -11),
+          width: 5,
+          height: 12,
+        ),
+        Paint()..color = const Color(0xAAFFFFFF),
+      );
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: center + const Offset(0, 28),
+          width: 9,
+          height: 3,
+        ),
+        Paint()..color = dark,
+      );
+
+      if (egg.hit) {
+        final crack = Path()
+          ..moveTo(center.dx - 8, center.dy - 6)
+          ..lineTo(center.dx - 1, center.dy + 1)
+          ..lineTo(center.dx - 5, center.dy + 6)
+          ..lineTo(center.dx + 3, center.dy + 11)
+          ..moveTo(center.dx + 2, center.dy - 1)
+          ..lineTo(center.dx + 8, center.dy - 7)
+          ..lineTo(center.dx + 5, center.dy + 1);
+        canvas.drawPath(
+          crack,
+          Paint()
+            ..color = const Color(0xFFFFE4BE)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round,
+        );
+      }
     }
+
+    for (final impact in impacts) {
+      _paintImpact(canvas, Offset(impact.dx * size.width, impact.dy * size.height));
+    }
+
     if (line.length > 1) {
       final path = Path()..moveTo(line.first.dx * size.width, line.first.dy * size.height);
       for (final point in line.skip(1)) {
@@ -186,10 +305,63 @@ class _SmashPainter extends CustomPainter {
       canvas.drawPath(
         path,
         Paint()
+          ..color = const Color(0xAA061A20)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 8
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+      canvas.drawPath(
+        path,
+        Paint()
           ..color = FeltColors.ivory
           ..style = PaintingStyle.stroke
           ..strokeWidth = 4
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = const Color(0xBFFFFFFF)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
           ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  void _paintImpact(Canvas canvas, Offset center) {
+    final progress = impactProgress.clamp(0.0, 1.0).toDouble();
+    final fade = (1 - progress).clamp(0.0, 1.0).toDouble();
+    final radius = 8 + 24 * progress;
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = const Color(0xFFFFD568).withOpacity(0.25 * fade)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3 * fade
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 5 * fade),
+    );
+    for (var i = 0; i < 8; i++) {
+      final angle = i * pi / 4;
+      final direction = Offset(cos(angle), sin(angle));
+      final start = center + direction * (7 + 4 * progress);
+      final end = center + direction * (radius + 9 * progress);
+      canvas.drawLine(
+        start,
+        end,
+        Paint()
+          ..color = (i.isEven ? const Color(0xFFFFE685) : Colors.white)
+              .withOpacity(fade)
+          ..strokeWidth = i.isEven ? 2.4 : 1.6
+          ..strokeCap = StrokeCap.round,
+      );
+      canvas.drawCircle(
+        end,
+        (i.isEven ? 2.6 : 1.8) * fade,
+        Paint()..color = const Color(0xFFFFE685).withOpacity(fade),
       );
     }
   }

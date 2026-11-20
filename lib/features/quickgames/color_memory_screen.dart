@@ -152,29 +152,147 @@ class _ColorMemorySessionState extends State<_ColorMemorySession> {
             : (_accepting ? 'Sıra sende, sırayla dokun' : ' '),
         style: const TextStyle(color: Colors.white60, fontSize: 12),
       ),
-      const SizedBox(height: 20),
+      const SizedBox(height: 8),
+      _buildSequenceMeter(),
+      const SizedBox(height: 12),
       Expanded(
         child: GridView.count(
           crossAxisCount: 2,
           crossAxisSpacing: 14,
           mainAxisSpacing: 14,
           children: [
-            for (var i = 0; i < _kMemoryColors.length; i++)
-              GestureDetector(
-                onTap: () => _tapColor(i),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 120),
-                  decoration: BoxDecoration(
-                    color: _highlighted == i ? Colors.white : _kMemoryColors[i],
-                    borderRadius: BorderRadius.circular(AZRadius.lg),
-                    border: Border.all(
-                        color: _highlighted == i ? _kMemoryColors[i] : Colors.white24, width: 3),
-                  ),
-                ),
-              ),
+            for (var i = 0; i < _kMemoryColors.length; i++) _buildColorPad(i),
           ],
         ),
       ),
     ]);
+  }
+
+  Widget _buildSequenceMeter() {
+    final activeSteps = _accepting ? _step : 0;
+    return Column(
+      children: [
+        Text(
+          _showingSequence ? 'Dizi' : 'İlerlemen',
+          style: const TextStyle(
+            color: Colors.white60,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < _sequence.length; i++)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  width: i < activeSteps ? 12 : 9,
+                  height: i < activeSteps ? 12 : 9,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: i < activeSteps
+                        ? const RadialGradient(
+                            colors: [Color(0xFFFFFFFF), Color(0xFFFFD976), Color(0xFFDF8D4A)],
+                          )
+                        : const RadialGradient(
+                            colors: [Color(0xFF786F91), Color(0xFF38334B)],
+                          ),
+                    border: Border.all(color: Colors.white.withAlpha(i < activeSteps ? 210 : 70)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: i < activeSteps ? const Color(0xFFFFD976).withAlpha(110) : Colors.black38,
+                        blurRadius: i < activeSteps ? 8 : 3,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorPad(int index) {
+    final base = _kMemoryColors[index];
+    final lit = _highlighted == index;
+    return GestureDetector(
+      onTap: () => _tapColor(index),
+      child: AnimatedScale(
+        scale: lit ? .965 : 1,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AZRadius.lg),
+            color: Color.lerp(base, Colors.black, .48),
+            boxShadow: [
+              BoxShadow(
+                color: lit ? base.withAlpha(210) : Colors.black.withAlpha(90),
+                blurRadius: lit ? 26 : 12,
+                offset: Offset(0, lit ? 2 : 8),
+              ),
+              if (!lit)
+                BoxShadow(color: base.withAlpha(95), blurRadius: 10, offset: const Offset(0, 2)),
+            ],
+          ),
+          padding: const EdgeInsets.only(bottom: 5, right: 4),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AZRadius.lg),
+              border: Border.all(color: lit ? Colors.white : Colors.white.withAlpha(125), width: 2),
+              gradient: RadialGradient(
+                center: const Alignment(-.45, -.55),
+                radius: 1.25,
+                colors: lit
+                    ? [Colors.white, Color.lerp(base, Colors.white, .75)!, base]
+                    : [Color.lerp(base, Colors.white, .48)!, base, Color.lerp(base, Colors.black, .35)!],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AZRadius.lg - 2),
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      height: 18,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.white.withAlpha(lit ? 210 : 95), Colors.transparent],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: const Alignment(-.55, -.6),
+                    child: Container(
+                      width: 22,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(lit ? 150 : 60),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

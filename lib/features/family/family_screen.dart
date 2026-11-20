@@ -10,13 +10,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/services/profile_service.dart';
+import '../../core/services/storage_service.dart';
+import '../../core/theme/az_theme.dart';
+import 'party_table.dart';
 
 const _configuredApi = String.fromEnvironment('FAMILY_API_URL');
 const _configuredWeb = String.fromEnvironment('FAMILY_WEB_URL');
+const _publicSalon = 'https://azoyun.web.app';
 const _games = {
   'okey': 'Klasik Okey',
   'okey101': '101 Okey',
-  'city': 'Mahalleler'
+  'city': 'Mahalleler',
+  'words': 'Kelime Tahtası',
+  'roles': 'Gizli Rol',
 };
 const _seatColors = [
   Color(0xFFF4C576),
@@ -42,21 +48,18 @@ class FamilyApp extends StatelessWidget {
         title: 'AZ Oyun · Aile Masası',
         debugShowCheckedModeBanner: false,
         initialRoute: '/',
-        theme: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(
-            primary: Color(0xFFF4C576),
-            surface: Color(0xFF1D302B),
-          ),
-        ),
+        theme: AZTheme.light,
+        darkTheme: AZTheme.dark,
         home: FamilyScreen(host: host, initialCode: code),
       );
 }
 
 class FamilyScreen extends StatefulWidget {
-  const FamilyScreen({super.key, required this.host, this.initialCode});
+  const FamilyScreen({super.key, required this.host, this.initialCode, this.initialGame});
 
   final bool host;
   final String? initialCode;
+  final String? initialGame;
 
   @override
   State<FamilyScreen> createState() => _FamilyScreenState();
@@ -73,7 +76,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
         ? _configuredApi
         : kIsWeb
             ? Uri.base.origin
-            : '',
+            : _publicSalon,
   );
   final _price = TextEditingController(text: '100');
   final _selected = <int>[];
@@ -85,6 +88,8 @@ class _FamilyScreenState extends State<FamilyScreen> {
   String? _token;
   String? _error;
   bool _busy = false;
+  bool _restoring = true;
+  bool _serverEdited = false;
   bool _polling = false;
   bool _pairs = false;
   int? _saleSquare;
@@ -95,6 +100,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
   String get _sessionKey =>
       'az_family_${_host ? 'host' : 'player'}_${_server.text.trim()}_$_code';
   bool get _city => _room?['game'] == 'city';
+  bool get _party => {'words', 'roles'}.contains(_room?['game']);
 
   @override
   void initState() {
@@ -108,28 +114,65 @@ class _FamilyScreenState extends State<FamilyScreen> {
       final prefs = await SharedPreferences.getInstance();
       if (!mounted || _busy || _code != null) return;
       if (!kIsWeb && _configuredApi.isEmpty) {
-        _server.text = prefs.getString('az_family_server') ?? '';
+        final stored = prefs.getString('az_family_server')?.trim();
+        final origin =
+            stored?.isNotEmpty == true ? stored! : await _publishedApi();
+        if (!mounted) return;
+        if (!_serverEdited) _server.text = origin;
       }
       final code = widget.initialCode ??
-          (_host
+          (_host && widget.initialGame == null
               ? prefs.getString('az_family_last_host_${_server.text.trim()}')
               : null);
       if (code == null || _server.text.isEmpty) return;
       _code = code;
       _token = prefs.getString(_sessionKey);
-      if (_token == null) {
-        _code = null;
-        return;
+      if (_token != null) {
+        await _refresh();
+        if (!mounted) return;
+        if (_token != null) {
+          _beginPolling();
+          return;
+        }
       }
-      await _refresh();
-      if (mounted && _room != null) _beginPolling();
-      if (mounted && _room == null) {
-        _code = null;
-        _token = null;
+      _code = null;
+      _token = null;
+      if (!_host && widget.initialCode != null) {
+        final name = await StorageService.instance.getPlayerName()
+            .timeout(const Duration(seconds: 2));
+        if (!mounted || _busy || _code != null) return;
+        if (_name.text.isEmpty) _name.text = name ?? '';
+        if (_name.text.trim().isNotEmpty) await _connect();
       }
     } catch (_) {
       // The player can enter the room code manually.
+    } finally {
+      if (mounted) setState(() => _restoring = false);
     }
+  }
+
+  Future<String> _publishedApi() async {
+    try {
+      final response = await _http
+          .get(Uri.parse('$_publicSalon/salon/family-api.json'))
+          .timeout(const Duration(seconds: 3));
+      if (response.statusCode != 200) return _publicSalon;
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final origin = data is Map ? data['origin'] : null;
+      final url = origin is String ? Uri.tryParse(origin) : null;
+      if (url != null &&
+          url.scheme == 'https' &&
+          url.host.isNotEmpty &&
+          url.userInfo.isEmpty &&
+          !url.hasQuery &&
+          !url.hasFragment &&
+          (url.path.isEmpty || url.path == '/')) {
+        return url.origin;
+      }
+    } catch (_) {
+      // If there is no published address, try the site's own API.
+    }
+    return _publicSalon;
   }
 
   Uri _url(String path) {
@@ -158,7 +201,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
         .timeout(const Duration(seconds: 7));
     if (!(result.headers['content-type'] ?? '').contains('application/json')) {
       throw const FormatException(
-          'Bu adreste Aile Masası sunucusu bulunamadı.');
+          'Aile Masası API’si bu adreste yanıt vermiyor. Sunucu ayarından çalışan HTTPS adresini kontrol et.');
     }
     final data = jsonDecode(utf8.decode(result.bodyBytes));
     if (data is! Map<String, dynamic>)
@@ -185,7 +228,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
       unawaited(_recordResult(data, matchId, seat));
     }
     final private = data['private'] as Map?;
-    final tiles = (private?['hand'] as List? ?? []).cast<Map>();
+    final tiles = (private?['hand'] as List? ?? []).whereType<Map>();
     final ids = tiles.map((tile) => tile['id'] as int).toSet();
     setState(() {
       _room = data;
@@ -201,7 +244,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
     try {
       final result = await ProfileService.instance.reportGameResult(
         gameId: 'family_${data['game']}',
-        won: data['winner'] == seat,
+        won: data['winner'] == seat || (data['winners'] as List? ?? []).contains(seat),
         resultId: 'family:$matchId',
       );
       if (mounted && result.granted) {
@@ -224,8 +267,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
       _accept(await _request('rooms/$code'));
     } catch (error) {
       if (mounted && _code == code) {
-        if (_room != null &&
-            error is _FamilyHttpError &&
+        if (_token != null && error is _FamilyHttpError &&
             (error.status == 404 || error.status == 401)) {
           final session = _sessionKey;
           unawaited(SharedPreferences.getInstance().then((prefs) {
@@ -240,10 +282,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
     }
   }
 
-  String _message(Object error) =>
-      error is FormatException && error.message is String
-          ? error.message as String
-          : 'Masaya bağlanılamadı. Sunucu adresini ve bağlantıyı kontrol et.';
+  String _message(Object error) => error is FormatException
+      ? error.message
+      : 'Masaya bağlanılamadı. İnternet bağlantını kontrol edip tekrar dene.';
 
   void _beginPolling() {
     _timer?.cancel();
@@ -267,17 +308,19 @@ class _FamilyScreenState extends State<FamilyScreen> {
       _error = null;
     });
     try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
       if (game == null) {
         _code = code;
-        final prefs = await SharedPreferences.getInstance();
         _token = prefs.getString(_sessionKey);
         if (_token != null) {
           await _refresh();
-          if (_room != null) {
+          if (!mounted) return;
+          if (_token != null) {
             _beginPolling();
             return;
           }
-          _token = null;
+          _code = code;
         }
       }
       final playerKey = _playerKey.text.trim();
@@ -291,14 +334,16 @@ class _FamilyScreenState extends State<FamilyScreen> {
       if (!mounted) return;
       _code = data['code'] as String;
       _token = data['token'] as String;
-      await _refresh();
-      _beginPolling();
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_sessionKey, _token!);
-      await prefs.setString('az_family_server', _server.text.trim());
+      if (_serverEdited) {
+        await prefs.setString('az_family_server', _server.text.trim());
+      }
       if (_host)
         await prefs.setString(
             'az_family_last_host_${_server.text.trim()}', _code!);
+      if (!mounted) return;
+      await _refresh();
+      if (mounted && _token != null) _beginPolling();
     } catch (error) {
       if (mounted) setState(() => _error = _message(error));
     } finally {
@@ -385,9 +430,16 @@ class _FamilyScreenState extends State<FamilyScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(_host ? 'Aile Masası · TV' : 'Aile Masası')),
       body: SafeArea(child: LayoutBuilder(builder: (context, bounds) {
-        final content = room == null
-            ? _setup()
-            : _match(room, wide: _host && bounds.maxWidth >= 850);
+        final content = room != null
+            ? _match(room, wide: _host && bounds.maxWidth >= 850)
+            : _token != null
+                ? [
+                    Text('$_code masasına yeniden bağlanılıyor…'),
+                    const SizedBox(height: 12),
+                    const LinearProgressIndicator(),
+                    TextButton(onPressed: _reset, child: const Text('Vazgeç')),
+                  ]
+                : _setup();
         return Center(
             child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: room == null ? 640 : 1440),
@@ -409,68 +461,81 @@ class _FamilyScreenState extends State<FamilyScreen> {
     );
   }
 
-  List<Widget> _setup() => [
-        Text(_host ? 'Ortak masayı aç' : 'Masaya otur',
-            style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 12),
-        Text(_host
-            ? 'Bir oyun seç. Oyuncular TV’deki QR kodunu telefonuyla okutsun.'
-            : 'Bu ekran elini, bakiyeni ve hamlelerini gösterir.'),
-        const SizedBox(height: 20),
-        if (!kIsWeb && _configuredApi.isEmpty)
-          TextField(
-              controller: _server,
-              keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                  labelText: 'Masa sunucusu', hintText: 'https://…')),
-        if (_host)
-          for (final (index, entry) in _games.entries.indexed)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: FilledButton.tonal(
-                autofocus: index == 0,
-                onPressed: _busy ? null : () => _connect(game: entry.key),
-                child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(entry.value)),
-              ),
-            )
-        else ...[
-          TextField(
-              controller: _name,
-              maxLength: 24,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Oyuncu adı')),
-          TextField(
-              controller: _codeInput,
-              maxLength: 6,
-              textCapitalization: TextCapitalization.characters,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp('[a-zA-Z2-9]'))
+  List<Widget> _setup() => _restoring
+      ? const [
+          LinearProgressIndicator(semanticsLabel: 'Masa ayarları yükleniyor')
+        ]
+      : [
+          Text(_host ? 'Ortak masayı aç' : 'Masaya otur',
+              style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(height: 12),
+          Text(_host
+              ? 'Bir oyun seç. Oyuncular TV’deki QR kodunu telefonuyla okutsun.'
+              : 'Bu ekran elini, bakiyeni ve hamlelerini gösterir.'),
+          const SizedBox(height: 20),
+          if (_host) ...[
+            for (final (index, entry) in _games.entries.indexed)
+              if (widget.initialGame == null || widget.initialGame == entry.key)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: FilledButton.tonal(
+                  autofocus: index == 0,
+                  onPressed: _busy ? null : () => _connect(game: entry.key),
+                  child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(entry.value)),
+                ),
+              )
+          ] else ...[
+            TextField(
+                controller: _name,
+                maxLength: 24,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Oyuncu adı')),
+            TextField(
+                controller: _codeInput,
+                maxLength: 6,
+                textCapitalization: TextCapitalization.characters,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp('[a-zA-Z2-9]'))
+                ],
+                decoration: const InputDecoration(labelText: 'Masa kodu')),
+            FilledButton(
+                onPressed: _busy ? null : _connect, child: const Text('Katıl')),
+            ExpansionTile(
+              title: const Text('Aile Masası profili'),
+              children: [
+                TextField(
+                  controller: _playerKey,
+                  obscureText: true,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  decoration: const InputDecoration(
+                      labelText: 'Oyuncu anahtarı (isteğe bağlı)'),
+                ),
+                TextButton(
+                  onPressed: _openPlayerProfile,
+                  child: const Text('Rozetler ve sıralama'),
+                ),
               ],
-              decoration: const InputDecoration(labelText: 'Masa kodu')),
-          FilledButton(
-              onPressed: _busy ? null : _connect, child: const Text('Katıl')),
-          ExpansionTile(
-            title: const Text('Aile Masası profili'),
-            children: [
-              TextField(
-                controller: _playerKey,
-                obscureText: true,
-                autocorrect: false,
-                enableSuggestions: false,
-                decoration: const InputDecoration(
-                    labelText: 'Oyuncu anahtarı (isteğe bağlı)'),
-              ),
-              TextButton(
-                onPressed: _openPlayerProfile,
-                child: const Text('Rozetler ve sıralama'),
-              ),
-            ],
-          ),
-        ],
-        if (_busy) const LinearProgressIndicator(),
-      ];
+            ),
+          ],
+          if (_busy) const LinearProgressIndicator(),
+          if (!kIsWeb && _configuredApi.isEmpty)
+            ExpansionTile(
+              title: const Text('Sunucu ayarı'),
+              children: [
+                TextField(
+                  controller: _server,
+                  enabled: !_busy,
+                  keyboardType: TextInputType.url,
+                  onChanged: (_) => _serverEdited = true,
+                  decoration: const InputDecoration(
+                      labelText: 'Masa sunucusu', hintText: 'https://…'),
+                ),
+              ],
+            ),
+        ];
 
   Future<void> _openPlayerProfile() async {
     try {
@@ -511,17 +576,18 @@ class _FamilyScreenState extends State<FamilyScreen> {
         for (final (index, player) in players.indexed)
           Chip(
             avatar: CircleAvatar(
-                backgroundColor: _seatColors[index],
+                backgroundColor: _seatColors[index % _seatColors.length],
                 child: Text('${index + 1}',
                     style: const TextStyle(color: Colors.black))),
             label: Text('${player['name']}${seat == index ? ' · Sen' : ''}'
-                '${player['count'] == null ? '' : ' · ${player['count']} taş'}'
+                '${player['count'] == null ? '' : ' · ${player['count']} ${_party ? 'harf' : 'taş'}'}'
                 '${player['out'] == true ? ' · İflas' : ''}'),
           ),
       ]),
       const SizedBox(height: 12),
       if (_city && (_host || !lobby)) _board(room, players, wide),
-      if (!_city && turn != null) ..._tileTable(room, players),
+      if (!_city && !_party && turn != null) ..._tileTable(room, players),
+      if (_party && !lobby) PartyTable(room: room, host: _host, busy: _busy, onAction: _act),
     ]);
     final lobbyControls =
         Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -568,10 +634,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
             child: const Text('Katılım bağlantısını kopyala')),
         const SizedBox(height: 12),
         FilledButton(
-          onPressed: _busy || players.length < (_city ? 2 : 4)
+          onPressed: _busy || players.length < (room['minPlayers'] as int? ?? (_city ? 2 : 4))
               ? null
               : () => _act('start'),
-          child: Text('Başlat · ${players.length}/4 oyuncu'),
+          child: Text('Başlat · ${players.length}/${room['maxPlayers'] ?? 4} oyuncu'),
         ),
       ] else
         const Text('TV’de masanın başlatılmasını bekle.'),
@@ -590,7 +656,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
         shared,
         if (lobby) lobbyControls,
       ],
-      if (!_host && playing && seat >= 0)
+      if (!_host && !_party && playing && seat >= 0)
         ...(_city
             ? _cityControls(room, private, players, seat)
             : _rackControls(room, private, seat)),
@@ -600,6 +666,8 @@ class _FamilyScreenState extends State<FamilyScreen> {
             child: const Text('Masayı kapat')),
       if (!lobby && !playing)
         FilledButton(onPressed: _reset, child: const Text('Masa seçimine dön')),
+      if (_party && _host && room['status'] == 'finished' && room['completed'] == true)
+        FilledButton(onPressed: _busy ? null : () => _act('rematch'), child: const Text('Aynı oyuncularla rövanş')),
     ];
   }
 

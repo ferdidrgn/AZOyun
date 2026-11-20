@@ -1,5 +1,8 @@
 import 'dart:math';
 
+import 'penalty_rules.dart';
+export 'penalty_rules.dart' show penaltyZones;
+
 enum SprintMode {
   bluff('Son Kart', 'Blöf yap, rakiplerin kart iddiasını sorgula.', 'sonkart',
       3, 6),
@@ -25,7 +28,6 @@ typedef SprintData = Map<String, dynamic>;
 typedef SprintAction = ({String type, int? choice});
 
 const sprintSymbols = ['Ay', 'Güneş', 'Yıldız'];
-const penaltyZones = ['Sol üst', 'Sağ üst', 'Orta', 'Sol alt', 'Sağ alt'];
 const stationNames = ['Enerji', 'İletişim', 'Soğutma'];
 const stationPuzzles = [
   (prompt: '2, 4, 8, ?', choices: ['12', '16', '18'], answer: 1),
@@ -67,7 +69,8 @@ int bluffTarget(SprintData state) =>
     ((state['seed'] as int) + state['round'] as int) % sprintSymbols.length;
 
 SprintData sprintRoom(
-        SprintMode mode, String host, String name, int seed, int now) =>
+        SprintMode mode, String host, String name, int seed, int now,
+        {bool penaltyV2 = false}) =>
     {
       'mode': mode.name,
       'phase': 'lobby',
@@ -77,6 +80,7 @@ SprintData sprintRoom(
       'seed': seed,
       'createdAt': now,
       'players': {host: name},
+      if (mode == SprintMode.penalty && penaltyV2) 'penaltyV2': true,
     };
 
 SprintData? joinSprint(
@@ -102,6 +106,7 @@ SprintData? updateSprint(SprintMode mode, SprintData state, String player,
   final players = sprintPlayers(state);
   if (state['mode'] != mode.name || !players.contains(player)) return null;
   final phase = state['phase'];
+  final penaltyV2 = mode == SprintMode.penalty && state['penaltyV2'] == true;
   if (action.type == 'leave') {
     if (phase == 'lobby') {
       final roster = sprintMap(state['players'])..remove(player);
@@ -114,10 +119,31 @@ SprintData? updateSprint(SprintMode mode, SprintData state, String player,
               'host': state['host'] == player ? remaining.first : state['host']
             };
     }
-    if (phase == 'finished') return null;
+    if (phase == 'finished') {
+      return penaltyV2 ? {...state, 'rematchClosed': true} : null;
+    }
     return _finish(state, 'left');
   }
-  if (epoch != state['epoch'] || phase == 'finished') return null;
+  if (epoch != state['epoch']) return null;
+  if (phase == 'finished') {
+    if (!penaltyV2 ||
+        action.type != 'rematch' ||
+        state['winner'] == 'left' ||
+        state['rematchClosed'] == true) return null;
+    final ready = {...sprintMap(state['rematch']), player: true};
+    if (ready.length < players.length) return {...state, 'rematch': ready};
+    return _beginRound(
+        mode,
+        {
+          ...state,
+          'score': {for (final id in players) id: 0},
+          'matchNumber': (state['matchNumber'] as int? ?? 0) + 1,
+          'winner': null,
+          'rematch': null,
+        },
+        1,
+        now);
+  }
   if (phase == 'lobby') {
     if (action.type != 'start' ||
         state['host'] != player ||
@@ -153,7 +179,9 @@ SprintData? updateSprint(SprintMode mode, SprintData state, String player,
         (choice == players.length ||
             (players[choice] != player &&
                 sprintActive(state).contains(players[choice]))),
-    'kick' => choice >= 0 && choice < penaltyZones.length,
+    'kick' => penaltyV2 && player == sprintActor(state)
+        ? validPenaltyKick(choice)
+        : choice >= 0 && choice < penaltyZones.length,
     _ => false,
   };
   if (!valid || action.type != phase) return null;
@@ -179,9 +207,14 @@ SprintData _beginRound(SprintMode mode, SprintData state, int round, int now) {
   final (phase, seconds) = switch (mode) {
     SprintMode.bluff => ('declare', 9),
     SprintMode.station => ('work', 15),
-    SprintMode.penalty => ('kick', 8),
+    SprintMode.penalty => ('kick', state['penaltyV2'] == true ? 14 : 8),
   };
-  return _step({...state, 'round': round, 'result': null}, phase, seconds, now);
+  return _step({
+    ...state,
+    'round': round,
+    'result': null,
+    'penaltyReplay': null,
+  }, phase, seconds, now);
 }
 
 SprintData _finish(SprintData state, String winner) =>
@@ -276,6 +309,23 @@ SprintData _advance(SprintMode mode, SprintData state, int now) {
       final keeper = players.firstWhere((id) => id != striker);
       final shot = moves[striker] as int?;
       final dive = moves[keeper] as int? ?? 2;
+      if (state['penaltyV2'] == true) {
+        final flight = penaltyFlight(shot, dive);
+        if (flight.result == 'goal')
+          score[striker] = (score[striker] as int) + 1;
+        final label = switch (flight.result) {
+          'goal' => 'Gol!',
+          'save' => 'Kaleci kurtardı.',
+          'miss' => 'Şut dışarı gitti.',
+          _ => 'Şut süresi doldu.',
+        };
+        return _step({
+          ...state,
+          'score': score,
+          'result': label,
+          'penaltyReplay': {if (shot != null) 'kick': shot, 'dive': dive},
+        }, 'reveal', 4, now);
+      }
       final goal = shot != null && shot != dive;
       if (goal) score[striker] = (score[striker] as int) + 1;
       final shotName = shot == null ? 'Şut çekilmedi' : penaltyZones[shot];

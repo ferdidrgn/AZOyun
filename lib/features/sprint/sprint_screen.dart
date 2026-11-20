@@ -9,7 +9,9 @@ import '../../core/services/room_service.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'penalty_pitch.dart';
 import 'sprint_rules.dart';
+import 'station_repair_control.dart';
 
 class SprintScreen extends StatefulWidget {
   const SprintScreen({super.key, required this.mode, this.initialCode});
@@ -44,8 +46,10 @@ class _SprintScreenState extends State<SprintScreen> {
         SprintMode.penalty => GamePaths.soccer,
       };
 
-  DatabaseReference _roomRef(String code) =>
-      _db.ref(_gamePath).child('sprint_$code');
+  DatabaseReference _roomRef(String code, {bool legacyPenalty = false}) =>
+      _db.ref(_gamePath).child(_mode == SprintMode.penalty && !legacyPenalty
+          ? 'penalty2_$code'
+          : 'sprint_$code');
 
   @override
   void initState() {
@@ -66,7 +70,11 @@ class _SprintScreenState extends State<SprintScreen> {
   Future<void> _loadName() async {
     try {
       final name = await StorageService.instance.getPlayerName();
-      if (mounted && _name.text.isEmpty) _name.text = name ?? '';
+      if (!mounted) return;
+      if (_name.text.isEmpty) _name.text = name ?? '';
+      if (widget.initialCode != null && _name.text.trim().isNotEmpty) {
+        await _connect(create: false);
+      }
     } catch (_) {
       // A name can still be entered when local storage is unavailable.
     }
@@ -102,18 +110,28 @@ class _SprintScreenState extends State<SprintScreen> {
       _message = null;
       _busy = true;
     });
-    final ref = _roomRef(code);
+    var ref = _roomRef(code);
     StreamSubscription<DatabaseEvent>? warmup;
     try {
       if (!create) {
-        // Keep the room subscribed so the transaction starts from a loaded snapshot.
-        final ready = Completer<bool>();
-        warmup = ref.onValue.listen((event) {
-          if (!ready.isCompleted) ready.complete(event.snapshot.exists);
-        }, onError: (Object error) {
-          if (!ready.isCompleted) ready.completeError(error);
-        });
-        if (!await ready.future.timeout(const Duration(seconds: 8))) {
+        Future<bool> roomExists(DatabaseReference candidate) async {
+          await warmup?.cancel();
+          final ready = Completer<bool>();
+          warmup = candidate.onValue.listen((event) {
+            if (!ready.isCompleted) ready.complete(event.snapshot.exists);
+          }, onError: (Object error) {
+            if (!ready.isCompleted) ready.completeError(error);
+          });
+          return ready.future.timeout(const Duration(seconds: 8));
+        }
+
+        var exists = await roomExists(ref);
+        if (!exists && _mode == SprintMode.penalty) {
+          ref = _roomRef(code, legacyPenalty: true);
+          exists = await roomExists(ref);
+        }
+        if (!mounted) return;
+        if (!exists) {
           if (mounted) setState(() => _message = 'Oda bulunamadı.');
           return;
         }
@@ -123,7 +141,8 @@ class _SprintScreenState extends State<SprintScreen> {
       final result = await ref.runTransaction((value) {
         final next = create
             ? value == null
-                ? sprintRoom(_mode, _me, name, seed, now)
+                ? sprintRoom(_mode, _me, name, seed, now,
+                    penaltyV2: _mode == SprintMode.penalty)
                 : null
             : joinSprint(_mode, sprintMap(value), _me, name, now);
         return next == null ? Transaction.abort() : Transaction.success(next);
@@ -189,7 +208,9 @@ class _SprintScreenState extends State<SprintScreen> {
     };
     unawaited(ProfileService.instance.reportGameResult(
       gameId: _mode.invite,
-      resultId: '$code:$createdAt',
+      resultId: (state['matchNumber'] as int? ?? 0) == 0
+          ? '$code:$createdAt'
+          : '$code:$createdAt:${state['matchNumber']}',
       won: won,
     ));
   }
@@ -359,6 +380,17 @@ class _SprintScreenState extends State<SprintScreen> {
       ] else if (finished) ...[
         Text(_winner(roster), style: Theme.of(context).textTheme.titleLarge),
         if (result != null && _room['winner'] != 'left') Text(result),
+        if (_room['penaltyV2'] == true &&
+            _room['winner'] != 'left' &&
+            _room['rematchClosed'] != true)
+          FilledButton(
+            onPressed: _busy || sprintMap(_room['rematch']).containsKey(_me)
+                ? null
+                : () => _action('rematch'),
+            child: Text(sprintMap(_room['rematch']).containsKey(_me)
+                ? 'Rövanş için rakip bekleniyor'
+                : 'Rövanş oyna'),
+          ),
       ] else ...[
         if (result != null)
           Text(result, style: Theme.of(context).textTheme.titleMedium),
@@ -389,6 +421,27 @@ class _SprintScreenState extends State<SprintScreen> {
   List<Widget> _round(
       String phase, List<String> players, SprintData roster, SprintData out) {
     final submitted = sprintMap(_room['moves']).containsKey(_me);
+    if (_mode == SprintMode.penalty && _room['penaltyV2'] == true) {
+      if (phase == 'reveal') {
+        final replay = sprintMap(_room['penaltyReplay']);
+        return [
+          PenaltyReplay(
+            key: ValueKey(_room['epoch']),
+            kick: replay['kick'] as int?,
+            dive: replay['dive'] as int? ?? 2,
+          )
+        ];
+      }
+      return [
+        PenaltyPitch(
+          key: ValueKey(_room['epoch']),
+          striker: sprintActor(_room) == _me,
+          locked: _busy || submitted,
+          onKick: (kick) => _action('kick', kick),
+        ),
+        if (submitted) const Text('Hamlen kilitlendi. Rakip bekleniyor.'),
+      ];
+    }
     if (phase == 'reveal') return [const Text('Sıradaki tur hazırlanıyor.')];
     if (submitted)
       return [const Text('Seçimin kilitlendi. Diğer oyuncular bekleniyor.')];
@@ -434,7 +487,7 @@ class _SprintScreenState extends State<SprintScreen> {
         _choice('Pas geç', phase, players.length),
       ] else if (sabotage) ...[
         const Text(
-            'Bir terminali sabote et. Orada onarım için iki doğru cevap gerekecek.'),
+            'Bir terminali sabote et. Onu kurtarmak için iki başarılı onarım gerekir.'),
         for (final (i, name) in stationNames.indexed) _choice(name, phase, i),
       ] else ...[
         Wrap(spacing: 8, children: [
@@ -445,10 +498,13 @@ class _SprintScreenState extends State<SprintScreen> {
                 onSelected: _busy ? null : (_) => setState(() => _sector = i)),
         ]),
         const SizedBox(height: 12),
-        Text('Sıradaki sayı: ${puzzle.prompt}',
-            style: Theme.of(context).textTheme.titleLarge),
-        for (final (i, answer) in puzzle.choices.indexed)
-          _choice(answer, phase, _sector * 3 + i),
+        StationRepairControl(
+          key: ValueKey((_room['epoch'], _sector)),
+          target: .24 + stationPuzzleIndex(_room, _sector) * .065,
+          busy: _busy,
+          onLock: (hit) => _action(phase,
+              _sector * 3 + (hit ? puzzle.answer : (puzzle.answer + 1) % 3)),
+        ),
       ],
     ];
   }

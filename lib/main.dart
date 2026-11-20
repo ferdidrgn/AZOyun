@@ -1,24 +1,39 @@
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'core/app_initializer.dart';
+import 'core/config/firebase_options.dart';
 import 'core/navigation/join_router.dart';
+import 'core/navigation/room_invite.dart';
 import 'core/services/analytics_service.dart';
 import 'core/services/app_keys.dart';
-import 'core/services/deep_link_service.dart';
 import 'core/services/language_service.dart';
 import 'core/services/theme_service.dart';
 import 'core/theme/az_theme.dart';
 import 'features/onboarding/splash_screen.dart';
 import 'features/family/family_screen.dart';
+import 'features/family/firebase_table_menu.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final family = kIsWeb ? Uri.base.queryParameters['family'] : null;
   final tv = WidgetsBinding.instance.platformDispatcher.defaultRouteName == '/family-tv';
-  if (tv || family != null) {
-    runApp(FamilyApp(host: tv || family == 'tv',
+  if (tv) {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    runApp(MaterialApp(
+      title: 'AZOyun · Aile Masası',
+      debugShowCheckedModeBanner: false,
+      initialRoute: '/',
+      theme: AZTheme.light,
+      darkTheme: AZTheme.dark,
+      home: const FirebaseTableMenu(),
+    ));
+    return;
+  }
+  if (family != null) {
+    runApp(FamilyApp(host: family == 'tv',
         code: family == null || family == 'tv' || family == 'join' ? null : family));
     return;
   }
@@ -28,7 +43,7 @@ void main() async {
 }
 
 void _handleDeepLink(Uri uri) {
-  final joined = DeepLinkService.parseJoinLink(uri);
+  final joined = parseRoomInvite(uri);
   if (joined == null) {
     return;
   }

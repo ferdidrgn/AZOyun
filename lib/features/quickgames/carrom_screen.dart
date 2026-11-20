@@ -255,25 +255,199 @@ class _CarromPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, const Radius.circular(12)),
-      Paint()..color = FeltColors.felt,
+    final w = size.width;
+    final h = size.height;
+
+    // Bilinear-ish projection: the far edge narrows, while the near rail
+    // grows toward the player. Disk coordinates stay normalized, so the
+    // existing collision and pocket rules are unchanged.
+    Offset project(double x, double y) {
+      final taper = .08 * (1 - y);
+      return Offset(w * (.055 + taper + x * (.89 - taper * 2)),
+          h * (.035 + y * .93));
+    }
+
+    Path polygon(List<Offset> points) => Path()..addPolygon(points, true);
+
+    Path boardPath(double inset) => polygon([
+          project(inset, inset),
+          project(1 - inset, inset),
+          project(1 - inset, 1 - inset),
+          project(inset, 1 - inset),
+        ]);
+
+    final outline = boardPath(0);
+    final rail = boardPath(.028);
+    final playSurface = boardPath(.052);
+
+    // Drop shadow and a layered, beveled wood frame.
+    canvas.drawPath(
+      outline.shift(Offset(0, h * .018)),
+      Paint()
+        ..color = Colors.black.withAlpha(125)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
     );
-    final pocket = Paint()..color = FeltColors.ink;
-    for (final x in [0.08, 0.92]) {
-      for (final y in [0.08, 0.92]) {
-        canvas.drawCircle(Offset(x * size.width, y * size.height), 10, pocket);
+    canvas.drawPath(
+      outline,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFECCB91), Color(0xFF9C5B32), Color(0xFF4B281C)],
+          stops: [0, .48, 1],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawPath(
+      rail,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFFE3B3), Color(0xFFBD7944), Color(0xFF744127)],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawPath(
+      rail,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..color = const Color(0xFFFFE8C1).withAlpha(150),
+    );
+
+    canvas.save();
+    canvas.clipPath(playSurface);
+    canvas.drawPath(
+      playSurface,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF8EACD), Color(0xFFE6D1A9), Color(0xFFD8BE91)],
+        ).createShader(Offset.zero & size),
+    );
+
+    // Soft wood-grain lines along the board face.
+    for (var i = 0; i < 8; i++) {
+      final y = .12 + i * .105;
+      canvas.drawLine(
+        project(.07, y),
+        project(.93, y + .012),
+        Paint()
+          ..color = const Color(0xFF8D6945).withAlpha(i.isEven ? 15 : 9)
+          ..strokeWidth = 1,
+      );
+    }
+
+    // Carrom guide rings, baseline and arrows, projected onto the same board.
+    final center = project(.5, .5);
+    for (final scale in [1.0, .78]) {
+      final oval = Rect.fromCenter(
+        center: center,
+        width: w * .31 * scale,
+        height: h * .22 * scale,
+      );
+      canvas.drawOval(
+        oval,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = scale == 1 ? 1.6 : 1
+          ..color = FeltColors.brass.withAlpha(scale == 1 ? 125 : 80),
+      );
+    }
+    canvas.drawCircle(center, w * .012,
+        Paint()..color = FeltColors.brass.withAlpha(135));
+    for (final y in [.735, .825]) {
+      canvas.drawLine(
+        project(.13, y),
+        project(.87, y),
+        Paint()
+          ..color = FeltColors.brass.withAlpha(y < .8 ? 130 : 85)
+          ..strokeWidth = y < .8 ? 1.8 : 1,
+      );
+    }
+    for (final x in [.08, .92]) {
+      for (final y in [.08, .92]) {
+        final point = project(x, y);
+        final depth = .74 + y * .26;
+        final radius = w * .041 * depth;
+        canvas.drawCircle(point.translate(0, radius * .12), radius * 1.34,
+            Paint()..color = const Color(0xFF9B713D).withAlpha(85));
+        canvas.drawCircle(point, radius * 1.12,
+            Paint()..color = const Color(0xFF3A211A));
+        canvas.drawCircle(point.translate(-radius * .1, -radius * .12), radius * .89,
+            Paint()
+              ..shader = RadialGradient(
+                colors: [const Color(0xFF241710), const Color(0xFF080707)],
+              ).createShader(Rect.fromCircle(center: point, radius: radius)));
+        canvas.drawCircle(
+          point,
+          radius * 1.12,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2
+            ..color = const Color(0xFFFFE5B5).withAlpha(175),
+        );
       }
     }
+    canvas.restore();
+
+    // Raised inset lip catches a narrow highlight along the playing face.
+    canvas.drawPath(
+      playSurface,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..color = Colors.white.withAlpha(155),
+    );
+
     for (final disk in disks) {
       if (disk.gone) {
         continue;
       }
+      final point = project(disk.x, disk.y);
+      final depth = .76 + disk.y * .34;
+      final radius = w * .035 * depth;
+      final body = Rect.fromCircle(center: point, radius: radius);
+      final base = disk.coin ? const Color(0xFFFFF8E9) : const Color(0xFFD79842);
+      final shade = disk.coin ? const Color(0xFFAA895B) : const Color(0xFF79501E);
+
+      // Floating contact shadow and deep outer rim make each piece read as
+      // a thick, rounded disk instead of a flat dot.
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: point.translate(radius * .12, radius * .42),
+          width: radius * 2.35,
+          height: radius * 1.05,
+        ),
+        Paint()
+          ..color = Colors.black.withAlpha(105)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+      canvas.drawCircle(point.translate(0, radius * .12), radius * 1.07,
+          Paint()..color = shade.withAlpha(230));
       canvas.drawCircle(
-        Offset(disk.x * size.width, disk.y * size.height),
-        size.width * 0.035,
-        Paint()..color = disk.coin ? FeltColors.ivory : FeltColors.brass,
+        point,
+        radius,
+        Paint()
+          ..shader = RadialGradient(
+            center: const Alignment(-.42, -.52),
+            radius: 1.1,
+            colors: [Colors.white, base, shade],
+            stops: const [0, .62, 1],
+          ).createShader(body),
+      );
+      canvas.drawCircle(
+        point,
+        radius * .76,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = radius * .075
+          ..color = (disk.coin ? const Color(0xFFB49668) : Colors.white).withAlpha(155),
+      );
+      canvas.drawCircle(
+        point.translate(-radius * .28, -radius * .3),
+        radius * .18,
+        Paint()..color = Colors.white.withAlpha(disk.coin ? 205 : 150),
       );
     }
   }

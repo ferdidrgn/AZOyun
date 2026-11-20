@@ -29,7 +29,7 @@ jobs:
           node-version: '24'
 
       - name: Aile Masası testlerini çalıştır
-        run: node --test family-server/server.test.mjs family-server/progression.test.mjs
+        run: node --test family-server/server.test.mjs family-server/progression.test.mjs family-server/party-games.test.mjs
 
       - name: Firebase oda temizliği kurallarını test et
         run: npm --prefix functions test
@@ -75,6 +75,15 @@ jobs:
             echo "GitHub Actions secret FIREBASE_SERVICE_ACCOUNT_AZOYUN boş."
             echo "Kurulum: docs/DEPLOY.md"
             exit 1
+          fi
+
+      - name: Yapılandırılan Aile Masası API’sini doğrula
+        env:
+          FAMILY_API_URL: ${{ vars.FAMILY_API_URL }}
+        run: |
+          if [ -n "$FAMILY_API_URL" ]; then
+            set -o pipefail
+            curl -fsS --max-time 20 "${FAMILY_API_URL%/}/api/family/health" | jq -e '.ok == true'
           fi
 
       - name: Firebase Hosting'e yayınla

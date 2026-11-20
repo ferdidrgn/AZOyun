@@ -58,7 +58,10 @@ class _RacingLobbyState extends State<RacingLobbyScreen> {
 
   Future<void> _load() async {
     final n = await _storage.getPlayerName(); if (!mounted) return;
-    if (n != null && n.isNotEmpty) setState(() => _name = n); else _ask();
+    if (n != null && n.isNotEmpty) setState(() => _name = n); else await _ask();
+    if (mounted && widget.initialCode != null && _name != null && !_loading) {
+      await _join();
+    }
   }
   Future<void> _ask() async {
     final n = await showNameDialog(context, current: _name, accentColor: AZColors.redDk);
@@ -367,6 +370,7 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
   int _myLap = 0, _myCheckpoint = 0;
   bool _finished = false;
   double _drift = 0.0;
+  double _crashFlash = 0;
 
   Timer? _physicsTimer;
   Timer? _syncTimer;
@@ -537,11 +541,18 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
       _x += cos(_angle) * _speed;
       _y += sin(_angle) * _speed;
 
-      // Duvar çarpışması
-      if (_x < 0.06) { _x = 0.06; _speed *= 0.5; }
-      if (_x > 0.94) { _x = 0.94; _speed *= 0.5; }
-      if (_y < 0.06) { _y = 0.06; _speed *= 0.5; }
-      if (_y > 0.94) { _y = 0.94; _speed *= 0.5; }
+      // Duvar çarpışması: kısa renk parlaması ve tek bir dokunsal bildirim.
+      var hitWall = false;
+      if (_x < 0.06) { _x = 0.06; _speed *= 0.5; hitWall = true; }
+      if (_x > 0.94) { _x = 0.94; _speed *= 0.5; hitWall = true; }
+      if (_y < 0.06) { _y = 0.06; _speed *= 0.5; hitWall = true; }
+      if (_y > 0.94) { _y = 0.94; _speed *= 0.5; hitWall = true; }
+      if (hitWall) {
+        if (_crashFlash < 0.08) HapticFeedback.mediumImpact();
+        _crashFlash = 1;
+      } else {
+        _crashFlash = max(0, _crashFlash - 0.045).toDouble();
+      }
 
       // Checkpoint kontrolü
       final nextCp = _checkpoints[_myCheckpoint % _checkpoints.length];
@@ -755,25 +766,44 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
               // her senkronizasyonda ışınlanmak yerine akıcı kayar.
               ...players.entries.where((e) => e.key != widget.myKey).map((e) {
                 final smoothed = _oppRenderPos[e.key];
-                final ox = (smoothed?.dx ?? (e.value['x'] as num?)?.toDouble() ?? 0.5) * W;
-                final oy = (smoothed?.dy ?? (e.value['y'] as num?)?.toDouble() ?? 0.5) * H;
+                final normX = smoothed?.dx ?? (e.value['x'] as num?)?.toDouble() ?? 0.5;
+                final normY = smoothed?.dy ?? (e.value['y'] as num?)?.toDouble() ?? 0.5;
+                final point = _projectTrackPoint(Offset(normX, normY), Size(W, H));
+                final spriteSize = 31 * _trackDepth(normY);
                 final oa = _oppRenderAngle[e.key] ?? (e.value['angle'] as num?)?.toDouble() ?? 0.0;
                 final carId = e.value['carId'] as String? ?? 'sport';
                 final c = _cars.firstWhere((cd) => cd.id == carId, orElse: () => _cars[0]);
-                return Positioned(left: ox - 14, top: oy - 14,
+                return Positioned(left: point.dx - spriteSize / 2,
+                    top: point.dy - spriteSize * .64,
                     // Araba emojileri varsayılan olarak sola bakar; hareket
                     // matematiği açı 0'da sağa gitmeyi varsayıyor — +pi
                     // düzeltmesi olmadan araba hep ters yöne bakar.
                     child: Transform.rotate(angle: oa + pi,
-                        child: _CarSprite(emoji: c.emoji, color: c.color, size: 28)));
+                        child: _CarSprite(emoji: c.emoji, color: c.color, size: spriteSize)));
               }),
 
               // Benim arabam
-              Positioned(left: _x * W - 16, top: _y * H - 16,
+              Positioned(
+                left: _projectTrackPoint(Offset(_x, _y), Size(W, H)).dx -
+                    34 * _trackDepth(_y) / 2,
+                top: _projectTrackPoint(Offset(_x, _y), Size(W, H)).dy -
+                    34 * _trackDepth(_y) * .64,
                 child: Transform.rotate(angle: _angle + pi,
                   child: _CarSprite(emoji: widget.car.emoji, color: widget.car.color,
-                      size: 32, isMe: true, drift: _drift.abs())),
+                      size: 34 * _trackDepth(_y), isMe: true, drift: _drift.abs())),
               ),
+
+              if (_crashFlash > .02)
+                Positioned.fill(child: IgnorePointer(child: DecoratedBox(
+                  decoration: BoxDecoration(gradient: RadialGradient(
+                    center: Alignment.bottomCenter,
+                    radius: 1.2,
+                    colors: [
+                      Colors.deepOrange.withAlpha((_crashFlash * 72).round()),
+                      Colors.transparent,
+                    ],
+                  )),
+                ))),
 
               // Countdown
               if (!_started)
@@ -839,6 +869,14 @@ class _RGameState extends State<RacingGameScreen> with SingleTickerProviderState
   }
 }
 
+Offset _projectTrackPoint(Offset point, Size size) {
+  final depth = _trackDepth(point.dy);
+  return Offset(size.width * .5 + (point.dx - .5) * size.width * .46 * depth,
+      size.height * (.055 + point.dy * .89));
+}
+
+double _trackDepth(double y) => .58 + y.clamp(0.0, 1.0).toDouble() * .62;
+
 class _CarSprite extends StatelessWidget {
   const _CarSprite({required this.emoji, required this.color, required this.size,
       this.isMe = false, this.drift = 0});
@@ -846,90 +884,181 @@ class _CarSprite extends StatelessWidget {
   final bool isMe; final double drift;
 
   @override
-  Widget build(BuildContext context) => Stack(clipBehavior: Clip.none, children: [
-    // Zemin gölgesi — arabayı pistin üstünde "havada" gibi hissettirir.
-    Positioned(
-      left: size * 0.1, top: size * 0.72,
-      child: Container(
-        width: size * 0.8, height: size * 0.28,
-        decoration: BoxDecoration(
-          color: Colors.black.withAlpha(90),
-          borderRadius: BorderRadius.circular(size),
-        ),
-      ),
-    ),
-    Container(
-      width: size, height: size,
-      decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(-0.3, -0.5),
-            colors: [Color.lerp(color, Colors.white, 0.35)!.withAlpha(isMe ? 220 : 150), color.withAlpha(isMe ? 200 : 130)],
+  Widget build(BuildContext context) {
+    final bodyWidth = size * .62;
+    return SizedBox(width: size, height: size * 1.28, child: Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        Positioned(bottom: size * .02, child: Container(
+          width: bodyWidth * 1.18, height: size * .28,
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(120),
+            borderRadius: BorderRadius.circular(size),
+            boxShadow: [BoxShadow(color: Colors.black.withAlpha(90), blurRadius: size * .22)],
           ),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-              color: isMe ? (drift > 0.3 ? Colors.orange : Colors.white) : Colors.white30,
-              width: isMe ? 2 : 1),
-          boxShadow: [BoxShadow(
-              color: (isMe && drift > 0.3 ? Colors.orange : Colors.black).withAlpha(isMe ? 160 : 100),
-              blurRadius: isMe ? 10 : 6, offset: const Offset(0, 3))]),
-      child: Center(child: Text(emoji,
-          style: TextStyle(fontSize: size * 0.5))),
-    ),
-  ]);
+        )),
+        Positioned(left: size * .08, top: size * .3,
+          child: _wheel(size * .35, size * .25)),
+        Positioned(right: size * .08, top: size * .3,
+          child: _wheel(size * .35, size * .25)),
+        Positioned(left: size * .08, bottom: size * .19,
+          child: _wheel(size * .35, size * .25)),
+        Positioned(right: size * .08, bottom: size * .19,
+          child: _wheel(size * .35, size * .25)),
+        Container(
+          width: bodyWidth, height: size * 1.12,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight,
+              colors: [Color.lerp(color, Colors.black, .28)!,
+                Color.lerp(color, Colors.white, .24)!, color]),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(size * .32), bottom: Radius.circular(size * .24)),
+            border: Border.all(color: isMe
+              ? (drift > .3 ? Colors.orangeAccent : Colors.white)
+              : Colors.white.withAlpha(150), width: isMe ? 1.7 : 1),
+            boxShadow: [BoxShadow(
+              color: (isMe && drift > .3 ? Colors.orange : color).withAlpha(100),
+              blurRadius: isMe ? size * .34 : size * .2,
+              offset: Offset(0, size * .1))],
+          ),
+          child: Stack(children: [
+            Positioned(left: bodyWidth * .16, right: bodyWidth * .16,
+              top: size * .28, height: size * .37,
+              child: DecoratedBox(decoration: BoxDecoration(
+                gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [Color(0xFFBDEEFF), Color(0xFF183246)]),
+                borderRadius: BorderRadius.circular(size * .15),
+                border: Border.all(color: Colors.white.withAlpha(130), width: .8),
+              ))),
+            Positioned(left: bodyWidth * .12, right: bodyWidth * .12, top: size * .13,
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                _lamp(size * .12, const Color(0xFFFFF1B0)),
+                _lamp(size * .12, const Color(0xFFFFF1B0)),
+              ])),
+            Positioned(left: bodyWidth * .15, right: bodyWidth * .15, bottom: size * .1,
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                _lamp(size * .1, const Color(0xFFFF5464)),
+                _lamp(size * .1, const Color(0xFFFF5464)),
+              ])),
+          ]),
+        ),
+      ],
+    ));
+  }
+
+  Widget _wheel(double width, double height) => Container(
+    width: width, height: height,
+    decoration: BoxDecoration(color: const Color(0xFF15191F),
+      borderRadius: BorderRadius.circular(height),
+      border: Border.all(color: const Color(0xFF65717E), width: .7)),
+  );
+
+  Widget _lamp(double size, Color color) => Container(
+    width: size, height: size * .48,
+    decoration: BoxDecoration(color: color,
+      borderRadius: BorderRadius.circular(size),
+      boxShadow: [BoxShadow(color: color.withAlpha(130), blurRadius: size * .8)]),
+  );
 }
 
 class _TrackPainter extends CustomPainter {
   const _TrackPainter({required this.checkpoints, required this.myCheckpoint});
   final List<Offset> checkpoints; final int myCheckpoint;
 
-  @override
-  void paint(Canvas canvas, Size s) {
-    // Zemin
-    canvas.drawRect(Rect.fromLTWH(0, 0, s.width, s.height),
-        Paint()..color = AZColors.green);
-
-    // Pist (kapalı devre — oval/döngüsel)
-    final pts = checkpoints.map((cp) => Offset(cp.dx * s.width, cp.dy * s.height)).toList();
-
-    final trackPaint = Paint()
-      ..color = const Color(0xFF5A5650) ..strokeWidth = s.width * 0.18
-      ..strokeCap = StrokeCap.round ..style = PaintingStyle.stroke;
-    final path = Path();
-    path.moveTo(pts.first.dx, pts.first.dy);
-    for (var i = 1; i < pts.length; i++) path.lineTo(pts[i].dx, pts[i].dy);
-    path.close();
-    canvas.drawPath(path, trackPaint);
-
-    // Pist çizgisi
-    final linePaint = Paint()
-      ..color = Colors.white.withAlpha(80) ..strokeWidth = s.width * 0.002
-      ..style = PaintingStyle.stroke;
-    canvas.drawPath(path, linePaint);
-
-    // Checkpointler
-    for (var i = 0; i < pts.length; i++) {
-      final past = i < myCheckpoint;
-      canvas.drawCircle(pts[i], 14,
-          Paint()..color = past ? AZColors.greenDk.withAlpha(180) : AZColors.orange.withAlpha(180));
-      canvas.drawCircle(pts[i], 14,
-          Paint()..color = Colors.white ..style = PaintingStyle.stroke ..strokeWidth = 2);
+  void _ribbon(Canvas canvas, Size size, List<Offset> points, double halfWidth,
+      Color color) {
+    final paint = Paint()..color = color;
+    for (var i = 0; i < points.length; i++) {
+      final next = (i + 1) % points.length;
+      final delta = points[next] - points[i];
+      final length = delta.distance;
+      if (length == 0) continue;
+      final normal = Offset(-delta.dy / length, delta.dx / length);
+      final a = halfWidth * _trackDepth(checkpoints[i].dy);
+      final b = halfWidth * _trackDepth(checkpoints[next].dy);
+      final path = Path()
+        ..moveTo(points[i].dx + normal.dx * a, points[i].dy + normal.dy * a)
+        ..lineTo(points[next].dx + normal.dx * b, points[next].dy + normal.dy * b)
+        ..lineTo(points[next].dx - normal.dx * b, points[next].dy - normal.dy * b)
+        ..lineTo(points[i].dx - normal.dx * a, points[i].dy - normal.dy * a)
+        ..close();
+      canvas.drawPath(path, paint);
     }
-
-    // Start/Finish
-    canvas.drawRect(Rect.fromCenter(center: pts[0], width: s.width * 0.18, height: 4),
-        Paint()..color = Colors.white);
-    // Dama deseni
-    final checkPaint = Paint()..color = Colors.black;
-    for (var i = 0; i < 6; i++) {
-      if (i % 2 == 0) canvas.drawRect(
-          Rect.fromLTWH(pts[0].dx - s.width * 0.09 + i * s.width * 0.03,
-              pts[0].dy - 2, s.width * 0.03, 4), checkPaint);
+    for (var i = 0; i < points.length; i++) {
+      canvas.drawCircle(points[i], halfWidth * _trackDepth(checkpoints[i].dy), paint);
     }
   }
 
-  @override bool shouldRepaint(_TrackPainter o) => o.myCheckpoint != myCheckpoint;
-}
+  @override
+  void paint(Canvas canvas, Size s) {
+    final background = Paint()..shader = const LinearGradient(
+      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+      colors: [Color(0xFF173B34), Color(0xFF32774D), Color(0xFF18492F)],
+    ).createShader(Offset.zero & s);
+    canvas.drawRect(Offset.zero & s, background);
 
+    // Camera projection compresses the far side of the circuit while keeping
+    // simulation/checkpoint coordinates unchanged.
+    final points = checkpoints.map((cp) => _projectTrackPoint(cp, s)).toList();
+    _ribbon(canvas, s, points, s.width * .12, const Color(0xFF14221F).withAlpha(110));
+    _ribbon(canvas, s, points, s.width * .108, const Color(0xFFB8A96A));
+    _ribbon(canvas, s, points, s.width * .096, const Color(0xFF34383D));
+
+    // Asphalt seams and broken center line recede with the track depth.
+    final seamPaint = Paint()..color = Colors.white.withAlpha(46)
+      ..strokeWidth = 1.2..strokeCap = StrokeCap.round;
+    final dashPaint = Paint()..color = const Color(0xFFE9DDAF).withAlpha(165)
+      ..strokeWidth = 1.8..strokeCap = StrokeCap.round;
+    for (var i = 0; i < points.length; i++) {
+      final next = (i + 1) % points.length;
+      final a = points[i];
+      final b = points[next];
+      canvas.drawLine(a, b, seamPaint);
+      for (var dash = 0; dash < 6; dash++) {
+        final t0 = dash / 6 + .05;
+        final t1 = t0 + .045;
+        final p0 = Offset.lerp(a, b, t0)!;
+        final p1 = Offset.lerp(a, b, t1)!;
+        canvas.drawLine(p0, p1, dashPaint..strokeWidth = 1.5 * _trackDepth(checkpoints[i].dy));
+      }
+    }
+
+    // The next checkpoint is a bright projected gate; completed gates fade.
+    for (var i = 0; i < points.length; i++) {
+      final point = points[i];
+      final depth = _trackDepth(checkpoints[i].dy);
+      final radius = 7.0 * depth;
+      final next = i == myCheckpoint % points.length;
+      final color = next ? const Color(0xFFFFD36D) : const Color(0xFFB8F0D0);
+      canvas.drawCircle(point, radius * (next ? 1.65 : 1.0),
+        Paint()..color = color.withAlpha(next ? 48 : 28));
+      canvas.drawCircle(point, radius, Paint()..color = color.withAlpha(next ? 235 : 105)
+        ..style = PaintingStyle.stroke..strokeWidth = next ? 2.4 : 1.3);
+      if (next) {
+        canvas.drawCircle(point, radius * .32, Paint()..color = Colors.white);
+      }
+    }
+
+    // Checkered start/finish stripe across the near edge of the road.
+    final a = points.first;
+    final b = points[1];
+    final delta = b - a;
+    final length = delta.distance;
+    if (length > 0) {
+      final normal = Offset(-delta.dy / length, delta.dx / length);
+      final half = s.width * .09 * _trackDepth(checkpoints.first.dy);
+      canvas.drawLine(a - normal * half, a + normal * half,
+        Paint()..color = Colors.white..strokeWidth = 3.2..strokeCap = StrokeCap.square);
+      canvas.drawLine(a - normal * half, a + normal * half,
+        Paint()..color = Colors.black.withAlpha(170)..strokeWidth = 1.1
+          ..strokeCap = StrokeCap.square);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TrackPainter old) => old.myCheckpoint != myCheckpoint;
+}
 class _CtrlBtn extends StatelessWidget {
   const _CtrlBtn({required this.label, required this.onDown, required this.onUp,
       required this.color, this.wide = false});

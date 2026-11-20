@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../features/batak/batak_screen.dart';
 import '../../features/checkers/dama_screens.dart';
 import '../../features/city/city_screens.dart';
 import '../../features/deck/deck_lobby_screen.dart';
@@ -9,6 +10,7 @@ import '../../features/golf/golf_lobby_screen.dart';
 import '../../features/hangman/hangman_lobby_screen.dart';
 import '../../features/impostor/impostor_screens.dart';
 import '../../features/liar/liar_screens.dart';
+import '../../features/mahalleler/mahalle_screen.dart';
 import '../../features/okey/okey_screens.dart';
 import '../../features/racing/racing_screens.dart';
 import '../../features/soccer/soccer_lobby_screen.dart';
@@ -44,6 +46,8 @@ void openGameInvite(BuildContext context, String game, String code) {
     'soccer' => SoccerLobbyScreen(initialCode: normalized),
     'hangman' => HangmanLobbyScreen(initialCode: normalized),
     'city' => CityLobbyScreen(initialCode: normalized),
+    'mahalle' => MahalleLobbyScreen(initialCode: normalized),
+    'batak' => BatakLobbyScreen(initialCode: normalized),
     'word' => WordLobbyScreen(initialCode: normalized),
     'vampire' => VampireLobbyScreen(initialCode: normalized),
     'liar' => LiarLobbyScreen(initialCode: normalized),

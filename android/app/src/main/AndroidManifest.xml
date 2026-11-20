@@ -2,6 +2,9 @@
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.faketouch" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -27,16 +30,9 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-5779807348211992~2861799229" />
 
-        <!-- Play Games Services v2 (bkz. ROADMAP 8.7). Gerçek proje ID'si
-             Play Console'dan alınıp res/values/strings.xml içindeki
-             game_services_project_id değerine yapıştırılana kadar bu
-             sessizce etkisiz kalır. -->
         <meta-data
             android:name="com.google.android.gms.games.APP_ID"
             android:value="@string/game_services_project_id" />
-        <meta-data
-            android:name="com.google.android.gms.games.SUPPRESS_GAME_PROFILE_CREATION"
-            android:value="true" />
 
         <activity
             android:name=".MainActivity"

@@ -42,6 +42,8 @@ class _ReflexTapGameScreenState extends State<ReflexTapGameScreen> {
   late List<int> _scores;
   _RoundPhase _phase = _RoundPhase.armed;
   Timer? _armTimer;
+  Timer? _pressTimer;
+  int? _pressedPlayer;
   QPPlayer? _roundWinner;
   final Set<QPPlayer> _falseStarters = {};
 
@@ -55,7 +57,21 @@ class _ReflexTapGameScreenState extends State<ReflexTapGameScreen> {
   @override
   void dispose() {
     _armTimer?.cancel();
+    _pressTimer?.cancel();
     super.dispose();
+  }
+
+  void _showTapPress(int idx) {
+    _pressTimer?.cancel();
+    setState(() => _pressedPlayer = idx);
+    _pressTimer = Timer(const Duration(milliseconds: 130), () {
+      if (mounted) setState(() => _pressedPlayer = null);
+    });
+  }
+
+  void _clearTapPress() {
+    _pressTimer?.cancel();
+    if (_pressedPlayer != null) setState(() => _pressedPlayer = null);
   }
 
   void _startRound() {
@@ -152,10 +168,84 @@ class _ReflexTapGameScreenState extends State<ReflexTapGameScreen> {
           ? '${_roundWinner!.name} bu turu kazandı!'
           : 'Bu tur boş geçti',
     };
-    return AZFrostCard(
-      child: Text(text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+    final isGo = _phase == _RoundPhase.go;
+    final isResult = _phase == _RoundPhase.result;
+    final phaseColor = isGo
+        ? const Color(0xFF34E889)
+        : isResult
+            ? const Color(0xFFFFD447)
+            : const Color(0xFFFF405C);
+    final phaseIcon = switch (_phase) {
+      _RoundPhase.armed => Icons.hourglass_top_rounded,
+      _RoundPhase.go => Icons.bolt_rounded,
+      _RoundPhase.result => Icons.emoji_events_rounded,
+    };
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isGo
+              ? const [Color(0xFF65F0A2), Color(0xFF15965E), Color(0xFF07513E)]
+              : isResult
+                  ? const [Color(0xFFFFEAA0), Color(0xFFD79B28), Color(0xFF8B4A1C)]
+                  : const [Color(0xFFFF8585), Color(0xFFCC364C), Color(0xFF721F38)],
+        ),
+        borderRadius: BorderRadius.circular(AZRadius.lg),
+        border: Border.all(
+          color: isResult ? const Color(0xFFFFE9A8) : Colors.white.withAlpha(125),
+          width: isResult ? 2 : 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: phaseColor.withAlpha(isGo || isResult ? 110 : 65),
+            blurRadius: isGo || isResult ? 22 : 12,
+            offset: const Offset(0, 7),
+          ),
+          const BoxShadow(color: Color(0x44000000), blurRadius: 3, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            top: -16,
+            child: Container(
+              height: 18,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.white.withAlpha(34), Colors.transparent],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+          ),
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(phaseIcon, color: Colors.white, size: 24,
+                    shadows: const [Shadow(color: Colors.black45, blurRadius: 5, offset: Offset(0, 2))]),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(text,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 5, offset: Offset(0, 2))],
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -167,25 +257,106 @@ class _ReflexTapGameScreenState extends State<ReflexTapGameScreen> {
       itemBuilder: (_, i) {
         final p = widget.players[i];
         final disqualified = _falseStarters.contains(p);
+        final isWinner = _roundWinner == p;
+        final pressed = _pressedPlayer == i;
+        final playerColor = kPlayerColors[i % kPlayerColors.length];
         return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (_) => _showTapPress(i),
+          onTapCancel: _clearTapPress,
           onTap: () => _tapPlayer(i),
-          child: Container(
-            decoration: BoxDecoration(
-              color: disqualified
-                  ? Colors.black26
-                  : kPlayerColors[i % kPlayerColors.length].withAlpha(200),
-              borderRadius: BorderRadius.circular(AZRadius.lg),
-            ),
-            child: Center(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(p.name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 4),
-                Text(disqualified ? 'ERKEN!' : '${_scores[i]} puan',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
-              ]),
+          child: AnimatedScale(
+            scale: pressed ? .965 : (isWinner ? 1.025 : 1),
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOutBack,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              transform: Matrix4.translationValues(0, pressed ? 4 : 0, 0),
+              decoration: BoxDecoration(
+                gradient: disqualified
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF54525B), Color(0xFF292A34), Color(0xFF171B25)],
+                      )
+                    : LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color.lerp(playerColor, Colors.white, .35)!.withAlpha(240),
+                          playerColor.withAlpha(230),
+                          Color.lerp(playerColor, Colors.black, .48)!.withAlpha(245),
+                        ],
+                      ),
+                borderRadius: BorderRadius.circular(AZRadius.lg),
+                border: Border.all(
+                  color: isWinner
+                      ? const Color(0xFFFFE37B)
+                      : Colors.white.withAlpha(disqualified ? 45 : 115),
+                  width: isWinner ? 3 : 1.4,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isWinner
+                        ? const Color(0xFFFFD447).withAlpha(145)
+                        : Colors.black.withAlpha(disqualified ? 18 : 65),
+                    blurRadius: pressed ? 3 : (isWinner ? 24 : 13),
+                    offset: Offset(0, pressed ? 1 : (isWinner ? 9 : 7)),
+                  ),
+                  if (!disqualified)
+                    BoxShadow(
+                      color: playerColor.withAlpha(70),
+                      blurRadius: isWinner ? 16 : 8,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AZRadius.lg),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        height: 16,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.white.withAlpha(disqualified ? 22 : 80), Colors.transparent],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        if (isWinner)
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 4),
+                            child: Icon(Icons.bolt_rounded, color: Color(0xFFFFE37B), size: 24),
+                          ),
+                        Text(p.name,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                shadows: [Shadow(color: Colors.black54, blurRadius: 5, offset: Offset(0, 2))],
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16)),
+                        const SizedBox(height: 5),
+                        Text(disqualified ? 'ERKEN!' : '${_scores[i]} puan',
+                            style: TextStyle(
+                                color: disqualified ? const Color(0xFFFFB5B5) : Colors.white.withAlpha(220),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                shadows: const [Shadow(color: Colors.black45, blurRadius: 3)])),
+                      ]),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         );

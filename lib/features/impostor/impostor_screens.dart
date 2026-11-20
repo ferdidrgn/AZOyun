@@ -72,7 +72,10 @@ class _ImpostorLobbyScreenState extends State<ImpostorLobbyScreen> {
     if (n != null && n.isNotEmpty) {
       setState(() => _name = n);
     } else {
-      _ask();
+      await _ask();
+    }
+    if (mounted && widget.initialCode != null && _name != null && !_loading) {
+      await _join();
     }
   }
 

@@ -1,6 +1,7 @@
 import { randomInt } from 'node:crypto';
+import { partyLimits, partyView, roleAction, startParty, wordAction } from './party-games.mjs';
 
-export const games = ['okey', 'okey101', 'city'];
+export const games = ['okey', 'okey101', 'city', 'words', 'roles'];
 const districts = [
   ['Başlangıç'], ['Çınar Sokak', 80, 14, 1], ['Pazar Kartı'], ['Fırın Yolu', 100, 17, 1],
   ['Belediye'], ['Sahil Parkı', 120, 21, 2], ['Vapur İskelesi', 140, 24, 2], ['Pazar Kartı'],
@@ -25,6 +26,7 @@ function shuffled(deck, random) {
 }
 
 function start(room, random) {
+  if (partyLimits[room.game]) return startParty(room, random);
   room.status = 'playing';
   room.turn = 0;
   room.round = 1;
@@ -409,23 +411,34 @@ function cityAction(room, seat, action, random) {
 }
 
 export function applyAction(room, seat, action, random = randomInt) {
+  if (action.type === 'rematch') {
+    check(seat === -1 && room.status === 'finished' && partyLimits[room.game], 'Bu masada rövanşı kurucu başlatabilir.');
+    check(!room.rewardPending, 'Önce maç ödülleri kaydedilmeli.');
+    check(room.players.length >= partyLimits[room.game][0], 'Rövanş için yeterli oyuncu gerekiyor.');
+    for (const key of ['winner', 'winners', 'finishedAt', 'teamWinner', 'rewardPending']) delete room[key];
+    room.completed = false;
+    return startParty(room, random);
+  }
   if (action.type === 'close') {
     check(seat === -1 && room.status !== 'finished', 'Masayı yalnızca kurucu kapatabilir.');
     return finish(room, null, 'Masa kurucu tarafından kapatıldı.');
   }
   if (action.type === 'start') {
     check(seat === -1 && room.status === 'lobby', 'Masayı yalnızca kurucu başlatabilir.');
-    check(room.players.length >= (room.game === 'city' ? 2 : 4), 'Daha fazla oyuncu gerekiyor.');
+    check(room.players.length >= (partyLimits[room.game]?.[0] ?? (room.game === 'city' ? 2 : 4)), 'Daha fazla oyuncu gerekiyor.');
     start(room, random);
     return;
   }
+  if (room.game === 'roles' && room.status === 'playing') return roleAction(room, seat, action);
   check(room.status === 'playing' && room.players[seat], 'Oyun başladıktan sonra oyuncu hamle yapabilir.');
+  if (room.game === 'words') return wordAction(room, seat, action, random);
   if (room.game === 'city') return cityAction(room, seat, action, random);
   check(room.turn === seat, 'Sıra başka oyuncuda.');
   tileAction(room, seat, action);
 }
 
 export function view(room, seat) {
+  if (partyLimits[room.game]) return partyView(room, seat);
   const output = {
     game: room.game, status: room.status, revision: room.revision, turn: room.turn,
     phase: room.phase, round: room.round, message: room.message, winner: room.winner,

@@ -152,21 +152,40 @@ class _NimGameScreenState extends State<NimGameScreen> {
                     Text('Yığın ${pi + 1}  ($size taş)',
                         style: const TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        for (var j = 0; j < size; j++)
-                          GestureDetector(
-                            onTap: () => _takeFrom(pi, j),
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: const BoxDecoration(
-                                  color: Color(0xFFBCAAA4), shape: BoxShape.circle),
-                            ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF473324), Color(0xFF281D18)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0x886B523A), width: 1),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x77000000),
+                            blurRadius: 9,
+                            offset: Offset(0, 5),
                           ),
-                      ],
+                          BoxShadow(
+                            color: Color(0x22FFE0B5),
+                            blurRadius: 3,
+                            offset: Offset(-1, -1),
+                          ),
+                        ],
+                      ),
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (var j = 0; j < size; j++)
+                            GestureDetector(
+                              onTap: () => _takeFrom(pi, j),
+                              child: const _NimStone(),
+                            ),
+                        ],
+                      ),
                     ),
                   ]),
                 );
@@ -177,4 +196,63 @@ class _NimGameScreenState extends State<NimGameScreen> {
       ),
     );
   }
+}
+
+class _NimStone extends StatelessWidget {
+  const _NimStone();
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 28,
+        height: 28,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(
+              margin: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const RadialGradient(
+                  center: Alignment(-.38, -.42),
+                  radius: .95,
+                  colors: [
+                    Color(0xFFF7ECE7),
+                    Color(0xFFC9B4AD),
+                    Color(0xFF8C7773),
+                  ],
+                  stops: [0, .58, 1],
+                ),
+                border: Border.all(color: const Color(0xFFE8D9D3), width: .9),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0xCC000000),
+                    blurRadius: 4,
+                    offset: Offset(0, 3),
+                  ),
+                  BoxShadow(
+                    color: Color(0x66FFFFFF),
+                    blurRadius: 2,
+                    offset: Offset(-1, -1),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              left: 7,
+              top: 5,
+              child: Container(
+                width: 8,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(175),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.white38, blurRadius: 3),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }

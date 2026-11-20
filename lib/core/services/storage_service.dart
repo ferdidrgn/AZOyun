@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Unified local storage — replaces both SecureLocalStorage and old StorageService.
@@ -21,6 +23,25 @@ class StorageService {
 
   Future<void> setPlayerName(String name) =>
       _storage.write(key: _kName, value: name);
+
+  Future<String>? _playerTokenTask;
+
+  Future<String> getPlayerToken() => _playerTokenTask ??= _loadPlayerToken();
+
+  Future<String> _loadPlayerToken() async {
+    try {
+      final saved = await _storage.read(key: 'player_token');
+      if (saved != null && saved.isNotEmpty) return saved;
+      final random = Random.secure();
+      final token = List.generate(4,
+          (_) => random.nextInt(1 << 30).toRadixString(16).padLeft(8, '0')).join();
+      await _storage.write(key: 'player_token', value: token);
+      return token;
+    } catch (_) {
+      _playerTokenTask = null;
+      rethrow;
+    }
+  }
 
   // ── Ad counters ───────────────────────────────────────────────────────────
 
@@ -71,5 +92,8 @@ class StorageService {
 
   Future<bool> adsRemoved() async => (await _storage.read(key: _kAdsRemoved)) == 'true';
 
-  Future<void> clearAll() => _storage.deleteAll();
+  Future<void> clearAll() async {
+    await _storage.deleteAll();
+    _playerTokenTask = null;
+  }
 }

@@ -45,7 +45,8 @@ class _PlayHubScreenState extends State<PlayHubScreen> {
     setState(() => _playBusy = false);
     if (!PlayGamesService.instance.isSignedIn) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Play Games oturumu açılmadı.')),
+        SnackBar(content: Text(PlayGamesService.instance.signInError ??
+            'Play Games oturumu açılmadı.')),
       );
     }
   }

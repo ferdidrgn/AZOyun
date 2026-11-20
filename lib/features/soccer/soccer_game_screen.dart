@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import '../../core/services/achievement_service.dart';
 import '../../core/services/ad_service.dart';
@@ -10,6 +11,7 @@ import '../../core/services/room_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
+import 'soccer_match.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -21,7 +23,7 @@ const double _kFriction    = 0.985; // her frame çarpanı
 const double _kBounceLoss  = 0.62;  // duvar çarpma enerji kaybı
 const double _kMinSpeed    = 0.003; // durma eşiği
 const double _kMaxPower    = 5.5;   // maksimum güç
-const double _kDt          = 0.016; // fizik adımı (60fps)
+const double _kDt          = 1 / 120;
 
 // Kale boyutları (normalize)
 const double _kGoalLeft   = 0.20;
@@ -62,7 +64,6 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
   bool _finalShown  = false;
   bool _roomGone    = false;
   bool _isMyTurn    = false;
-  int  _myScore     = 0;
   int  _currentRound = 1;
   int  _totalRounds  = 5;
 
@@ -91,7 +92,15 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
   double _gkVel     = 0.0;
 
   // ── Animations ───────────────────────────────────────────────────────────
-  late AnimationController _physCtrl;
+  late final Ticker _physicsTicker;
+  Duration _previousFrame = Duration.zero;
+  double _frameBudget = 0;
+  double _shotSeconds = 0;
+  SoccerTurn? _shotTurn;
+  String? _pendingResult;
+  bool _savingResult = false;
+  bool _syncing = false;
+  bool _leaving = false;
   late AnimationController _goalCtrl;
   late AnimationController _missCtrl;
   late Animation<double>   _goalScale;
@@ -105,6 +114,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
 
   // Spin / after-touch efekti (top havada döner)
   double _spin = 0.0;
+  double _curveAcceleration = 0.0;
 
   // Powerbar için renk
   Color get _powerColor {
@@ -120,9 +130,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
     super.initState();
     _ref = _db.child('${GamePaths.soccer}/${widget.roomId}');
 
-    _physCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 16))
-      ..addListener(_physicsTick);
+    _physicsTicker = createTicker(_physicsFrame);
 
     _goalCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900));
@@ -143,7 +151,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
 
   @override
   void dispose() {
-    _physCtrl.dispose();
+    _physicsTicker.dispose();
     _goalCtrl.dispose();
     _missCtrl.dispose();
     _syncTimer?.cancel();
@@ -173,7 +181,6 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
       _currentRound = (d['currentRound'] as int?) ?? 1;
       _totalRounds  = (d['totalRounds']  as int?) ?? 5;
       _isMyTurn     = d['currentPlayer'] == widget.myKey;
-      _myScore      = (d['players']?[widget.myKey]?['score'] as int?) ?? 0;
     });
 
     // Sıra yeni bir oyuncuya geçti — top yeni vuruş için resetlenir
@@ -187,7 +194,9 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
     // hiç çalıştırmaz, sadece gelen veriyi görselleştirir.
     if (!_isMyTurn) {
       final ball = d['ball'] as Map?;
-      if (ball != null) {
+      if (ball != null &&
+          (ball['player'] == null ||
+              (ball['player'] == newPlayer && ball['round'] == _currentRound))) {
         final bx = (ball['x'] as num?)?.toDouble();
         final by = (ball['y'] as num?)?.toDouble();
         if (bx != null && by != null) {
@@ -202,113 +211,106 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
           });
         }
       }
-      // Vuran tarafın bildirdiği sonucu (gol/kaleci kurtardı/kaçırdı) göster.
-      final resultSeq = (d['resultSeq'] as int?) ?? 0;
-      if (resultSeq != 0 && resultSeq != _shownResultSeq) {
-        _shownResultSeq = resultSeq;
-        switch (d['result'] as String?) {
-          case 'goal':    _playGoalFx(); break;
-          case 'blocked': _playBlockedFx(); break;
-          case 'miss':    _playMissFx(); break;
-        }
-      }
     }
 
-    if (d['status'] == 'finished' && !_finalShown) {
+    final resultSeq = d['resultSeq'] as int? ?? 0;
+    if (resultSeq != 0 && resultSeq != _shownResultSeq) {
+      _shownResultSeq = resultSeq;
+      switch (d['result'] as String?) {
+        case 'goal': unawaited(_playGoalFx()); break;
+        case 'blocked': unawaited(_playBlockedFx()); break;
+        case 'miss': unawaited(_playMissFx()); break;
+      }
+    }
+    if (_shotTurn != null && _shotTurn != soccerTurn(d)) {
+      _shotTurn = null;
+      _pendingResult = null;
+    }
+    if (d['status'] == 'finished' && !_finalShown && !_leaving) {
       _finalShown = true;
       AdService.instance.onGameEnd();
-      Future.delayed(const Duration(milliseconds: 600), _showFinalDialog);
+      Future.delayed(const Duration(milliseconds: 1500), _showFinalDialog);
     }
   }
 
   // ── Physics tick (60fps) ─────────────────────────────────────────────────
 
-  void _physicsTick() {
-    if (!_moving) return;
+  void _physicsFrame(Duration elapsed) {
+    if (!_moving || !_isMyTurn) return;
+    _frameBudget += ((elapsed - _previousFrame).inMicroseconds / 1000000).clamp(0, .05);
+    _previousFrame = elapsed;
     setState(() {
-      // Hareketi uygula
-      _ball    += _ballVel * _kDt;
-      _ballVel *= _kFriction;
-
-      // Spin efekti — topun yatay çizgisi hafif bükülür
-      _spin += _ballVel.dx * 0.1;
-
-      // ── Goalkeeper hareketi ──
-      final gkDiff = _gkTargetX - _gkX;
-      _gkVel  = _gkVel * 0.7 + gkDiff * 0.25;
-      _gkX   += _gkVel * _kDt * 60;
-      _gkX    = _gkX.clamp(
-          _kGoalLeft  + _kGkRadius,
-          _kGoalRight - _kGkRadius);
-
-      // ── Saha duvarı (sol/sağ/alt) — TOP ÇIKMAZ ──
-      if (_ball.dx - _kBallRadius < 0) {
-        _ball    = Offset(_kBallRadius, _ball.dy);
-        _ballVel = Offset(-_ballVel.dx * _kBounceLoss, _ballVel.dy * 0.92);
-        HapticFeedback.lightImpact();
-      }
-      if (_ball.dx + _kBallRadius > 1) {
-        _ball    = Offset(1 - _kBallRadius, _ball.dy);
-        _ballVel = Offset(-_ballVel.dx * _kBounceLoss, _ballVel.dy * 0.92);
-        HapticFeedback.lightImpact();
-      }
-      if (_ball.dy + _kBallRadius > 1) {
-        _ball    = Offset(_ball.dx, 1 - _kBallRadius);
-        _ballVel = Offset(_ballVel.dx * 0.92, -_ballVel.dy * _kBounceLoss);
-        HapticFeedback.lightImpact();
-      }
-
-      // ── Kale direği çarpması ──
-      // Sol direk
-      _collidePost(Offset(_kGoalLeft,  _kGoalBottom));
-      // Sağ direk
-      _collidePost(Offset(_kGoalRight, _kGoalBottom));
-      // Üst sol köşe
-      _collidePost(Offset(_kGoalLeft,  0));
-      // Üst sağ köşe
-      _collidePost(Offset(_kGoalRight, 0));
-
-      // ── Kale üst direği (crossbar) çarpması ──
-      // Top kale üstünden geri sektiyse
-      if (_ball.dy - _kBallRadius < 0 &&
-          _ball.dx > _kGoalLeft &&
-          _ball.dx < _kGoalRight) {
-        _ball    = Offset(_ball.dx, _kBallRadius);
-        _ballVel = Offset(_ballVel.dx, -_ballVel.dy * _kBounceLoss);
-        HapticFeedback.lightImpact();
-      }
-
-      // ── Kaleci çarpması ──
-      if (_ball.dy < _kGoalBottom + 0.05) {
-        final gkDx = _ball.dx - _gkX;
-        final gkDy = _ball.dy - _kGkY;
-        final dist = sqrt(gkDx * gkDx + gkDy * gkDy);
-        if (dist < _kBallRadius + _kGkRadius) {
-          // Sekme yönü
-          final nx    = gkDx / dist;
-          final ny    = gkDy / dist;
-          final speed = _ballVel.distance * 0.75;
-          _ballVel    = Offset(nx * speed, ny * speed.abs() * 1.2);
-          // Top kaleciden dışarı it
-          final overlap = (_kBallRadius + _kGkRadius) - dist;
-          _ball = Offset(
-              _ball.dx + nx * overlap,
-              _ball.dy + ny * overlap);
-          HapticFeedback.mediumImpact();
-        }
-      }
-
-      // ── Durma kontrolü ──
-      if (_ballVel.distance < _kMinSpeed) {
-        _ballVel = Offset.zero;
-        _moving  = false;
-        _spin    = 0;
-        _physCtrl.stop();
-        _checkResult();
+      while (_moving && _frameBudget >= _kDt) {
+        _frameBudget -= _kDt;
+        _shotSeconds += _kDt;
+        _physicsStep();
       }
     });
   }
 
+  void _physicsStep() {
+    final previous = _ball;
+    // Hareketi uygula
+    _ball    += _ballVel * _kDt;
+    _ballVel = (_ballVel + Offset(_curveAcceleration * _kDt, 0)) * _kFriction;
+
+    // Spin efekti — topun yatay çizgisi hafif bükülür
+    _spin += _ballVel.dx * 0.1;
+
+    // ── Goalkeeper hareketi ──
+    final gkDiff = _gkTargetX - _gkX;
+    _gkVel  = _gkVel * 0.84 + gkDiff * 0.13;
+    _gkX   += _gkVel * _kDt * 60;
+    _gkX    = _gkX.clamp(
+        _kGoalLeft  + _kGkRadius,
+        _kGoalRight - _kGkRadius);
+
+    // ── Saha duvarı (sol/sağ/alt) — TOP ÇIKMAZ ──
+    if (_ball.dx - _kBallRadius < 0) {
+      _ball    = Offset(_kBallRadius, _ball.dy);
+      _ballVel = Offset(-_ballVel.dx * _kBounceLoss, _ballVel.dy * 0.92);
+      HapticFeedback.lightImpact();
+    }
+    if (_ball.dx + _kBallRadius > 1) {
+      _ball    = Offset(1 - _kBallRadius, _ball.dy);
+      _ballVel = Offset(-_ballVel.dx * _kBounceLoss, _ballVel.dy * 0.92);
+      HapticFeedback.lightImpact();
+    }
+    if (_ball.dy + _kBallRadius > 1) {
+      _ball    = Offset(_ball.dx, 1 - _kBallRadius);
+      _ballVel = Offset(_ballVel.dx * 0.92, -_ballVel.dy * _kBounceLoss);
+      HapticFeedback.lightImpact();
+    }
+
+    // ── Kale direği çarpması ──
+    // Sol direk
+    _collidePost(Offset(_kGoalLeft,  _kGoalBottom));
+    // Sağ direk
+    _collidePost(Offset(_kGoalRight, _kGoalBottom));
+    // Üst sol köşe
+    _collidePost(Offset(_kGoalLeft,  0));
+    // Üst sağ köşe
+    _collidePost(Offset(_kGoalRight, 0));
+
+    if ((_ball - Offset(_gkX, _kGkY)).distance < _kBallRadius + _kGkRadius) {
+      _completeShot('blocked');
+      return;
+    }
+
+    final crossing = soccerLineResult(
+      fromX: previous.dx, fromY: previous.dy,
+      toX: _ball.dx, toY: _ball.dy,
+      goalLine: _kGoalBottom, leftPost: _kGoalLeft,
+      rightPost: _kGoalRight, radius: _kBallRadius,
+    );
+    if (crossing != null) {
+      _completeShot(crossing);
+      return;
+    }
+    if (_ballVel.distance < _kMinSpeed || _shotSeconds >= 4.5) {
+      _completeShot('miss');
+    }
+  }
   /// Silindirik kale direğiyle çarpışma
   void _collidePost(Offset postPos) {
     const postRadius = 0.018;
@@ -334,7 +336,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
       Offset(local.dx / size.width, local.dy / size.height);
 
   void _onPanStart(DragStartDetails d, Size size) {
-    if (!_isMyTurn || !_canShoot || _moving) return;
+    if (!_isMyTurn || !_canShoot || _moving || _savingResult || _celebrating || _blocked || _missed || _leaving) return;
     final tap = _norm(d.localPosition, size);
     // Top yakınında mı kontrol et (biraz geniş tolerans)
     if ((tap - _ball).distance > 0.18) return;
@@ -347,7 +349,9 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
   }
 
   void _onPanEnd(DragEndDetails _, Size size) {
-    if (_dragStart == null || _dragCurrent == null || !_isMyTurn || !_canShoot) return;
+    final turn = soccerTurn(_room);
+    if (_dragStart == null || _dragCurrent == null || turn == null ||
+        turn.player != widget.myKey || !_canShoot || _leaving) return;
     final delta = _dragStart! - _dragCurrent!;
     if (delta.distance < 0.015) {
       setState(() { _dragStart = null; _dragCurrent = null; });
@@ -358,9 +362,6 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
     final rawPower = (delta.distance * 14.0).clamp(1.0, _kMaxPower);
     final dir      = delta / delta.distance;
 
-    // Hafif spin — yatay bileşen topun dönüşünü etkiler
-    final lateralBias = Offset(-dir.dy * 0.15, dir.dx * 0.15);
-
     setState(() {
       _canShoot    = false;
       _moving      = true;
@@ -368,7 +369,8 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
       _celebrating = false;
       _missed      = false;
       _blocked     = false;
-      _ballVel     = (dir + lateralBias) * rawPower;
+      _ballVel     = dir * rawPower;
+      _curveAcceleration = dir.dx * rawPower * .7;
       _dragStart   = null;
       _dragCurrent = null;
       // Kaleci rastgele bir tarafa atılır
@@ -377,7 +379,11 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
           : _kGoalRight - _kGkRadius - _rng.nextDouble() * _kGkRange;
     });
 
-    _physCtrl.repeat();
+    _shotTurn = turn;
+    _previousFrame = Duration.zero;
+    _frameBudget = 0;
+    _shotSeconds = 0;
+    _physicsTicker.start();
     HapticFeedback.mediumImpact();
 
     // Top hareket etmeye başladı — izleyen tarafın ekranında görünmesi
@@ -389,56 +395,58 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
   }
 
   Future<void> _syncBallToFirebase() async {
-    if (!_isMyTurn) return;
-    await _ref.update({
-      'ball': {
-        'x': _ball.dx, 'y': _ball.dy,
-        'vx': _ballVel.dx, 'vy': _ballVel.dy,
-        'spin': _spin, 'gkX': _gkX,
-        'moving': _moving,
-      },
-    });
-  }
-
-  // ── Result check ──────────────────────────────────────────────────────────
-
-  Future<void> _checkResult() async {
-    // Top durdu — periyodik senkronu kapat, izleyen tarafa son (durma)
-    // konumunu bir kez daha gönder.
-    _syncTimer?.cancel();
-    unawaited(_syncBallToFirebase());
-
-    // Gol bölgesi: x [GoalLeft..GoalRight], y < GoalBottom
-    final inGoal = _ball.dx > _kGoalLeft  + 0.01 &&
-                   _ball.dx < _kGoalRight - 0.01 &&
-                   _ball.dy < _kGoalBottom + 0.01;
-
-    // Kaleci bloğu (kaleci yakınındaysa zaten fiziksel olarak sekmiştir)
-    // Ek yazılımsal kontrol: Kaleci gerçekten kurtardı mı?
-    final gkDist = (_ball.dx - _gkX).abs();
-    final gkSave = gkDist < _kGkRadius * 1.5 && _ball.dy < _kGoalBottom + 0.08;
-
-    if (inGoal) {
-      await _onGoal();
-    } else if (gkSave) {
-      await _onBlocked();
-    } else {
-      await _onMiss();
+    if (!_isMyTurn || !_moving || _syncing || _leaving) return;
+    _syncing = true;
+    try {
+      await _ref.update({
+        'ball': {
+          'x': _ball.dx, 'y': _ball.dy,
+          'vx': _ballVel.dx, 'vy': _ballVel.dy,
+          'spin': _spin, 'gkX': _gkX,
+          'moving': true,
+          'round': _currentRound, 'player': widget.myKey,
+        },
+      });
+    } catch (_) {
+      // Ball samples are disposable. The shot result is retried separately.
+    } finally {
+      _syncing = false;
     }
   }
 
-  // _playXFx(): sadece görsel efekt — hem vuran taraf (doğrudan) hem
-  // izleyen taraf (Firebase'den gelen resultSeq üzerinden, bkz.
-  // _onFirebase) tarafından çağrılır. _onX(): SADECE vuran tarafta
-  // çalışır — efekti oynatır, skor/sonucu Firebase'e yazar ve sırayı
-  // ilerletir.
+  void _completeShot(String result) {
+    _moving = false;
+    _ballVel = Offset.zero;
+    _physicsTicker.stop();
+    _syncTimer?.cancel();
+    _pendingResult = result;
+    unawaited(_saveShot());
+  }
 
+  Future<void> _saveShot() async {
+    final turn = _shotTurn;
+    final result = _pendingResult;
+    if (turn == null || result == null || _savingResult || _leaving) return;
+    setState(() => _savingResult = true);
+    try {
+      final saved = await _rooms.transactRoom(
+        gamePath: GamePaths.soccer, roomId: widget.roomId,
+        update: (room) => finishSoccerShot(room, turn, result),
+      ).timeout(const Duration(seconds: 8));
+      if (!mounted) return;
+      if (saved.committed || soccerTurn(_room) != turn) _pendingResult = null;
+    } catch (error) {
+      debugPrint('Serbest Vuruş skor kaydı: $error');
+    } finally {
+      if (mounted) setState(() => _savingResult = false);
+    }
+  }
   Future<void> _playGoalFx() async {
     setState(() { _celebrating = true; _inNet = true; });
     _goalCtrl.forward(from: 0);
     HapticFeedback.heavyImpact();
     await Future.delayed(const Duration(milliseconds: 2000));
-    if (mounted) setState(() { _celebrating = false; });
+    if (mounted) setState(() { _celebrating = false; _inNet = false; });
   }
 
   Future<void> _playBlockedFx() async {
@@ -457,60 +465,24 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
     if (mounted) setState(() { _missed = false; });
   }
 
-  Future<void> _onGoal() async {
-    final newScore = _myScore + 1;
-    await _ref.update({
-      'players/${widget.myKey}/score': newScore,
-      'result': 'goal', 'resultSeq': ServerValue.increment(1),
-    });
-    await _playGoalFx();
-    _resetBall();
-    await _advanceTurn();
-  }
-
-  Future<void> _onBlocked() async {
-    await _ref.update({'result': 'blocked', 'resultSeq': ServerValue.increment(1)});
-    await _playBlockedFx();
-    _resetBall();
-    await _advanceTurn();
-  }
-
-  Future<void> _onMiss() async {
-    await _ref.update({'result': 'miss', 'resultSeq': ServerValue.increment(1)});
-    await _playMissFx();
-    _resetBall();
-    await _advanceTurn();
-  }
-
   void _resetBall() {
+    _physicsTicker.stop();
+    _syncTimer?.cancel();
     setState(() {
+      _dragStart = null;
+      _dragCurrent = null;
       _ball      = const Offset(0.50, 0.72);
       _ballVel   = Offset.zero;
       _moving    = false;
       _canShoot  = true;
       _inNet     = false;
       _spin      = 0;
+      _curveAcceleration = 0;
       _gkX       = 0.50;
       _gkTargetX = 0.50;
       _gkVel     = 0.0;
     });
   }
-
-  Future<void> _advanceTurn() async {
-    if (!_isMyTurn) return;
-    final players = (_room['players'] as Map?)?.keys.toList() ?? ['p1', 'p2'];
-    final idx     = players.indexOf(widget.myKey);
-    final nextKey = players[(idx + 1) % players.length];
-
-    if (_currentRound >= _totalRounds && nextKey == players.first) {
-      await _ref.update({'status': 'finished'});
-    } else {
-      final newRound = nextKey == players.first ? _currentRound + 1 : _currentRound;
-      await _ref.update({'currentPlayer': nextKey, 'currentRound': newRound});
-    }
-  }
-
-  // ── Final dialog ──────────────────────────────────────────────────────────
 
   void _showFinalDialog() {
     if (!mounted) return;
@@ -518,15 +490,19 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
     final sorted  = players.entries.toList()
       ..sort((a, b) =>
           ((b.value['score'] as int?) ?? 0).compareTo((a.value['score'] as int?) ?? 0));
-    final iWon = sorted.isNotEmpty && sorted.first.key == widget.myKey;
-    ProfileService.instance
+    final leftPlayer = _room['leftPlayer'];
+    final tied = leftPlayer == null && sorted.length == 2 &&
+        sorted.first.value['score'] == sorted.last.value['score'];
+    final iWon = leftPlayer == null && !tied &&
+        sorted.isNotEmpty && sorted.first.key == widget.myKey;
+    if (leftPlayer == null) ProfileService.instance
         .reportGameResult(gameId: 'soccer', resultId: widget.roomId, won: iWon)
         .then((_) => AchievementService.instance.checkAndUnlock());
     const medals = ['🥇', '🥈'];
 
     showDialog(context: context, barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: const Text('🏆 Maç Bitti!', textAlign: TextAlign.center),
+        title: Text(leftPlayer != null ? 'Oyuncu maçtan ayrıldı' : tied ? 'Berabere' : 'Maç bitti', textAlign: TextAlign.center),
         content: Column(mainAxisSize: MainAxisSize.min,
           children: sorted.asMap().entries.map((e) {
             final isMe  = e.value.key == widget.myKey;
@@ -555,7 +531,7 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
         actions: [FilledButton(
           style: FilledButton.styleFrom(backgroundColor: AZColors.orange),
           onPressed: () async {
-            await _db.child('${GamePaths.soccer}/${widget.roomId}').remove();
+            await _leaveGame();
             if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
           },
           child: const Text('Ana Menü'),
@@ -564,26 +540,31 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
     );
   }
 
-  /// Aktif maçta önceden HİÇBİR çıkış yolu yoktu — sırası gelen oyuncu
-  /// ayrılırsa (geri tuşu/uygulamayı kapatma), rakip "Rakibin vuruyor..."
-  /// ekranında sonsuza dek beklerdi çünkü sırayı sadece o oyuncunun kendi
-  /// vuruşu ilerletir. Ayrılmadan önce sırası bendeyse rakibe devrediyoruz.
   Future<void> _leaveGame() async {
-    final players = Map<String, dynamic>.from((_room['players'] as Map?) ?? {});
-    final remaining = Map<String, dynamic>.from(players)..remove(widget.myKey);
-    if (remaining.isEmpty) {
-      await _rooms.deleteRoom(gamePath: GamePaths.soccer, roomId: widget.roomId);
-    } else {
-      if (_isMyTurn) {
-        await _ref.update({'currentPlayer': remaining.keys.first});
+    if (_leaving) return;
+    setState(() => _leaving = true);
+    try {
+      if (_room['status'] == 'playing') {
+        await _rooms.transactRoom(
+          gamePath: GamePaths.soccer, roomId: widget.roomId,
+          update: (room) => closeSoccerMatch(room, widget.myKey),
+        ).timeout(const Duration(seconds: 8));
       }
-      await _rooms.removePlayer(
-          gamePath: GamePaths.soccer, roomId: widget.roomId, playerKey: widget.myKey);
+      await _rooms.unregisterPresence(
+        gamePath: GamePaths.soccer, roomId: widget.roomId, playerKey: widget.myKey,
+      );
+      if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+    } catch (_) {
+      if (mounted) context.snack('Maçtan çıkılamadı. Tekrar dene.');
+    } finally {
+      if (mounted) setState(() => _leaving = false);
     }
-    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
   }
-
   Future<void> _confirmLeave() async {
+    if (_room['status'] == 'finished') {
+      await _leaveGame();
+      return;
+    }
     final ok = await confirmLeaveGame(
       context,
       title:   'Maçtan çık?',
@@ -637,6 +618,12 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
           )),
         ),
 
+        if (_pendingResult != null)
+          TextButton(
+            onPressed: _savingResult ? null : _saveShot,
+            child: Text(_savingResult ? 'Sonuç gönderiliyor…' : 'Sonucu yeniden gönder'),
+          ),
+
         // ── Field ─────────────────────────────────────────────────────────
         Expanded(child: LayoutBuilder(builder: (_, constraints) {
           final size = constraints.biggest;
@@ -644,6 +631,10 @@ class _SoccerGameScreenState extends State<SoccerGameScreen>
             onPanStart:  (d) => _onPanStart(d, size),
             onPanUpdate: (d) => _onPanUpdate(d, size),
             onPanEnd:    (d) => _onPanEnd(d, size),
+            onPanCancel: () => setState(() {
+              _dragStart = null;
+              _dragCurrent = null;
+            }),
             child: Stack(children: [
 
               // Ana saha painter
@@ -835,23 +826,105 @@ class _SoccerFieldPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, W, H));
     canvas.drawRect(Rect.fromLTWH(0, 0, W, H), grassPaint);
 
-    // Çim şeritleri
-    for (var i = 0; i < 10; i++) {
-      if (i.isOdd) {
-        canvas.drawRect(
-            Rect.fromLTWH(0, H * i / 10, W, H / 10),
-            Paint()..color = const Color(0x0C000000));
+    double fieldLeft(double y) => W * 0.11 * (1 - y / H);
+    double fieldRight(double y) => W - fieldLeft(y);
+    final standBottom = H * .22;
+    final standPath = Path()
+      ..moveTo(0, 0)
+      ..lineTo(W, 0)
+      ..lineTo(fieldRight(standBottom), standBottom)
+      ..lineTo(fieldLeft(standBottom), standBottom)
+      ..close();
+    canvas.save();
+    canvas.clipPath(standPath);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, W, standBottom),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF111D2B), Color(0xFF334154), Color(0xFF172A35)],
+        ).createShader(Rect.fromLTWH(0, 0, W, standBottom)),
+    );
+    for (var row = 0; row < 5; row++) {
+      final y = H * (.035 + row * .032);
+      for (var col = 0; col < 32; col++) {
+        final x = W * (col + .5) / 32;
+        final tint = ((row * 17 + col * 13) % 5);
+        final colors = const [
+          Color(0xFF8FA9AF), Color(0xFFD0B987), Color(0xFF78918E),
+          Color(0xFF6D7D93), Color(0xFFAF7566),
+        ];
+        canvas.drawCircle(
+          Offset(x, y),
+          W * .0034,
+          Paint()..color = colors[tint].withAlpha(130 + (col % 3) * 30),
+        );
       }
     }
+    for (final side in [W * .055, W * .945]) {
+      final beam = Path()
+        ..moveTo(side - W * .035, H * .18)
+        ..lineTo(side + W * .035, H * .18)
+        ..lineTo(side + W * .018, H * .045)
+        ..lineTo(side - W * .018, H * .045)
+        ..close();
+      canvas.drawPath(beam, Paint()..color = Colors.white.withAlpha(20));
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(side, H * .045), width: W * .065, height: H * .018),
+        Paint()
+          ..color = const Color(0xFFFFF4C7).withAlpha(210)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+      );
+    }
+    canvas.restore();
+
+    // Çim şeritleri
+    final fieldPath = Path()
+      ..moveTo(fieldLeft(0), 0)
+      ..lineTo(fieldRight(0), 0)
+      ..lineTo(W, H)
+      ..lineTo(0, H)
+      ..close();
+    canvas.save();
+    canvas.clipPath(fieldPath);
+    for (var i = 0; i < 10; i++) {
+      if (i.isOdd) {
+        final y0 = H * i / 10;
+        final y1 = H * (i + 1) / 10;
+        final band = Path()
+          ..moveTo(fieldLeft(y0), y0)
+          ..lineTo(fieldRight(y0), y0)
+          ..lineTo(fieldRight(y1), y1)
+          ..lineTo(fieldLeft(y1), y1)
+          ..close();
+        canvas.drawPath(band, Paint()..color = const Color(0x0C000000));
+      }
+    }
+    canvas.restore();
 
     // ── Orta çizgi & çember ──────────────────────────────────────────────
     final linePaint = Paint()
       ..color = Colors.white.withAlpha(70)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
-    canvas.drawLine(Offset(0, H * 0.5), Offset(W, H * 0.5), linePaint);
-    canvas.drawCircle(Offset(W * 0.5, H * 0.5), W * 0.12, linePaint);
-    canvas.drawCircle(Offset(W * 0.5, H * 0.5), 4,
+    canvas.drawLine(Offset(fieldLeft(0), 0), Offset(0, H), linePaint);
+    canvas.drawLine(Offset(fieldRight(0), 0), Offset(W, H), linePaint);
+    final centerY = H * 0.55;
+    canvas.drawLine(
+      Offset(fieldLeft(centerY), centerY),
+      Offset(fieldRight(centerY), centerY),
+      linePaint,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(W * 0.5, centerY),
+        width: W * 0.24,
+        height: H * 0.11,
+      ),
+      linePaint,
+    );
+    canvas.drawCircle(Offset(W * 0.5, centerY), 4,
         Paint()..color = Colors.white.withAlpha(70));
 
     // ── Kale çizgisi & alan ───────────────────────────────────────────────
@@ -860,12 +933,24 @@ class _SoccerFieldPainter extends CustomPainter {
     final goalY     = H * _kGoalBottom;
 
     // Ceza sahası
-    canvas.drawRect(
-        Rect.fromLTRB(W * 0.08, 0, W * 0.92, H * 0.30),
-        Paint()
-          ..color = Colors.white.withAlpha(25)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.2);
+    final penaltyPath = Path()
+      ..moveTo(W * 0.25, goalY + H * 0.015)
+      ..lineTo(W * 0.75, goalY + H * 0.015)
+      ..lineTo(W * 0.88, H * 0.39)
+      ..lineTo(W * 0.12, H * 0.39)
+      ..close();
+    canvas.drawPath(
+      penaltyPath,
+      Paint()
+        ..color = Colors.white.withAlpha(42)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+    canvas.drawCircle(
+      Offset(W * 0.5, H * 0.30),
+      W * 0.006,
+      Paint()..color = Colors.white.withAlpha(90),
+    );
 
     // ── Kale ağı (3D görünüm) ─────────────────────────────────────────────
     final netDepth = H * _kNetDepth;
@@ -966,7 +1051,17 @@ class _SoccerFieldPainter extends CustomPainter {
     }
 
     // ── Top ──────────────────────────────────────────────────────────────
-    _drawBall(canvas, ball.dx * W, ball.dy * H, W * _kBallRadius, spin, ballVel);
+    final ballDepth = (0.68 + ball.dy.clamp(0.0, 1.0) * 0.48)
+        .clamp(0.68, 1.16)
+        .toDouble();
+    _drawBall(
+      canvas,
+      ball.dx * W,
+      ball.dy * H,
+      W * _kBallRadius * ballDepth,
+      spin,
+      ballVel,
+    );
   }
 
   /// Kale direği

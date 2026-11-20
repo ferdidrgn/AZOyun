@@ -125,18 +125,52 @@ class _BullsCowsSessionState extends State<_BullsCowsSession> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           for (var i = 0; i < _kDigits; i++)
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
               width: 52,
               height: 52,
               margin: const EdgeInsets.symmetric(horizontal: 6),
               decoration: BoxDecoration(
-                color: const Color(0x26FFFFFF),
+                gradient: i < _current.length
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFFF7D7), Color(0xFFFFD878), Color(0xFFE6A82C)],
+                      )
+                    : const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0x442D1A70), Color(0x22200C56)],
+                      ),
                 borderRadius: BorderRadius.circular(AZRadius.md),
+                border: Border.all(
+                  color: i < _current.length
+                      ? const Color(0xFFFFF0AE)
+                      : Colors.white.withAlpha(70),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(48),
+                    blurRadius: 8,
+                    offset: const Offset(0, 5),
+                  ),
+                  if (i < _current.length)
+                    const BoxShadow(
+                      color: Color(0x44FFE18A),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                ],
               ),
               alignment: Alignment.center,
               child: Text(i < _current.length ? '${_current[i]}' : '',
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                  color: Color(0xFF45247D),
+                  shadows: [Shadow(color: Colors.white70, blurRadius: 2, offset: Offset(0, 1))],
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900)),
             ),
         ],
       ),
@@ -147,21 +181,61 @@ class _BullsCowsSessionState extends State<_BullsCowsSession> {
         alignment: WrapAlignment.center,
         children: [
           for (var d = 0; d < 10; d++)
-            GestureDetector(
-              onTap: () => _tapDigit(d),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _current.contains(d) ? Colors.white24 : Colors.white,
-                  shape: BoxShape.circle,
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => _tapDigit(d),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 130),
+                  curve: Curves.easeOut,
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: _current.contains(d)
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF8C75B4), Color(0xFF574276), Color(0xFF3C2B58)],
+                          )
+                        : const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Colors.white, Color(0xFFE4DDF1), Color(0xFFC7B8DF)],
+                          ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: _current.contains(d)
+                          ? Colors.white.withAlpha(80)
+                          : const Color(0xFFF8F2FF),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(_current.contains(d) ? 18 : 70),
+                        blurRadius: _current.contains(d) ? 2 : 6,
+                        offset: Offset(0, _current.contains(d) ? 1 : 4),
+                      ),
+                      if (!_current.contains(d))
+                        const BoxShadow(
+                          color: Color(0xAAFFFFFF),
+                          blurRadius: 2,
+                          offset: Offset(-1, -1),
+                        ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('$d',
+                      style: TextStyle(
+                          color: _current.contains(d) ? Colors.white54 : AZColors.purple,
+                          shadows: _current.contains(d)
+                              ? const [
+                                  Shadow(color: Colors.black38, blurRadius: 2, offset: Offset(0, 1))
+                                ]
+                              : null,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16)),
                 ),
-                alignment: Alignment.center,
-                child: Text('$d',
-                    style: TextStyle(
-                        color: _current.contains(d) ? Colors.white54 : AZColors.purple,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16)),
               ),
             ),
         ],
@@ -197,15 +271,33 @@ class _BullsCowsSessionState extends State<_BullsCowsSession> {
                 opacity: 0.08,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(children: [
-                  Text(g.guess,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 4)),
+                  Container(
+                    width: 66,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFFF7D7), Color(0xFFE5D5AF)],
+                      ),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(color: const Color(0xFFEFE1BD)),
+                      boxShadow: const [
+                        BoxShadow(color: Color(0x66000000), blurRadius: 5, offset: Offset(0, 3)),
+                      ],
+                    ),
+                    child: Text(g.guess,
+                        style: const TextStyle(
+                            color: Color(0xFF422B6B),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 4)),
+                  ),
                   const Spacer(),
-                  Text('🎯 ${g.bulls}  🔸 ${g.cows}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  _HintPill(icon: Icons.place_rounded, count: g.bulls, color: const Color(0xFF54E1A0)),
+                  const SizedBox(width: 7),
+                  _HintPill(icon: Icons.swap_horiz_rounded, count: g.cows, color: const Color(0xFFFFD36E)),
                 ]),
               ),
             );
@@ -214,4 +306,28 @@ class _BullsCowsSessionState extends State<_BullsCowsSession> {
       ),
     ]);
   }
+}
+
+class _HintPill extends StatelessWidget {
+  const _HintPill({required this.icon, required this.count, required this.color});
+
+  final IconData icon;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withAlpha(30),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withAlpha(130)),
+          boxShadow: [BoxShadow(color: color.withAlpha(30), blurRadius: 8)],
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text('$count', style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 12)),
+        ]),
+      );
 }
