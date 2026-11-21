@@ -32,6 +32,24 @@
 - [x] Eski Penaltı/Frikik katalog beklentisi düzeltilince `cb26726` web CI ve Firebase Hosting yayını başarıyla tamamlandı: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44868220304).
 - [x] `9ac9fda` Android testleri/AAB iş akışı tamamlandı; Play'e yükleme adımı `The caller does not have permission` hatası verdi. Yeni ortak oyun değişiklikleri için sonraki Android CI bu akışı tekrar doğrulayacak: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44860486302).
 
+## 22 Kasım 2026 · Vampir Köylü tur sunumu
+
+- [x] Gece, şafak, gündüz oylaması ve akşam geçişini ekranda animasyonlu tur şeridiyle görünür kıl.
+- [x] Oyuncu hedef kartlarına ada göre sabit, rolden bağımsız karakter avatarı ekle; gizli rolü avatar veya karttan açığa çıkarma.
+- [x] Vampirlerin gece hedef oylaması ve köyün gündüz oylamasında eşitlik olursa harita sırasına bağlı eleme yerine adil biçimde kimseyi eleme.
+- [x] Gündüz turu tamamlandığında kişi bazında oy sayısını ve sonuç kartını göster; tek tek oy seçimlerini sonuç özeti olarak saklama.
+- [x] Şafak ekranında kurtarılma veya ortak hedef bulunamaması durumunu, akşam ekranında da oylama sonucunu görsel geçiş kartıyla açıkla.
+- [ ] Dört ila sekiz Android oyuncusuyla gece/gündüz, eşit oy, rol yetenekleri ve maç sonu akışını fiziksel cihazlarda doğrula.
+
+## 22 Kasım 2026 · Ayarlar ve erişilebilirlik ayrıntıları
+
+- [x] Ayarlardaki Play Games ve Premium başarı durumlarını ortak `AZColors.success` semantik rengine bağla.
+- [x] Dil seçimi durum göstergesini ortak başarı rengiyle eşle.
+- [x] Dil satırlarında seçili durum bilgisini ekran okuyucuya sun; kumanda/klavye odağını ve en az 48 dp dokunma alanını ekle.
+- [x] Tema tercihlerini erişilebilir seçili seçenekler olarak duyur; seçili tercihe kumanda/klavye başlangıç odağı ver.
+- [x] Özel tema renklerini etiketli, seçili durumu duyurulan ve 48 dp üzeri odaklanabilir seçeneklere dönüştür.
+- [x] Gizlilik ve kullanım şartlarında sabit yazı boyutu yerine Material 3 gövde tipografisini kullanarak sistem yazı ölçeklemesini koru.
+
 ## 21 Kasım 2026 · Tema, profil ve ayarlar
 
 - [x] Uygulama genelindeki Material 3 renk paleti daha oyun odaklı, futuristik elektrik moru ve parlak semantik aksanlara geçirildi. Açık/koyu yüzeyler ile özel renk paleti merkezileştirildi.
@@ -59,12 +77,12 @@
 - [x] Uygulama yapısı araştırıldı: mevcut Flutter Android projesinde Wear OS’a özel arayüz için küçük bir yerel Kotlin + Compose for Wear OS modülü gerekir; Wear Compose saat arayüzleri için Google’ın önerdiği araç takımıdır. [Flutter–Android köprüsü](https://docs.flutter.dev/platform-integration/android/call-jetpack-apis) · [Compose for Wear OS](https://developer.android.com/training/wearables/compose)
 - [x] Telefon tarafında Wear köprüsünün ilk güvenli dilimi eklendi: Firebase oda akışı yalnızca oyun adı, davet kodu, durum ve oyuncu sayısını whitelisted özet olarak aktarır; el/rol/hedef/oyuncu kimliği aktarılmaz. Oda özeti değişmediğinde gönderim yinelenmez, erişilebilir Wear uygulaması yoksa oda akışı etkilenmez.
 - [x] Telefon köprüsü için Flutter testleri ve 58.3 MB imzalı AAB üretimi geçti; [Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44939471451). Google Play’e son yükleme servis hesabının `The caller does not have permission` hatasıyla reddedildi.
-- [ ] Bu telefon köprüsünü tamamlamak için Compose for Wear OS saat uygulamasını, `azoyun_wear_app` capability tanımını ve saatten telefon/oyun açma akışını ekle; saat emülatörü ve gerçek saat testlerini yap.
-- [ ] MVP kapsamını sabitle: etkin oda/oyun adı, oda kodu ve doluluk; oyuncu katıldı/oyun başladı/sıra sende olaylarında kısa bildirim ve titreşim; saatten telefonu veya ilgili oyunu açma. Okey taşı/kart hamlesi gibi tam oyun kontrolleri ilk sürüme alınmayacak.
-- [ ] Firebase oda akışlarında ortak olay sözleşmesini tanımla: `roomCreated`, `playerJoined`, `roomStarted`, `turnChanged`, `roomFinished`. Her oyun kendi mevcut kural servisini kullanmalı; saat yalnızca gerekli oyuncu/oda özetini görmeli, gizli el/rol/hedef verisi taşımamalı.
-- [ ] Android modülleri arasında Wear OS modülünü ve telefondaki Flutter uygulamasına ince bir platform köprüsünü kur. `CapabilityClient` ile eşli saatte uygulamanın bulunmasını algıla; yalnızca etkin oda özetini ve telefon açma/izinli hızlı eylem isteklerini aktar. Hızlı eylemleri telefon tarafında mevcut Firebase transaction ve sıra/koltuk doğrulamasından geçir.
-- [ ] Wear OS bildirimlerinde yinelenmeyi önle. Oda daveti ve arka plan olaylarını FCM’den; uygulama aktifken değişen oda özetini Data Layer veya mevcut Firebase akışından göster. Bağlantı kopunca eski durumu açıkça işaretle; yeniden bağlanmada Firebase’den güncel durumu al.
-- [ ] Wear OS emülatöründe eşleme, uygulama algılama, oda katılımı, sıra bildirimi, titreşim, bağlantı kesilip gelme, telefon uygulaması kapalı/açık ve yinelenen bildirim senaryolarını dene; ardından en az bir gerçek Wear OS saatte doğrula.
+- [x] Compose for Wear OS companion ekranı, oda özeti ve `Telefonu aç` eylemi eklendi. Saat uygulaması telefon uygulamasına bağlı (non-standalone) olarak bildirildi.
+- [x] Wear OS MVP kapsamı sabitlendi: etkin oyun/oda özeti, katılan/başlayan/sırası değişen/biten maç için kısa titreşim ve eşli telefonu açma; tam masa hamlesi ve gizli bilgi saat kapsamı dışında.
+- [x] Wear oda olay sözleşmesi tamamlandı: `roomCreated` (ilk görünüm `roomSnapshot`), `playerJoined`, `roomStarted`, `turnChanged`, `roomFinished`; saat yalnızca izinli oda özetini alıyor. Sıra sayacı dâhili karşılaştırılıyor, oyuncu anahtarı gönderilmiyor.
+- [x] Wear OS `:wear` modülü, `azoyun_wear_app` capability bildirimi ve eşli telefonu açma akışı eklendi; telefondaki mevcut `CapabilityClient`/Data Layer köprüsüne bağlandı. Saatten Firebase'e doğrudan yazma yok.
+- [x] Wear oda özeti ekranda gösteriliyor; aynı `eventId` yeniden geldiğinde titreşim tekrarlanmıyor, eski Data Layer durumuna iki dakikada eski etiketi geliyor.
+- [ ] Wear OS emülatöründe ve fiziksel saatte eşleme, capability keşfi, oda katılımı, sıra titreşimi, yeniden bağlanma ve telefon açma testlerini yap.
 - [ ] Play Console’da Wear OS form faktörünü/ayrı Wear OS test kanalını, TV’den ayrı mağaza ekran görüntülerini ve inceleme adımlarını yapılandır. Gerekli saat modülü ve Wear OS manifesti olmadan mevcut telefon + TV AAB’sinin saati desteklediğini varsayma. [Wear OS yayınlama](https://developer.android.com/training/wearables/packaging) · [Play Console form faktörleri](https://support.google.com/googleplay/android-developer/answer/13295490)
 
 ## 20 Kasım 2026 · 3D oyun görsel turu

@@ -95,7 +95,7 @@ class MainActivity : FlutterActivity() {
         val eventType = safeString("eventType", 24)
         val allowedStatuses = setOf("waiting", "playing", "finished", "unknown")
         val allowedEvents = setOf(
-            "roomSnapshot", "playerJoined", "roomStarted", "roomFinished", "roomUpdated"
+            "roomSnapshot", "playerJoined", "roomStarted", "turnChanged", "roomFinished", "roomUpdated"
         )
         if (roomKey.isEmpty() || gameName.isEmpty() ||
             status !in allowedStatuses || eventType !in allowedEvents
@@ -126,6 +126,7 @@ class MainActivity : FlutterActivity() {
                         ?.toInt()?.coerceAtLeast(0) ?: 0)
                     dataMap.putString("eventType", eventType)
                     dataMap.putString("eventId", safeString("eventId", 220))
+                    dataMap.putLong("publishedAt", (arguments["publishedAt"] as? Number)?.toLong() ?: System.currentTimeMillis())
                 }.asPutDataRequest().setUrgent()
 
                 Wearable.getDataClient(this).putDataItem(data)

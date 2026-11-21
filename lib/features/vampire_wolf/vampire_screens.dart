@@ -13,6 +13,7 @@ import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
+import 'vampire_game_rules.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LOBİ
@@ -436,14 +437,10 @@ class _VGS extends State<VampireGameScreen> {
         final g = v.value['vote'] as String? ?? '';
         if (g.isNotEmpty) votes[g] = (votes[g] ?? 0) + 1;
       }
-      String? elim;
-      var mx = 0;
-      votes.forEach((k, v) {
-        if (v > mx) {
-          mx = v;
-          elim = k;
-        }
-      });
+      final nightTally = VampireVoteTally.fromCounts(votes);
+      // Equal vampire votes produce no night victim; map iteration order must
+      // never decide who gets removed from the game.
+      final elim = nightTally.winnerKey;
 
       final protectedKey = aliveDoctor.isNotEmpty ? (aliveDoctor.first.value['protect'] as String?) : null;
       final saved = elim != null && elim == protectedKey;
@@ -457,6 +454,7 @@ class _VGS extends State<VampireGameScreen> {
       }
       upd['phase'] = 'dawn';
       upd['nightSaved'] = saved;
+      upd['nightNoConsensus'] = nightTally.isTie;
       await _ref.update(upd);
 
       await Future.delayed(const Duration(seconds: 3));
@@ -485,22 +483,24 @@ class _VGS extends State<VampireGameScreen> {
         final g = v.value['vote'] as String? ?? '';
         if (g.isNotEmpty) votes[g] = (votes[g] ?? 0) + 1;
       }
-      String? elim;
-      var mx = 0;
-      votes.forEach((k, v) {
-        if (v > mx) {
-          mx = v;
-          elim = k;
-        }
-      });
+      final tally = VampireVoteTally.fromCounts(votes);
+      final elim = tally.winnerKey;
       final upd = <String, dynamic>{};
       for (final p in alive) {
         upd['players/${p.key}/vote'] = '';
       }
-      if (elim != null) {
-        upd['players/$elim/alive'] = false;
-        upd['lastEliminated'] = elim;
+      final validElim = elim != null && alive.any((player) => player.key == elim)
+          ? elim
+          : null;
+      if (validElim != null) {
+        upd['players/$validElim/alive'] = false;
       }
+      // Store counts by target, not each player's ballot. Individual ballot fields are cleared when the completed-round summary is written.
+      upd['lastVoteTally'] = tally.counts;
+      upd['lastVoteOutcome'] = tally.isTie
+          ? 'tie'
+          : (validElim == null ? 'noVotes' : 'eliminated');
+      upd['lastEliminated'] = validElim ?? '';
       upd['phase'] = 'dusk';
       upd['day'] = (d['day'] as int? ?? 1) + 1;
       await _ref.update(upd);
@@ -608,6 +608,12 @@ class _VGS extends State<VampireGameScreen> {
         actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tamam'))],
       ),
     );
+  }
+
+  String _villagerAvatar(String name) {
+    const villagers = ['🧑‍🌾', '🧑‍🍳', '🧑‍⚕️', '🧔', '👩‍🌾', '👩‍🍳', '🕵️', '🧑‍🏫'];
+    final seed = name.runes.fold<int>(0, (sum, rune) => sum + rune);
+    return villagers[seed % villagers.length];
   }
 
   String _roleEmoji(String? role) => switch (role) {
@@ -744,6 +750,52 @@ class _VGS extends State<VampireGameScreen> {
     if (ok) await _leaveGame();
   }
 
+  Widget _phaseTimeline() {
+    final current = switch (_phase) {
+      'night' => 0,
+      'dawn' => 1,
+      'day' => 2,
+      'dusk' => 3,
+      _ => 0,
+    };
+    const labels = ['GECE', 'ŞAFAK', 'OYLAMA', 'AKŞAM'];
+    final accent = _isNight ? const Color(0xFFE4B9FF) : const Color(0xFFFFD27B);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+      child: Row(
+        children: List.generate(labels.length, (index) {
+          final active = index == current;
+          final passed = index < current;
+          return Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 260),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              decoration: BoxDecoration(
+                color: active ? accent.withAlpha(48) : Colors.black.withAlpha(28),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: active ? accent : Colors.white.withAlpha(passed ? 70 : 28),
+                  width: active ? 1.5 : 1,
+                ),
+              ),
+              child: Text(
+                labels[index],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: active ? accent : Colors.white.withAlpha(passed ? 190 : 110),
+                  fontSize: 9,
+                  fontWeight: active ? FontWeight.w900 : FontWeight.w600,
+                  letterSpacing: .5,
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_room.isEmpty) {
@@ -843,6 +895,7 @@ class _VGS extends State<VampireGameScreen> {
                       ],
                     ),
                   ),
+                  _phaseTimeline(),
                   Container(
                     margin: const EdgeInsets.all(12),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -957,21 +1010,91 @@ class _VGS extends State<VampireGameScreen> {
 
     if (isTransition) {
       final showSaved = _phase == 'dawn' && _nightSaved;
+      final showNoConsensus = _phase == 'dawn' &&
+          (_room['nightNoConsensus'] as bool? ?? false);
+      final tally = Map<String, dynamic>.from(
+        (_room['lastVoteTally'] as Map?) ?? const {},
+      );
+      final rankedTally = tally.entries.toList()
+        ..sort((a, b) => (b.value as num).compareTo(a.value as num));
+      final isTie = _phase == 'dusk' && _room['lastVoteOutcome'] == 'tie';
+      final outcome = _phase == 'dawn'
+          ? (showSaved
+              ? 'Doktor saldırıyı durdurdu. Köyden kimse ölmedi.'
+              : (showNoConsensus
+                  ? 'Vampirler aynı hedefte buluşamadı. Bu gece kimse ölmedi.'
+                  : 'Gece sona erdi...'))
+          : isTie
+              ? 'Oylar eşit. Bu tur kimse elenmedi.'
+              : (_lastElim == null
+                  ? 'Oylamada kimse elenmedi.'
+                  : '${_players[_lastElim]?['name'] ?? _lastElim} köyden elendi.');
       return Center(
-        child: AZFrostCard(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(showSaved ? '🛡️' : (_phase == 'dawn' ? '🌅' : '🌆'), style: const TextStyle(fontSize: 48)),
-            const SizedBox(height: 8),
-            Text(
-              showSaved
-                  ? 'Doktor birini kurtardı! Kimse ölmedi.'
-                  : (_phase == 'dawn' ? 'Yeni gün başlıyor...' : 'Gece bastırıyor...'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-          ]),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: AZFrostCard(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(
+                showSaved ? '🛡️' : (showNoConsensus || isTie ? '⚖️' : (_phase == 'dawn' ? '🌅' : '🗳️')),
+                style: const TextStyle(fontSize: 48),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _phase == 'dusk' ? 'KÖY OYLAMASI' : 'GÜN DOĞUYOR',
+                style: const TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1.3),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                outcome,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              if (_phase == 'dusk' && rankedTally.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                for (final entry in rankedTally.take(5))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _players[entry.key]?['name'] as String? ?? entry.key,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 96,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: (entry.value as num).toDouble() /
+                                  (rankedTally.first.value as num).toDouble(),
+                              minHeight: 7,
+                              backgroundColor: Colors.white12,
+                              color: isTie ? const Color(0xFFFFD27B) : AZColors.purple,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${entry.value}',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 12),
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              ),
+            ]),
+          ),
         ),
       );
     }
@@ -1140,7 +1263,10 @@ class _VGS extends State<VampireGameScreen> {
                                 border: Border.all(color: Colors.white.withAlpha(105)),
                               ),
                               child: Center(
-                                child: Text(isSelf ? '🙂' : '👤', style: const TextStyle(fontSize: 24)),
+                                child: Text(
+                                  isSelf ? '🙂' : _villagerAvatar(name),
+                                  style: const TextStyle(fontSize: 24),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
