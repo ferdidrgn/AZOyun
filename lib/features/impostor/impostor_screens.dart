@@ -9,6 +9,7 @@ import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
+import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
@@ -158,89 +159,20 @@ class _ImpostorLobbyScreenState extends State<ImpostorLobbyScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => AZGradientScaffold(
-        gradient: _kSpaceGradient,
-        child: Column(children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context)),
-                ),
-                const Text('👨‍🚀', style: TextStyle(fontSize: 72)),
-                const Text('HAİN KİM?',
-                    style: TextStyle(
-                        color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                const Text('4-10 Oyuncu · Görevleri tamamla ya da haini bul',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
-                const SizedBox(height: 24),
-                GestureDetector(
-                  onTap: _ask,
-                  child: AZFrostCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.person_rounded, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(_name ?? 'Ad seç',
-                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ]),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                AZButton(
-                    label: 'YENİ ODA',
-                    icon: Icons.add_circle_outline_rounded,
-                    onPressed: _create,
-                    color: const Color(0xFF425461),
-                    loading: _loading,
-                    width: 280),
-                const SizedBox(height: 20),
-                const Text('— veya —', style: TextStyle(color: Colors.white54)),
-                const SizedBox(height: 20),
-                AZFrostCard(
-                  child: Column(children: [
-                    AZCodeField(controller: _codeCtrl),
-                    const SizedBox(height: 14),
-                    AZJoinButton(onPressed: _join, loading: _loading),
-                  ]),
-                ),
-                const SizedBox(height: 24),
-                AZFrostCard(
-                  opacity: 0.08,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('👨‍🚀 Nasıl oynanır?',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                      SizedBox(height: 8),
-                      Text(
-                        '• 4-10 oyuncu, 1-2 gizli hain\n'
-                        '• Mürettebat görevleri tamamlar\n'
-                        '• Hain(ler) mürettebatı eler\n'
-                        '• Şüphelenen "Acil Toplantı" çağırıp oylama başlatır\n'
-                        '• Tüm görevler biter ya da hainler elenirse mürettebat kazanır\n'
-                        '• Hainler mürettebata sayıca eşitlenirse hainler kazanır',
-                        style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
-                      ),
-                    ],
-                  ),
-                ),
-              ]),
-            ),
-          ),
-          const AdaptiveBannerAdWidget(),
-        ]),
+  Widget build(BuildContext context) => AZOnlineLobby(
+        title: 'Hain Kim?',
+        icon: Icons.travel_explore_rounded,
+        summary: '4–10 oyuncu · Görevleri tamamla ya da haini bul',
+        instructions:
+            'Mürettebat görevlerini bitirsin; hain gizlice sabote etsin. Acil toplantıda şüpheliyi oylayın. En az 4 oyuncu gerekir.',
+        playerName: _name,
+        codeController: _codeCtrl,
+        loading: _loading,
+        onRename: _ask,
+        onCreate: _create,
+        onJoin: _join,
+        footer: const AdaptiveBannerAdWidget(),
       );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ROOM (BEKLEME ODASI)
-// ═══════════════════════════════════════════════════════════════════════════
-
 class ImpostorRoomScreen extends StatefulWidget {
   const ImpostorRoomScreen({super.key, required this.roomId, required this.myKey, required this.myName});
   final String roomId, myKey, myName;
