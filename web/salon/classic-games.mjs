@@ -1,4 +1,5 @@
 import { classics } from "./classic-catalog.mjs";
+import { nimApplyMove } from "./nim-rules.mjs";
 import { ticTacToeOutcome } from "./tic-tac-toe-rules.mjs";
 
 const shuffle = (items) => {
@@ -196,7 +197,7 @@ function lineGame({ paint, surface }, connect) {
   });
 }
 function nim({ paint, surface }) {
-  const rows = [3, 5, 7];
+  let rows = [3, 5, 7, 9];
   let turn = 1;
   const render = (message = "Sıra " + turn + ". oyuncuda") =>
     paint(
@@ -215,8 +216,9 @@ function nim({ paint, surface }) {
   render();
   return click(surface, (move) => {
     const [row, count] = move.split(":").map(Number);
-    rows[row] -= count;
-    if (rows.every((n) => !n)) return render(turn + ". oyuncu kazandı.");
+    const outcome = nimApplyMove(rows, row, count);
+    rows = outcome.piles;
+    if (outcome.finished) return render(turn + ". oyuncu kazandı.");
     turn = 3 - turn;
     render();
   });

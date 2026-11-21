@@ -1,0 +1,36 @@
+{
+  "contractVersion": 1,
+  "gameId": "nim",
+  "initialPiles": [3, 5, 7, 9],
+  "cases": [
+    {
+      "name": "bir taş al ve sırayı sürdür",
+      "piles": [3, 5, 7, 9],
+      "pileIndex": 0,
+      "remove": 1,
+      "nextPiles": [2, 5, 7, 9],
+      "finished": false
+    },
+    {
+      "name": "yığının tamamını al ama oyun sürsün",
+      "piles": [3, 1, 0, 0],
+      "pileIndex": 1,
+      "remove": 1,
+      "nextPiles": [3, 0, 0, 0],
+      "finished": false
+    },
+    {
+      "name": "son taşı alan kazanır",
+      "piles": [0, 0, 0, 2],
+      "pileIndex": 3,
+      "remove": 2,
+      "nextPiles": [0, 0, 0, 0],
+      "finished": true
+    }
+  ],
+  "invalidCases": [
+    { "piles": [1, 0, 0, 0], "pileIndex": 0, "remove": 0 },
+    { "piles": [1, 0, 0, 0], "pileIndex": 0, "remove": 2 },
+    { "piles": [1, 0, 0, 0], "pileIndex": 4, "remove": 1 }
+  ]
+}

@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/features/quickgames/tic_tac_toe_rules.dart';
+import 'package:AZOyun/features/quickgames/tic_tac_toe_rules.dart';
 
 void main() {
   final contract = jsonDecode(
