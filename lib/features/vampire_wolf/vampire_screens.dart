@@ -10,6 +10,7 @@ import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
+import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
@@ -136,90 +137,20 @@ class _VLS extends State<VampireLobbyScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => AZGradientScaffold(
-        gradient: AZColors.gradDark,
-        child: Column(children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context)),
-                ),
-                const Text('🧛', style: TextStyle(fontSize: 72)),
-                const Text('VAMPİR KÖYLÜ',
-                    style: TextStyle(
-                        color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                const Text('4-8 Oyuncu · Rol bazlı · Mafia tarzı',
-                    style: TextStyle(color: Colors.white70, fontSize: 13)),
-                const SizedBox(height: 24),
-                GestureDetector(
-                  onTap: _ask,
-                  child: AZFrostCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      const Icon(Icons.person_rounded, color: Colors.white, size: 20),
-                      const SizedBox(width: 8),
-                      Text(_name ?? 'Ad seç',
-                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    ]),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                AZButton(
-                    label: 'YENİ ODA',
-                    icon: Icons.add_circle_outline_rounded,
-                    onPressed: _create,
-                    color: AZColors.purple,
-                    loading: _loading,
-                    width: 280),
-                const SizedBox(height: 20),
-                const Text('— veya —', style: TextStyle(color: Colors.white54)),
-                const SizedBox(height: 20),
-                AZFrostCard(
-                  child: Column(children: [
-                    AZCodeField(controller: _codeCtrl),
-                    const SizedBox(height: 14),
-                    AZJoinButton(onPressed: _join, loading: _loading),
-                  ]),
-                ),
-                const SizedBox(height: 24),
-                AZFrostCard(
-                  opacity: 0.08,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('🧛 Nasıl oynanır?',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                      SizedBox(height: 8),
-                      Text(
-                        '• 4-8 oyuncu\n'
-                        '• 🌙 Gece: Vampirler kurban seçer\n'
-                        '• 💉 5+ oyuncuda bir Doktor gizlice birini korur\n'
-                        '• 🔎 6+ oyuncuda bir Dedektif gizlice birini soruşturur\n'
-                        '• ☀️ Gündüz: Herkes vampir sandığını oylar\n'
-                        '• Vampir kalmayınca köy kazanır, vampirler sayıca '
-                        'eşitlenirse vampirler kazanır',
-                        style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
-                      ),
-                    ],
-                  ),
-                ),
-              ]),
-            ),
-          ),
-          const AdaptiveBannerAdWidget(),
-        ]),
+  Widget build(BuildContext context) => AZOnlineLobby(
+        title: 'Vampir Köylü',
+        icon: Icons.nights_stay_rounded,
+        summary: '4–8 oyuncu · Gizli roller ve oylama',
+        instructions:
+            'Gece vampirler hedef seçer; doktor korur, dedektif araştırır. Gündüz herkes oy verir. Köy, tüm vampirleri bulursa kazanır.',
+        playerName: _name,
+        codeController: _codeCtrl,
+        loading: _loading,
+        onRename: _ask,
+        onCreate: _create,
+        onJoin: _join,
+        footer: const AdaptiveBannerAdWidget(),
       );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// BEKLEME ODASI
-// ═══════════════════════════════════════════════════════════════════════════
-
 class VampireRoomScreen extends StatefulWidget {
   const VampireRoomScreen({super.key, required this.roomId, required this.myKey, required this.myName});
   final String roomId, myKey, myName;
