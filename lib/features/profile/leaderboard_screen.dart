@@ -75,9 +75,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     future: LeaderboardService.instance.topScores(_gameId),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
-                        return const Center(
-                          child:
-                              CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         );
                       }
                       final entries = snapshot.data!;
