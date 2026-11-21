@@ -14,7 +14,7 @@ class WearRoomSnapshot {
     required this.maxPlayers,
     required this.revision,
     required this.eventType,
-    required this._turnRevision,
+    required this.turnRevision,
   });
 
   final String roomKey;
@@ -25,7 +25,7 @@ class WearRoomSnapshot {
   final int maxPlayers;
   final int revision;
   final String eventType;
-  final int _turnRevision;
+  final int turnRevision;
 
   String get eventId => '$roomKey:$revision:$eventType';
 
@@ -97,7 +97,7 @@ class WearRoomSnapshot {
       maxPlayers: _safeCount(room['maxPlayers'] ?? room['playerLimit']),
       revision: revision,
       eventType: eventType,
-      _turnRevision: turnRevision,
+      turnRevision: turnRevision,
     );
   }
 
@@ -124,7 +124,7 @@ class WearRoomSnapshot {
   }
 
   String get dedupeKey =>
-      '$roomKey|$gameName|$roomCode|$status|$playerCount|$maxPlayers|$_turnRevision';
+      '$roomKey|$gameName|$roomCode|$status|$playerCount|$maxPlayers|${turnRevision}';
 }
 
 class WearRoomBridge {
