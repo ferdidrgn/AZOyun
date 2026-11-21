@@ -25,17 +25,21 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with WidgetsBindingObserver {
   String _version = '';
   bool _donating = false;
   bool _buyingPremium = false;
   DateTime? _premiumUntil;
+  bool? _notificationsEnabled;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadVersion();
     _loadPremiumStatus();
+    _loadNotificationPermission();
     _iapNotes = IAPService.instance.notes.listen((_) {
       if (!mounted) return;
       _loadPremiumStatus();
@@ -43,6 +47,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   late final StreamSubscription<String> _iapNotes;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadNotificationPermission();
+  }
+
+  Future<void> _loadNotificationPermission() async {
+    final allowed = await NotificationService.instance.hasPermission();
+    if (!mounted) return;
+    setState(() => _notificationsEnabled = allowed);
+  }
+
+  Future<void> _manageNotifications() async {
+    if (_notificationsEnabled == true) {
+      await NotificationService.instance.openSystemSettings();
+      return;
+    }
+    final allowed = await NotificationService.instance.requestPermission();
+    if (!mounted) return;
+    setState(() => _notificationsEnabled = allowed);
+    if (!allowed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t('settings_notifications_denied')),
+          action: SnackBarAction(
+            label: t('settings_title'),
+            onPressed: NotificationService.instance.openSystemSettings,
+          ),
+        ),
+      );
+    }
+  }
 
   Future<void> _loadVersion() async {
     try {
@@ -62,6 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _iapNotes.cancel();
     super.dispose();
   }
@@ -72,8 +109,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     setState(() => _donating = false);
     if (!started) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Bağış ürünü şu an kullanılamıyor.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bağış ürünü şu an kullanılamıyor.')));
     }
   }
 
@@ -86,8 +123,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     setState(() => _buyingPremium = false);
     if (!started) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Premium ürünü şu an kullanılamıyor.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Premium ürünü şu an kullanılamıyor.')));
     }
   }
 
@@ -113,7 +150,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(t('settings_title'))),
       body: ListenableBuilder(
-        listenable: Listenable.merge([ThemeService.instance, LanguageService.instance]),
+        listenable: Listenable.merge([
+          ThemeService.instance,
+          LanguageService.instance,
+          PlayGamesService.instance,
+        ]),
         builder: (context, _) => ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -124,11 +165,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               icon: Icons.language_rounded,
               title: t('settings_language'),
-              subtitle: LanguageService.instance.language == AppLanguage.tr
-                  ? t('language_tr')
-                  : t('language_en'),
-              onTap: () =>
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const LanguageScreen())),
+              subtitle: t('language_${LanguageService.instance.language.name}'),
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const LanguageScreen())),
             ),
             const SizedBox(height: 20),
             _sectionLabel(context, t('settings_account')),
@@ -136,8 +175,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               icon: Icons.notifications_active_rounded,
               title: t('settings_notifications'),
-              subtitle: t('settings_notifications_subtitle'),
-              onTap: () => NotificationService.instance.openSystemSettings(),
+              subtitle: _notificationsEnabled == null
+                  ? t('settings_notifications_subtitle')
+                  : _notificationsEnabled!
+                      ? t('settings_notifications_enabled')
+                      : t('settings_notifications_disabled'),
+              trailing: _notificationsEnabled == true
+                  ? const Icon(Icons.notifications_active_rounded)
+                  : const Icon(Icons.notifications_off_rounded),
+              onTap: _manageNotifications,
             ),
             _tile(
               context,
@@ -175,8 +221,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   : t('settings_premium_subtitle_buy'),
               trailing: _buyingPremium
                   ? const SizedBox(
-                      width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : (_premiumActive ? const Icon(Icons.check_circle_rounded, color: Colors.green) : null),
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : (_premiumActive
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: Colors.green)
+                      : null),
               onTap: (_buyingPremium || _premiumActive) ? null : _buyPremium,
             ),
             _tile(
@@ -186,7 +237,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: t('settings_donate_subtitle'),
               trailing: _donating
                   ? const SizedBox(
-                      width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : null,
               onTap: _donating ? null : _donate,
             ),
@@ -211,20 +264,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.privacy_tip_rounded,
               title: t('settings_privacy'),
               onTap: () => Navigator.push(
-                  context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const PrivacyPolicyScreen())),
             ),
             _tile(
               context,
               icon: Icons.description_rounded,
               title: t('settings_terms'),
-              onTap: () =>
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsScreen())),
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const TermsScreen())),
             ),
             const SizedBox(height: 24),
             if (_version.isNotEmpty)
               Center(
                 child: Text('${t('settings_version')} $_version',
-                    style: TextStyle(color: Theme.of(context).hintColor, fontSize: 12)),
+                    style: TextStyle(
+                        color: Theme.of(context).hintColor, fontSize: 12)),
               ),
             const SizedBox(height: 16),
           ],
@@ -234,22 +290,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _sectionLabel(BuildContext context, String label) => Padding(
-    padding: const EdgeInsets.only(bottom: 8, top: 4, left: 4),
-    child: Text(label,
-        style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
-            color: Theme.of(context).colorScheme.primary)),
-  );
+        padding: const EdgeInsets.only(bottom: 8, top: 4, left: 4),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+                color: Theme.of(context).colorScheme.primary)),
+      );
 
   Widget _themeCard(BuildContext context) {
     final options = [
-      (AppThemePreference.light, t('settings_theme_light'), Icons.light_mode_rounded),
-      (AppThemePreference.dark, t('settings_theme_dark'), Icons.dark_mode_rounded),
-      (AppThemePreference.dynamic, t('settings_theme_dynamic'), Icons.wallpaper_rounded),
+      (
+        AppThemePreference.light,
+        t('settings_theme_light'),
+        Icons.light_mode_rounded
+      ),
+      (
+        AppThemePreference.dark,
+        t('settings_theme_dark'),
+        Icons.dark_mode_rounded
+      ),
+      (
+        AppThemePreference.dynamic,
+        t('settings_theme_dynamic'),
+        Icons.wallpaper_rounded
+      ),
     ];
-    final isCustom = ThemeService.instance.preference == AppThemePreference.custom;
+    final isCustom =
+        ThemeService.instance.preference == AppThemePreference.custom;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -265,14 +334,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Column(children: [
                       isCustom
-                          ? CircleAvatar(radius: 12, backgroundColor: ThemeService.instance.customColor)
+                          ? CircleAvatar(
+                              radius: 12,
+                              backgroundColor:
+                                  ThemeService.instance.customColor)
                           : Icon(Icons.palette_rounded,
                               color: Theme.of(context).hintColor),
                       const SizedBox(height: 6),
                       Text(t('settings_theme_custom'),
                           style: TextStyle(
                               fontSize: 11.5,
-                              fontWeight: isCustom ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isCustom
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                               color: isCustom
                                   ? Theme.of(context).colorScheme.primary
                                   : Theme.of(context).hintColor)),
@@ -287,7 +361,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _themeOptionTile(BuildContext context, AppThemePreference pref, String label, IconData icon) {
+  Widget _themeOptionTile(BuildContext context, AppThemePreference pref,
+      String label, IconData icon) {
     final selected = ThemeService.instance.preference == pref;
     return InkWell(
       onTap: () => ThemeService.instance.setPreference(pref),
@@ -296,13 +371,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           children: [
             Icon(icon,
-                color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).hintColor),
+                color: selected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).hintColor),
             const SizedBox(height: 6),
             Text(label,
                 style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                    color: selected ? Theme.of(context).colorScheme.primary : Theme.of(context).hintColor)),
+                    color: selected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).hintColor)),
           ],
         ),
       ),
@@ -324,7 +403,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: CircleAvatar(
                   radius: 22,
                   backgroundColor: c,
-                  child: ThemeService.instance.preference == AppThemePreference.custom &&
+                  child: ThemeService.instance.preference ==
+                              AppThemePreference.custom &&
                           ThemeService.instance.customColor.value == c.value
                       ? const Icon(Icons.check_rounded, color: Colors.white)
                       : null,
@@ -333,7 +413,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(t('common_cancel'))),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(t('common_cancel'))),
         ],
       ),
     );
@@ -351,10 +433,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
+          minVerticalPadding: 12,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          title:
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
           subtitle: subtitle != null ? Text(subtitle) : null,
-          trailing: trailing ?? (onTap != null ? const Icon(Icons.chevron_right_rounded) : null),
+          trailing: trailing ??
+              (onTap != null ? const Icon(Icons.chevron_right_rounded) : null),
           onTap: onTap,
         ),
       );

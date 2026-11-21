@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/services/room_service.dart';
+import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 import 'hangman_game_screen.dart';
 
@@ -24,7 +25,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
   Map<String, dynamic> _room = {};
   bool _navigating = false;
 
-  static const _kRed = Color(0xFFAD6F63);
+  static const _kRed = AZColors.red;
 
   @override
   void initState() {
@@ -87,10 +88,7 @@ class _HangmanRoomScreenState extends State<HangmanRoomScreen> {
     return AZLeaveGuard(
       onLeave: _leaveRoom,
       child: AZGradientScaffold(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-          colors: [Color(0xFFCB8A7E), Color(0xFFAD6F63)],
-        ),
+        gradient: AZColors.gradRed,
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(children: [

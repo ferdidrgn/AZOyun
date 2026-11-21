@@ -29,7 +29,6 @@ class AppStrings {
     'common_cancel': 'Vazgeç',
     'common_continue': 'Devam Et',
     'common_skip': 'Geç',
-
     'onboarding_title_1': 'Arkadaşlarınla Eğlen',
     'onboarding_body_1':
         'Oda kodu paylaş, arkadaşların katılsın. 31 farklı oyun — strateji, '
@@ -44,14 +43,12 @@ class AppStrings {
             'oynayın ya da tek başınıza yüksek skor kovalayın.',
     'onboarding_next': 'İleri',
     'onboarding_start': 'Başlayalım',
-
     'notif_permission_title': 'Bildirimlerden Haberdar Ol',
     'notif_permission_body':
         'Sıra sana geldiğinde, arkadaşın seni odaya davet ettiğinde ya da '
             'yeni bir oyun eklendiğinde haber verelim mi?',
     'notif_permission_allow': 'İzin Ver',
     'notif_permission_later': 'Daha Sonra',
-
     'settings_title': 'Ayarlar',
     'settings_appearance': 'GÖRÜNÜM',
     'settings_theme': 'Tema',
@@ -64,6 +61,11 @@ class AppStrings {
     'settings_account': 'HESAP',
     'settings_notifications': 'Bildirimler',
     'settings_notifications_subtitle': 'Bildirim izinlerini yönet',
+    'settings_notifications_enabled': 'Bildirimler açık · sistem ayarlarını aç',
+    'settings_notifications_disabled':
+        'Bildirimler kapalı · izin vermek için dokun',
+    'settings_notifications_denied':
+        'Bildirim izni verilmedi. Telefon ayarlarından açabilirsin.',
     'settings_play_games': 'Google Play Games',
     'settings_play_games_connected': 'Bağlı',
     'settings_play_games_connect': 'Bağlan',
@@ -78,7 +80,6 @@ class AppStrings {
     'settings_privacy': 'Gizlilik Politikası',
     'settings_terms': 'Kullanım Şartları',
     'settings_version': 'Sürüm',
-
     'language_title': 'Dil Seç',
     'language_tr': 'Türkçe',
     'language_en': 'İngilizce',
@@ -86,21 +87,17 @@ class AppStrings {
     'language_fr': 'Fransızca',
     'language_es': 'İspanyolca',
     'language_ru': 'Rusça',
-
     'privacy_title': 'Gizlilik Politikası',
     'terms_title': 'Kullanım Şartları',
     'privacy_body': _privacyBodyTr,
     'terms_body': _termsBodyTr,
-
     'donate_title': '☕ Bize Kahve Ismarla',
-    'donate_body':
-        'AZ Oyun tamamen ücretsiz ve reklamsız-agresif olmama sözü '
-            'veriyoruz. Uygulamayı geliştirmeye devam etmemize destek olmak '
-            'istersen küçük bir bağış yapabilirsin — tamamen gönüllü, hiçbir '
-            'oyun içi avantaj sağlamaz.',
+    'donate_body': 'AZ Oyun tamamen ücretsiz ve reklamsız-agresif olmama sözü '
+        'veriyoruz. Uygulamayı geliştirmeye devam etmemize destek olmak '
+        'istersen küçük bir bağış yapabilirsin — tamamen gönüllü, hiçbir '
+        'oyun içi avantaj sağlamaz.',
     'donate_button': 'Küçük Bir Bağış Yap',
     'donate_thanks': 'Çok teşekkürler! Desteğin bizim için çok değerli. 💜',
-
     'settings_premium': 'Premium — 6 Ay Reklamsız',
     'settings_premium_subtitle_buy': 'Tüm reklamları 6 ay boyunca kaldır',
     'settings_premium_active': 'Premium aktif',
@@ -114,7 +111,6 @@ class AppStrings {
     'common_cancel': 'Cancel',
     'common_continue': 'Continue',
     'common_skip': 'Skip',
-
     'onboarding_title_1': 'Have Fun With Friends',
     'onboarding_body_1':
         'Share a room code, friends join in. 31 different games — '
@@ -129,14 +125,12 @@ class AppStrings {
             'the computer, or chase a high score solo.',
     'onboarding_next': 'Next',
     'onboarding_start': "Let's Go",
-
     'notif_permission_title': 'Stay in the Loop',
     'notif_permission_body':
         "Want us to notify you when it's your turn, a friend invites you "
             'to a room, or a new game is added?',
     'notif_permission_allow': 'Allow',
     'notif_permission_later': 'Later',
-
     'settings_title': 'Settings',
     'settings_appearance': 'APPEARANCE',
     'settings_theme': 'Theme',
@@ -149,6 +143,10 @@ class AppStrings {
     'settings_account': 'ACCOUNT',
     'settings_notifications': 'Notifications',
     'settings_notifications_subtitle': 'Manage notification permissions',
+    'settings_notifications_enabled': 'Notifications on · open system settings',
+    'settings_notifications_disabled': 'Notifications off · tap to allow',
+    'settings_notifications_denied':
+        'Permission not granted. You can enable it in system settings.',
     'settings_play_games': 'Google Play Games',
     'settings_play_games_connected': 'Connected',
     'settings_play_games_connect': 'Connect',
@@ -163,7 +161,6 @@ class AppStrings {
     'settings_privacy': 'Privacy Policy',
     'settings_terms': 'Terms of Service',
     'settings_version': 'Version',
-
     'language_title': 'Choose Language',
     'language_tr': 'Turkish',
     'language_en': 'English',
@@ -171,21 +168,17 @@ class AppStrings {
     'language_fr': 'French',
     'language_es': 'Spanish',
     'language_ru': 'Russian',
-
     'privacy_title': 'Privacy Policy',
     'terms_title': 'Terms of Service',
     'privacy_body': _privacyBodyEn,
     'terms_body': _termsBodyEn,
-
     'donate_title': '☕ Buy Us a Coffee',
-    'donate_body':
-        'AZ Oyun promises to stay free and to never be aggressively '
-            "ad-heavy. If you'd like to support ongoing development, you "
-            'can make a small donation — completely voluntary and it never '
-            'grants any in-game advantage.',
+    'donate_body': 'AZ Oyun promises to stay free and to never be aggressively '
+        "ad-heavy. If you'd like to support ongoing development, you "
+        'can make a small donation — completely voluntary and it never '
+        'grants any in-game advantage.',
     'donate_button': 'Make a Small Donation',
     'donate_thanks': "Thank you so much! Your support means a lot to us. 💜",
-
     'settings_premium': 'Premium — 6 Months Ad-Free',
     'settings_premium_subtitle_buy': 'Remove all ads for 6 months',
     'settings_premium_active': 'Premium active',
@@ -199,7 +192,6 @@ class AppStrings {
     'common_cancel': 'Abbrechen',
     'common_continue': 'Weiter',
     'common_skip': 'Überspringen',
-
     'onboarding_title_1': 'Spaß mit Freunden',
     'onboarding_body_1':
         'Teile einen Raumcode, Freunde treten bei. 31 verschiedene Spiele — '
@@ -214,14 +206,12 @@ class AppStrings {
             'spielt gegen den Computer oder jagt allein einen Highscore.',
     'onboarding_next': 'Weiter',
     'onboarding_start': "Los geht's",
-
     'notif_permission_title': 'Bleib auf dem Laufenden',
     'notif_permission_body':
         'Sollen wir dich benachrichtigen, wenn du am Zug bist, ein Freund '
             'dich zu einem Raum einlädt oder ein neues Spiel hinzukommt?',
     'notif_permission_allow': 'Erlauben',
     'notif_permission_later': 'Später',
-
     'settings_title': 'Einstellungen',
     'settings_appearance': 'DARSTELLUNG',
     'settings_theme': 'Design',
@@ -233,7 +223,14 @@ class AppStrings {
     'settings_language': 'Sprache',
     'settings_account': 'KONTO',
     'settings_notifications': 'Benachrichtigungen',
-    'settings_notifications_subtitle': 'Benachrichtigungsberechtigungen verwalten',
+    'settings_notifications_subtitle':
+        'Benachrichtigungsberechtigungen verwalten',
+    'settings_notifications_enabled':
+        'Benachrichtigungen an · Systemeinstellungen öffnen',
+    'settings_notifications_disabled':
+        'Benachrichtigungen aus · zum Aktivieren tippen',
+    'settings_notifications_denied':
+        'Keine Berechtigung. Du kannst sie in den Systemeinstellungen aktivieren.',
     'settings_play_games': 'Google Play Games',
     'settings_play_games_connected': 'Verbunden',
     'settings_play_games_connect': 'Verbinden',
@@ -248,7 +245,6 @@ class AppStrings {
     'settings_privacy': 'Datenschutzerklärung',
     'settings_terms': 'Nutzungsbedingungen',
     'settings_version': 'Version',
-
     'language_title': 'Sprache wählen',
     'language_tr': 'Türkisch',
     'language_en': 'Englisch',
@@ -256,10 +252,8 @@ class AppStrings {
     'language_fr': 'Französisch',
     'language_es': 'Spanisch',
     'language_ru': 'Russisch',
-
     'privacy_title': 'Datenschutzerklärung',
     'terms_title': 'Nutzungsbedingungen',
-
     'donate_title': '☕ Spendiere uns einen Kaffee',
     'donate_body':
         'AZ Oyun verspricht, kostenlos zu bleiben und nie aufdringlich '
@@ -267,8 +261,8 @@ class AppStrings {
             'möchtest, kannst du eine kleine Spende machen — völlig '
             'freiwillig und ohne jeden Spielvorteil.',
     'donate_button': 'Kleine Spende machen',
-    'donate_thanks': 'Vielen herzlichen Dank! Deine Unterstützung bedeutet uns sehr viel. 💜',
-
+    'donate_thanks':
+        'Vielen herzlichen Dank! Deine Unterstützung bedeutet uns sehr viel. 💜',
     'settings_premium': 'Premium — 6 Monate werbefrei',
     'settings_premium_subtitle_buy': 'Entferne alle Werbung für 6 Monate',
     'settings_premium_active': 'Premium aktiv',
@@ -282,7 +276,6 @@ class AppStrings {
     'common_cancel': 'Annuler',
     'common_continue': 'Continuer',
     'common_skip': 'Passer',
-
     'onboarding_title_1': 'Amuse-toi avec tes amis',
     'onboarding_body_1':
         'Partage un code de salon, tes amis rejoignent. 31 jeux différents '
@@ -299,14 +292,12 @@ class AppStrings {
             'score en solo.',
     'onboarding_next': 'Suivant',
     'onboarding_start': "C'est parti",
-
     'notif_permission_title': 'Reste informé',
     'notif_permission_body':
         "On te prévient quand c'est ton tour, qu'un ami t'invite dans un "
             'salon, ou qu\'un nouveau jeu est ajouté ?',
     'notif_permission_allow': 'Autoriser',
     'notif_permission_later': 'Plus tard',
-
     'settings_title': 'Paramètres',
     'settings_appearance': 'APPARENCE',
     'settings_theme': 'Thème',
@@ -318,7 +309,14 @@ class AppStrings {
     'settings_language': 'Langue',
     'settings_account': 'COMPTE',
     'settings_notifications': 'Notifications',
-    'settings_notifications_subtitle': 'Gérer les autorisations de notification',
+    'settings_notifications_subtitle':
+        'Gérer les autorisations de notification',
+    'settings_notifications_enabled':
+        'Notifications activées · ouvrir les réglages',
+    'settings_notifications_disabled':
+        'Notifications désactivées · toucher pour autoriser',
+    'settings_notifications_denied':
+        'Autorisation refusée. Activez-la dans les réglages système.',
     'settings_play_games': 'Google Play Games',
     'settings_play_games_connected': 'Connecté',
     'settings_play_games_connect': 'Se connecter',
@@ -333,7 +331,6 @@ class AppStrings {
     'settings_privacy': 'Politique de confidentialité',
     'settings_terms': "Conditions d'utilisation",
     'settings_version': 'Version',
-
     'language_title': 'Choisir la langue',
     'language_tr': 'Turc',
     'language_en': 'Anglais',
@@ -341,10 +338,8 @@ class AppStrings {
     'language_fr': 'Français',
     'language_es': 'Espagnol',
     'language_ru': 'Russe',
-
     'privacy_title': 'Politique de confidentialité',
     'terms_title': "Conditions d'utilisation",
-
     'donate_title': '☕ Offre-nous un café',
     'donate_body':
         'AZ Oyun promet de rester gratuit et de ne jamais afficher de '
@@ -352,10 +347,11 @@ class AppStrings {
             'continu, tu peux faire un petit don — entièrement volontaire '
             'et sans aucun avantage en jeu.',
     'donate_button': 'Faire un petit don',
-    'donate_thanks': 'Merci beaucoup ! Ton soutien compte énormément pour nous. 💜',
-
+    'donate_thanks':
+        'Merci beaucoup ! Ton soutien compte énormément pour nous. 💜',
     'settings_premium': 'Premium — 6 mois sans pub',
-    'settings_premium_subtitle_buy': 'Supprime toutes les publicités pendant 6 mois',
+    'settings_premium_subtitle_buy':
+        'Supprime toutes les publicités pendant 6 mois',
     'settings_premium_active': 'Premium actif',
     'premium_thanks': 'Premium activé ! Plus de pub pendant 6 mois. ✨',
   };
@@ -367,7 +363,6 @@ class AppStrings {
     'common_cancel': 'Cancelar',
     'common_continue': 'Continuar',
     'common_skip': 'Omitir',
-
     'onboarding_title_1': 'Diviértete con tus amigos',
     'onboarding_body_1':
         'Comparte un código de sala, tus amigos se unen. 31 juegos '
@@ -384,14 +379,12 @@ class AppStrings {
             'solitario.',
     'onboarding_next': 'Siguiente',
     'onboarding_start': 'Empecemos',
-
     'notif_permission_title': 'Mantente al tanto',
     'notif_permission_body':
         '¿Quieres que te avisemos cuando sea tu turno, un amigo te invite '
             'a una sala o se añada un nuevo juego?',
     'notif_permission_allow': 'Permitir',
     'notif_permission_later': 'Más tarde',
-
     'settings_title': 'Ajustes',
     'settings_appearance': 'APARIENCIA',
     'settings_theme': 'Tema',
@@ -404,6 +397,12 @@ class AppStrings {
     'settings_account': 'CUENTA',
     'settings_notifications': 'Notificaciones',
     'settings_notifications_subtitle': 'Gestionar permisos de notificación',
+    'settings_notifications_enabled':
+        'Notificaciones activadas · abrir ajustes del sistema',
+    'settings_notifications_disabled':
+        'Notificaciones desactivadas · toca para permitir',
+    'settings_notifications_denied':
+        'Permiso no concedido. Puedes activarlo en los ajustes del sistema.',
     'settings_play_games': 'Google Play Games',
     'settings_play_games_connected': 'Conectado',
     'settings_play_games_connect': 'Conectar',
@@ -418,7 +417,6 @@ class AppStrings {
     'settings_privacy': 'Política de privacidad',
     'settings_terms': 'Términos de servicio',
     'settings_version': 'Versión',
-
     'language_title': 'Elegir idioma',
     'language_tr': 'Turco',
     'language_en': 'Inglés',
@@ -426,21 +424,19 @@ class AppStrings {
     'language_fr': 'Francés',
     'language_es': 'Español',
     'language_ru': 'Ruso',
-
     'privacy_title': 'Política de privacidad',
     'terms_title': 'Términos de servicio',
-
     'donate_title': '☕ Invítanos un café',
-    'donate_body':
-        'AZ Oyun promete seguir siendo gratis y no mostrar nunca '
-            'publicidad invasiva. Si quieres apoyar el desarrollo continuo, '
-            'puedes hacer una pequeña donación — totalmente voluntaria y '
-            'sin ninguna ventaja dentro del juego.',
+    'donate_body': 'AZ Oyun promete seguir siendo gratis y no mostrar nunca '
+        'publicidad invasiva. Si quieres apoyar el desarrollo continuo, '
+        'puedes hacer una pequeña donación — totalmente voluntaria y '
+        'sin ninguna ventaja dentro del juego.',
     'donate_button': 'Hacer una pequeña donación',
-    'donate_thanks': '¡Muchas gracias! Tu apoyo significa mucho para nosotros. 💜',
-
+    'donate_thanks':
+        '¡Muchas gracias! Tu apoyo significa mucho para nosotros. 💜',
     'settings_premium': 'Premium — 6 meses sin anuncios',
-    'settings_premium_subtitle_buy': 'Elimina todos los anuncios durante 6 meses',
+    'settings_premium_subtitle_buy':
+        'Elimina todos los anuncios durante 6 meses',
     'settings_premium_active': 'Premium activo',
     'premium_thanks': '¡Premium activado! Sin anuncios durante 6 meses. ✨',
   };
@@ -452,7 +448,6 @@ class AppStrings {
     'common_cancel': 'Отмена',
     'common_continue': 'Продолжить',
     'common_skip': 'Пропустить',
-
     'onboarding_title_1': 'Веселись с друзьями',
     'onboarding_body_1':
         'Поделись кодом комнаты, друзья присоединятся. 31 разная игра — '
@@ -468,14 +463,12 @@ class AppStrings {
             'играйте против компьютера или в одиночку бейте рекорд.',
     'onboarding_next': 'Далее',
     'onboarding_start': 'Начнём',
-
     'notif_permission_title': 'Будь в курсе',
     'notif_permission_body':
         'Уведомлять тебя, когда наступает твой ход, друг приглашает в '
             'комнату или добавляется новая игра?',
     'notif_permission_allow': 'Разрешить',
     'notif_permission_later': 'Позже',
-
     'settings_title': 'Настройки',
     'settings_appearance': 'ВНЕШНИЙ ВИД',
     'settings_theme': 'Тема',
@@ -488,6 +481,12 @@ class AppStrings {
     'settings_account': 'АККАУНТ',
     'settings_notifications': 'Уведомления',
     'settings_notifications_subtitle': 'Управление разрешениями на уведомления',
+    'settings_notifications_enabled':
+        'Уведомления включены · открыть настройки',
+    'settings_notifications_disabled':
+        'Уведомления выключены · нажмите, чтобы разрешить',
+    'settings_notifications_denied':
+        'Разрешение не выдано. Включите его в системных настройках.',
     'settings_play_games': 'Google Play Игры',
     'settings_play_games_connected': 'Подключено',
     'settings_play_games_connect': 'Подключить',
@@ -502,7 +501,6 @@ class AppStrings {
     'settings_privacy': 'Политика конфиденциальности',
     'settings_terms': 'Условия использования',
     'settings_version': 'Версия',
-
     'language_title': 'Выбрать язык',
     'language_tr': 'Турецкий',
     'language_en': 'Английский',
@@ -510,10 +508,8 @@ class AppStrings {
     'language_fr': 'Французский',
     'language_es': 'Испанский',
     'language_ru': 'Русский',
-
     'privacy_title': 'Политика конфиденциальности',
     'terms_title': 'Условия использования',
-
     'donate_title': '☕ Угости нас кофе',
     'donate_body':
         'AZ Oyun обещает оставаться бесплатным и никогда не показывать '
@@ -521,8 +517,8 @@ class AppStrings {
             'разработку, можешь сделать небольшое пожертвование — '
             'полностью добровольно и без каких-либо игровых преимуществ.',
     'donate_button': 'Сделать небольшое пожертвование',
-    'donate_thanks': 'Большое спасибо! Твоя поддержка очень много значит для нас. 💜',
-
+    'donate_thanks':
+        'Большое спасибо! Твоя поддержка очень много значит для нас. 💜',
     'settings_premium': 'Премиум — 6 месяцев без рекламы',
     'settings_premium_subtitle_buy': 'Убрать всю рекламу на 6 месяцев',
     'settings_premium_active': 'Премиум активен',

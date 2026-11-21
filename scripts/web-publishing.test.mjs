@@ -21,6 +21,9 @@ test("built web salon serves canonical games, ad verification and app associatio
   assert.equal(urls.filter((url) => url.pathname.startsWith("/oyun/")).length, 38);
   assert.equal(new Set(urls.map(String)).size, urls.length);
   const { body: home } = await read("/");
+  assert.match(home, /href="\/salon\/style\.css"/);
+  assert.match(home, /src="\/salon\/app\.mjs"/);
+  assert.doesNotMatch(home, /flutter_bootstrap\.js|flutter\.js/);
   for (const url of urls) {
     assert.equal(url.origin, origin);
     const { body: page } = await read(url.pathname);

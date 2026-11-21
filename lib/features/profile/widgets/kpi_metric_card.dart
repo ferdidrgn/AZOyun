@@ -44,9 +44,12 @@ class KpiMetricCard extends StatelessWidget {
                 ),
                 if (trend != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: (trendPositive ? DashTokens.emerald : DashTokens.rose)
+                      color: (trendPositive
+                              ? DashTokens.emerald(context)
+                              : DashTokens.rose(context))
                           .withAlpha(24),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -56,23 +59,27 @@ class KpiMetricCard extends StatelessWidget {
                             ? Icons.trending_up_rounded
                             : Icons.trending_down_rounded,
                         size: 12,
-                        color: trendPositive ? DashTokens.emeraldSoft : DashTokens.rose,
+                        color: trendPositive
+                            ? DashTokens.emeraldSoft(context)
+                            : DashTokens.rose(context),
                       ),
                       const SizedBox(width: 2),
                       Text(trend!,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: trendPositive ? DashTokens.emeraldSoft : DashTokens.rose,
+                            color: trendPositive
+                                ? DashTokens.emeraldSoft(context)
+                                : DashTokens.rose(context),
                           )),
                     ]),
                   ),
               ],
             ),
             const SizedBox(height: 16),
-            Text(value, style: DashTokens.metricValue),
+            Text(value, style: DashTokens.metricValue(context)),
             const SizedBox(height: 4),
-            Text(label, style: DashTokens.label),
+            Text(label, style: DashTokens.label(context)),
           ],
         ),
       );

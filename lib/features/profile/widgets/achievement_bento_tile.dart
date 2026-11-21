@@ -25,8 +25,10 @@ class AchievementBentoTile extends StatelessWidget {
     final accent = DashTokens.accent(context);
     final tile = BentoCard(
       padding: const EdgeInsets.all(14),
-      color: unlocked ? DashTokens.surfaceHi : DashTokens.surface,
-      borderColor: unlocked ? accent.withAlpha(60) : DashTokens.border,
+      color: unlocked
+          ? DashTokens.surfaceHi(context)
+          : DashTokens.surface(context),
+      borderColor: unlocked ? accent.withAlpha(60) : DashTokens.border(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -36,7 +38,9 @@ class AchievementBentoTile extends StatelessWidget {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: unlocked ? accent.withAlpha(30) : DashTokens.highlight,
+                color: unlocked
+                    ? accent.withAlpha(30)
+                    : DashTokens.highlight(context),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Opacity(
@@ -46,9 +50,11 @@ class AchievementBentoTile extends StatelessWidget {
             ),
             const Spacer(),
             if (unlocked)
-              Icon(Icons.check_circle_rounded, color: DashTokens.emeraldSoft, size: 16)
+              Icon(Icons.check_circle_rounded,
+                  color: DashTokens.emeraldSoft(context), size: 16)
             else
-              Icon(Icons.lock_rounded, color: DashTokens.textTertiary, size: 14),
+              Icon(Icons.lock_rounded,
+                  color: DashTokens.textTertiary(context), size: 14),
           ]),
           const SizedBox(height: 10),
           Text(def.title,
@@ -57,7 +63,9 @@ class AchievementBentoTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: unlocked ? DashTokens.textPrimary : DashTokens.textTertiary,
+                color: unlocked
+                    ? DashTokens.textPrimary(context)
+                    : DashTokens.textTertiary(context),
               )),
           const SizedBox(height: 3),
           Text(def.description,
@@ -66,20 +74,27 @@ class AchievementBentoTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 height: 1.3,
-                color: unlocked ? DashTokens.textSecondary : DashTokens.textTertiary.withAlpha(160),
+                color: unlocked
+                    ? DashTokens.textSecondary(context)
+                    : DashTokens.textTertiary(context).withAlpha(160),
               )),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(
-              color: (unlocked ? DashTokens.emerald : DashTokens.textTertiary).withAlpha(24),
+              color: (unlocked
+                      ? DashTokens.emerald(context)
+                      : DashTokens.textTertiary(context))
+                  .withAlpha(24),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text('+${def.xpReward} XP',
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: unlocked ? DashTokens.emeraldSoft : DashTokens.textTertiary,
+                  color: unlocked
+                      ? DashTokens.emeraldSoft(context)
+                      : DashTokens.textTertiary(context),
                 )),
           ),
         ],

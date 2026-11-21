@@ -40,9 +40,12 @@ class GameVarietyChart extends StatelessWidget {
                 borderData: FlBorderData(show: false),
                 barTouchData: BarTouchData(enabled: false),
                 titlesData: FlTitlesData(
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -51,7 +54,7 @@ class GameVarietyChart extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           value == 0 ? 'Hızlı Oyunlar' : 'Online Odalar',
-                          style: DashTokens.labelSm,
+                          style: DashTokens.labelSm(context),
                         ),
                       ),
                     ),
@@ -65,18 +68,22 @@ class GameVarietyChart extends StatelessWidget {
                       width: 34,
                       borderRadius: BorderRadius.circular(8),
                       backDrawRodData: BackgroundBarChartRodData(
-                        show: true, toY: quickTotal.toDouble(), color: DashTokens.highlight,
+                        show: true,
+                        toY: quickTotal.toDouble(),
+                        color: DashTokens.highlight(context),
                       ),
                     ),
                   ]),
                   BarChartGroupData(x: 1, barRods: [
                     BarChartRodData(
                       toY: onlinePlayed.toDouble(),
-                      color: DashTokens.emerald,
+                      color: DashTokens.emerald(context),
                       width: 34,
                       borderRadius: BorderRadius.circular(8),
                       backDrawRodData: BackgroundBarChartRodData(
-                        show: true, toY: onlineTotal.toDouble(), color: DashTokens.highlight,
+                        show: true,
+                        toY: onlineTotal.toDouble(),
+                        color: DashTokens.highlight(context),
                       ),
                     ),
                   ]),
@@ -88,10 +95,16 @@ class GameVarietyChart extends StatelessWidget {
           const SizedBox(height: 16),
           Row(children: [
             _CoverageChip(
-                color: accent, played: quickPlayed, total: quickTotal, label: 'Hızlı'),
+                color: accent,
+                played: quickPlayed,
+                total: quickTotal,
+                label: 'Hızlı'),
             const SizedBox(width: 16),
             _CoverageChip(
-                color: DashTokens.emerald, played: onlinePlayed, total: onlineTotal, label: 'Online'),
+                color: DashTokens.emerald(context),
+                played: onlinePlayed,
+                total: onlineTotal,
+                label: 'Online'),
           ]),
         ],
       ),
@@ -101,16 +114,26 @@ class GameVarietyChart extends StatelessWidget {
 
 class _CoverageChip extends StatelessWidget {
   const _CoverageChip(
-      {required this.color, required this.played, required this.total, required this.label});
+      {required this.color,
+      required this.played,
+      required this.total,
+      required this.label});
   final Color color;
   final int played, total;
   final String label;
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+  Widget build(BuildContext context) =>
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),
-        Text('$played/$total ', style: DashTokens.body.copyWith(color: DashTokens.textPrimary, fontWeight: FontWeight.w700)),
-        Text(label, style: DashTokens.labelSm),
+        Text('$played/$total ',
+            style: DashTokens.body(context).copyWith(
+                color: DashTokens.textPrimary(context),
+                fontWeight: FontWeight.w700)),
+        Text(label, style: DashTokens.labelSm(context)),
       ]);
 }

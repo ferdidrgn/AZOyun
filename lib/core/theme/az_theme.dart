@@ -5,115 +5,118 @@ import 'package:google_fonts/google_fonts.dart';
 // ═══════════════════════════════════════════════════════════════════════════
 // DESIGN TOKENS
 //
-// "Soft UI" görsel dili: sıcak, mat, yumuşak köşeli, düşük doygunlukta
-// pastel renkler (açık temada krem/toprak tonları) ve koyu lacivert +
-// sıcak altın vurgulu bir "token sheet" hissi (koyu temada). Eski parlak/
-// doygun mor-kırmızı-turuncu-camgöbeği paleti kasıtlı olarak kaldırıldı —
-// sabit isimler (purple/red/green/orange/blue...) korunuyor ki 100'den
-// fazla çağrı yerini tek tek değiştirmeye gerek kalmasın; sadece DEĞERLERİ
-// yeni, yumuşak paletle güncellendi. Bu yüzden bu dosyadaki değişiklik tüm
-// uygulamaya (30+ oyun ekranı dahil) otomatik yansır.
+// AZ Oyun'un oyun arayüzü paleti. Renkler isim olarak sabit tutulur ki oyun
+// tahtalarının anlamı korunurken uygulama genelindeki görünüm tek yerden
+// değiştirilebilsin.
 // ═══════════════════════════════════════════════════════════════════════════
 
 abstract class AZColors {
-  // Marka — yumuşak toprak/lavanta ailesi (eski parlak #6C63FF mor yerine)
-  static const purple   = Color(0xFF6D5AAE);
-  static const purpleDk = Color(0xFF4C3D82);
+  // Marka — elektrik moru ve yüksek kontrastlı oyun aksanları.
+  static const purple = Color(0xFF9B6DFF);
+  static const purpleDk = Color(0xFF6035C9);
 
-  // Oyun renkleri — hepsi aynı mat/pastel aileden, eski neon tonların yerine
-  static const red      = Color(0xFFC15B52);
-  static const redDk    = Color(0xFF8E3E38);
-  static const green    = Color(0xFF3F8F62);
-  static const greenDk  = Color(0xFF246246);
-  static const orange   = Color(0xFFD4923E);
-  static const orangeDk = Color(0xFFA56A22);
-  static const blue     = Color(0xFF3E7EA8);
-  static const blueDk   = Color(0xFF2A5878);
+  // Oyun durumları — kazanma, uyarı, kayıp ve etkileşimlerde ortak renkler.
+  static const red = Color(0xFFFF647C);
+  static const redDk = Color(0xFFB82F50);
+  static const green = Color(0xFF4FE0A1);
+  static const greenDk = Color(0xFF168A68);
+  static const orange = Color(0xFFFFC857);
+  static const orangeDk = Color(0xFFCC7A17);
+  static const blue = Color(0xFF52B8FF);
+  static const blueDk = Color(0xFF2870D4);
 
   // Semantik
   static const success = green;
   static const warning = orange;
-  static const error   = Color(0xFFC97B6E);
+  static const error = Color(0xFFFF647C);
 
-  // Yüzey — açık temada sıcak krem, koyu temada soğuk lacivert (bkz. 2. ve
-  // 3. görsel referans: açık = sıcak clay UI, koyu = lacivert token sheet)
-  static const bg      = Color(0xFFF6F1E9);
-  static const surface = Color(0xFFFDFBF6);
+  // Açık ve koyu yüzeyler; oyun aksanları her iki parlaklıkta da korunur.
+  static const bg = Color(0xFFF3F2FA);
+  static const surface = Color(0xFFFFFFFF);
 
   // Metin
-  static const textPrimary   = Color(0xFF3A342C);
-  static const textSecondary = Color(0xFF675E54);
+  static const textPrimary = Color(0xFF171525);
+  static const textSecondary = Color(0xFF59566B);
 
   // Koyu tema yüzeyleri
-  static const bgDark          = Color(0xFF161C29);
-  static const surfaceDark     = Color(0xFF212A3B);
-  static const surfaceDarkHi   = Color(0xFF2A3447); // bir ton daha açık (kart üstü kart)
-  static const accentGold      = Color(0xFFD9A25C); // koyu temanın birincil vurgusu
-  static const accentGoldSoft  = Color(0xFFE8C08A);
-  static const textPrimaryDark   = Color(0xFFEDE7DD);
-  static const textSecondaryDark = Color(0xFF9098A8);
+  static const bgDark = Color(0xFF0D0C16);
+  static const surfaceDark = Color(0xFF171522);
+  static const surfaceDarkHi = Color(0xFF211E31);
+  static const accentGold = Color(0xFFB18AFF);
+  static const accentGoldSoft = Color(0xFFD1B8FF);
+  static const textPrimaryDark = Color(0xFFF5F1FF);
+  static const textSecondaryDark = Color(0xFFB5AEC8);
 
   // Gradyanlar — hepsi yumuşak, düşük kontrast; artık "hangi oyun hangi
   // neon renk" değil, "hangi oyun hangi yumuşak ton" mantığıyla ayrışıyor
   static const gradPurple = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [purple, purpleDk],
   );
   static const gradRed = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [red, redDk],
   );
   static const gradGreen = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [green, greenDk],
   );
   static const gradOrange = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [orange, orangeDk],
   );
   static const gradBlue = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [blue, blueDk],
   );
   static const gradPink = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFFC47A90), Color(0xFF8E4E62)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFF76B7), Color(0xFFB73778)],
   );
   static const gradCyan = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFF3E8F86), Color(0xFF24635C)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF38D9D1), Color(0xFF168A92)],
   );
   static const gradDark = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFF232A3A), bgDark],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF29233D), bgDark],
   );
   static const gradRose = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
-    colors: [Color(0xFFC46A62), Color(0xFF8A403C)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFFF647C), Color(0xFFB82F50)],
   );
 
-  /// Koyu temanın kendi "token sheet" gradyanı — Ayarlar/Splash/Onboarding
-  /// gibi ekranların koyu modda kullandığı marka arka planı.
+  /// Koyu tema yüzey gradyanı.
   static const gradNavy = LinearGradient(
-    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [surfaceDarkHi, bgDark],
   );
 }
 
 abstract class AZSpacing {
-  static const xs  = 4.0;
-  static const sm  = 8.0;
-  static const md  = 16.0;
-  static const lg  = 24.0;
-  static const xl  = 32.0;
+  static const xs = 4.0;
+  static const sm = 8.0;
+  static const md = 16.0;
+  static const lg = 24.0;
+  static const xl = 32.0;
   static const xxl = 48.0;
 }
 
 abstract class AZRadius {
-  static const sm  = 8.0;
-  static const md  = 12.0;
-  static const lg  = 18.0;
-  static const xl  = 24.0;
+  static const sm = 8.0;
+  static const md = 12.0;
+  static const lg = 18.0;
+  static const xl = 24.0;
   static const xxl = 32.0;
 }
 
@@ -122,17 +125,26 @@ abstract class AZRadius {
 /// rengi de parametrik: açık temada ılık kahve-gri, koyu temada saf siyah.
 abstract class AZShadow {
   static List<BoxShadow> soft(Color tint) => [
-        BoxShadow(color: tint.withAlpha(28), blurRadius: 14, offset: const Offset(0, 4)),
+        BoxShadow(
+            color: tint.withAlpha(28),
+            blurRadius: 14,
+            offset: const Offset(0, 4)),
       ];
   static List<BoxShadow> medium(Color tint) => [
-        BoxShadow(color: tint.withAlpha(40), blurRadius: 22, offset: const Offset(0, 8)),
+        BoxShadow(
+            color: tint.withAlpha(40),
+            blurRadius: 22,
+            offset: const Offset(0, 8)),
       ];
   static List<BoxShadow> deep(Color tint) => [
-        BoxShadow(color: tint.withAlpha(60), blurRadius: 32, offset: const Offset(0, 14)),
+        BoxShadow(
+            color: tint.withAlpha(60),
+            blurRadius: 32,
+            offset: const Offset(0, 14)),
       ];
 
   static const lightTint = Color(0xFF3A342C);
-  static const darkTint  = Color(0xFF000000);
+  static const darkTint = Color(0xFF000000);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -141,22 +153,26 @@ abstract class AZShadow {
 
 abstract class AZTheme {
   static ThemeData get light => _build(
-      ColorScheme.fromSeed(seedColor: AZColors.orange, brightness: Brightness.light),
+      ColorScheme.fromSeed(
+          seedColor: AZColors.orange, brightness: Brightness.light),
       Brightness.light);
 
   static ThemeData get dark => _build(
-      ColorScheme.fromSeed(seedColor: AZColors.accentGold, brightness: Brightness.dark),
+      ColorScheme.fromSeed(
+          seedColor: AZColors.accentGold, brightness: Brightness.dark),
       Brightness.dark);
 
   /// Ayarlar'da kullanıcının seçtiği özel bir vurgu rengine göre üretilen
   /// tema — `light`/`dark` ile aynı yapıyı kullanır, sadece tohum (seed)
   /// rengi değişir.
-  static ThemeData fromSeed(Color seed, Brightness brightness) =>
-      _build(ColorScheme.fromSeed(seedColor: seed, brightness: brightness), brightness);
+  static ThemeData fromSeed(Color seed, Brightness brightness) => _build(
+      ColorScheme.fromSeed(seedColor: seed, brightness: brightness),
+      brightness);
 
   /// Telefonun kendi Material You (dinamik renk) şemasından üretilen tema
   /// — `dynamic_color` paketinin sağladığı gerçek `ColorScheme`'i kullanır.
-  static ThemeData fromScheme(ColorScheme scheme) => _build(scheme, scheme.brightness);
+  static ThemeData fromScheme(ColorScheme scheme) =>
+      _build(scheme, scheme.brightness);
 
   /// Ana sayfa/Splash/Onboarding gibi "hero" gradyanlarında kullanılan,
   /// aktif temanın vurgu rengine göre üretilen dinamik gradyan — böylece
@@ -165,7 +181,8 @@ abstract class AZTheme {
   static LinearGradient dynamicGradient(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     final hsl = HSLColor.fromColor(primary);
-    final darker = hsl.withLightness((hsl.lightness - 0.16).clamp(0.0, 1.0)).toColor();
+    final darker =
+        hsl.withLightness((hsl.lightness - 0.16).clamp(0.0, 1.0)).toColor();
     return LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -175,13 +192,16 @@ abstract class AZTheme {
 
   static ThemeData _build(ColorScheme scheme, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final bg      = isDark ? AZColors.bgDark      : AZColors.bg;
+    final bg = isDark ? AZColors.bgDark : AZColors.bg;
     final surface = isDark ? AZColors.surfaceDark : AZColors.surface;
     final surfaceHi = isDark ? AZColors.surfaceDarkHi : Colors.white;
     final shadowTint = isDark ? AZShadow.darkTint : AZShadow.lightTint;
-    final textPrimary   = isDark ? AZColors.textPrimaryDark   : AZColors.textPrimary;
-    final textSecondary = isDark ? AZColors.textSecondaryDark : AZColors.textSecondary;
-    final borderColor = isDark ? const Color(0x22FFFFFF) : const Color(0x14000000);
+    final textPrimary =
+        isDark ? AZColors.textPrimaryDark : AZColors.textPrimary;
+    final textSecondary =
+        isDark ? AZColors.textSecondaryDark : AZColors.textSecondary;
+    final borderColor =
+        isDark ? const Color(0x22FFFFFF) : const Color(0x14000000);
 
     return ThemeData(
       useMaterial3: true,
@@ -208,7 +228,7 @@ abstract class AZTheme {
         backgroundColor: bg,
         foregroundColor: textPrimary,
         systemOverlayStyle: SystemUiOverlayStyle(
-          statusBarColor:          Colors.transparent,
+          statusBarColor: Colors.transparent,
           statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
         ),
       ),
@@ -285,13 +305,15 @@ abstract class AZTheme {
         ),
         titleTextStyle: TextStyle(
             color: textPrimary, fontSize: 18, fontWeight: FontWeight.w700),
-        contentTextStyle: TextStyle(color: textSecondary, fontSize: 14, height: 1.5),
+        contentTextStyle:
+            TextStyle(color: textSecondary, fontSize: 14, height: 1.5),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: isDark ? AZColors.surfaceDarkHi : AZColors.textPrimary,
         contentTextStyle: TextStyle(
-            color: isDark ? AZColors.textPrimaryDark : Colors.white, fontSize: 14),
+            color: isDark ? AZColors.textPrimaryDark : Colors.white,
+            fontSize: 14),
         elevation: 0,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AZRadius.lg)),
@@ -324,29 +346,28 @@ abstract class AZTheme {
         textColor: textPrimary,
         iconColor: textSecondary,
       ),
-      dividerTheme: DividerThemeData(color: borderColor, thickness: 1, space: 1),
+      dividerTheme:
+          DividerThemeData(color: borderColor, thickness: 1, space: 1),
       iconTheme: IconThemeData(color: textPrimary),
     );
   }
 
-  /// Ayarlar/Splash/Onboarding gibi "chrome" ekranlarında koyu temada
-  /// kullanılan marka gradyanı — artık lacivert "token sheet" tonunda.
+  /// Ayarlar/Splash/Onboarding ekranlarının marka gradyanı.
   static const darkBrandGradient = AZColors.gradNavy;
 
-  /// Ayarlar'daki "Özel Renk" seçicisinde sunulan hazır palet — hepsi yeni
-  /// yumuşak/mat aileden.
+  /// Ayarlar'daki özel vurgu rengi paleti.
   static const List<Color> customColorSwatches = [
+    AZColors.purple,
+    AZColors.blue,
+    Color(0xFF38D9D1),
+    AZColors.green,
     AZColors.orange,
     AZColors.red,
-    Color(0xFFDCC17A), // hardal
-    AZColors.green,
-    Color(0xFF7FBBAE), // deniz yeşili
-    AZColors.blue,
-    AZColors.purple,
-    Color(0xFFCE94B0), // toz pembe
-    Color(0xFF5C6B7A), // arduvaz lacivert
-    Color(0xFF6FA394), // çam yeşili
-    Color(0xFFB07C4F), // tarçın
-    AZColors.accentGold,
+    Color(0xFFFF76B7),
+    Color(0xFF5865F2),
+    Color(0xFF8C7CFF),
+    Color(0xFF23A6D5),
+    Color(0xFF22C55E),
+    Color(0xFFFF8A3D),
   ];
 }

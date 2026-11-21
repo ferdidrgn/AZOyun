@@ -29,9 +29,8 @@ class WinRateDonut extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           BentoSectionLabel('Galibiyet Oranı',
-              trailing: bestStreak > 0
-                  ? _StreakChip(bestStreak: bestStreak)
-                  : null),
+              trailing:
+                  bestStreak > 0 ? _StreakChip(bestStreak: bestStreak) : null),
           const SizedBox(height: 18),
           if (!hasData)
             const _EmptyChartPlaceholder()
@@ -47,13 +46,13 @@ class WinRateDonut extends StatelessWidget {
                     sections: [
                       PieChartSectionData(
                         value: wins.toDouble().clamp(0.0001, double.infinity),
-                        color: DashTokens.emerald,
+                        color: DashTokens.emerald(context),
                         showTitle: false,
                         radius: 22,
                       ),
                       PieChartSectionData(
                         value: losses.toDouble().clamp(0.0001, double.infinity),
-                        color: DashTokens.highlight,
+                        color: DashTokens.highlight(context),
                         showTitle: false,
                         radius: 22,
                       ),
@@ -63,17 +62,24 @@ class WinRateDonut extends StatelessWidget {
                 ),
                 Column(mainAxisSize: MainAxisSize.min, children: [
                   Text('${winRate.toStringAsFixed(0)}%',
-                      style: DashTokens.metricValue.copyWith(fontSize: 24)),
-                  Text('galibiyet', style: DashTokens.labelSm),
+                      style: DashTokens.metricValue(context)
+                          .copyWith(fontSize: 24)),
+                  Text('galibiyet', style: DashTokens.labelSm(context)),
                 ]),
               ]),
             ).animate().fadeIn(duration: 400.ms).scale(
                 begin: const Offset(0.9, 0.9), curve: Curves.easeOutBack),
           const SizedBox(height: 16),
           Row(children: [
-            _Legend(color: DashTokens.emerald, label: 'Galibiyet', value: '$wins'),
+            _Legend(
+                color: DashTokens.emerald(context),
+                label: 'Galibiyet',
+                value: '$wins'),
             const SizedBox(width: 20),
-            _Legend(color: DashTokens.highlight, label: 'Mağlubiyet', value: '$losses'),
+            _Legend(
+                color: DashTokens.highlight(context),
+                label: 'Mağlubiyet',
+                value: '$losses'),
           ]),
         ],
       ),
@@ -82,20 +88,25 @@ class WinRateDonut extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend({required this.color, required this.label, required this.value});
+  const _Legend(
+      {required this.color, required this.label, required this.value});
   final Color color;
   final String label, value;
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
+  Widget build(BuildContext context) =>
+      Row(mainAxisSize: MainAxisSize.min, children: [
         Container(
           width: 8,
           height: 8,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text('$value ', style: DashTokens.body.copyWith(color: DashTokens.textPrimary, fontWeight: FontWeight.w700)),
-        Text(label, style: DashTokens.labelSm),
+        Text('$value ',
+            style: DashTokens.body(context).copyWith(
+                color: DashTokens.textPrimary(context),
+                fontWeight: FontWeight.w700)),
+        Text(label, style: DashTokens.labelSm(context)),
       ]);
 }
 
@@ -107,12 +118,14 @@ class _StreakChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: DashTokens.amber.withAlpha(24),
+          color: DashTokens.amber(context).withAlpha(24),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text('🔥 $bestStreak seri',
             style: TextStyle(
-                fontSize: 10.5, fontWeight: FontWeight.w700, color: DashTokens.amber)),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: DashTokens.amber(context))),
       );
 }
 
@@ -124,9 +137,10 @@ class _EmptyChartPlaceholder extends StatelessWidget {
         height: 160,
         child: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.donut_large_rounded, color: DashTokens.textTertiary, size: 40),
+            Icon(Icons.donut_large_rounded,
+                color: DashTokens.textTertiary(context), size: 40),
             const SizedBox(height: 8),
-            Text('Henüz maç verisi yok', style: DashTokens.labelSm),
+            Text('Henüz maç verisi yok', style: DashTokens.labelSm(context)),
           ]),
         ),
       );

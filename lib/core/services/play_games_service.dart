@@ -13,19 +13,27 @@ class PlayGamesService extends ChangeNotifier {
   static const _interactiveTimeout = Duration(minutes: 2);
   static const _channel = MethodChannel('azoyun/play_games');
   static const _defaultLeaderboardId = 'CgkIxOrNg4kPEAIQAQ';
-  static const xpLeaderboardId =
-      String.fromEnvironment('PGS_XP_LEADERBOARD_ID', defaultValue: 'CgkIxOrNg4kPEAIQEA');
+  static const xpLeaderboardId = String.fromEnvironment('PGS_XP_LEADERBOARD_ID',
+      defaultValue: 'CgkIxOrNg4kPEAIQEA');
 
   static const _achievementIds = {
     'first_step': 'CgkIxOrNg4kPEAIQAw',
-    'ten_games': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAMES', defaultValue: 'CgkIxOrNg4kPEAIQCw'),
-    'fifty_games': String.fromEnvironment('PGS_ACHIEVEMENT_FIFTY_GAMES', defaultValue: 'CgkIxOrNg4kPEAIQDg'),
-    'five_wins': String.fromEnvironment('PGS_ACHIEVEMENT_FIVE_WINS', defaultValue: 'CgkIxOrNg4kPEAIQDA'),
-    'twenty_wins': String.fromEnvironment('PGS_ACHIEVEMENT_TWENTY_WINS', defaultValue: 'CgkIxOrNg4kPEAIQDQ'),
-    'win_streak_3': String.fromEnvironment('PGS_ACHIEVEMENT_WIN_STREAK_3', defaultValue: 'CgkIxOrNg4kPEAIQDw'),
-    'try_them_all': String.fromEnvironment('PGS_ACHIEVEMENT_TRY_THEM_ALL', defaultValue: 'CgkIxOrNg4kPEAIQCg'),
-    'hundred_games': String.fromEnvironment('PGS_ACHIEVEMENT_HUNDRED_GAMES', defaultValue: 'CgkIxOrNg4kPEAIQEQ'),
-    'ten_game_types': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAME_TYPES', defaultValue: 'CgkIxOrNg4kPEAIQEg'),
+    'ten_games': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAMES',
+        defaultValue: 'CgkIxOrNg4kPEAIQCw'),
+    'fifty_games': String.fromEnvironment('PGS_ACHIEVEMENT_FIFTY_GAMES',
+        defaultValue: 'CgkIxOrNg4kPEAIQDg'),
+    'five_wins': String.fromEnvironment('PGS_ACHIEVEMENT_FIVE_WINS',
+        defaultValue: 'CgkIxOrNg4kPEAIQDA'),
+    'twenty_wins': String.fromEnvironment('PGS_ACHIEVEMENT_TWENTY_WINS',
+        defaultValue: 'CgkIxOrNg4kPEAIQDQ'),
+    'win_streak_3': String.fromEnvironment('PGS_ACHIEVEMENT_WIN_STREAK_3',
+        defaultValue: 'CgkIxOrNg4kPEAIQDw'),
+    'try_them_all': String.fromEnvironment('PGS_ACHIEVEMENT_TRY_THEM_ALL',
+        defaultValue: 'CgkIxOrNg4kPEAIQCg'),
+    'hundred_games': String.fromEnvironment('PGS_ACHIEVEMENT_HUNDRED_GAMES',
+        defaultValue: 'CgkIxOrNg4kPEAIQEQ'),
+    'ten_game_types': String.fromEnvironment('PGS_ACHIEVEMENT_TEN_GAME_TYPES',
+        defaultValue: 'CgkIxOrNg4kPEAIQEg'),
   };
 
   String? _playerId;
@@ -90,7 +98,7 @@ class PlayGamesService extends ChangeNotifier {
           PlatformException(details: 7) =>
             'Play Games’e erişilemedi. İnternet bağlantını kontrol edip tekrar dene.',
           PlatformException(details: 10) =>
-            'Bu AZOyun sürümü Play Games ile doğrulanamadı (kod 10).',
+            'Play Games yapılandırması eşleşmiyor (kod 10). Paket adı ve bu APK/AAB imzasının SHA-1’i Play Console ayarlarıyla eşleşmeli.',
           PlatformException(details: 16) => 'Play Games girişi iptal edildi.',
           PlatformException(details: final int code) =>
             'Play Games bağlantısı kurulamadı (kod $code).',

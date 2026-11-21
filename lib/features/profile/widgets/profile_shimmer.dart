@@ -16,12 +16,12 @@ class _Bone extends StatelessWidget {
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: DashTokens.highlight,
+          color: DashTokens.highlight(context),
           borderRadius: BorderRadius.circular(radius),
         ),
-      ).animate(onPlay: (c) => c.repeat()).shimmer(
-          duration: 1400.ms,
-          color: Colors.white.withAlpha(20));
+      )
+          .animate(onPlay: (c) => c.repeat())
+          .shimmer(duration: 1400.ms, color: Colors.white.withAlpha(20));
 }
 
 /// Profil dashboard'ının tamamı yüklenirken gösterilen bento-grid
@@ -38,7 +38,8 @@ class ProfileDashboardShimmer extends StatelessWidget {
         const _Bone(width: 64, height: 64, radius: 20),
         const SizedBox(width: 16),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const _Bone(width: 140, height: 18),
             const SizedBox(height: 10),
             const _Bone(height: 10, radius: 5),
@@ -49,20 +50,25 @@ class ProfileDashboardShimmer extends StatelessWidget {
       ]),
     );
 
-    final kpiRow = Row(children: List.generate(3, (i) => Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: i == 2 ? 0 : 12),
-            child: BentoCard(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const _Bone(width: 38, height: 38, radius: 11),
-                const SizedBox(height: 16),
-                const _Bone(width: 60, height: 22),
-                const SizedBox(height: 6),
-                const _Bone(width: 50, height: 10),
-              ]),
-            ),
-          ),
-        )));
+    final kpiRow = Row(
+        children: List.generate(
+            3,
+            (i) => Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: i == 2 ? 0 : 12),
+                    child: BentoCard(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const _Bone(width: 38, height: 38, radius: 11),
+                            const SizedBox(height: 16),
+                            const _Bone(width: 60, height: 22),
+                            const SizedBox(height: 6),
+                            const _Bone(width: 50, height: 10),
+                          ]),
+                    ),
+                  ),
+                )));
 
     final chartCard = BentoCard(
       child: Column(children: [
@@ -87,11 +93,13 @@ class ProfileDashboardShimmer extends StatelessWidget {
               const _Bone(width: 40, height: 40, radius: 12),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const _Bone(height: 12),
-                  const SizedBox(height: 6),
-                  _Bone(width: 100, height: 10),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _Bone(height: 12),
+                      const SizedBox(height: 6),
+                      _Bone(width: 100, height: 10),
+                    ]),
               ),
             ]),
           ),

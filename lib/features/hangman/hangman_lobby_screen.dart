@@ -2,6 +2,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
 import 'hangman_room_screen.dart';
 
@@ -22,7 +23,7 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
   String? _playerName;
   bool    _loading = false;
 
-  static const _kRed = Color(0xFFAD6F63);
+  static const _kRed = AZColors.red;
 
   @override
   void initState() {
@@ -108,10 +109,7 @@ class _HangmanLobbyScreenState extends State<HangmanLobbyScreen> {
   @override
   Widget build(BuildContext context) {
     return AZGradientScaffold(
-      gradient: const LinearGradient(
-        begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [Color(0xFFCB8A7E), Color(0xFFAD6F63)],
-      ),
+      gradient: AZColors.gradRed,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(children: [

@@ -637,10 +637,7 @@ class _OnlineGamesTab extends StatelessWidget {
       AZGameCard(
         emoji: '🏁', title: 'Araba Yarışı',
         subtitle: '2-4 Oyuncu · 3 Tur · Top-down',
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3A4356), Color(0xFF232B3A)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
+        gradient: AZColors.gradBlue,
         onTap: () => _push(context, const RacingLobbyScreen()),
         badge: 'YENİ',
       ),
@@ -689,10 +686,7 @@ class _OnlineGamesTab extends StatelessWidget {
       AZGameCard(
         emoji: '⚪⚫', title: 'Dama',
         subtitle: '2 Oyuncu · Türk Dama · Klasik strateji',
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5C4A3D), Color(0xFF2E241D)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
+        gradient: AZColors.gradPurple,
         onTap: () => _push(context, const DamaLobbyScreen()),
         badge: 'YENİ',
       ),
@@ -702,10 +696,7 @@ class _OnlineGamesTab extends StatelessWidget {
       AZGameCard(
         emoji: '⚔️', title: 'Dövüşçüler',
         subtitle: '1v1 · 6 karakter · Kombo & özel yetenek',
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5C3530), Color(0xFF2E1A17)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
+        gradient: AZColors.gradRed,
         onTap: () => _push(context, const FighterLobbyScreen()),
         badge: 'YENİ',
       ),
@@ -727,10 +718,7 @@ class _OnlineGamesTab extends StatelessWidget {
       AZGameCard(
         emoji: '👨‍🚀', title: 'Hain Kim?',
         subtitle: '4-10 Oyuncu · Görev tamamla · Gizli haini bul',
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2A3540), Color(0xFF35434D), Color(0xFF425461)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-        ),
+        gradient: AZColors.gradCyan,
         onTap: () => _push(context, const ImpostorLobbyScreen()),
         badge: 'YENİ',
       ),

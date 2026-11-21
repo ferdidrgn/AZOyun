@@ -24,7 +24,7 @@
 - Kelime Tahtası 2–4 kişi, yedi harf, 11×11 tahta ve kod içinde sınırlı bir aile sözlüğü kullanıyor. Genel Türkçe sözlüğün tamamını desteklediği iddia edilmemeli.
 - Gizli Rol 4–8 kişi. Her yaşayan oyuncu gece görevi veya dinlenme, gündüz oy onayı gönderiyor. Sabotajcı, koruyucu, gözcü ve köylü var. Tartışma ve sonraki geceyi TV kurucusu ilerletiyor.
 - Yeni iki oyun için gerçek HTTPS API yayını bekliyor. Firebase Hosting tek başına Node API'yi çalıştırmaz.
-- Sürüm `1.0.0+21`. Play workflow varsayılanı dahili test. İmzalı AAB artifact olarak saklanıyor. ARM 32/64 bit derleme seçili.
+- Sürüm `1.0.1+22`. Play workflow varsayılanı dahili test. İmzalı AAB artifact olarak saklanıyor. ARM 32/64 bit derleme seçili.
 
 ## Test sonuçları
 

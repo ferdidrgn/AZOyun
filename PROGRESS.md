@@ -1,5 +1,44 @@
 # AZOyun oyun geliştirme ve ilerleme takibi
 
+## EN YÜKSEK ÖNCELİK · Flutter Android + HTML/CSS/JS web dengesi
+
+- [x] Mevcut dağıtım doğrulandı: Android uygulaması Flutter akışını, web yayını `web/` içindeki özel HTML/CSS/JS salonunu kullanıyor. GitHub Actions `main` push'unda `node scripts/build-web.mjs` çalıştırıp `build/salon` çıktısını Firebase Hosting'e dağıtıyor; Flutter Web derlemesi yapmıyor.
+- [x] Tasarım kararı: Android oyunları Flutter içinde kalacak; web sitesi statik HTML/CSS/JS olarak kalacak. Flutter web uygulamasını siteye gömmek yerine ortak backend, oyun kimlikleri, katalog verisi ve kural/sonuç sözleşmeleri kullanılacak.
+- [x] Sürüm `1.0.0+21` → `1.0.1+22` yükseltildi. `main` push'u ve Actions sonucu bekliyor.
+- [x] Web yayını testi, kök sayfanın HTML/CSS/JS girişlerini kullanmasını ve Flutter bootstrap dosyalarını referans etmemesini kontrol edecek şekilde güçlendirildi.
+- [ ] `main`'e push et; statik HTML/CSS/JS Firebase Hosting deploy'unu ve Android dahili AAB iş akışını Actions'ta doğrula. Google Play test kanalı servis hesabı izni daha önce eksik olduğundan upload adımı başarısız olabilir.
+- [ ] Oyun envanterini Android Flutter motorları, mevcut ortak Three.js/JavaScript motorları ve yalnızca tarayıcıda bulunan motorlar olarak ayır. Her oyun için desteklenen istemcileri ve ortak kural/sonuç sözleşmesini yaz.
+- [ ] Mevcut Three.js motorunu Android ve web'de ortak çalıştırma sınırlarını doğrula; köprü, dokunma/kumanda girdisi, yaşam döngüsü ve hata kurtarmayı tanımla. Dart-only oyunlarda Flutter Android motorunu koru ve HTML/JS web karşılığını aynı kural fixture'larıyla doğrula.
+- [ ] Web'de HTML/CSS oyun kabuğu içinde Canvas/Three.js motorunu barındır; telefon ve masaüstü reklam yerleşimlerini yalnızca web tarafında, mevcut `WEB_ADS_ENABLED` izin anahtarı ve reklam/consent kurallarıyla yönet.
+- [ ] `main` push CI'sında Flutter Android test/build ile statik HTML/CSS/JS derleme/test/deploy işlerini ayrı ve görünür tut. Flutter Web çıktısının Firebase Hosting'e yanlışlıkla yüklenmediğini otomatik doğrula.
+- [ ] Android, web ve oda sunucusunu temsili oyunlarda aynı oda/hamle/sonuç senaryolarıyla doğrula; ardından diğer oyunlara dalgalar halinde yay.
+
+## 21 Kasım 2026 · Tema, profil ve ayarlar
+
+- [x] Uygulama genelindeki Material 3 renk paleti daha oyun odaklı, futuristik elektrik moru ve parlak semantik aksanlara geçirildi. Açık/koyu yüzeyler ile özel renk paleti merkezileştirildi.
+- [x] Profil ve liderlik tablosunun sabit koyu renkleri kaldırıldı; kartlar, yazılar ve vurgular artık uygulamanın seçili temasını izliyor.
+- [x] Lobi/Play yüzeyleri ortak Material 3 yüzey ve metin renklerine bağlandı. Oyun tahtalarının kendi oynanış renkleri korundu.
+- [x] Ayarlarda seçili dil adı bütün mevcut diller için doğru gösteriliyor; bildirim izni durumu görünür, izin sonrası sistem ayarlarına yönlendirme ve uygulamaya dönünce durumu yenileme var. Play Games bağlantı durumu ekrana anlık yansıyor.
+- [x] Gizlilik politikası ve kullanım şartları ekranlarının projede mevcut olduğu doğrulandı; tema metin görünümüne uygulanıyor.
+- [x] Ana oyun kataloğundaki sabit eski yarış/zeka/dama/dövüş/sosyal kart gradyanları ortak oyun paletine bağlandı. Adam Asmaca lobi ve oda ekranları da aynı canlı kırmızı tema tokenlarını kullanıyor.
+- [ ] Oyun dışı sayfaların kalan sabit renk ve yazı stillerini tek tek gözden geçir; ortak lobby/HUD/sonuç/tekli oyun yüzeylerini aynı tasarım sistemine taşı.
+- [ ] Telefon ve TV’de açık/koyu tema, büyük yazı, erişilebilir dokunma hedefleri ve kumandayla gezinmeyi gerçek cihaz/emülatörde doğrula.
+- [ ] Play Games’i Play Console’daki `com.ferdidrgn.azgame` kaydı ve Play App Signing SHA-1 ile eşleştir; mağaza test kanalında giriş ve Saved Games geri yüklemeyi doğrula. Hesap/sertifika ayarına henüz erişilmedi.
+- [ ] Mobile Design becerisi için istenen `npx claude-code-templates@latest --skill creative-design/mobile-design` kurulumunu ağ/DNS erişimi düzeldiğinde tamamla ve kurulu `SKILL.md` ile zorunlu referanslarını oku. Bu oturumda DNS çözümlemesi başarısız oldu.
+
+## 21 Kasım 2026 · Akıllı saat / Wear OS araştırması
+
+- [x] Resmî Android ve Google Play kaynakları araştırıldı. AZOyun için ilk hedef Wear OS saat; küçük ekranda tam masa oyunu yerine aktif oda özeti, oyuncu sayısı, sıra bilgisi ve kısa titreşimli bildirimler öneriliyor. [Wear tasarım kılavuzu](https://developer.android.com/design/ui/wear/guides/get-started/design-for-wearables) · [Wear OS arayüzleri](https://developer.android.com/training/wearables/user-interfaces)
+- [x] Oda mantığının tek sahibi Firebase Realtime Database ve mevcut `RoomService` olacak. Bağlantı: Firebase oda olayı (oyuncu katıldı / oda başladı / sıra değişti / maç bitti) → telefondaki mevcut oda akışı → güvenli ve kısa Wear OS durumu/bildirimi → saat ekranı ve titreşim. Saatteki bir eylem → eşlenmiş telefon → mevcut oda/hamle doğrulaması ve Firebase işlemi. Saatte ikinci bir oyun kuralı veya bağımsız oda gerçeği tutulmayacak.
+- [x] Veri yolları ayrıştırıldı: FCM ve mevcut `NotificationCompat` bildirimleri bulut kaynaklı davet/olaylar için; eşlenmiş Android telefon ile Wear OS saat arasındaki kısa durum ve uzaktan eylemler için Wearable Data Layer. Data Layer internet/backend yerine kullanılmayacak ve iPhone eşlemesiyle çalıştığı varsayılmayacak. [Data Layer sınırları](https://developer.android.com/training/wearables/data/overview) · [Wear bildirimleri](https://developer.android.com/training/wearables/notifications)
+- [x] Uygulama yapısı araştırıldı: mevcut Flutter Android projesinde Wear OS’a özel arayüz için küçük bir yerel Kotlin + Compose for Wear OS modülü gerekir; Wear Compose saat arayüzleri için Google’ın önerdiği araç takımıdır. [Flutter–Android köprüsü](https://docs.flutter.dev/platform-integration/android/call-jetpack-apis) · [Compose for Wear OS](https://developer.android.com/training/wearables/compose)
+- [ ] MVP kapsamını sabitle: etkin oda/oyun adı, oda kodu ve doluluk; oyuncu katıldı/oyun başladı/sıra sende olaylarında kısa bildirim ve titreşim; saatten telefonu veya ilgili oyunu açma. Okey taşı/kart hamlesi gibi tam oyun kontrolleri ilk sürüme alınmayacak.
+- [ ] Firebase oda akışlarında ortak olay sözleşmesini tanımla: `roomCreated`, `playerJoined`, `roomStarted`, `turnChanged`, `roomFinished`. Her oyun kendi mevcut kural servisini kullanmalı; saat yalnızca gerekli oyuncu/oda özetini görmeli, gizli el/rol/hedef verisi taşımamalı.
+- [ ] Android modülleri arasında Wear OS modülünü ve telefondaki Flutter uygulamasına ince bir platform köprüsünü kur. `CapabilityClient` ile eşli saatte uygulamanın bulunmasını algıla; yalnızca etkin oda özetini ve telefon açma/izinli hızlı eylem isteklerini aktar. Hızlı eylemleri telefon tarafında mevcut Firebase transaction ve sıra/koltuk doğrulamasından geçir.
+- [ ] Wear OS bildirimlerinde yinelenmeyi önle. Oda daveti ve arka plan olaylarını FCM’den; uygulama aktifken değişen oda özetini Data Layer veya mevcut Firebase akışından göster. Bağlantı kopunca eski durumu açıkça işaretle; yeniden bağlanmada Firebase’den güncel durumu al.
+- [ ] Wear OS emülatöründe eşleme, uygulama algılama, oda katılımı, sıra bildirimi, titreşim, bağlantı kesilip gelme, telefon uygulaması kapalı/açık ve yinelenen bildirim senaryolarını dene; ardından en az bir gerçek Wear OS saatte doğrula.
+- [ ] Play Console’da Wear OS form faktörünü/ayrı Wear OS test kanalını, TV’den ayrı mağaza ekran görüntülerini ve inceleme adımlarını yapılandır. Gerekli saat modülü ve Wear OS manifesti olmadan mevcut telefon + TV AAB’sinin saati desteklediğini varsayma. [Wear OS yayınlama](https://developer.android.com/training/wearables/packaging) · [Play Console form faktörleri](https://support.google.com/googleplay/android-developer/answer/13295490)
+
 ## 20 Kasım 2026 · 3D oyun görsel turu
 
 - [x] Ortak Three.js motoruna Neon Pist, Sinyal Avı, Yörünge Pilotu, Kristal Labirent, Mini Bowling, Frikik ve Penaltı modları bağlandı. Ortak HUD, duraklatma, yüksek skor, mobil dokunma ve gölge/ışık profili kullanılıyor.
@@ -85,7 +124,7 @@
 | 6 | Tekli oyunlar | Önce Yılan, Pac Labirent, Jump Dash ve yarış modu. Ardından bulmacalar ve çocuk oyunları. Her oyunda kontrol, zorluk eğrisi, duraklatma, sonuç ve tekrar oyna akışı. |
 
 - [ ] Oyun 2D sahnesi için ilk örnek Mini Golf. Mevcut Flutter `Ticker` ve `CustomPainter` sahnesini kullanıyor. Yarış ve dövüşte ortak sahne döngüsü, çarpışma ve dokunma girdileri tekrar etmeye başladığında Flame üzerinde prototip ve düşük donanımlı Android’de kare süresi karşılaştırması yapılacak. Mevcut Three.js 3D sahneleri kamera ve üç boyutlu hareket gereken oyunlarda değerlendirilecek.
-- [ ] Ortak sayfa düzeni çevrimiçi lobilerden başlayarak oyun HUD’ı, sonuç, profil, ayarlar ve tekli oyunlara uygulanacak. Açık ve koyu temada aynı yüzeyler, yazı stilleri, oda durumları, düğmeler ve boş ekranlar kullanılacak. Oyun tahtaları ve sahneler oynanış işaretlerini koruyacak.
+- [ ] Ortak sayfa düzenini kalan çevrimiçi lobiler, oyun HUD’ı, sonuç ekranları ve tekli oyunlara tamamla. Profil, ayarlar ve temel Material 3 tema düzenlendi; kalan sayfalarda açık/koyu yüzeyler, yazı stilleri, oda durumları, düğmeler ve boş ekranlar tutarlılaştırılacak. Oyun tahtaları ve sahneler oynanış işaretlerini koruyacak.
 - [ ] Her çevrimiçi oyunda manuel kod ve QR, oda dolu/kapalı, aynı anda katılım, zayıf bağlantı, geri tuşu, arka plana alma, sonuç ve rövanş doğrulanacak. Her tekli oyunda küçük ekran, büyük yazı, çevrimdışı oynama, duraklatma ve tekrar deneme doğrulanacak.
 - [ ] İmzalı AAB’yi dahili test kanalında deneyip temiz kurulum ve mevcut sürümden yükseltmeyi doğrula. Fiziksel cihaz ve test kanalı sonuçlarından sonra üretim yayınını değerlendir.
 

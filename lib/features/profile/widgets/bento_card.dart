@@ -28,7 +28,10 @@ class BentoCard extends StatelessWidget {
     final content = Container(
       padding: padding,
       decoration: bentoDecoration(
-          color: color, gradient: gradient, borderColor: borderColor),
+          context: context,
+          color: color,
+          gradient: gradient,
+          borderColor: borderColor),
       child: child,
     );
     if (onTap == null) return content;
@@ -54,7 +57,7 @@ class BentoSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(children: [
-        Text(text.toUpperCase(), style: DashTokens.labelSm),
+        Text(text.toUpperCase(), style: DashTokens.labelSm(context)),
         const Spacer(),
         if (trailing != null) trailing!,
       ]);

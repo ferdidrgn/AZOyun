@@ -28,9 +28,10 @@ class PlayGamesBanner extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color:
-                  (connected ? DashTokens.emerald : DashTokens.accent(context))
-                      .withAlpha(28),
+              color: (connected
+                      ? DashTokens.emerald(context)
+                      : DashTokens.accent(context))
+                  .withAlpha(28),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -38,7 +39,7 @@ class PlayGamesBanner extends StatelessWidget {
                   ? Icons.cloud_done_rounded
                   : Icons.videogame_asset_rounded,
               color: connected
-                  ? DashTokens.emeraldSoft
+                  ? DashTokens.emeraldSoft(context)
                   : DashTokens.accentSoft(context),
               size: 20,
             ),
@@ -55,7 +56,7 @@ class PlayGamesBanner extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
-                      color: DashTokens.textPrimary),
+                      color: DashTokens.textPrimary(context)),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -63,7 +64,7 @@ class PlayGamesBanner extends StatelessWidget {
                       (connected
                           ? 'Bulut eşitlemesini kontrol et'
                           : 'İlerlemeni buluta yedekle, liderlik tablosuna gir'),
-                  style: DashTokens.labelSm,
+                  style: DashTokens.labelSm(context),
                 ),
               ],
             ),
@@ -75,7 +76,8 @@ class PlayGamesBanner extends StatelessWidget {
                 child: CircularProgressIndicator(
                     strokeWidth: 2, color: DashTokens.accentSoft(context)))
           else if (!connected)
-            Icon(Icons.chevron_right_rounded, color: DashTokens.textTertiary),
+            Icon(Icons.chevron_right_rounded,
+                color: DashTokens.textTertiary(context)),
         ]),
       );
 }

@@ -54,7 +54,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _connectingPlayGames = false;
       _connectError = ok
           ? null
-          : PlayGamesService.instance.signInError ?? 'Play Games bağlantısı kurulamadı.';
+          : PlayGamesService.instance.signInError ??
+              'Play Games bağlantısı kurulamadı.';
     });
     if (!ok && mounted) {
       ScaffoldMessenger.of(context)
@@ -64,7 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: DashTokens.canvas,
+        backgroundColor: DashTokens.canvas(context),
         body: AnimatedBuilder(
             animation: Listenable.merge(
                 [ProfileService.instance, PlayGamesService.instance]),
@@ -85,19 +86,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMobileDashboard(BuildContext context) => CustomScrollView(
         slivers: [
           SliverAppBar(
-            backgroundColor: DashTokens.canvas,
+            backgroundColor: DashTokens.canvas(context),
             surfaceTintColor: Colors.transparent,
             pinned: true,
             expandedHeight: 96,
             leading: IconButton(
-              icon:
-                  Icon(Icons.arrow_back_rounded, color: DashTokens.textPrimary),
+              icon: Icon(Icons.arrow_back_rounded,
+                  color: DashTokens.textPrimary(context)),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
               title: Text('Profil',
-                  style: DashTokens.displayLg.copyWith(fontSize: 22)),
+                  style: DashTokens.displayLg(context).copyWith(fontSize: 22)),
               background: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -105,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     end: Alignment.bottomCenter,
                     colors: [
                       DashTokens.accent(context).withAlpha(24),
-                      DashTokens.canvas
+                      DashTokens.canvas(context)
                     ],
                   ),
                 ),
@@ -139,11 +140,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Row(children: [
                 IconButton(
                   icon: Icon(Icons.arrow_back_rounded,
-                      color: DashTokens.textPrimary),
+                      color: DashTokens.textPrimary(context)),
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(width: 8),
-                Text('Profil & İstatistikler', style: DashTokens.displayLg),
+                Text('Profil & İstatistikler',
+                    style: DashTokens.displayLg(context)),
               ]),
               const SizedBox(height: 28),
               Expanded(
@@ -235,7 +237,7 @@ class _MobileContent extends StatelessWidget {
             icon: Icons.emoji_events_rounded,
             value: '${p.wins}',
             label: 'Galibiyet',
-            accent: DashTokens.emerald,
+            accent: DashTokens.emerald(context),
             trend: p.gamesPlayed > 0
                 ? '${(p.wins / p.gamesPlayed * 100).round()}%'
                 : null,
@@ -247,7 +249,7 @@ class _MobileContent extends StatelessWidget {
             icon: Icons.local_fire_department_rounded,
             value: '${p.bestWinStreak}',
             label: 'En İyi Seri',
-            accent: DashTokens.amber,
+            accent: DashTokens.amber(context),
           ),
         ),
       ]).animate().fadeIn(duration: 400.ms, delay: 80.ms),
@@ -331,7 +333,7 @@ class _DesktopContent extends StatelessWidget {
                         icon: Icons.emoji_events_rounded,
                         value: '${p.wins}',
                         label: 'Galibiyet',
-                        accent: DashTokens.emerald,
+                        accent: DashTokens.emerald(context),
                         trend: p.gamesPlayed > 0
                             ? '${(p.wins / p.gamesPlayed * 100).round()}%'
                             : null,
@@ -343,7 +345,7 @@ class _DesktopContent extends StatelessWidget {
                         icon: Icons.local_fire_department_rounded,
                         value: '${p.bestWinStreak}',
                         label: 'En İyi Seri',
-                        accent: DashTokens.amber,
+                        accent: DashTokens.amber(context),
                       ),
                     ),
                   ]).animate().fadeIn(duration: 400.ms, delay: 80.ms),
@@ -411,9 +413,12 @@ class _NewPlayerBanner extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [DashTokens.emerald.withAlpha(38), DashTokens.surface],
+          colors: [
+            DashTokens.emerald(context).withAlpha(38),
+            DashTokens.surface(context)
+          ],
         ),
-        borderColor: DashTokens.emerald.withAlpha(60),
+        borderColor: DashTokens.emerald(context).withAlpha(60),
         child: Row(children: [
           Text('👋', style: const TextStyle(fontSize: 28)),
           const SizedBox(width: 14),
@@ -425,11 +430,11 @@ class _NewPlayerBanner extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: DashTokens.textPrimary)),
+                        color: DashTokens.textPrimary(context))),
                 const SizedBox(height: 3),
                 Text(
                     'İlk maçını oyna, istatistiklerin burada canlanmaya başlasın.',
-                    style: DashTokens.labelSm),
+                    style: DashTokens.labelSm(context)),
               ],
             ),
           ),
@@ -488,7 +493,7 @@ class _MissionCard extends StatelessWidget {
           const SizedBox(height: 10),
           if (data.locked.isEmpty) const Text('Tüm görevleri tamamladın.'),
           for (final mission in data.locked.take(3)) ...[
-            Text(mission.description, style: DashTokens.headline),
+            Text(mission.description, style: DashTokens.headline(context)),
             const SizedBox(height: 4),
             LinearProgressIndicator(
               value: mission.progress(data.profile).clamp(0, mission.goal) /
@@ -498,7 +503,7 @@ class _MissionCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${mission.progress(data.profile).clamp(0, mission.goal)}/${mission.goal}  ·  +${mission.xpReward} AZ XP',
-              style: DashTokens.labelSm,
+              style: DashTokens.labelSm(context),
             ),
             const SizedBox(height: 10),
           ],
@@ -522,11 +527,11 @@ class _LeaderboardEntryCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: DashTokens.amber.withAlpha(38),
+              color: DashTokens.amber(context).withAlpha(38),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(Icons.emoji_events_rounded,
-                color: DashTokens.amber, size: 22),
+                color: DashTokens.amber(context), size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -537,14 +542,15 @@ class _LeaderboardEntryCard extends StatelessWidget {
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: DashTokens.textPrimary)),
+                        color: DashTokens.textPrimary(context))),
                 const SizedBox(height: 2),
                 Text('Yılan ve 2048\'de en iyi skorlar',
-                    style: DashTokens.labelSm),
+                    style: DashTokens.labelSm(context)),
               ],
             ),
           ),
-          Icon(Icons.chevron_right_rounded, color: DashTokens.textTertiary),
+          Icon(Icons.chevron_right_rounded,
+              color: DashTokens.textTertiary(context)),
         ]),
       ).animate().fadeIn(duration: 350.ms);
 }

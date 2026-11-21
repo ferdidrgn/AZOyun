@@ -19,11 +19,12 @@ abstract class FeltColors {
   static const brassPageDeep = Color(0xFFE7D7A8);
 }
 
-TextStyle feltDisplay(Color color, double size) => GoogleFonts.fraunces(
+TextStyle feltDisplay(Color color, double size) => GoogleFonts.plusJakartaSans(
       fontSize: size,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w800,
       color: color,
       height: 1.05,
+      letterSpacing: -0.6,
     );
 
 TextStyle feltUi(
@@ -52,25 +53,16 @@ class FeltPalette {
 
   factory FeltPalette.of(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    if (dark) {
-      return const FeltPalette._(
-        dark: true,
-        canvasTop: FeltColors.felt,
-        canvasBottom: FeltColors.feltDeep,
-        ink: FeltColors.ivory,
-        muted: FeltColors.mist,
-        surface: FeltColors.feltLift,
-        line: Color(0x33F3EFE6),
-      );
-    }
-    return const FeltPalette._(
-      dark: false,
-      canvasTop: FeltColors.ivory,
-      canvasBottom: Color(0xFFE7E0D2),
-      ink: FeltColors.ink,
-      muted: Color(0xFF5E6B62),
-      surface: Colors.white,
-      line: Color(0x1F141C16),
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return FeltPalette._(
+      dark: dark,
+      canvasTop: theme.scaffoldBackgroundColor,
+      canvasBottom: scheme.surfaceContainerLow,
+      ink: scheme.onSurface,
+      muted: scheme.onSurfaceVariant,
+      surface: scheme.surfaceContainer,
+      line: scheme.outlineVariant,
     );
   }
 
@@ -85,7 +77,8 @@ class FeltPalette {
 
 /// Sayfa zemini. [showMark] yalnızca imza halkanın bu ekranda duracağı yerde true.
 class FeltBackdrop extends StatelessWidget {
-  const FeltBackdrop({super.key, required this.child, this.canvasTop, this.canvasBottom});
+  const FeltBackdrop(
+      {super.key, required this.child, this.canvasTop, this.canvasBottom});
 
   final Widget child;
   final Color? canvasTop;
@@ -99,7 +92,10 @@ class FeltBackdrop extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [canvasTop ?? palette.canvasTop, canvasBottom ?? palette.canvasBottom],
+          colors: [
+            canvasTop ?? palette.canvasTop,
+            canvasBottom ?? palette.canvasBottom
+          ],
         ),
       ),
       child: child,
@@ -117,7 +113,8 @@ class FeltMark extends StatefulWidget {
   State<FeltMark> createState() => _FeltMarkState();
 }
 
-class _FeltMarkState extends State<FeltMark> with SingleTickerProviderStateMixin {
+class _FeltMarkState extends State<FeltMark>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
@@ -203,7 +200,9 @@ class _FeltMarkPainter extends CustomPainter {
       final painter = TextPainter(
         text: TextSpan(
           text: suits[i],
-          style: TextStyle(fontSize: size.shortestSide * 0.11, color: colors[i].withValues(alpha: suitT)),
+          style: TextStyle(
+              fontSize: size.shortestSide * 0.11,
+              color: colors[i].withValues(alpha: suitT)),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -215,7 +214,8 @@ class _FeltMarkPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _FeltMarkPainter oldDelegate) => oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _FeltMarkPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 /// Oyun ekranlarının gradyanı üzerinde kenar kararması. Metin rengini değiştirmez.

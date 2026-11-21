@@ -25,7 +25,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: DashTokens.canvas,
+        backgroundColor: DashTokens.canvas(context),
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -35,12 +35,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 Row(children: [
                   IconButton(
                     icon: Icon(Icons.arrow_back_rounded,
-                        color: DashTokens.textPrimary),
+                        color: DashTokens.textPrimary(context)),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(width: 4),
                   Text('Liderlik Tablosu',
-                      style: DashTokens.displayLg.copyWith(fontSize: 22)),
+                      style:
+                          DashTokens.displayLg(context).copyWith(fontSize: 22)),
                 ]),
                 const SizedBox(height: 16),
                 if (PlayGamesService.instance.isSupported)
@@ -59,7 +60,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       ),
                   ]),
                 const SizedBox(height: 8),
-                Text('Bu cihazdaki skorlar', style: DashTokens.labelSm),
+                Text('Bu cihazdaki skorlar',
+                    style: DashTokens.labelSm(context)),
                 const SizedBox(height: 8),
                 _GamePicker(
                   games: _games,
@@ -124,10 +126,12 @@ class _GamePicker extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? DashTokens.accent(context)
-                      : DashTokens.surface,
+                      : DashTokens.surface(context),
                   borderRadius: BorderRadius.circular(DashTokens.chipRadius),
                   border: Border.all(
-                    color: isSelected ? Colors.transparent : DashTokens.border,
+                    color: isSelected
+                        ? Colors.transparent
+                        : DashTokens.border(context),
                   ),
                 ),
                 child: Text(
@@ -136,8 +140,8 @@ class _GamePicker extends StatelessWidget {
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: isSelected
-                        ? DashTokens.canvas
-                        : DashTokens.textSecondary,
+                        ? DashTokens.canvas(context)
+                        : DashTokens.textSecondary(context),
                   ),
                 ),
               ),
@@ -159,22 +163,23 @@ class _LeaderboardRow extends StatelessWidget {
     final medal = _medals[rank];
     return BentoCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      borderColor: rank <= 3 ? DashTokens.amber.withAlpha(70) : null,
+      borderColor: rank <= 3 ? DashTokens.amber(context).withAlpha(70) : null,
       child: Row(children: [
         SizedBox(
           width: 32,
           child: medal != null
               ? Text(medal, style: const TextStyle(fontSize: 20))
-              : Text('$rank', style: DashTokens.label.copyWith(fontSize: 14)),
+              : Text('$rank',
+                  style: DashTokens.label(context).copyWith(fontSize: 14)),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Text(entry.name,
-              style: DashTokens.headline.copyWith(fontSize: 15),
+              style: DashTokens.headline(context).copyWith(fontSize: 15),
               overflow: TextOverflow.ellipsis),
         ),
         Text('${entry.score}',
-            style: DashTokens.metricValue.copyWith(fontSize: 18)),
+            style: DashTokens.metricValue(context).copyWith(fontSize: 18)),
       ]),
     );
   }
@@ -189,10 +194,11 @@ class _EmptyState extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('🏆', style: const TextStyle(fontSize: 40)),
           const SizedBox(height: 12),
-          Text('Henüz $gameTitle skoru yok', style: DashTokens.headline),
+          Text('Henüz $gameTitle skoru yok',
+              style: DashTokens.headline(context)),
           const SizedBox(height: 6),
           Text('İlk skoru sen kaydet, adın burada görünsün.',
-              style: DashTokens.body),
+              style: DashTokens.body(context)),
         ]),
       );
 }

@@ -49,13 +49,13 @@ class NotificationService {
 
     try {
       _token = await _messaging.getToken();
-      debugPrint('[NotificationService] FCM token: $_token');
     } catch (e) {
       debugPrint('[NotificationService] token alınamadı: $e');
     }
 
     FirebaseMessaging.onMessage.listen((message) {
-      debugPrint('[NotificationService] ön planda mesaj: ${message.notification?.title}');
+      debugPrint(
+          '[NotificationService] ön planda mesaj: ${message.notification?.title}');
       _showForegroundNotification(message);
     });
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
@@ -75,7 +75,8 @@ class NotificationService {
         importance: Importance.high,
       );
       await _localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
     } catch (e) {
       debugPrint('[NotificationService] yerel bildirim kurulamadı: $e');
@@ -109,7 +110,8 @@ class NotificationService {
 
     final title = notification.title;
     final body = notification.body;
-    final text = [title, body].where((s) => s != null && s.isNotEmpty).join(' — ');
+    final text =
+        [title, body].where((s) => s != null && s.isNotEmpty).join(' — ');
     if (text.isEmpty) return;
     scaffoldMessengerKey.currentState?.showSnackBar(
       SnackBar(content: Text(text), duration: const Duration(seconds: 4)),
@@ -136,7 +138,8 @@ class NotificationService {
   Future<bool> hasPermission() async {
     try {
       final settings = await _messaging.getNotificationSettings();
-      return settings.authorizationStatus == AuthorizationStatus.authorized;
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (e) {
       return false;
     }

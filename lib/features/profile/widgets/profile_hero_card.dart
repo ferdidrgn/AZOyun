@@ -33,10 +33,13 @@ class ProfileHeroCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [accent.withAlpha(46), DashTokens.surface],
+          colors: [accent.withAlpha(46), DashTokens.surface(context)],
         ),
         boxShadow: [
-          BoxShadow(color: accent.withAlpha(30), blurRadius: 32, offset: const Offset(0, 16)),
+          BoxShadow(
+              color: accent.withAlpha(30),
+              blurRadius: 32,
+              offset: const Offset(0, 16)),
         ],
       ),
       child: Row(
@@ -49,16 +52,22 @@ class ProfileHeroCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: LinearGradient(
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
                 colors: [accent, accentSoft],
               ),
               boxShadow: [
-                BoxShadow(color: accent.withAlpha(90), blurRadius: 18, offset: const Offset(0, 8)),
+                BoxShadow(
+                    color: accent.withAlpha(90),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8)),
               ],
             ),
             child: Text('$level',
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800)),
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800)),
           ),
           const SizedBox(width: 18),
           Expanded(
@@ -70,44 +79,50 @@ class ProfileHeroCard extends StatelessWidget {
                     child: Text(playerName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: DashTokens.headline),
+                        style: DashTokens.headline(context)),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: DashTokens.amber.withAlpha(26),
+                      color: DashTokens.amber(context).withAlpha(26),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.paid_rounded, size: 13, color: DashTokens.amber),
+                      Icon(Icons.paid_rounded,
+                          size: 13, color: DashTokens.amber(context)),
                       const SizedBox(width: 4),
                       Text('$coins',
                           style: TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.w700, color: DashTokens.amber)),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: DashTokens.amber(context))),
                     ]),
                   ),
                 ]),
                 const SizedBox(height: 3),
-                Text('Seviye $level', style: DashTokens.label),
+                Text('Seviye $level', style: DashTokens.label(context)),
                 const SizedBox(height: 14),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: Stack(children: [
-                    Container(height: 8, color: DashTokens.highlight),
+                    Container(height: 8, color: DashTokens.highlight(context)),
                     FractionallySizedBox(
                       widthFactor: progress,
                       child: Container(
                         height: 8,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [accent, accentSoft]),
+                          gradient:
+                              LinearGradient(colors: [accent, accentSoft]),
                         ),
                       ),
                     ),
                   ]),
                 ).animate().fadeIn(duration: 500.ms),
                 const SizedBox(height: 6),
-                Text('$xpIntoLevel/$xpPerLevel XP · Seviye ${level + 1}\'e kadar',
-                    style: DashTokens.labelSm),
+                Text(
+                    '$xpIntoLevel/$xpPerLevel XP · Seviye ${level + 1}\'e kadar',
+                    style: DashTokens.labelSm(context)),
               ],
             ),
           ),
