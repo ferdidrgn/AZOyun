@@ -9,6 +9,7 @@ import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -128,64 +129,19 @@ class _CityLobbyScreenState extends State<CityLobbyScreen> {
   void _nav(Widget s) => Navigator.push(context, MaterialPageRoute(builder: (_) => s));
 
   @override
-  Widget build(BuildContext context) {
-    return AZGradientScaffold(
-      gradient: AZColors.gradPink,
-      child: Column(children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(children: [
-              Align(alignment: Alignment.centerLeft,
-                child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context))),
-              const SizedBox(height: 8),
-              const Text('🏙️', style: TextStyle(fontSize: 72)),
-              const SizedBox(height: 8),
-              const Text('ŞEHİR BULMACA',
-                  style: TextStyle(color: Colors.white, fontSize: 26,
-                      fontWeight: FontWeight.bold, letterSpacing: 2)),
-              const SizedBox(height: 4),
-              const Text('2-4 Oyuncu · 5 Tur · İpuçlarla şehri bul',
-                  style: TextStyle(color: Colors.white70, fontSize: 13)),
-              const SizedBox(height: 28),
-              AZNameChip(name: _playerName, onTap: _askName),
-              const SizedBox(height: 36),
-              AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-                  onPressed: _createRoom, color: _kPink, loading: _loading, width: 300),
-              const SizedBox(height: 28),
-              const Text('— veya —', style: TextStyle(color: Colors.white54)),
-              const SizedBox(height: 28),
-              AZFrostCard(child: Column(children: [
-                AZCodeField(controller: _codeCtrl),
-                const SizedBox(height: 14),
-                AZJoinButton(onPressed: _joinRoom, loading: _loading),
-              ])),
-              const SizedBox(height: 32),
-              AZFrostCard(opacity: 0.08, child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('🏙️  Nasıl oynanır?',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                    SizedBox(height: 10),
-                    Text(
-                      '• Her turda bir şehir için 3 ipucu verilir\n'
-                      '• İlk ipucuyla bil → 10 puan\n'
-                      '• İkinci ipucuyla → 7 puan, üçüncüyle → 4 puan\n'
-                      '• 5 tur sonunda en yüksek puan kazanır\n'
-                      '• 📺 Reklam izleyerek ekstra ipucu kazanabilirsin!',
-                      style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65),
-                    ),
-                  ])),
-              const SizedBox(height: 24),
-            ]),
-          ),
-        ),
-        // Banner reklam — lobby altında
-        const AdaptiveBannerAdWidget(),
-      ]),
-    );
-  }
+  Widget build(BuildContext context) => AZOnlineLobby(
+        title: 'Şehir Bulmaca',
+        icon: Icons.location_city_rounded,
+        summary: '2–4 oyuncu · 5 tur · Şehirleri bul',
+        instructions: 'Her turda bir şehir için üç ipucu verilir. İlk ipucuyla doğru cevap 10, ikinciyle 7, üçüncüyle 4 puan kazandırır. Beş turun sonunda en yüksek puan kazanır.',
+        playerName: _playerName,
+        codeController: _codeCtrl,
+        loading: _loading,
+        onRename: _askName,
+        onCreate: _createRoom,
+        onJoin: _joinRoom,
+        footer: const AdaptiveBannerAdWidget(),
+      );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

@@ -16,6 +16,7 @@ class AZOnlineLobby extends StatelessWidget {
     required this.onCreate,
     required this.onJoin,
     this.setupOptions,
+    this.footer,
   });
 
   final String title, summary, instructions;
@@ -25,12 +26,14 @@ class AZOnlineLobby extends StatelessWidget {
   final bool loading;
   final VoidCallback onRename, onCreate, onJoin;
   final Widget? setupOptions;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(title)),
+      bottomNavigationBar: footer,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

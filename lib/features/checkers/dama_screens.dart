@@ -9,6 +9,7 @@ import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -239,68 +240,19 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => AZGradientScaffold(
-    gradient: const LinearGradient(
-      colors: [Color(0xFF5C4A3D), Color(0xFF2E241D)],
-      begin: Alignment.topLeft, end: Alignment.bottomRight,
-    ),
-    child: Column(children: [
-      Expanded(child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(children: [
-          Align(alignment: Alignment.centerLeft,
-              child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context))),
-          const Text('⚪⚫', style: TextStyle(fontSize: 56)),
-          const SizedBox(height: 8),
-          const Text('DAMA', style: TextStyle(color: Colors.white, fontSize: 28,
-              fontWeight: FontWeight.bold, letterSpacing: 4)),
-          const Text('2 Oyuncu · Türk Dama · Klasik strateji',
-              style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 24),
-          GestureDetector(onTap: _ask, child: AZFrostCard(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.person_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Text(_name ?? 'Ad seç', style: const TextStyle(color: Colors.white,
-                  fontSize: 15, fontWeight: FontWeight.bold)),
-            ]),
-          )),
-          const SizedBox(height: 24),
-          AZButton(label: 'ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-              onPressed: _create, color: const Color(0xFF7A6552), loading: _loading, width: 280),
-          const SizedBox(height: 20),
-          const Text('— veya —', style: TextStyle(color: Colors.white54)),
-          const SizedBox(height: 20),
-          AZFrostCard(child: Column(children: [
-            AZCodeField(controller: _codeCtrl),
-            const SizedBox(height: 14),
-            AZJoinButton(onPressed: _join, loading: _loading),
-          ])),
-          const SizedBox(height: 24),
-          AZFrostCard(opacity: 0.1, child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text('⚫ Dama Nasıl?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              Text('• Oda kuran ⚪ Beyaz, katılan ⚫ Siyah oynar\n'
-                  '• Gerçek Türk Dama kuralları: piyonlar çapraz DEĞİL, '
-                  'düz (ileri/yan) hareket eder\n'
-                  '• Yakalama zorunludur (üzerinden atlama) ve aynı taş '
-                  'devam edebiliyorsa zincirleme yakalamak da zorunludur\n'
-                  '• Son sıraya ulaşan taş dame (uçan kral) olur\n'
-                  '• Rakibinin tüm taşlarını alan ya da rakibini hamlesiz '
-                  'bırakan oyuncu kazanır',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6)),
-            ],
-          )),
-          const SizedBox(height: 16),
-        ]),
-      )),
-      const AdaptiveBannerAdWidget(),
-    ]),
-  );
+  Widget build(BuildContext context) => AZOnlineLobby(
+        title: 'Dama',
+        icon: Icons.grid_4x4_rounded,
+        summary: '2 oyuncu · Türk dama · Klasik strateji',
+        instructions: 'Oda sahibi beyaz taşlarla, katılan siyah taşlarla oynar. Türk dama taşları düz hareket eder; yakalama ve zincirleme yakalama zorunludur. Son sıraya ulaşan taş dama olur. Rakibinin taşlarını alan veya onu hamlesiz bırakan kazanır.',
+        playerName: _playerName,
+        codeController: _codeCtrl,
+        loading: _loading,
+        onRename: _askName,
+        onCreate: _createRoom,
+        onJoin: _joinRoom,
+        footer: const AdaptiveBannerAdWidget(),
+      );
 }
 
 // ═══════════════════════════════════════════════════════════════════

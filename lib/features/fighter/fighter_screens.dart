@@ -10,6 +10,7 @@ import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -50,28 +51,21 @@ class FighterLobbyScreen extends StatefulWidget {
   @override State<FighterLobbyScreen> createState() => _FLobbyState();
 }
 
-class _FLobbyState extends State<FighterLobbyScreen>
-    with SingleTickerProviderStateMixin {
+class _FLobbyState extends State<FighterLobbyScreen> {
   final _rooms = RoomService.instance;
   final _storage = StorageService.instance;
   final _codeCtrl = TextEditingController();
   String? _name; bool _loading = false;
   FighterData _sel = kFighters[0];
-  late AnimationController _glowCtrl;
-  late Animation<double> _glow;
 
   @override
   void initState() {
     super.initState();
     seedRoomCode(_codeCtrl, widget.initialCode);
-    _glowCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat(reverse: true);
-    _glow = Tween(begin: 0.5, end: 1.0).animate(
-        CurvedAnimation(parent: _glowCtrl, curve: Curves.easeInOut));
     _load();
   }
 
-  @override void dispose() { _glowCtrl.dispose(); _codeCtrl.dispose(); super.dispose(); }
+  @override void dispose() { _codeCtrl.dispose(); super.dispose(); }
 
   Future<void> _load() async {
     final n = await _storage.getPlayerName(); if (!mounted) return;
@@ -134,206 +128,60 @@ class _FLobbyState extends State<FighterLobbyScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [Color(0xFF2E1A17), Color(0xFF241419), Color(0xFF16211C)],
+  Widget build(BuildContext context) => AZOnlineLobby(
+        title: 'Dövüşçüler',
+        icon: Icons.sports_martial_arts_rounded,
+        summary: '2 oyuncu · Gerçek zamanlı · 3 raunt',
+        instructions:
+            'Karakterini seç; can, saldırı, savunma ve hız değerleri oynanışını belirler. Üç raundun sonunda en çok raundu alan kazanır.',
+        playerName: _name,
+        codeController: _codeCtrl,
+        loading: _loading,
+        onRename: _ask,
+        onCreate: _create,
+        onJoin: _join,
+        footer: const AdaptiveBannerAdWidget(),
+        setupOptions: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Karakterini seç',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: kFighters
+                      .map(
+                        (fighter) => ChoiceChip(
+                          label: Text('${fighter.emoji} ${fighter.name}'),
+                          selected: fighter.id == _sel.id,
+                          onSelected: _loading
+                              ? null
+                              : (_) => setState(() => _sel = fighter),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Text(_sel.emoji,
+                      style: const TextStyle(fontSize: 34)),
+                  title: Text(_sel.name),
+                  subtitle: Text(_sel.special),
+                ),
+                _StatBar('CAN', _sel.maxHp, 150, AZColors.red),
+                _StatBar('SALDIRI', _sel.attack, 32, AZColors.orange),
+                _StatBar('SAVUNMA', _sel.defense, 30, AZColors.blue),
+                _StatBar('HIZ', 1500 - _sel.speed, 1100, AZColors.green),
+              ],
+            ),
           ),
         ),
-        child: SafeArea(child: Column(children: [
-          Expanded(child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(children: [
-              Align(alignment: Alignment.centerLeft,
-                  child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white70),
-                      onPressed: () => Navigator.pop(context))),
-              // Başlık
-              AnimatedBuilder(
-                animation: _glow,
-                builder: (_, __) => Text('⚔️', style: TextStyle(fontSize: 64,
-                    shadows: [Shadow(blurRadius: 30 * _glow.value,
-                        color: Colors.red.withAlpha((200 * _glow.value).toInt()))])),
-              ),
-              const SizedBox(height: 8),
-              const Text('DÖVÜŞÇÜLER',
-                  style: TextStyle(color: Colors.white, fontSize: 28,
-                      fontWeight: FontWeight.bold, letterSpacing: 4)),
-              const Text('1v1 · Gerçek Zamanlı · 3 Raunt',
-                  style: TextStyle(color: Colors.white38, fontSize: 13)),
-              const SizedBox(height: 24),
-
-              // Karakter seç
-              const _SectionTitle('KARAKTERINI SEÇ'),
-              const SizedBox(height: 10),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, childAspectRatio: 0.78,
-                    mainAxisSpacing: 10, crossAxisSpacing: 10),
-                itemCount: kFighters.length,
-                itemBuilder: (_, i) {
-                  final f = kFighters[i];
-                  final sel = f.id == _sel.id;
-                  return GestureDetector(
-                    onTap: () => setState(() => _sel = f),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      decoration: BoxDecoration(
-                        color: sel ? f.color.withAlpha(160) : Colors.white10,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                            color: sel ? Colors.white : Colors.white24,
-                            width: sel ? 2.5 : 1),
-                        boxShadow: sel ? [BoxShadow(
-                            color: f.color.withAlpha(150), blurRadius: 12)] : [],
-                      ),
-                      padding: const EdgeInsets.all(10),
-                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Text(f.emoji, style: const TextStyle(fontSize: 30)),
-                        const SizedBox(height: 4),
-                        Text(f.name, style: const TextStyle(color: Colors.white,
-                            fontSize: 11, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
-                        _MiniStat('❤️', f.maxHp, 150),
-                        _MiniStat('⚔️', f.attack, 32),
-                        _MiniStat('🛡️', f.defense, 30),
-                      ]),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Seçili karakter detay
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_sel.color.withAlpha(100), Colors.black87],
-                    begin: Alignment.topLeft, end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: _sel.color.withAlpha(180), width: 2),
-                ),
-                child: Row(children: [
-                  Text(_sel.emoji, style: const TextStyle(fontSize: 52)),
-                  const SizedBox(width: 14),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(_sel.name, style: const TextStyle(color: Colors.white,
-                        fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text('✨ ${_sel.special}',
-                        style: const TextStyle(color: Colors.amberAccent,
-                            fontSize: 11, fontStyle: FontStyle.italic)),
-                    const SizedBox(height: 8),
-                    _StatBar('CAN', _sel.maxHp, 150, Colors.red.shade400),
-                    _StatBar('SALDIRI', _sel.attack, 32, Colors.orange.shade400),
-                    _StatBar('SAVUNMA', _sel.defense, 30, Colors.blue.shade400),
-                    _StatBar('HIZ', 1500 - _sel.speed, 1100, Colors.green.shade400),
-                  ])),
-                ]),
-              ),
-              const SizedBox(height: 20),
-
-              // İsim
-              GestureDetector(onTap: _ask, child: AZFrostCard(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.person_rounded, color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
-                  Text(_name ?? 'Ad seç', style: const TextStyle(color: Colors.white,
-                      fontSize: 15, fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 6),
-                  const Icon(Icons.edit_rounded, color: Colors.white38, size: 13),
-                ]),
-              )),
-              const SizedBox(height: 20),
-
-              // Oluştur
-              SizedBox(width: double.infinity, height: 54,
-                child: ElevatedButton.icon(
-                  onPressed: _loading ? null : _create,
-                  icon: _loading
-                      ? const SizedBox(width: 18, height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.add_circle_outline),
-                  label: const Text('ODA OLUŞTUR',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AZColors.redDk,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    elevation: 6,
-                    shadowColor: AZColors.redDk,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text('— veya —', style: TextStyle(color: Colors.white38)),
-              const SizedBox(height: 20),
-              AZFrostCard(child: Column(children: [
-                AZCodeField(controller: _codeCtrl),
-                const SizedBox(height: 14),
-                AZJoinButton(onPressed: _loading ? null : _join, loading: _loading),
-              ])),
-              const SizedBox(height: 16),
-            ]),
-          )),
-          const AdaptiveBannerAdWidget(),
-        ])),
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-  final String text;
-  @override
-  Widget build(BuildContext context) => Text(text,
-      style: const TextStyle(color: Colors.white54, fontSize: 11,
-          letterSpacing: 2.5, fontWeight: FontWeight.w700));
-}
-
-class _MiniStat extends StatelessWidget {
-  const _MiniStat(this.icon, this.val, this.max);
-  final String icon; final int val, max;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 2),
-    child: Row(children: [
-      Text(icon, style: const TextStyle(fontSize: 9)),
-      const SizedBox(width: 3),
-      Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(3),
-          child: LinearProgressIndicator(value: val / max,
-              minHeight: 5, backgroundColor: Colors.white10,
-              valueColor: const AlwaysStoppedAnimation(Colors.white54)))),
-    ]),
-  );
-}
-
-class _StatBar extends StatelessWidget {
-  const _StatBar(this.label, this.val, this.max, this.color);
-  final String label; final int val, max; final Color color;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 5),
-    child: Row(children: [
-      SizedBox(width: 60, child: Text(label, style: const TextStyle(
-          color: Colors.white54, fontSize: 10))),
-      Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(5),
-          child: LinearProgressIndicator(value: val / max,
-              minHeight: 9, backgroundColor: Colors.white12,
-              valueColor: AlwaysStoppedAnimation(color)))),
-      const SizedBox(width: 6),
-      Text('$val', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-    ]),
-  );
+      );
 }
 
 // ═══════════════════════════════════════════════════════════════════

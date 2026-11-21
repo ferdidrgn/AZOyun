@@ -42,6 +42,7 @@
 - [x] Ana oyun kataloğundaki sabit eski yarış/zeka/dama/dövüş/sosyal kart gradyanları ortak oyun paletine bağlandı. Adam Asmaca lobi ve oda ekranları da aynı canlı kırmızı tema tokenlarını kullanıyor.
 - [x] Adam Asmaca lobisi ortak AZOnlineLobby düzenine taşındı; ortak tema yüzeyi, oyuncu adı, oda oluşturma/katılma düğmeleri ve yükleme kilidi kullanılıyor. Ortak lobi düğmeleri erişilebilir dokunma yüksekliğine çıkarıldı.
 - [x] Pişti lobisi de aynı ortak düzene taşındı; Oyuncu/Ortak Masa seçimi tema uyumlu, kumandayla seçilebilir Material 3 segmented control olarak kaldı.
+- [x] Dövüşçüler, Araba Yarışı, Dama, Şehir Bulmaca ve Yalancılar Kahvesi lobi ekranları ortak Material 3 AZOnlineLobby düzenine taşındı. Karakter/araba seçimleri odada korunup erişilebilir ChoiceChip’e çevrildi; banner alanı korundu.
 - [x] Liderlik tablosu yükleme göstergesi seçili temanın rengini kullanıyor; oyun seçimi Material 3 ChoiceChip’e geçti ve klavye/kumanda odağı aldı.
 - [x] Ortak lobi/oda eylemlerinde Android TV kumandasının başlangıç odağını oluştur/başlat düğmesine taşı; oda başlatma hedefini en az 56 dp yap.
 - [ ] Oyun dışı sayfaların kalan sabit renk ve yazı stillerini tek tek gözden geçir; ortak lobby/HUD/sonuç/tekli oyun yüzeylerini aynı tasarım sistemine taşı.
