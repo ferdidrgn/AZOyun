@@ -33,7 +33,7 @@ Bu dosya oyun başlıklarının benzerliğini, kural kodunun ortak olduğu anlam
 | `yilan` | `snake` / `snake_screen.dart` | 14×14 tahta, başlangıç ve elma puanı eşit; dönüş, duvar/kuyruk çarpışması ve boşalan kuyruk hücresi ortak vektörlere bağlı |
 | `oje` | `nailsalon` / `nail_salon_screen.dart` | Benzer tek kişilik deneyim; ortak kural sözleşmesi gerekmiyor |
 | `ciz` | `drawsmash` / `draw_smash_screen.dart` | Benzer yerel parti deneyimi; çizim aktarımı ve süre eşlenecek |
-| `maymun` | `monkeytap` / `monkey_touch_screen.dart` | Aynı tür; hedef/süre puanı karşılaştırılacak |
+| `maymun` | `monkeytap` / `monkey_touch_screen.dart` | 3×3 hedef, 700 ms hedef hareketi, 20 sn tur ve hedef isabetine 1 puan ortak vektörlere bağlı |
 | `scuba` | `scubasweep` / `scuba_sweep_screen.dart` | Aynı tür; hedef/çarpışma/puan vektörleri karşılaştırılacak |
 | `zipla` | `jumpdash` / `jump_dash_screen.dart` | Aynı tür; engel/zamanlama vektörleri karşılaştırılacak |
 | `kaplan` | `tigerrun` / `tiger_run_screen.dart` | Aynı tür; engel/toplama vektörleri karşılaştırılacak |

@@ -1,0 +1,16 @@
+{
+  "sessionSeconds": 20,
+  "moveIntervalMs": 700,
+  "scorePerHit": 1,
+  "tapCases": [
+    {"name":"hit the visible monkey","score":0,"targetIndex":4,"tappedIndex":4,"running":true,"nextScore":1,"hit":true},
+    {"name":"empty cell gives no points","score":2,"targetIndex":4,"tappedIndex":3,"running":true,"nextScore":2,"hit":false},
+    {"name":"finished session gives no points","score":5,"targetIndex":4,"tappedIndex":4,"running":false,"nextScore":5,"hit":false}
+  ],
+  "tickCases": [
+    {"secondsLeft":20,"nextSeconds":19,"running":true},
+    {"secondsLeft":1,"nextSeconds":0,"running":false},
+    {"secondsLeft":0,"nextSeconds":0,"running":false}
+  ]
+}
+

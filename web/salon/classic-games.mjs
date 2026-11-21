@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 16615)
-Total output lines: 1376
+Warning: truncated output (original token count: 17030)
+Total output lines: 1433
 
 import { classics } from "./classic-catalog.mjs";
 import { connectFourDropRow, connectFourOutcome } from "./connect-four-rules.mjs";
@@ -11,6 +11,12 @@ import {
   popBalloon,
   tickBalloonSession,
 } from "./balloon-rules.mjs";
+import {
+  MONKEY_MOVE_INTERVAL_MS,
+  MONKEY_SESSION_SECONDS,
+  tapMonkey,
+  tickMonkeySession,
+} from "./monkey-rules.mjs";
 import { nimApplyMove } from "./nim-rules.mjs";
 import { ticTacToeOutcome } from "./tic-tac-toe-rules.mjs";
 
@@ -413,25 +419,7 @@ function dice({ paint, surface }) {
       return render("Bir geldi. Sıra " + (turn + 1), true);
     }
     pot += roll;
-    lastEvent = `Zar ${roll} geldi · eldeki puan ${pot}.`;
-    render("Zar " + roll + " · Elde " + pot, true);
-  });
-}
-function memory({ paint, surface …1615 tokens truncated…s && n === next;
-      const palettes = complete
-        ? ["#9ec5aa", "#416e57", "#244637", "#f1f8e9"]
-        : active
-          ? ["#fff0b4", "#e3ad4e", "#8f5425", "#fffce6"]
-          : ["#fff3d1", ["#d5a36a", "#bd8d5a", "#dfa967", "#c39160"][n % 4], "#765139", "#fff7e8"];
-      const [light, face, shadow, ink] = palettes;
-      const fontSize = String(n).length > 1 ? "clamp(1rem,4.1vw,1.8rem)" : "clamp(1.2rem,5vw,2.25rem)";
-      return btn(
-        `<span aria-hidden="true">${n}</span>`,
-        index,
-        `aria-label="${numbers ? 'Sayı ' : 'Taş '}${n}" ${numbers && n < next ? "disabled" : ""} style="min-height:0;padding:0;aspect-ratio:1;border:1px solid rgba(255,255,255,.52);border-radius:clamp(5px,1.3vw,11px);background:linear-gradient(145deg,${light} 0%,${face} 52%,${shadow} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.72),inset 0 -3px 0 rgba(45,27,16,.25),0 3px 0 ${shadow},0 7px 11px rgba(0,0,0,.34);color:${ink};font-size:${fontSize};font-weight:900;text-shadow:0 1px 0 rgba(55,35,22,.2);transform:translateY(-2px);cursor:${complete ? "default" : "pointer"};${active ? "outline:2px solid #fff0b4;outline-offset:1px;" : ""}`,
-      );
-    }).join("");
-    const boardView = `<div style="width:min(100%,510px);margin:0 auto;padding:clamp(8px,2vw,15px);border:1px solid rgba(255,224,174,.5);border-radius:clamp(12px,2vw,20px);background:linear-gradient(135deg,#a87543 0%,#684324 25%,#bd8955 52%,#56361f 78%,#8a5932 100%);box-shadow:inset 0 2px 0 rgba(255,241,214,.6),inset 0 -5px 8px rgba(36,20,12,.55),0 10px 20px rgba(0,0,0,.38)"><div class="classic-grid" role="grid" aria-label="${numbers ? 'Sayı bulmaca tahtası' : 'Kaydırmalı sayı tahtası'}" style="--columns:${width};width:100%;aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(3px,.9vw,7px);padding:clamp(5px,1.2vw,9px);border:1px solid rgba(10,38,30,.8);border-radius:clamp(6px,1.3vw,11px);background:radial-gradient(ellipse at 38% 20%,#354747,#1b2c31 70%,#132329);box-shadow:inset 0 3px 8px rgba(0,0,0,.46),inset 0 0 0 1px rgba(164,214,162,.1)">${cells}</div></div>`;
+    lastEvent = `Zar ${roll…2030 tokens truncated…a(36,20,12,.55),0 10px 20px rgba(0,0,0,.38)"><div class="classic-grid" role="grid" aria-label="${numbers ? 'Sayı bulmaca tahtası' : 'Kaydırmalı sayı tahtası'}" style="--columns:${width};width:100%;aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(3px,.9vw,7px);padding:clamp(5px,1.2vw,9px);border:1px solid rgba(10,38,30,.8);border-radius:clamp(6px,1.3vw,11px);background:radial-gradient(ellipse at 38% 20%,#354747,#1b2c31 70%,#132329);box-shadow:inset 0 3px 8px rgba(0,0,0,.46),inset 0 0 0 1px rgba(164,214,162,.1)">${cells}</div></div>`;
     paint(boardView, message);
   };
   render();
@@ -772,6 +760,7 @@ function reflex({ paint, surface }) {
 }
 function targets({ paint, surface }, mode = "balon") {
   if (mode === "balon") return balloonTargets({ paint, surface });
+  if (mode === "maymun") return monkeyTargets({ paint, surface });
   let target = random(16),
     points = 0,
     remaining = 20,
@@ -817,6 +806,56 @@ function targets({ paint, surface }, mode = "balon") {
   return () => {
     clear();
     clearInterval(timer);
+  };
+}
+function monkeyTargets({ paint, surface }) {
+  let target = 4,
+    score = 0,
+    remaining = MONKEY_SESSION_SECONDS,
+    running = false;
+  let countdown, movement;
+  const render = () =>
+    paint(
+      running
+        ? grid(3, range(9).map((i) => btn(i === target ? "🐵" : "·", i,
+            `aria-label="${i === target ? "Maymun" : "Boş"} ${i + 1}"`)).join(""))
+        : remaining
+          ? btn("Başla", "start")
+          : "",
+      `Puan ${score} · ${remaining} sn`,
+    );
+  const end = () => {
+    running = false;
+    clearInterval(countdown);
+    clearInterval(movement);
+    render();
+  };
+  render();
+  const clear = click(surface, (value) => {
+    if (value === "start" && !running && remaining === MONKEY_SESSION_SECONDS) {
+      running = true;
+      movement = setInterval(() => {
+        target = random(9);
+        render();
+      }, MONKEY_MOVE_INTERVAL_MS);
+      countdown = setInterval(() => {
+        const tick = tickMonkeySession(remaining);
+        remaining = tick.secondsLeft;
+        if (!tick.running) end();
+        else render();
+      }, 1000);
+      return render();
+    }
+    const result = tapMonkey({ score, targetIndex: target, tappedIndex: Number(value), running });
+    if (!result.hit) return;
+    score = result.score;
+    target = random(9);
+    render();
+  });
+  return () => {
+    clear();
+    clearInterval(countdown);
+    clearInterval(movement);
   };
 }
 function balloonTargets({ paint, surface }) {

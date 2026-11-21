@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'monkey_rules.dart';
 
 class MonkeyTouchLobbyScreen extends StatelessWidget {
   const MonkeyTouchLobbyScreen({super.key});
@@ -55,7 +56,7 @@ class _MonkeySessionState extends State<_MonkeySession> {
   Timer? _clock;
   int _cell = 4;
   int _score = 0;
-  int _left = 20;
+  int _left = monkeySessionSeconds;
   bool _started = false;
 
   @override
@@ -70,7 +71,7 @@ class _MonkeySessionState extends State<_MonkeySession> {
       return;
     }
     setState(() => _started = true);
-    _move = Timer.periodic(const Duration(milliseconds: 700), (_) {
+    _move = Timer.periodic(Duration(milliseconds: monkeyMoveIntervalMs), (_) {
       if (!mounted) {
         return;
       }
@@ -80,8 +81,9 @@ class _MonkeySessionState extends State<_MonkeySession> {
       if (!mounted) {
         return;
       }
-      _left--;
-      if (_left <= 0) {
+      final tick = tickMonkeySession(_left);
+      _left = tick.secondsLeft;
+      if (!tick.running) {
         _move?.cancel();
         _clock?.cancel();
         widget.onFinished(_score);
@@ -92,12 +94,15 @@ class _MonkeySessionState extends State<_MonkeySession> {
   }
 
   void _tap(int index) {
-    if (!_started) {
-      return;
-    }
-    if (index == _cell) {
+    final result = tapMonkey(
+      score: _score,
+      targetIndex: _cell,
+      tappedIndex: index,
+      running: _started,
+    );
+    if (result.hit) {
       setState(() {
-        _score++;
+        _score = result.score;
         _cell = _rng.nextInt(9);
       });
     }
@@ -247,3 +252,4 @@ class _MonkeyForestPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MonkeyForestPainter oldDelegate) => false;
 }
+
