@@ -117,6 +117,8 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
         onJoin: _joinRoom,
         footer: const AdaptiveBannerAdWidget(),
       );
+}
+
 class WordRoomScreen extends StatefulWidget {
   const WordRoomScreen({super.key, required this.roomId,
       required this.myKey, required this.myName});

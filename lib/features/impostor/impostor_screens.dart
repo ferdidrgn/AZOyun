@@ -173,6 +173,8 @@ class _ImpostorLobbyScreenState extends State<ImpostorLobbyScreen> {
         onJoin: _join,
         footer: const AdaptiveBannerAdWidget(),
       );
+}
+
 class ImpostorRoomScreen extends StatefulWidget {
   const ImpostorRoomScreen({super.key, required this.roomId, required this.myKey, required this.myName});
   final String roomId, myKey, myName;
