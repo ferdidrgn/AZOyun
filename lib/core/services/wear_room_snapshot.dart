@@ -84,7 +84,7 @@ class WearRoomSnapshot {
     return WearRoomSnapshot(
       roomKey: '$gamePath/$roomId',
       gameName: _gameNames[gamePath] ?? 'Oyun Odası',
-      roomCode: normalizedCode.substring(0, normalizedCode.length.clamp(0, 12)),
+      roomCode: normalizedCode.substring(0, normalizedCode.length.clamp(0, 12).toInt()),
       status: status,
       playerCount: playerCount,
       maxPlayers: _safeCount(room['maxPlayers'] ?? room['playerLimit']),
@@ -112,7 +112,7 @@ class WearRoomSnapshot {
 
   static int _safeCount(Object? value) {
     final count = value is int ? value : int.tryParse('$value') ?? 0;
-    return count.clamp(0, 64);
+    return count.clamp(0, 64).toInt();
   }
 
   String get dedupeKey =>
