@@ -79,6 +79,7 @@ class AZOnlineLobby extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 FilledButton.icon(
+                  autofocus: true,
                   onPressed: loading ? null : onCreate,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(56),
@@ -202,7 +203,14 @@ class AZOnlineWaitingRoom extends StatelessWidget {
                   const SizedBox(height: 16),
                   if (isHost)
                     FilledButton.icon(
+                      autofocus: canStart && !starting,
                       onPressed: canStart && !starting ? onStart : null,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: Text(starting ? 'Başlatılıyor…' : 'Maçı başlat'),
                     ),
