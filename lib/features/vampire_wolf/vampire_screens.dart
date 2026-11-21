@@ -803,8 +803,8 @@ class _VGS extends State<VampireGameScreen> {
                                     style: const TextStyle(fontSize: 22)),
                                 const SizedBox(width: 10),
                                 Text(
-                                  '\${_isNight ? "GECE" : (isTransition ? "GEÇİŞ" : "GÜNDÜZ")}'
-                                  '\${_day > 1 ? " — Gün $_day" : ""}',
+                                  '${_isNight ? "GECE" : (isTransition ? "GEÇİŞ" : "GÜNDÜZ")}'
+                                  '${_day > 1 ? " — Gün $_day" : ""}',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 17,
@@ -828,7 +828,7 @@ class _VGS extends State<VampireGameScreen> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(99),
                                       child: LinearProgressIndicator(
-                                        value: playerCount == 0 ? 0 : aliveCount / playerCount,
+                                        value: playerCount == 0 ? 0.0 : aliveCount / playerCount,
                                         minHeight: 7,
                                         backgroundColor: Colors.black26,
                                         color: _isNight ? const Color(0xFFE4B9FF) : const Color(0xFFFFF0B4),
@@ -897,9 +897,9 @@ class _VGS extends State<VampireGameScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '\${_players[_lastElim]?['name'] ?? _lastElim} elendi! '
-                              '(\${_roleEmoji(_players[_lastElim]?['role'] as String?)} '
-                              '\${_roleName(_players[_lastElim]?['role'] as String?)})',
+                              '${_players[_lastElim]?['name'] ?? _lastElim} elendi! '
+                              '(${_roleEmoji(_players[_lastElim]?['role'] as String?)} '
+                              '${_roleName(_players[_lastElim]?['role'] as String?)})',
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -926,7 +926,7 @@ class _VGS extends State<VampireGameScreen> {
                       switchInCurve: Curves.easeOutCubic,
                       switchOutCurve: Curves.easeInCubic,
                       child: KeyedSubtree(
-                        key: ValueKey('\$_phase-\$_day-\$_myVote-\$_myProtect-\$_myInvestigate-\$_isAlive'),
+                        key: ValueKey('$_phase-$_day-$_myVote-$_myProtect-$_myInvestigate-$_isAlive'),
                         child: _buildBody(isTransition),
                       ),
                     ),
@@ -1179,7 +1179,7 @@ class _VGS extends State<VampireGameScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 2),
               child: Center(
-                child: Text('Vampirler aynı hedefte buluşmalı · \$_votedCount/$_voterCount seçim',
+                child: Text('Vampirler aynı hedefte buluşmalı · $_votedCount/$_voterCount seçim',
                     style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 12)),
               ),
             ),
@@ -1214,7 +1214,7 @@ class _VampireVillagePainter extends CustomPainter {
     );
 
     final orb = Offset(size.width * .78, size.height * .22);
-    final radius = math.min(size.width, size.height) * .075;
+    final radius = min(size.width, size.height).toDouble() * .075;
     if (dark) {
       canvas.drawCircle(orb, radius * 1.55, Paint()..color = const Color(0xFFB9A8F8).withAlpha(16));
       canvas.drawCircle(orb, radius, Paint()..color = const Color(0xFFE6DDFB));
