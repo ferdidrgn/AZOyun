@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/felt.dart';
 import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/az_online_lobby.dart';
 import 'deck_repository.dart';
 import 'deck_room_screen.dart';
 
@@ -47,7 +48,8 @@ class _DeckLobbyScreenState extends State<DeckLobbyScreen> {
       return;
     }
     final size = MediaQuery.sizeOf(context);
-    _asTable = widget.table || (widget.initialCode == null && size.width >= 840);
+    _asTable =
+        widget.table || (widget.initialCode == null && size.width >= 840);
   }
 
   @override
@@ -72,7 +74,8 @@ class _DeckLobbyScreenState extends State<DeckLobbyScreen> {
   }
 
   Future<void> _askName() async {
-    final name = await showNameDialog(context, current: _name, accentColor: FeltColors.felt);
+    final name = await showNameDialog(context,
+        current: _name, accentColor: FeltColors.felt);
     if (name == null || !mounted) {
       return;
     }
@@ -134,7 +137,8 @@ class _DeckLobbyScreenState extends State<DeckLobbyScreen> {
     }
     setState(() => _loading = true);
     try {
-      final joined = await _repo.join(code: code, name: _name!, asTable: _asTable);
+      final joined =
+          await _repo.join(code: code, name: _name!, asTable: _asTable);
       if (!mounted) {
         return;
       }
@@ -164,154 +168,53 @@ class _DeckLobbyScreenState extends State<DeckLobbyScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final palette = FeltPalette.of(context);
-    return Scaffold(
-      body: FeltBackdrop(
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(Icons.arrow_back_rounded, color: palette.ink),
-                    ),
-                  ),
-                  const Center(child: FeltMark(size: 120)),
-                  const SizedBox(height: 12),
-                  Text('Pişti', textAlign: TextAlign.center, style: feltDisplay(palette.ink, 40)),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Bir ekran masanın ortasında açık kartları gösterir. Telefonlar sadece kendi elini görür. QR kodu TV, bilgisayar veya başka bir telefonda aç.',
-                    textAlign: TextAlign.center,
-                    style: feltUi(palette.muted, 15),
-                  ),
-                  const SizedBox(height: 24),
-                  AZNameChip(name: _name, onTap: _askName),
-                  const SizedBox(height: 16),
-                  Text('Bu cihaz', style: feltUi(palette.ink, 14, weight: FontWeight.w700)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _RoleButton(
-                          label: 'Oyuncu',
-                          detail: 'Elimi gör',
-                          selected: !_asTable,
-                          onTap: () => setState(() {
-                            _roleTouched = true;
-                            _asTable = false;
-                          }),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _RoleButton(
-                          label: 'Masa',
-                          detail: 'TV veya bilgisayar',
-                          selected: _asTable,
-                          onTap: () => setState(() {
-                            _roleTouched = true;
-                            _asTable = true;
-                          }),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 56,
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: _loading ? null : _create,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: FeltColors.felt,
-                        foregroundColor: FeltColors.ivory,
-                      ),
-                      child: _loading
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2.4, color: FeltColors.ivory),
-                            )
-                          : Text('Masa kur', style: feltUi(FeltColors.ivory, 16, weight: FontWeight.w700)),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Text('Koda katıl', style: feltUi(palette.ink, 14, weight: FontWeight.w700)),
-                  const SizedBox(height: 8),
-                  AZCodeField(controller: _codeCtrl),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 52,
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _loading ? null : _join,
-                      child: Text('Odaya katıl', style: feltUi(palette.ink, 15, weight: FontWeight.w700)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoleButton extends StatelessWidget {
-  const _RoleButton({
-    required this.label,
-    required this.detail,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final String detail;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = FeltPalette.of(context);
-    return Material(
-      color: selected ? FeltColors.felt : palette.surface,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 72),
+  Widget build(BuildContext context) => AZOnlineLobby(
+        title: 'Pişti',
+        icon: Icons.style_rounded,
+        summary: 'Telefonlarda gizli el · ortak masada açık oyun',
+        instructions:
+            'Telefonlar yalnızca kendi elini gösterir. Ortak ekran açık kartları ve masayı gösterir. '
+            'QR kodunu TV, bilgisayar veya başka bir telefonda okut.',
+        playerName: _name,
+        codeController: _codeCtrl,
+        loading: _loading,
+        onRename: _askName,
+        onCreate: _create,
+        onJoin: _join,
+        setupOptions: Card(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: feltUi(
-                    selected ? FeltColors.ivory : palette.ink,
-                    16,
-                    weight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  detail,
-                  style: feltUi(selected ? FeltColors.mist : palette.muted, 12),
+                Text('Bu cihazın rolü',
+                    style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 12),
+                SegmentedButton<bool>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(
+                      value: false,
+                      icon: Icon(Icons.person_rounded),
+                      label: Text('Oyuncu'),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      icon: Icon(Icons.tv_rounded),
+                      label: Text('Ortak masa'),
+                    ),
+                  ],
+                  selected: {_asTable},
+                  onSelectionChanged: _loading
+                      ? null
+                      : (selection) => setState(() {
+                            _roleTouched = true;
+                            _asTable = selection.first;
+                          }),
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
+      );
 }
