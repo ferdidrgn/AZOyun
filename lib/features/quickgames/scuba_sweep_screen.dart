@@ -571,14 +571,14 @@ class _OceanPainter extends CustomPainter {
       case _Kind.bottle:
         canvas.drawRRect(
           RRect.fromRectAndRadius(
-            const Rect.fromCenter(center: Offset(1, 2), width: 22, height: 46),
+            Rect.fromCenter(center: Offset(1, 2), width: 22, height: 46),
             const Radius.circular(7),
           ),
           Paint()..color = const Color(0xFF286A70),
         );
         canvas.drawRRect(
           RRect.fromRectAndRadius(
-            const Rect.fromCenter(center: Offset.zero, width: 20, height: 44),
+            Rect.fromCenter(center: Offset.zero, width: 20, height: 44),
             const Radius.circular(7),
           ),
           Paint()
@@ -586,11 +586,11 @@ class _OceanPainter extends CustomPainter {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [Color(0xFFD6FFF0), Color(0xFF77D6CA), Color(0xFF318A90)],
-            ).createShader(const Rect.fromLTWH(-10, -22, 20, 44)),
+            ).createShader(Rect.fromLTWH(-10, -22, 20, 44)),
         );
         canvas.drawRRect(
           RRect.fromRectAndRadius(
-            const Rect.fromCenter(center: Offset(0, -24), width: 8, height: 9),
+            Rect.fromCenter(center: Offset(0, -24), width: 8, height: 9),
             const Radius.circular(2),
           ),
           Paint()..color = const Color(0xFFBCE9D7),
@@ -611,7 +611,7 @@ class _OceanPainter extends CustomPainter {
           Paint()
             ..shader = const LinearGradient(
               colors: [Color(0xAAD7F6F4), Color(0x447BD3D7)],
-            ).createShader(const Rect.fromLTWH(-11, -17, 22, 39)),
+            ).createShader(Rect.fromLTWH(-11, -17, 22, 39)),
         );
         canvas.drawPath(
           glass,
@@ -639,7 +639,7 @@ class _OceanPainter extends CustomPainter {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [Color(0xFFF4FFEB), Color(0xBFE1E7D8), Color(0x8097B1B4)],
-            ).createShader(const Rect.fromLTWH(-16, -14, 32, 40)),
+            ).createShader(Rect.fromLTWH(-16, -14, 32, 40)),
         );
         canvas.drawPath(
           bag,
@@ -655,20 +655,20 @@ class _OceanPainter extends CustomPainter {
       case _Kind.straw:
         canvas.drawRRect(
           RRect.fromRectAndRadius(
-            const Rect.fromCenter(center: Offset(1.5, 2), width: 8, height: 44),
+            Rect.fromCenter(center: Offset(1.5, 2), width: 8, height: 44),
             const Radius.circular(4),
           ),
           Paint()..color = const Color(0xFF8D5A31),
         );
         canvas.drawRRect(
           RRect.fromRectAndRadius(
-            const Rect.fromCenter(center: Offset.zero, width: 7, height: 43),
+            Rect.fromCenter(center: Offset.zero, width: 7, height: 43),
             const Radius.circular(3),
           ),
           Paint()
             ..shader = const LinearGradient(
               colors: [Color(0xFFFFE7A1), Color(0xFFD89A45), Color(0xFFAC692E)],
-            ).createShader(const Rect.fromLTWH(-4, -22, 8, 44)),
+            ).createShader(Rect.fromLTWH(-4, -22, 8, 44)),
         );
         canvas.drawLine(const Offset(-1.5, -18), const Offset(-1.5, 15),
             Paint()..color = Colors.white.withAlpha(150)..strokeWidth = 1.2);
@@ -728,7 +728,7 @@ class _OceanPainter extends CustomPainter {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [Color(0xFF7A9CAA), Color(0xFF354E60), Color(0xFF172C3A)],
-            ).createShader(const Rect.fromLTWH(-30, -16, 60, 36)),
+            ).createShader(Rect.fromLTWH(-30, -16, 60, 36)),
         );
         final fin = Path()
           ..moveTo(-3, -8)
@@ -739,7 +739,7 @@ class _OceanPainter extends CustomPainter {
         canvas.drawCircle(const Offset(16, -3), 1.8, Paint()..color = Colors.white);
         canvas.drawCircle(const Offset(16, -3), 1, Paint()..color = Colors.black87);
         canvas.drawArc(
-          const Rect.fromLTWH(16, 1, 8, 5),
+          Rect.fromLTWH(16, 1, 8, 5),
           0,
           pi,
           false,
@@ -771,7 +771,7 @@ class _OceanPainter extends CustomPainter {
         canvas.drawCircle(const Offset(-5, -3), 2.1, Paint()..color = Colors.black87);
         canvas.drawCircle(const Offset(5, -3), 2.1, Paint()..color = Colors.black87);
         canvas.drawArc(
-          const Rect.fromLTWH(-4, 1, 8, 5),
+          Rect.fromLTWH(-4, 1, 8, 5),
           0,
           pi,
           false,
@@ -787,7 +787,7 @@ class _OceanPainter extends CustomPainter {
             ..shader = const RadialGradient(
               center: Alignment(-.4, -.45),
               colors: [Color(0xFFFFFFFF), Color(0xFFF9EBD6), Color(0xFFB89F82)],
-            ).createShader(const Rect.fromCircle(center: Offset.zero, radius: 11)),
+            ).createShader(Rect.fromCircle(center: Offset.zero, radius: 11)),
         );
         canvas.drawCircle(
           Offset.zero,
@@ -831,7 +831,7 @@ class _OceanPainter extends CustomPainter {
         Paint()
           ..shader = const RadialGradient(
             colors: [Color(0x4478E9FF), Color(0x2278E9FF), Colors.transparent],
-          ).createShader(const Rect.fromCircle(center: Offset.zero, radius: 40)),
+          ).createShader(Rect.fromCircle(center: Offset.zero, radius: 40)),
       );
       canvas.drawCircle(
         Offset.zero,
@@ -857,7 +857,7 @@ class _OceanPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [Color(0xFF42A9B8), Color(0xFF125166), Color(0xFF082C3C)],
-      ).createShader(const Rect.fromLTWH(-28, 0, 56, 30));
+      ).createShader(Rect.fromLTWH(-28, 0, 56, 30));
     final leftFin = Path()
       ..moveTo(-7, 10)
       ..lineTo(-26, 17)
@@ -877,35 +877,35 @@ class _OceanPainter extends CustomPainter {
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        const Rect.fromCenter(center: Offset(0, -2), width: 31, height: 34),
+        Rect.fromCenter(center: Offset(0, -2), width: 31, height: 34),
         const Radius.circular(9),
       ),
       Paint()..color = const Color(0xFF173A45),
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        const Rect.fromCenter(center: Offset(-17, -2), width: 8, height: 25),
+        Rect.fromCenter(center: Offset(-17, -2), width: 8, height: 25),
         const Radius.circular(4),
       ),
       Paint()
         ..shader = const LinearGradient(
           colors: [Color(0xFFFFD47C), Color(0xFFB67734)],
-        ).createShader(const Rect.fromLTWH(-21, -15, 8, 25)),
+        ).createShader(Rect.fromLTWH(-21, -15, 8, 25)),
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        const Rect.fromCenter(center: Offset(17, -2), width: 8, height: 25),
+        Rect.fromCenter(center: Offset(17, -2), width: 8, height: 25),
         const Radius.circular(4),
       ),
       Paint()
         ..shader = const LinearGradient(
           colors: [Color(0xFFFFD47C), Color(0xFFB67734)],
-        ).createShader(const Rect.fromLTWH(13, -15, 8, 25)),
+        ).createShader(Rect.fromLTWH(13, -15, 8, 25)),
     );
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        const Rect.fromCenter(center: Offset(0, 0), width: 25, height: 31),
+        Rect.fromCenter(center: Offset(0, 0), width: 25, height: 31),
         const Radius.circular(9),
       ),
       Paint()
@@ -913,7 +913,7 @@ class _OceanPainter extends CustomPainter {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFF3E91A4), Color(0xFF1A596B), Color(0xFF0B3448)],
-        ).createShader(const Rect.fromLTWH(-13, -16, 26, 32)),
+        ).createShader(Rect.fromLTWH(-13, -16, 26, 32)),
     );
     canvas.drawLine(const Offset(-9, -10), const Offset(9, -10),
         Paint()..color = Colors.white.withAlpha(110)..strokeWidth = 2);
@@ -927,10 +927,10 @@ class _OceanPainter extends CustomPainter {
         ..shader = const RadialGradient(
           center: Alignment(-.35, -.45),
           colors: [Color(0xFFE7FFFF), Color(0xFF8FD6E8), Color(0xFF337D98)],
-        ).createShader(const Rect.fromCircle(center: Offset.zero, radius: 13)),
+        ).createShader(Rect.fromCircle(center: Offset.zero, radius: 13)),
     );
     canvas.drawArc(
-      const Rect.fromCenter(center: Offset(-2, -27), width: 13, height: 8),
+      Rect.fromCenter(center: Offset(-2, -27), width: 13, height: 8),
       pi,
       pi * .72,
       false,

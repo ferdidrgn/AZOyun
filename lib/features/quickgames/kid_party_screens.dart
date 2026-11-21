@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -1077,7 +1078,7 @@ class _SlipperPainter extends CustomPainter {
     canvas.translate(center.dx, center.dy);
     canvas.rotate(degrees * pi / 180);
     canvas.drawRRect(
-      RRect.fromRectAndRadius(const Rect.fromLTWH(-50, -18, 100, 36), const Radius.circular(18)),
+      RRect.fromRectAndRadius(Rect.fromLTWH(-50, -18, 100, 36), const Radius.circular(18)),
       Paint()..color = AZColors.orange,
     );
     canvas.restore();

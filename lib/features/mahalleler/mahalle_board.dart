@@ -94,6 +94,7 @@ class MahalleBoard extends StatelessWidget {
                   )),
                 ),
               ),
+              ),
               for (final cell in board.keys)
                 Positioned(
                   left: cell % 5 * step,
