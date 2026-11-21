@@ -11,13 +11,20 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
-import androidx.wear.compose.material3.ScalingLazyColumn
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.TimeText
-import androidx.wear.compose.material3.rememberScalingLazyListState
 import androidx.wear.remote.interactions.RemoteActivityHelper
 import com.google.android.gms.wearable.DataClient
 import com.google.android.gms.wearable.DataEventBuffer
@@ -32,32 +39,30 @@ class WearHomeActivity : ComponentActivity(), DataClient.OnDataChangedListener {
         room = readWearRoom()
         setContent {
             MaterialTheme {
-                val listState = rememberScalingLazyListState()
                 ScreenScaffold(timeText = { TimeText() }) { contentPadding ->
-                    ScalingLazyColumn(state = listState, contentPadding = contentPadding) {
-                        item { Text("AZOyun", style = MaterialTheme.typography.titleSmall) }
-                        item {
-                            Text(
-                                if (room.roomCode.isBlank()) "Etkin oda yok" else room.gameName,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                        }
-                        item {
-                            Text(if (room.roomCode.isBlank()) "Oda bekleniyor" else "Kod: ${room.roomCode}")
-                        }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(contentPadding),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text("AZOyun", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            if (room.roomCode.isBlank()) "Etkin oda yok" else room.gameName,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(if (room.roomCode.isBlank()) "Oda bekleniyor" else "Kod: ${room.roomCode}")
                         if (room.roomCode.isNotBlank()) {
-                            item {
-                                val capacity = if (room.maxPlayers > 0) "/${room.maxPlayers}" else ""
-                                Text("Oyuncu: ${room.playerCount}$capacity")
-                            }
+                            val capacity = if (room.maxPlayers > 0) "/${room.maxPlayers}" else ""
+                            Text("Oyuncu: ${room.playerCount}$capacity")
                         }
-                        item {
-                            Text(
-                                if (room.stale) "Güncel değil · telefonu aç"
-                                else statusLabel(room.status),
-                            )
-                        }
-                        item { Button(onClick = ::openPhone) { Text("Telefonu aç") } }
+                        Text(
+                            if (room.stale) "Güncel değil · telefonu aç"
+                            else statusLabel(room.status),
+                        )
+                        Button(onClick = ::openPhone) { Text("Telefonu aç") }
                     }
                 }
             }
