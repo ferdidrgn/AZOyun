@@ -15,6 +15,10 @@ Wear OS is a companion surface for the existing Android app. Firebase and `RoomS
 
 The phone publishes a small Wearable Data Layer item at `/azoyun/room/summary`: room key, game label, public invite code, coarse status, counts, revision/event ID, event type, and publication timestamp. Turn-owner IDs and other player details are not part of the payload. The watch uses the event ID to suppress duplicate haptics and the timestamp to identify stale cached state.
 
+## Packaging
+
+The Wear APK uses the same application ID and release signing properties as the phone APK so Play services Data Layer can connect the paired apps. It is built as a separate Wear APK for the Wear OS form factor; upload it through the existing Play Console listing after testing. Keep its version code higher than prior Wear releases and unique across the listing's form factors; the build defaults to 10000 and accepts `-PwearVersionCode=...` and `-PwearVersionName=...` overrides.
+
 ## Still required before release
 
 Build and install both apps on a paired Wear OS emulator. Verify capability discovery, fresh room updates, turn haptics, deduplication, stale state while disconnected, reconnect behavior, and opening the phone. Repeat on a physical watch. Configure the Wear OS listing and test track only after those device checks.
