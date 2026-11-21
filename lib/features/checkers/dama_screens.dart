@@ -245,12 +245,12 @@ class _DamaLobbyState extends State<DamaLobbyScreen> {
         icon: Icons.grid_4x4_rounded,
         summary: '2 oyuncu · Türk dama · Klasik strateji',
         instructions: 'Oda sahibi beyaz taşlarla, katılan siyah taşlarla oynar. Türk dama taşları düz hareket eder; yakalama ve zincirleme yakalama zorunludur. Son sıraya ulaşan taş dama olur. Rakibinin taşlarını alan veya onu hamlesiz bırakan kazanır.',
-        playerName: _playerName,
+        playerName: _name,
         codeController: _codeCtrl,
         loading: _loading,
-        onRename: _askName,
-        onCreate: _createRoom,
-        onJoin: _joinRoom,
+        onRename: _ask,
+        onCreate: _create,
+        onJoin: _join,
         footer: const AdaptiveBannerAdWidget(),
       );
 }
