@@ -9,11 +9,32 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.ferdidrgn.azgame.wear"
+        applicationId = "com.ferdidrgn.azgame"
         minSdk = 30
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        // Keep Wear APK versioning independent from the phone form factor.
+        versionCode = providers.gradleProperty("wearVersionCode").orElse("10000").get().toInt()
+        versionName = providers.gradleProperty("wearVersionName").orElse("1.0.0").get()
+    }
+
+    signingConfigs {
+        create("release") {
+            val props = java.util.Properties()
+            val propsFile = rootProject.file("key.properties")
+            if (propsFile.exists()) {
+                propsFile.inputStream().use { props.load(it) }
+            }
+            keyAlias = props["keyAlias"] as String
+            keyPassword = props["keyPassword"] as String
+            storeFile = rootProject.file(props["storeFile"] as String)
+            storePassword = props["storePassword"] as String
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+        }
     }
 
     buildFeatures { compose = true }
