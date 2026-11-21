@@ -77,7 +77,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       if (!snapshot.hasData) {
                         return const Center(
                           child:
-                              CircularProgressIndicator(color: Colors.white24),
+                              CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
                         );
                       }
                       final entries = snapshot.data!;
@@ -112,42 +112,19 @@ class _GamePicker extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   @override
-  Widget build(BuildContext context) => Row(
-        children: games.map((id) {
-          final isSelected = id == selected;
-          return Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
-              onTap: () => onChanged(id),
-              child: AnimatedContainer(
-                duration: 200.ms,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? DashTokens.accent(context)
-                      : DashTokens.surface(context),
-                  borderRadius: BorderRadius.circular(DashTokens.chipRadius),
-                  border: Border.all(
-                    color: isSelected
-                        ? Colors.transparent
-                        : DashTokens.border(context),
-                  ),
-                ),
-                child: Text(
-                  kQuickGameTitles[id] ?? id,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: isSelected
-                        ? DashTokens.canvas(context)
-                        : DashTokens.textSecondary(context),
-                  ),
-                ),
+  Widget build(BuildContext context) => Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: games
+            .map(
+              (id) => ChoiceChip(
+                label: Text(kQuickGameTitles[id] ?? id),
+                selected: id == selected,
+                onSelected: (_) => onChanged(id),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               ),
-            ),
-          );
-        }).toList(),
+            )
+            .toList(),
       );
 }
 
