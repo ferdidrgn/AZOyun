@@ -159,14 +159,41 @@ class _RacingLobbyState extends State<RacingLobbyScreen> {
                 Text('${_car.emoji} ${_car.name}',
                     style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
-                _StatBarW('🏎️ Hız', _car.maxSpeed, AZColors.red),
-                _StatBarW('⚡ İvme', _car.acceleration, AZColors.orange),
-                _StatBarW('🎮 Kontrol', _car.handling, AZColors.green),
+                _statBar('🏎️ Hız', _car.maxSpeed, AZColors.red),
+                _statBar('⚡ İvme', _car.acceleration, AZColors.orange),
+                _statBar('🎮 Kontrol', _car.handling, AZColors.green),
               ],
             ),
           ),
         ),
       );
+  Widget _statBar(String label, double value, Color color) {
+    final progress = value.clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 96,
+            child: Text(label, style: Theme.of(context).textTheme.labelSmall),
+          ),
+          Expanded(
+            child: LinearProgressIndicator(
+              value: progress,
+              color: color,
+              backgroundColor: color.withAlpha(35),
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text('${(progress * 100).round()}%',
+              style: Theme.of(context).textTheme.labelSmall),
+        ],
+      ),
+    );
+  }
+
 }
 
 // ═══════════════════════════════════════════════════════════════════
