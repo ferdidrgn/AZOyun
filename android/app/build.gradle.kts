@@ -106,4 +106,6 @@ dependencies {
     // burada da açıkça tanımlanması gerekiyor (Google'ın resmi kurulum
     // adımı da bu şekilde).
     implementation("com.google.android.gms:play-services-games-v2:22.1.0")
+    // Wear OS Data Layer: companion discovery and safe room summary sync.
+    implementation("com.google.android.gms:play-services-wearable:20.0.1")
 }
