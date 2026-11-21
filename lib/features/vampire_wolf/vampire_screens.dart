@@ -1101,10 +1101,14 @@ class _VGS extends State<VampireGameScreen> {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   decoration: BoxDecoration(
-                    color: isSelected ? color.withAlpha(45) : Colors.white.withAlpha(18),
+                    color: isSelected
+                        ? color.withAlpha(_isNight ? 70 : 38)
+                        : (_isNight ? const Color(0xCC242337) : const Color(0xFFE8D8B7)),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: isSelected ? color : Colors.white.withAlpha(38),
+                      color: isSelected
+                          ? color
+                          : (_isNight ? Colors.white.withAlpha(38) : const Color(0xFF97846C)),
                       width: isSelected ? 2 : 1,
                     ),
                     boxShadow: isSelected
@@ -1116,6 +1120,8 @@ class _VGS extends State<VampireGameScreen> {
                     borderRadius: BorderRadius.circular(18),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
+                      focusColor: color.withAlpha(55),
+                      hoverColor: color.withAlpha(30),
                       onTap: () => onTap(entry.key),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -1147,7 +1153,7 @@ class _VGS extends State<VampireGameScreen> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color: _isNight ? Colors.white : const Color(0xFF2A252A),
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -1155,7 +1161,10 @@ class _VGS extends State<VampireGameScreen> {
                                   const SizedBox(height: 3),
                                   Text(
                                     isSelf ? 'Kendini seç' : actionLabel,
-                                    style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 12),
+                                    style: TextStyle(
+                                      color: _isNight ? Colors.white.withAlpha(180) : const Color(0xFF6D6259),
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ],
                               ),
