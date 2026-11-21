@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'jump_dash_rules.dart';
 
 class JumpDashLobbyScreen extends StatelessWidget {
   const JumpDashLobbyScreen({super.key});
@@ -59,13 +60,11 @@ class _JumpDashSession extends StatefulWidget {
 }
 
 class _JumpDashSessionState extends State<_JumpDashSession> {
-  static const _gravity = 0.0018;
-  static const _jumpImpulse = -0.034;
-  static const _pipeSpeed = 0.011;
-  static const _pipeWidth = 0.14;
-  static const _gapHalf = 0.16;
-  static const _birdX = 0.22;
-  static const _birdR = 0.035;
+  static const _jumpImpulse = jumpDashImpulse;
+  static const _pipeSpeed = jumpDashPipeSpeed;
+  static const _pipeWidth = jumpDashPipeWidth;
+  static const _gapHalf = jumpDashGapHalf;
+  static const _birdX = jumpDashBirdX;
 
   final _rng = Random();
   Timer? _timer;
@@ -101,36 +100,31 @@ class _JumpDashSessionState extends State<_JumpDashSession> {
   void _tick() {
     if (_over) return;
     setState(() {
-      _velocity += _gravity;
-      _birdY += _velocity;
+      _velocity = jumpDashNextVelocity(_velocity);
+      _birdY = jumpDashNextBirdY(_birdY, _velocity);
       _scenePhase += _pipeSpeed;
       _spawnTimer += _pipeSpeed;
-      if (_spawnTimer >= 0.42) {
+      if (jumpDashShouldSpawn(_spawnTimer)) {
         _spawnTimer = 0;
         _pipes.add(_Pipe(x: 1.15, gapCenter: 0.22 + _rng.nextDouble() * 0.56));
       }
       for (final p in _pipes) {
         p.x -= _pipeSpeed;
-        if (!p.passed && p.x + _pipeWidth < _birdX) {
+        if (!p.passed && jumpDashPipePassed(p.x)) {
           p.passed = true;
           _score++;
         }
       }
       _pipes.removeWhere((p) => p.x < -0.2);
 
-      if (_birdY - _birdR < 0 || _birdY + _birdR > 1) {
+      if (jumpDashHitBoundary(_birdY)) {
         _end();
         return;
       }
       for (final p in _pipes) {
-        final overlapX = (_birdX + _birdR > p.x) && (_birdX - _birdR < p.x + _pipeWidth);
-        if (overlapX) {
-          final inGap = (_birdY - _birdR > p.gapCenter - _gapHalf) &&
-              (_birdY + _birdR < p.gapCenter + _gapHalf);
-          if (!inGap) {
-            _end();
-            return;
-          }
+        if (jumpDashPipeCollision(_birdY, p.x, p.gapCenter)) {
+          _end();
+          return;
         }
       }
     });
@@ -377,3 +371,4 @@ class _JumpDashBackdropPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _JumpDashBackdropPainter oldDelegate) => true;
 }
+

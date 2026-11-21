@@ -1,0 +1,26 @@
+{
+  "constants": {
+    "gravity": 0.0018,
+    "jumpImpulse": -0.034,
+    "pipeSpeed": 0.011,
+    "pipeWidth": 0.14,
+    "gapHalf": 0.16,
+    "birdX": 0.22,
+    "birdRadius": 0.035,
+    "spawnThreshold": 0.42
+  },
+  "cases": [
+    {"name":"gravity advances velocity","velocity":0.01,"nextVelocity":0.0118},
+    {"name":"position advances by velocity","birdY":0.5,"velocity":-0.02,"nextBirdY":0.48},
+    {"name":"pipe moves left","pipeX":0.8,"nextPipeX":0.789},
+    {"name":"spawn threshold reached","spawnTimer":0.409,"shouldSpawn":true},
+    {"name":"spawn threshold not reached","spawnTimer":0.4,"shouldSpawn":false},
+    {"name":"pipe passed","pipeX":0.07,"passed":true},
+    {"name":"pipe not passed","pipeX":0.1,"passed":false},
+    {"name":"outside top boundary","birdY":0.03,"pipeX":0.8,"gapCenter":0.5,"collision":true},
+    {"name":"clear inside pipe gap","birdY":0.5,"pipeX":0.2,"gapCenter":0.5,"collision":false},
+    {"name":"hits pipe above gap","birdY":0.2,"pipeX":0.2,"gapCenter":0.5,"collision":true},
+    {"name":"does not collide before pipe","birdY":0.5,"pipeX":0.4,"gapCenter":0.5,"collision":false}
+  ]
+}
+

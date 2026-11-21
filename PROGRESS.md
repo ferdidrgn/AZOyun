@@ -19,6 +19,8 @@
 - [x] Yılan Android/web tahtasını 14×14, başlangıç konumunu ve elma başına 10 puanı eşitle; dönüş, duvar/kuyruk çarpışması ve kuyruğun boşalan hücresine girme kuralları için Dart/JavaScript ortak senaryoları ekle. Web yayını ve Android CI Flutter testleri geçti; AAB üretildi, Play yükleme izni mevcut hesapta başarısız oldu.
 - [x] Balon Patlat'ta 20 saniyelik tur, 1,1 saniyelik balon süresi, başarılı dokunuş başına 1 puan ve tur bitince puan verilmeme kurallarını Android/web için ortak JSON senaryolarına bağla.
 - [x] Maymun Dokunuşu'nda 3×3 hedef, 700 ms hedef hareketi, 20 saniyelik tur ve doğru dokunuşa 1 puanı Android/web için ortak senaryolara bağla.
+- [x] Zıpla Geç web oynanışını mobildeki borulu uçuşa taşı; yerçekimi, zıplama, boru akışı, puan ve çarpışma sınırlarını ortak Dart/JavaScript senaryolarına bağla.
+- [ ] Scuba Sweep web hedef tıklaması ile mobil dalış sahnesi farklı oyunlar. Web sürümünü mobildeki hareket/toplama/engel kurallarına taşı.
 - [ ] Balon, Maymun Dokunuşu, Scuba ve Jump Dash gibi zamanlı oyunların süre/puan vektörlerini sırayla ekle.
 - [ ] Aile Masası ve çevrimiçi oyunlarda Android/web istemcileri ile oda sunucusunu temsilî oda, hamle, kopma/yeniden bağlanma ve sonuç senaryolarıyla eşle.
 - [x] İlk HTML/CSS oyun kabuğu içinde ortak Three.js motoru gömüldü. Gerçek reklam gösterimi `WEB_ADS_ENABLED` kapalıyken devre dışı kalır; açılınca reklam betiği web sayfasında çalışır.

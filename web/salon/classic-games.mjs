@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 17030)
-Total output lines: 1433
+Warning: truncated output (original token count: 18135)
+Total output lines: 1551
 
 import { classics } from "./classic-catalog.mjs";
 import { connectFourDropRow, connectFourOutcome } from "./connect-four-rules.mjs";
@@ -17,6 +17,21 @@ import {
   tapMonkey,
   tickMonkeySession,
 } from "./monkey-rules.mjs";
+import {
+  JUMP_DASH_BIRD_RADIUS,
+  JUMP_DASH_BIRD_X,
+  JUMP_DASH_GAP_HALF,
+  JUMP_DASH_IMPULSE,
+  JUMP_DASH_PIPE_SPEED,
+  JUMP_DASH_PIPE_WIDTH,
+  jumpDashHitBoundary,
+  jumpDashNextBirdY,
+  jumpDashNextPipeX,
+  jumpDashNextVelocity,
+  jumpDashPipeCollision,
+  jumpDashPipePassed,
+  jumpDashShouldSpawn,
+} from "./jump-dash-rules.mjs";
 import { nimApplyMove } from "./nim-rules.mjs";
 import { ticTacToeOutcome } from "./tic-tac-toe-rules.mjs";
 
@@ -408,70 +423,7 @@ function dice({ paint, surface }) {
       lastEvent = `${turn + 1}. oyuncu ${banked} puanı kasaya aldı.`;
       if (score[turn] >= 40) return render(turn + 1 + ". oyuncu kazandı.");
       turn ^= 1;
-      return render();
-    }
-    const roll = 1 + random(6);
-    lastRoll = roll;
-    if (roll === 1) {
-      lastEvent = `Bir geldi. Eldeki puan sıfırlandı; sıra ${turn + 2 > 2 ? 1 : turn + 2}. oyuncuda.`;
-      pot = 0;
-      turn ^= 1;
-      return render("Bir geldi. Sıra " + (turn + 1), true);
-    }
-    pot += roll;
-    lastEvent = `Zar ${roll…2030 tokens truncated…a(36,20,12,.55),0 10px 20px rgba(0,0,0,.38)"><div class="classic-grid" role="grid" aria-label="${numbers ? 'Sayı bulmaca tahtası' : 'Kaydırmalı sayı tahtası'}" style="--columns:${width};width:100%;aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(3px,.9vw,7px);padding:clamp(5px,1.2vw,9px);border:1px solid rgba(10,38,30,.8);border-radius:clamp(6px,1.3vw,11px);background:radial-gradient(ellipse at 38% 20%,#354747,#1b2c31 70%,#132329);box-shadow:inset 0 3px 8px rgba(0,0,0,.46),inset 0 0 0 1px rgba(164,214,162,.1)">${cells}</div></div>`;
-    paint(boardView, message);
-  };
-  render();
-  return click(surface, (value) => {
-    const i = Number(value),
-      empty = board.indexOf(0);
-    if (numbers) {
-      if (board[i] !== next) return render("Şimdi " + next + " sayısını bul.");
-      next++;
-      return render(next === 26 ? "25 sayının hepsini buldun!" : undefined);
-    }
-    if (!adjacent(i, empty)) return;
-    [board[i], board[empty]] = [board[empty], board[i]];
-    moves++;
-    render(
-      board.slice(0, 15).every((n, j) => n === j + 1)
-        ? moves + " hamlede çözdün!"
-        : undefined,
-    );
-  });
-}
-function merge2048({ paint, surface }) {
-  const board = Array(16).fill(0);
-  let score = 0;
-  const tileColors = {
-    2: ["#fff2cb", "#d7ab70", "#9b643d", "#fffaf0"],
-    4: ["#ffe5b3", "#e5a45f", "#a95c35", "#fff5df"],
-    8: ["#ffd5a0", "#f28b52", "#a9442d", "#fff8ed"],
-    16: ["#ffd2a3", "#ef704b", "#982e31", "#fff2e7"],
-    32: ["#ffc3a0", "#df554f", "#852c40", "#fff0ec"],
-    64: ["#ffc0a5", "#c83c50", "#6f263d", "#fff1ee"],
-    128: ["#fff1aa", "#e4bd42", "#876328", "#fffbe2"],
-    256: ["#fff0a3", "#d9a92f", "#805025", "#fff9d7"],
-    512: ["#fff0a7", "#c98832", "#6d4021", "#fff8df"],
-    1024: ["#fff1ad", "#b97835", "#633725", "#fff9e6"],
-    2048: ["#fff6c6", "#e8bd50", "#8c4d24", "#fffdf2"],
-  };
-  function spawn() {
-    const spaces = range(16).filter((i) => !board[i]);
-    if (spaces.length)
-      board[spaces[random(spaces.length)]] = random(10) ? 2 : 4;
-  }
-  function render(message = "Puan " + score) {
-    const highest = Math.max(...board);
-    const tiles = board.map((n, index) => {
-      if (!n)
-        return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, boş" data-number="0" style="min-height:0;padding:0;border:1px solid rgba(186,220,232,.12);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,#213847,#172a37 62%,#12232f);box-shadow:inset 0 3px 7px rgba(0,0,0,.36),inset 0 -1px 0 rgba(177,218,231,.06)"></span>`;
-      const [light, face, dark, ink] = tileColors[n] || tileColors[2048];
-      const size = n >= 1024 ? "clamp(.86rem,4vw,1.85rem)" : n >= 128 ? "clamp(1rem,4.8vw,2.15rem)" : "clamp(1.2rem,5.4vw,2.45rem)";
-      return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, ${n}" data-number="${n}" style="min-height:0;padding:0;border:1px solid rgba(255,255,255,.55);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,${light} 0%,${face} 48%,${dark} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.68),inset 0 -3px 0 rgba(26,19,28,.28),0 3px 0 ${dark},0 7px 12px rgba(0,0,0,.34);color:${ink};font-size:${size};font-weight:900;text-shadow:0 1px 0 rgba(45,29,26,.28),0 3px 7px rgba(34,19,25,.2);transform:translateY(-2px)">${n}</span>`;
-    }).join("");
-    const counters = `<div class="classic-2048-counters" style="width:min(100%,510px);display:flex;justify-content:flex-end;gap:8px;margin:0 auto 10px"><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:linear-gradient(145deg,#435367,#283646);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.8">PUAN</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${score.toLocaleString("tr-TR")}</strong></div><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:linear-gradient(145deg,#785c38,#40312d);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff3d5"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.85">EN BÜYÜK TAŞ</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${highest}</strong></div></div>`;
+      return r…3135 tokens truncated…tring("tr-TR")}</strong></div><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:linear-gradient(145deg,#785c38,#40312d);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff3d5"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.85">EN BÜYÜK TAŞ</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${highest}</strong></div></div>`;
     paint(
       counters +
         `<div class="classic-grid classic-2048-board" role="grid" aria-label="2048 oyun tahtası" style="--columns:4;width:min(100%,510px);aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(5px,1.5vw,10px);padding:clamp(7px,2vw,12px);border:1px solid rgba(186,220,232,.2);border-radius:clamp(10px,2vw,18px);background:linear-gradient(145deg,#263e4d,#182b39 58%,#12222f);box-shadow:inset 0 2px 0 rgba(255,255,255,.08),inset 0 -8px 18px rgba(0,0,0,.24),0 12px 26px rgba(0,0,0,.34)">${tiles}</div>` +
@@ -1128,6 +1080,7 @@ const implementations = {
   ciz: drawGame,
 };
 function runner({ paint, surface, say }, mode) {
+  if (mode === "zipla") return flappyRunner({ paint, surface, say });
   const racing = mode === "serit";
   const tiger = mode === "kaplan";
   paint(
@@ -1245,6 +1198,108 @@ function runner({ paint, surface, say }, mode) {
     keys();
     cancelAnimationFrame(frame);
   };
+}
+function flappyRunner({ paint, surface, say }) {
+  paint(
+    '<canvas class="classic-canvas drawing-game" width="540" height="280" aria-label="Zıpla Geç uçuş alanı"></canvas>' +
+      btn("Başla", "start") + '<div class="actions">' + btn("Zıpla", "jump") + "</div>",
+    "Boruların arasından geç.",
+  );
+  const canvas = surface.querySelector("canvas");
+  const ctx = canvas.getContext("2d");
+  let birdY = 0.5,
+    velocity = 0,
+    spawnTimer = 0,
+    score = 0,
+    phase = 0,
+    timer;
+  const pipes = [];
+  const draw = () => {
+    const { width, height } = canvas;
+    const sky = ctx.createLinearGradient(0, 0, 0, height);
+    sky.addColorStop(0, "#6cc6df");
+    sky.addColorStop(.56, "#b8e5da");
+    sky.addColorStop(1, "#e9f0cb");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = "#fff1bd";
+    ctx.beginPath();
+    ctx.arc(width * .8, height * .16, width * .075, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#77ad75";
+    ctx.beginPath();
+    ctx.moveTo(0, height * .68);
+    for (let x = 0; x <= width; x += 8) {
+      ctx.lineTo(x, height * (.66 + Math.sin(x * .018 + phase) * .045));
+    }
+    ctx.lineTo(width, height); ctx.lineTo(0, height); ctx.fill();
+    const birdX = JUMP_DASH_BIRD_X * width;
+    for (const pipe of pipes) {
+      const px = pipe.x * width;
+      const top = (pipe.gap - JUMP_DASH_GAP_HALF) * height;
+      const bottom = (pipe.gap + JUMP_DASH_GAP_HALF) * height;
+      ctx.fillStyle = "#39875d";
+      ctx.fillRect(px, 0, JUMP_DASH_PIPE_WIDTH * width, top);
+      ctx.fillRect(px, bottom, JUMP_DASH_PIPE_WIDTH * width, height - bottom);
+      ctx.fillStyle = "#9be59b";
+      ctx.fillRect(px + 5, 0, 5, top);
+      ctx.fillRect(px + 5, bottom, 5, height - bottom);
+    }
+    ctx.save();
+    ctx.translate(birdX, birdY * height);
+    ctx.fillStyle = "#ffc94d";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, JUMP_DASH_BIRD_RADIUS * width, JUMP_DASH_BIRD_RADIUS * width * .78, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(5, -4, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#3c3445";
+    ctx.beginPath(); ctx.arc(6, -4, 1.7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#f07857";
+    ctx.beginPath(); ctx.moveTo(9, 2); ctx.lineTo(18, 5); ctx.lineTo(9, 8); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "#4d8a55";
+    ctx.fillRect(0, height - 10, width, 10);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 22px system-ui";
+    ctx.fillText("Puan " + score, 14, 28);
+  };
+  const tick = () => {
+    velocity = jumpDashNextVelocity(velocity);
+    birdY = jumpDashNextBirdY(birdY, velocity);
+    phase += .03;
+    spawnTimer += JUMP_DASH_PIPE_SPEED;
+    if (jumpDashShouldSpawn(spawnTimer)) {
+      spawnTimer = 0;
+      pipes.push({ x: 1.15, gap: .22 + Math.random() * .56, passed: false });
+    }
+    for (const pipe of pipes) {
+      pipe.x = jumpDashNextPipeX(pipe.x);
+      if (!pipe.passed && jumpDashPipePassed(pipe.x)) { pipe.passed = true; score++; }
+    }
+    while (pipes.length && pipes[0].x < -.2) pipes.shift();
+    if (jumpDashHitBoundary(birdY) || pipes.some((pipe) => jumpDashPipeCollision(birdY, pipe.x, pipe.gap))) {
+      clearInterval(timer);
+      timer = undefined;
+      draw();
+      say("Çarptın! Skor: " + score);
+      return;
+    }
+    draw();
+  };
+  const jump = () => { if (timer) velocity = JUMP_DASH_IMPULSE; };
+  const clear = click(surface, (value) => {
+    if (value === "start" && !timer) {
+      surface.querySelector('[data-move="start"]').hidden = true;
+      timer = setInterval(tick, 30);
+    } else if (value === "jump") jump();
+  });
+  const key = (event) => {
+    if (event.code === "Space" && timer) { event.preventDefault(); jump(); }
+  };
+  document.addEventListener("keydown", key);
+  draw();
+  return () => { clear(); clearInterval(timer); document.removeEventListener("keydown", key); };
 }
 function aim({ paint, surface }, mode) {
   const bowling = mode === "bovling",

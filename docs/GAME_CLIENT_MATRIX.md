@@ -34,8 +34,8 @@ Bu dosya oyun başlıklarının benzerliğini, kural kodunun ortak olduğu anlam
 | `oje` | `nailsalon` / `nail_salon_screen.dart` | Benzer tek kişilik deneyim; ortak kural sözleşmesi gerekmiyor |
 | `ciz` | `drawsmash` / `draw_smash_screen.dart` | Benzer yerel parti deneyimi; çizim aktarımı ve süre eşlenecek |
 | `maymun` | `monkeytap` / `monkey_touch_screen.dart` | 3×3 hedef, 700 ms hedef hareketi, 20 sn tur ve hedef isabetine 1 puan ortak vektörlere bağlı |
-| `scuba` | `scubasweep` / `scuba_sweep_screen.dart` | Aynı tür; hedef/çarpışma/puan vektörleri karşılaştırılacak |
-| `zipla` | `jumpdash` / `jump_dash_screen.dart` | Aynı tür; engel/zamanlama vektörleri karşılaştırılacak |
+| `scuba` | `scubasweep` / `scuba_sweep_screen.dart` | Web’de 4×4 hedef tıklama, mobilde kaydırmalı dalış sahnesi var; aynı oyun olacak şekilde web sahnesi henüz taşınmadı |
+| `zipla` | `jumpdash` / `jump_dash_screen.dart` | Borulu uçuş web’de de kuruldu; yerçekimi, zıplama, boru akışı, puan ve çarpışma ortak vektörlerde |
 | `kaplan` | `tigerrun` / `tiger_run_screen.dart` | Aynı tür; engel/toplama vektörleri karşılaştırılacak |
 | `serit` | `lanerace` / `lane_race_screen.dart` | Aynı tür; şerit/çarpışma vektörleri karşılaştırılacak |
 | `bovling` | `minibowling` / `mini_bowling_screen.dart` | Benzer başlık; iki oyunun nişan ve skor kuralları aynı kabul edilmiyor |
