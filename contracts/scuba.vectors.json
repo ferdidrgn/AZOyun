@@ -1,0 +1,46 @@
+{
+  "constants": {
+    "stepSeconds": 0.03,
+    "boostPace": 0.82,
+    "diverHomeY": 0.72,
+    "trashSpawnSeconds": 1.2,
+    "enemySpawnSeconds": 2.3,
+    "pearlSpawnSeconds": 10,
+    "pearlShieldSeconds": 4,
+    "levelPaces": [0.19,0.31,0.38,0.5,0.62,0.82,0.94,1]
+  },
+  "paceCases": [
+    {"level":1,"shielded":false,"pace":0.19},
+    {"level":1,"shielded":true,"pace":0.82},
+    {"level":6,"shielded":true,"pace":0.82},
+    {"level":8,"shielded":false,"pace":1},
+    {"level":99,"shielded":false,"pace":1}
+  ],
+  "driftCases": [
+    {"x":0.5,"y":0.2,"vx":0.18,"pace":0.5,"dt":0.03,"nextX":0.5054,"nextY":0.215},
+    {"x":0.94,"y":0.8,"vx":0.18,"pace":1,"dt":0.03,"nextX":0.94,"nextY":0.83},
+    {"x":0.06,"y":0.4,"vx":-0.18,"pace":0.19,"dt":0.03,"nextX":0.06,"nextY":0.4057}
+  ],
+  "spawnCases": [
+    {"elapsed":1.17,"dt":0.03,"interval":1.2,"nextElapsed":0,"spawn":true},
+    {"elapsed":1.16,"dt":0.03,"interval":1.2,"nextElapsed":1.19,"spawn":false},
+    {"elapsed":2.27,"dt":0.03,"interval":2.3,"nextElapsed":0,"spawn":true}
+  ],
+  "reachCases": [
+    {"kind":"shark","scale":1,"reach":0.09},
+    {"kind":"puffer","scale":2,"reach":0.09},
+    {"kind":"jelly","scale":1,"reach":0.055},
+    {"kind":"pearl","scale":1,"reach":0.05},
+    {"kind":"bottle","scale":1,"reach":0.045}
+  ],
+  "overlapCases": [
+    {"ax":0.5,"ay":0.74,"bx":0.52,"by":0.75,"reach":0.07,"overlap":true},
+    {"ax":0.5,"ay":0.74,"bx":0.9,"by":0.1,"reach":0.07,"overlap":false}
+  ],
+  "contactCases": [
+    {"kind":"bottle","score":9,"level":1,"shieldSeconds":0,"nextScore":10,"nextLevel":2,"nextShield":0,"gameOver":false},
+    {"kind":"pearl","score":2,"level":1,"shieldSeconds":0,"nextScore":2,"nextLevel":1,"nextShield":4,"gameOver":false},
+    {"kind":"shark","score":2,"level":1,"shieldSeconds":0,"nextScore":2,"nextLevel":1,"nextShield":0,"gameOver":true},
+    {"kind":"jelly","score":2,"level":1,"shieldSeconds":1.5,"nextScore":2,"nextLevel":1,"nextShield":1.5,"gameOver":false}
+  ]
+}

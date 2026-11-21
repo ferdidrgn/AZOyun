@@ -7,6 +7,9 @@ import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/theme/felt.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'scuba_rules.dart';
+
+export 'scuba_rules.dart' show scubaOverlap;
 
 class ScubaSweepLobbyScreen extends StatelessWidget {
   const ScubaSweepLobbyScreen({super.key});
@@ -61,12 +64,6 @@ class _Drift {
   double scale = 1;
 }
 
-bool scubaOverlap(double ax, double ay, double bx, double by, double reach) {
-  final dx = ax - bx;
-  final dy = ay - by;
-  return dx * dx + dy * dy <= reach * reach;
-}
-
 class _ScubaSession extends StatefulWidget {
   const _ScubaSession({required this.player, required this.onFinished});
 
@@ -78,9 +75,6 @@ class _ScubaSession extends StatefulWidget {
 }
 
 class _ScubaSessionState extends State<_ScubaSession> {
-  static const _speeds = [0.19, 0.31, 0.38, 0.50, 0.62, 0.82, 0.94, 1.0];
-  static const _boost = 0.82;
-  static const _diverHome = 0.72;
   static const _tips = [
     'Plastik şişeyi geri dönüştür.',
     'Poşet yerine file çanta kullan.',
@@ -116,11 +110,7 @@ class _ScubaSessionState extends State<_ScubaSession> {
   }
 
   double get _pace {
-    final base = _speeds[(_level - 1).clamp(0, _speeds.length - 1)];
-    if (_shield > 0 && base < _boost) {
-      return _boost;
-    }
-    return base;
+    return scubaPace(_level, shielded: _shield > 0);
   }
 
   void _start() {
@@ -149,34 +139,34 @@ class _ScubaSessionState extends State<_ScubaSession> {
     if (!mounted || _over || _paused) {
       return;
     }
-    const step = 0.03;
+    const step = scubaStepSeconds;
     _time += step;
     _collectFlash = max(0.0, _collectFlash - step * 2.6).toDouble();
-    if (_diverY > _diverHome) {
-      _diverY = max(_diverHome, _diverY - 0.01);
+    if (_diverY > scubaDiverHomeY) {
+      _diverY = max(scubaDiverHomeY, _diverY - 0.01);
     }
     final pace = _pace;
     if (_shield > 0) {
       _shield -= step;
     }
-    _trashIn += step;
-    _enemyIn += step;
-    _pearlIn += step;
-    if (_trashIn >= 1.2) {
-      _trashIn = 0;
+    final trashSpawn = scubaSpawnTick(_trashIn, step, scubaTrashSpawnSeconds);
+    _trashIn = trashSpawn.elapsed;
+    final enemySpawn = scubaSpawnTick(_enemyIn, step, scubaEnemySpawnSeconds);
+    _enemyIn = enemySpawn.elapsed;
+    final pearlSpawn = scubaSpawnTick(_pearlIn, step, scubaPearlSpawnSeconds);
+    _pearlIn = pearlSpawn.elapsed;
+    if (trashSpawn.spawn) {
       _items.add(_plastic());
     }
-    if (_enemyIn >= 2.3) {
-      _enemyIn = 0;
+    if (enemySpawn.spawn) {
       _items.add(_enemy());
     }
-    if (_pearlIn >= 10) {
-      _pearlIn = 0;
+    if (pearlSpawn.spawn) {
       _items.add(_Drift(kind: _Kind.pearl, x: _lane(), y: -0.08, vx: 0));
     }
     for (final item in _items) {
-      item.y += pace * step;
-      item.x = (item.x + item.vx * step).clamp(0.06, 0.94);
+      item.y = scubaMoveDriftY(item.y, pace, step);
+      item.x = scubaMoveDriftX(item.x, item.vx, step);
       if (item.kind == _Kind.puffer && item.scale < 2.4) {
         item.scale += step * 0.35;
       }
@@ -192,32 +182,26 @@ class _ScubaSessionState extends State<_ScubaSession> {
       }
     }
     for (final item in List<_Drift>.of(_items)) {
-      final reach = switch (item.kind) {
-        _Kind.shark => 0.09,
-        _Kind.puffer => 0.045 * item.scale,
-        _Kind.jelly => 0.055,
-        _Kind.pearl => 0.05,
-        _ => 0.045,
-      };
+      final reach = scubaCollisionReach(item.kind.name, item.scale);
       if (!scubaOverlap(_x, _diverY, item.x, item.y, reach)) {
         continue;
       }
       _items.remove(item);
-      if (item.kind == _Kind.pearl) {
-        _shield = 4;
-      } else if (item.kind == _Kind.shark ||
-          item.kind == _Kind.puffer ||
-          item.kind == _Kind.jelly) {
-        if (_shield <= 0) {
-          _end();
-          return;
-        }
-      } else {
-        _score += 1;
+      final contact = scubaResolveContact(
+        kind: item.kind.name,
+        score: _score,
+        level: _level,
+        shieldSeconds: _shield,
+      );
+      if (contact.gameOver) {
+        _end();
+        return;
+      }
+      _score = contact.score;
+      _level = contact.level;
+      _shield = contact.shieldSeconds;
+      if (item.kind != _Kind.pearl) {
         _collectFlash = 1;
-        if (_score % 10 == 0) {
-          _level += 1;
-        }
       }
     }
     _lean *= 0.9;
