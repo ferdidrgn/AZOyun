@@ -173,15 +173,42 @@ class _FLobbyState extends State<FighterLobbyScreen> {
                   title: Text(_sel.name),
                   subtitle: Text(_sel.special),
                 ),
-                _StatBar('CAN', _sel.maxHp, 150, AZColors.red),
-                _StatBar('SALDIRI', _sel.attack, 32, AZColors.orange),
-                _StatBar('SAVUNMA', _sel.defense, 30, AZColors.blue),
-                _StatBar('HIZ', 1500 - _sel.speed, 1100, AZColors.green),
+                _statBar('CAN', _sel.maxHp, 150, AZColors.red),
+                _statBar('SALDIRI', _sel.attack, 32, AZColors.orange),
+                _statBar('SAVUNMA', _sel.defense, 30, AZColors.blue),
+                _statBar('HIZ', 1500 - _sel.speed, 1100, AZColors.green),
               ],
             ),
           ),
         ),
       );
+  Widget _statBar(String label, int value, int maxValue, Color color) {
+    final progress = maxValue <= 0 ? 0.0 : (value / maxValue).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 78,
+            child: Text(label, style: Theme.of(context).textTheme.labelSmall),
+          ),
+          Expanded(
+            child: LinearProgressIndicator(
+              value: progress,
+              color: color,
+              backgroundColor: color.withAlpha(35),
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text('${(progress * 100).round()}%',
+              style: Theme.of(context).textTheme.labelSmall),
+        ],
+      ),
+    );
+  }
+
 }
 
 // ═══════════════════════════════════════════════════════════════════
