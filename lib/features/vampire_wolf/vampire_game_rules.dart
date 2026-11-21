@@ -20,13 +20,15 @@ class VampireVoteTally {
         if (entry.key.isNotEmpty && entry.value > 0) entry.key: entry.value,
     };
     final maxVotes = counts.values.fold<int>(0, (max, count) => count > max ? count : max);
-    final leaders = maxVotes == 0
-        ? <String>[]
-        : counts.entries
+    final leaders = <String>[];
+    if (maxVotes > 0) {
+      leaders.addAll(
+        counts.entries
             .where((entry) => entry.value == maxVotes)
-            .map((entry) => entry.key)
-            .toList()
-          ..sort();
+            .map((entry) => entry.key),
+      );
+      leaders.sort();
+    }
     return VampireVoteTally(counts: counts, maxVotes: maxVotes, leaders: leaders);
   }
 }

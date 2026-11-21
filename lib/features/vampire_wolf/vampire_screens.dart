@@ -495,8 +495,7 @@ class _VGS extends State<VampireGameScreen> {
       if (validElim != null) {
         upd['players/$validElim/alive'] = false;
       }
-      // Store counts by target, not each player's ballot. Individual votes
-      // remain private until the tally is complete and are then discarded.
+      // Store counts by target, not each player's ballot. Individual ballot fields are cleared when the completed-round summary is written.
       upd['lastVoteTally'] = tally.counts;
       upd['lastVoteOutcome'] = tally.isTie
           ? 'tie'
@@ -759,7 +758,7 @@ class _VGS extends State<VampireGameScreen> {
       'dusk' => 3,
       _ => 0,
     };
-    const labels = ['GECE', 'ŞAFAK', 'MEYDAN', 'AKŞAM'];
+    const labels = ['GECE', 'ŞAFAK', 'OYLAMA', 'AKŞAM'];
     final accent = _isNight ? const Color(0xFFE4B9FF) : const Color(0xFFFFD27B);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),

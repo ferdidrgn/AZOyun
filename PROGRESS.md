@@ -67,6 +67,15 @@
 - [ ] Wear OS emülatöründe eşleme, uygulama algılama, oda katılımı, sıra bildirimi, titreşim, bağlantı kesilip gelme, telefon uygulaması kapalı/açık ve yinelenen bildirim senaryolarını dene; ardından en az bir gerçek Wear OS saatte doğrula.
 - [ ] Play Console’da Wear OS form faktörünü/ayrı Wear OS test kanalını, TV’den ayrı mağaza ekran görüntülerini ve inceleme adımlarını yapılandır. Gerekli saat modülü ve Wear OS manifesti olmadan mevcut telefon + TV AAB’sinin saati desteklediğini varsayma. [Wear OS yayınlama](https://developer.android.com/training/wearables/packaging) · [Play Console form faktörleri](https://support.google.com/googleplay/android-developer/answer/13295490)
 
+## 22 Kasım 2026 · Vampir Köylü tur sunumu
+
+- [x] Gece, şafak, gündüz oylaması ve akşam geçişini ekranda animasyonlu tur şeridiyle görünür kıl.
+- [x] Oyuncu hedef kartlarına ada göre sabit, rolden bağımsız karakter avatarı ekle; gizli rolü avatar veya karttan açığa çıkarma.
+- [x] Vampirlerin gece hedef oylaması ve köyün gündüz oylamasında eşitlik olursa harita sırasına bağlı eleme yerine adil biçimde kimseyi eleme.
+- [x] Gündüz turu tamamlandığında kişi bazında oy sayısını ve sonuç kartını göster; tek tek oy seçimlerini sonuç özeti olarak saklama.
+- [x] Şafak ekranında kurtarılma veya ortak hedef bulunamaması durumunu, akşam ekranında da oylama sonucunu görsel geçiş kartıyla açıkla.
+- [ ] Dört ila sekiz Android oyuncusuyla gece/gündüz, eşit oy, rol yetenekleri ve maç sonu akışını fiziksel cihazlarda doğrula.
+
 ## 20 Kasım 2026 · 3D oyun görsel turu
 
 - [x] Ortak Three.js motoruna Neon Pist, Sinyal Avı, Yörünge Pilotu, Kristal Labirent, Mini Bowling, Frikik ve Penaltı modları bağlandı. Ortak HUD, duraklatma, yüksek skor, mobil dokunma ve gölge/ışık profili kullanılıyor.
