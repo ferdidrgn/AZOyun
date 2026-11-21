@@ -10,6 +10,8 @@ const extras = {
   "klasik-okey": ["Klasik Okey", "Dört oyuncuyla TV’de masa kur ve telefonundan taşlarını diz.", "Aile Masası", "/?family=tv&game=okey"],
   "101-okey": ["101 Okey", "Dört oyuncuyla 101 puanı tamamla, elini aç ve taş işle.", "Aile Masası", "/?family=tv&game=okey101"],
   mahalleler: ["Mahalleler", "İki ila dört oyuncuyla mülk al, kira topla ve özel takas yap.", "Aile Masası", "/?family=tv&game=city"],
+  penalti: ["Penaltı Antrenmanı", "Kaleciyi geçmek için 3D vuruşunu yönlendir.", "3D Arcade", "/oyun/penalti-antrenmani/"],
+  frikik: ["Frikik Ustası", "Falsolu 3D vuruşla barajı ve kaleciyi aş.", "3D Arcade", "/oyun/frikik-ustasi/"],
 };
 const escape = (value) => String(value).replace(/[&<>"']/g, (char) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);

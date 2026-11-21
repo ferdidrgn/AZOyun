@@ -84,13 +84,6 @@ export const classics = {
     "⋮",
   ],
   bovling: ["Mini Bovling", "İşaretlenen hatta atış yap", "Tek kişilik", "◉"],
-  penalti: [
-    "Penaltı Antrenmanı",
-    "Beş vuruşta kaleciyi geç",
-    "Tek kişilik",
-    "◎",
-  ],
-  frikik: ["Frikik Ustası", "Barajı aşacak köşeyi seç", "Tek kişilik", "⌒"],
 };
 
 export function classicCards() {

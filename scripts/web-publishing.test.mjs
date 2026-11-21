@@ -56,6 +56,14 @@ test("built web salon serves canonical games, ad verification and app associatio
   const { body: arcadeShell } = await read("/salon/arcade-shell.mjs");
   assert.match(arcadeShell, /\/arcade3d\/index\.html\?game=/);
   await read("/arcade3d/arcade.js");
+  for (const [legacy, canonical] of Object.entries({
+    penalti: "penalti-antrenmani",
+    frikik: "frikik-ustasi",
+  })) {
+    const { body: page } = await read("/oyun/" + legacy + "/");
+    assert.ok(page.includes('href="/oyun/' + canonical + '/"'));
+    assert.doesNotMatch(page, /data-play=/);
+  }
   assert.match(home, /name="google-site-verification"/);
   const publisher = home.match(/name="google-adsense-account" content="ca-(pub-\d+)"/)[1];
   for (const path of ["/ads.txt", "/app-ads.txt"]) {

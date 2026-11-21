@@ -1,4 +1,5 @@
 import { classics } from "./classic-catalog.mjs";
+import { ticTacToeOutcome } from "./tic-tac-toe-rules.mjs";
 
 const shuffle = (items) => {
   const result = [...items];
@@ -75,24 +76,28 @@ function lineGame({ paint, surface }, connect) {
   const render = (message = "Sıra " + marks[turn]) => {
     const winCells = new Set();
     if (done) {
-      const needed = connect ? 4 : 3;
-      for (let index = 0; index < board.length; index++) {
-        const mark = board[index];
-        if (!mark) continue;
-        const row = Math.floor(index / width);
-        const column = index % width;
-        for (const [dr, dc] of [[1, 0], [0, 1], [1, 1], [1, -1]]) {
-          const line = [index];
-          for (const sign of [-1, 1]) {
-            let r = row + dr * sign;
-            let c = column + dc * sign;
-            while (r >= 0 && r < height && c >= 0 && c < width && board[r * width + c] === mark) {
-              line.push(r * width + c);
-              r += dr * sign;
-              c += dc * sign;
+      if (!connect) {
+        const outcome = ticTacToeOutcome(board);
+        for (const cell of outcome.winningLine ?? []) winCells.add(cell);
+      } else {
+        for (let index = 0; index < board.length; index++) {
+          const mark = board[index];
+          if (!mark) continue;
+          const row = Math.floor(index / width);
+          const column = index % width;
+          for (const [dr, dc] of [[1, 0], [0, 1], [1, 1], [1, -1]]) {
+            const line = [index];
+            for (const sign of [-1, 1]) {
+              let r = row + dr * sign;
+              let c = column + dc * sign;
+              while (r >= 0 && r < height && c >= 0 && c < width && board[r * width + c] === mark) {
+                line.push(r * width + c);
+                r += dr * sign;
+                c += dc * sign;
+              }
             }
+            if (line.length >= 4) for (const cell of line) winCells.add(cell);
           }
-          if (line.length >= needed) for (const cell of line) winCells.add(cell);
         }
       }
     }
@@ -142,6 +147,19 @@ function lineGame({ paint, surface }, connect) {
     }
     if (board[index]) return;
     const mark = (board[index] = marks[turn]);
+    if (!connect) {
+      const outcome = ticTacToeOutcome(board);
+      if (outcome.winner) {
+        done = true;
+        return render(mark + " kazandı.");
+      }
+      if (outcome.draw) {
+        done = true;
+        return render("Berabere.");
+      }
+      turn ^= 1;
+      return render();
+    }
     const row = Math.floor(index / width);
     const column = index % width;
     const run = (dr, dc) => {

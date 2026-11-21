@@ -1,0 +1,49 @@
+{
+  "contractVersion": 1,
+  "gameId": "tictactoe",
+  "boardSize": 9,
+  "cases": [
+    {
+      "name": "X yatay kazanır",
+      "board": ["X", "X", "X", null, "O", null, "O", null, null],
+      "winner": "X",
+      "winningLine": [0, 1, 2],
+      "draw": false
+    },
+    {
+      "name": "O dikey kazanır",
+      "board": ["X", null, "O", "X", null, "O", null, "X", "O"],
+      "winner": "O",
+      "winningLine": [2, 5, 8],
+      "draw": false
+    },
+    {
+      "name": "X ana çaprazda kazanır",
+      "board": ["X", "O", null, null, "X", "O", null, null, "X"],
+      "winner": "X",
+      "winningLine": [0, 4, 8],
+      "draw": false
+    },
+    {
+      "name": "O ters çaprazda kazanır",
+      "board": ["X", null, "O", "X", "O", null, "O", null, "X"],
+      "winner": "O",
+      "winningLine": [2, 4, 6],
+      "draw": false
+    },
+    {
+      "name": "kazanan olmayan açık tahta",
+      "board": ["X", "O", "X", "O", "X", "O", "O", "X", null],
+      "winner": null,
+      "winningLine": null,
+      "draw": false
+    },
+    {
+      "name": "kazanan olmayan dolu tahta beraberliktir",
+      "board": ["X", "O", "X", "X", "O", "O", "O", "X", "X"],
+      "winner": null,
+      "winningLine": null,
+      "draw": true
+    }
+  ]
+}

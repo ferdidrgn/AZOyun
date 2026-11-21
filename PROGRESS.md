@@ -10,13 +10,16 @@
 - [x] Android iş akışında Flutter testleri ve imzalı AAB üretimi geçti; AAB Actions artefaktına yüklendi. Google Play'e yükleme `The caller does not have permission` ile reddedildi: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44858985553).
 - [x] İlk oyun motoru envanteri çıkarıldı: yedi Three.js oyun modu (`runway`, `drones`, `orbit`, `maze`, `bowling`, `freeKick`, `penalty`) Android Flutter ekranından ve aynı paketli JS motorundan açılıyor.
 - [x] Aynı yedi Three.js modu için HTML/CSS oyun sayfaları ve katalog kartları eklendi. Sayfalar mevcut `arcade3d` motorunu açıyor; web reklamları Flutter/WebView içine değil, yalnızca dağıtım değişkeni açtığında web kabuğuna yükleniyor.
-- [ ] Kalan Dart-only ve tarayıcıya özgü oyunların envanterini çıkar; hangi oyunlarda ortak kural/sonuç sözleşmesi veya ayrı eşdeğer uygulama gerekeceğini belirle.
-- [ ] Mevcut Three.js motorunu Android ve web'de ortak çalıştırma sınırlarını doğrula; köprü, dokunma/kumanda girdisi, yaşam döngüsü ve hata kurtarmayı tanımla. Dart-only oyunlarda Flutter Android motorunu koru ve HTML/JS web karşılığını aynı kural fixture'larıyla doğrula.
+- [x] Dart hızlı oyunları, web klasiklerini, çevrimiçi Firebase oyunlarını ve ortak Three.js motorlarını istemci bazında sınıflandır: [GAME_CLIENT_MATRIX.md](docs/GAME_CLIENT_MATRIX.md).
+- [x] Web'deki eski Penaltı/Frikik quiz kartlarını kaldır; önceki URL'leri aynı 3D arcade oyun sayfalarına bağla, katalogda aynı adlı çift oyun gösterme.
+- [x] XOX için ortak JSON kural vektörleri oluştur; Dart ve JavaScript motorları kazanan çizgisi, galibiyet ve beraberlik sonuçlarını bu sözleşmeye göre hesaplıyor.
+- [ ] Dörtlü Diz ve Nim ile devam et; sonraki dalgalarda 2048, Yılan ve zamanlı oyunların kural/sonuç vektörlerini ekle.
+- [ ] Aile Masası ve çevrimiçi oyunlarda Android/web istemcileri ile oda sunucusunu temsilî oda, hamle, kopma/yeniden bağlanma ve sonuç senaryolarıyla eşle.
 - [x] İlk HTML/CSS oyun kabuğu içinde ortak Three.js motoru gömüldü. Gerçek reklam gösterimi `WEB_ADS_ENABLED` kapalıyken devre dışı kalır; açılınca reklam betiği web sayfasında çalışır.
-- [ ] `main` push CI'sında Flutter Android test/build ile statik HTML/CSS/JS derleme/test/deploy işlerini ayrı ve görünür tut. Flutter Web çıktısının Firebase Hosting'e yanlışlıkla yüklenmediğini otomatik doğrula.
+- [x] CI ayrımı doğrulandı: Flutter Android test/AAB akışı `.github/workflows/play-store-deploy.yml`, statik HTML/CSS/JS CI/yayın akışı `.github/workflows/firebase-hosting-deploy.yml` içinde. Web derleyicisi yalnızca `web/` ile ortak arcade varlıklarını `build/salon` içine alır; Flutter Web üretimi yoktur.
 - [ ] Android, web ve oda sunucusunu temsili oyunlarda aynı oda/hamle/sonuç senaryolarıyla doğrula; ardından diğer oyunlara dalgalar halinde yay.
 - [x] `46fc3af` için web CI, yayın dosyası doğrulaması ve Firebase Hosting deploy'u başarılı: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44860597839). Windows'ta yerel entegrasyon testi localhost sunucusuna bağlanamadı (`EACCES 127.0.0.1`); aynı test GitHub Actions'ta geçti.
-- [ ] `9ac9fda` Android AAB derleme/yayın iş akışını tamamla; dahili Play yüklemesini kontrol et. Önceki AAB Play'e `The caller does not have permission` yanıtıyla yüklenemedi.
+- [x] `9ac9fda` Android testleri/AAB iş akışı tamamlandı; Play'e yükleme adımı `The caller does not have permission` hatası verdi. Yeni ortak oyun değişiklikleri için sonraki Android CI bu akışı tekrar doğrulayacak: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44860486302).
 
 ## 21 Kasım 2026 · Tema, profil ve ayarlar
 

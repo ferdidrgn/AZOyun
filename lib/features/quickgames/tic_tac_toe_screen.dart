@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'tic_tac_toe_rules.dart';
 
 class TicTacToeLobbyScreen extends StatelessWidget {
   const TicTacToeLobbyScreen({super.key});
@@ -33,12 +34,6 @@ class TicTacToeGameScreen extends StatefulWidget {
 }
 
 class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
-  static const _lines = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8],
-    [0, 3, 6], [1, 4, 7], [2, 5, 8],
-    [0, 4, 8], [2, 4, 6],
-  ];
-
   late List<String?> _board;
   late int _turn; // 0 or 1
   bool _busy = false;
@@ -62,16 +57,6 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
     _maybeLetAIPlay();
   }
 
-  List<int>? _findWinningLine(List<String?> board) {
-    for (final line in _lines) {
-      final a = board[line[0]], b = board[line[1]], c = board[line[2]];
-      if (a != null && a == b && b == c) return line;
-    }
-    return null;
-  }
-
-  bool _isFull(List<String?> board) => board.every((c) => c != null);
-
   Future<void> _play(int index) async {
     if (_busy || _board[index] != null || _winningLine != null) return;
     setState(() {
@@ -81,13 +66,14 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
   }
 
   Future<void> _afterMove() async {
-    final win = _findWinningLine(_board);
+    final outcome = ticTacToeOutcome(_board);
+    final win = outcome.winningLine;
     if (win != null) {
       setState(() => _winningLine = win);
       await _finish(winnerIndex: _turn);
       return;
     }
-    if (_isFull(_board)) {
+    if (outcome.draw) {
       await _finish(winnerIndex: null);
       return;
     }
@@ -124,14 +110,15 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
     return bestMove;
   }
 
-  int _minimax(List<String?> board, int depth, bool maximizing, String me, String opp) {
-    final win = _findWinningLine(board);
+  int _minimax(
+      List<String?> board, int depth, bool maximizing, String me, String opp) {
+    final win = ticTacToeOutcome(board).winningLine;
     if (win != null) {
       final winner = board[win[0]];
       if (winner == me) return 10 - depth;
       return depth - 10;
     }
-    if (_isFull(board)) return 0;
+    if (ticTacToeOutcome(board).draw) return 0;
 
     if (maximizing) {
       var best = -999;
@@ -181,12 +168,14 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
           const SizedBox(height: 16),
           AZFrostCard(
             child: Text(
-              _winningLine != null || _isFull(_board)
+              _winningLine != null || ticTacToeOutcome(_board).draw
                   ? 'Oyun bitti'
                   : '${_current.name} sırası (${_mark(_turn)})',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16),
             ),
           ),
           const SizedBox(height: 24),
@@ -212,7 +201,8 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFD9AD75), width: 1.2),
+                      border: Border.all(
+                          color: const Color(0xFFD9AD75), width: 1.2),
                       boxShadow: const [
                         BoxShadow(
                           color: Color(0xAA000000),
@@ -230,7 +220,8 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF242019),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0x88351F11), width: 2),
+                        border: Border.all(
+                            color: const Color(0x88351F11), width: 2),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -250,11 +241,13 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
                                   ),
                                   itemBuilder: (_, i) {
                                     final mark = _board[i];
-                                    final isWinCell = _winningLine?.contains(i) ?? false;
+                                    final isWinCell =
+                                        _winningLine?.contains(i) ?? false;
                                     return GestureDetector(
                                       onTap: () => _play(i),
                                       child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 220),
+                                        duration:
+                                            const Duration(milliseconds: 220),
                                         decoration: BoxDecoration(
                                           gradient: isWinCell
                                               ? const LinearGradient(
@@ -274,7 +267,8 @@ class _TicTacToeGameScreenState extends State<TicTacToeGameScreen> {
                                                     Color(0x26302739),
                                                   ],
                                                 ),
-                                          borderRadius: BorderRadius.circular(AZRadius.md),
+                                          borderRadius: BorderRadius.circular(
+                                              AZRadius.md),
                                           border: Border.all(
                                             color: isWinCell
                                                 ? const Color(0xFFDCCBFF)
@@ -430,5 +424,6 @@ class _WinningLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_WinningLinePainter oldDelegate) => oldDelegate.line != line;
+  bool shouldRepaint(_WinningLinePainter oldDelegate) =>
+      oldDelegate.line != line;
 }
