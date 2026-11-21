@@ -41,6 +41,7 @@
 - [x] Gizlilik politikası ve kullanım şartları ekranlarının projede mevcut olduğu doğrulandı; tema metin görünümüne uygulanıyor.
 - [x] Ana oyun kataloğundaki sabit eski yarış/zeka/dama/dövüş/sosyal kart gradyanları ortak oyun paletine bağlandı. Adam Asmaca lobi ve oda ekranları da aynı canlı kırmızı tema tokenlarını kullanıyor.
 - [x] Adam Asmaca lobisi ortak AZOnlineLobby düzenine taşındı; ortak tema yüzeyi, oyuncu adı, oda oluşturma/katılma düğmeleri ve yükleme kilidi kullanılıyor. Ortak lobi düğmeleri erişilebilir dokunma yüksekliğine çıkarıldı.
+- [x] Hain Kim, Vampir Köylü ve Kelime Bulmaca lobileri ortak Material 3 lobi düzenine taşındı; oda oluşturma/katılma mantığı, kayıtlı oyuncu adı ve banner reklamları korundu. Ortak lobiye 6 karakterlik davet kodu yardımı, klavyede gönder eylemi ve oyun seçenekleri için ekran okuyucu etiketi eklendi.
 - [x] Pişti lobisi de aynı ortak düzene taşındı; Oyuncu/Ortak Masa seçimi tema uyumlu, kumandayla seçilebilir Material 3 segmented control olarak kaldı.
 - [x] Dövüşçüler, Araba Yarışı, Dama, Şehir Bulmaca ve Yalancılar Kahvesi lobi ekranları ortak Material 3 AZOnlineLobby düzenine taşındı. Karakter/araba seçimleri odada korunup erişilebilir ChoiceChip’e çevrildi; banner alanı korundu.
 - [x] Liderlik tablosu yükleme göstergesi seçili temanın rengini kullanıyor; oyun seçimi Material 3 ChoiceChip’e geçti ve klavye/kumanda odağı aldı.
