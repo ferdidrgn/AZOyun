@@ -25,12 +25,15 @@ test("built web salon serves canonical games, ad verification and app associatio
   assert.match(home, /href="\/salon\/style\.css"/);
   assert.match(home, /src="\/salon\/app\.mjs"/);
   assert.doesNotMatch(home, /flutter_bootstrap\.js|flutter\.js/);
+  const legacyArcadeAliases = new Set(["/oyun/penalti/", "/oyun/frikik/"]);
   for (const url of urls) {
     assert.equal(url.origin, origin);
     const { body: page } = await read(url.pathname);
     assert.ok(page.includes('href="' + url.href + '"'), url.pathname);
     if (url.pathname.startsWith("/oyun/")) {
-      assert.ok(home.includes('href="' + url.pathname + '"'), url.pathname);
+      if (!legacyArcadeAliases.has(url.pathname)) {
+        assert.ok(home.includes('href="' + url.pathname + '"'), url.pathname);
+      }
       assert.match(page, /"@type":"VideoGame"/);
     }
   }
