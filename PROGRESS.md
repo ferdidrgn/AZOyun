@@ -7,12 +7,15 @@
 - [x] Sürüm `1.0.0+21` → `1.0.1+22` yükseltildi ve `b7ad599` commit'i `main`'e gönderildi.
 - [x] Web yayını testi, kök sayfanın HTML/CSS/JS girişlerini kullanmasını ve Flutter bootstrap dosyalarını referans etmemesini kontrol edecek şekilde güçlendirildi.
 - [x] `b7ad599` için HTML/CSS/JS web CI testi ve Firebase Hosting yayını başarılı oldu: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44858985585).
-- [ ] Aynı commit'in Android dahili AAB/test/yükleme iş akışının tamamlanmasını ve Google Play sonucu vermesini bekle: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44858985553). Önceki denemelerde test kanalı servis hesabı izinleri yüklemeyi engellemişti.
-- [ ] Oyun envanterini Android Flutter motorları, mevcut ortak Three.js/JavaScript motorları ve yalnızca tarayıcıda bulunan motorlar olarak ayır. Her oyun için desteklenen istemcileri ve ortak kural/sonuç sözleşmesini yaz.
+- [x] Android iş akışında Flutter testleri ve imzalı AAB üretimi geçti; AAB Actions artefaktına yüklendi. Google Play'e yükleme `The caller does not have permission` ile reddedildi: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44858985553).
+- [x] İlk oyun motoru envanteri çıkarıldı: yedi Three.js oyun modu (`runway`, `drones`, `orbit`, `maze`, `bowling`, `freeKick`, `penalty`) Android Flutter ekranından ve aynı paketli JS motorundan açılıyor.
+- [x] Aynı yedi Three.js modu için HTML/CSS oyun sayfaları ve katalog kartları eklendi. Sayfalar mevcut `arcade3d` motorunu açıyor; web reklamları Flutter/WebView içine değil, yalnızca dağıtım değişkeni açtığında web kabuğuna yükleniyor.
+- [ ] Kalan Dart-only ve tarayıcıya özgü oyunların envanterini çıkar; hangi oyunlarda ortak kural/sonuç sözleşmesi veya ayrı eşdeğer uygulama gerekeceğini belirle.
 - [ ] Mevcut Three.js motorunu Android ve web'de ortak çalıştırma sınırlarını doğrula; köprü, dokunma/kumanda girdisi, yaşam döngüsü ve hata kurtarmayı tanımla. Dart-only oyunlarda Flutter Android motorunu koru ve HTML/JS web karşılığını aynı kural fixture'larıyla doğrula.
-- [ ] Web'de HTML/CSS oyun kabuğu içinde Canvas/Three.js motorunu barındır; telefon ve masaüstü reklam yerleşimlerini yalnızca web tarafında, mevcut `WEB_ADS_ENABLED` izin anahtarı ve reklam/consent kurallarıyla yönet.
+- [x] İlk HTML/CSS oyun kabuğu içinde ortak Three.js motoru gömüldü. Gerçek reklam gösterimi `WEB_ADS_ENABLED` kapalıyken devre dışı kalır; açılınca reklam betiği web sayfasında çalışır.
 - [ ] `main` push CI'sında Flutter Android test/build ile statik HTML/CSS/JS derleme/test/deploy işlerini ayrı ve görünür tut. Flutter Web çıktısının Firebase Hosting'e yanlışlıkla yüklenmediğini otomatik doğrula.
 - [ ] Android, web ve oda sunucusunu temsili oyunlarda aynı oda/hamle/sonuç senaryolarıyla doğrula; ardından diğer oyunlara dalgalar halinde yay.
+- [ ] Bu değişikliklerin `main` push CI/web yayını ve Android derlemesini tamamlamasını doğrula. Yerel Windows ortamı entegrasyon testinin localhost sunucusuna bağlanmasını engelledi (`EACCES 127.0.0.1`); GitHub Actions doğrulaması bekliyor.
 
 ## 21 Kasım 2026 · Tema, profil ve ayarlar
 

@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { classics, classicCards } from "../web/salon/classic-catalog.mjs";
+import { arcadeCards, arcadeGames } from "../web/salon/arcade-catalog.mjs";
 
 const origin = "https://azoyun.web.app";
 const brand = "AZ Oyun";
@@ -9,8 +10,6 @@ const extras = {
   "klasik-okey": ["Klasik Okey", "Dört oyuncuyla TV’de masa kur ve telefonundan taşlarını diz.", "Aile Masası", "/?family=tv&game=okey"],
   "101-okey": ["101 Okey", "Dört oyuncuyla 101 puanı tamamla, elini aç ve taş işle.", "Aile Masası", "/?family=tv&game=okey101"],
   mahalleler: ["Mahalleler", "İki ila dört oyuncuyla mülk al, kira topla ve özel takas yap.", "Aile Masası", "/?family=tv&game=city"],
-  "yorunge-pilotu": ["Yörünge Pilotu", "Uzay aracını yönlendir ve 3D halkalardan geç.", "3D Arcade", "/arcade3d/?game=orbit", "/salon/orbit.jpg"],
-  "kristal-labirent": ["Kristal Labirent", "Üç kristali topla ve labirentin altın çıkışını bul.", "3D Arcade", "/arcade3d/?game=maze", "/salon/maze.jpg"],
 };
 const escape = (value) => String(value).replace(/[&<>"']/g, (char) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -35,7 +34,11 @@ function metadata(title, description, path, image = defaultImage) {
 
 export async function writePublicPages(input, output) {
   const template = await readFile(new URL("index.html", input), "utf8");
-  const allGames = { ...Object.fromEntries(Object.entries(classics).map(([id, game]) => [id, game.slice(0, 3)])), ...extras };
+  const allGames = {
+    ...Object.fromEntries(Object.entries(classics).map(([id, game]) => [id, game.slice(0, 3)])),
+    ...Object.fromEntries(Object.entries(arcadeGames).map(([id, game]) => [id, [game.title, game.description, "3D Arcade", game.mode, game.image]])),
+    ...extras,
+  };
   const total = Object.keys(allGames).length;
   const homeDescription = `AZ Oyun’da ${total} tarayıcı oyunu oyna. Okey ve Mahalleler için TV’de masa kur, QR kodla katıl veya 2048, Yılan ve 3D oyunlara başla.`;
   const familyLinks = {
@@ -43,8 +46,6 @@ export async function writePublicPages(input, output) {
     "/?family=tv&amp;game=okey101": "/oyun/101-okey/",
     "/?family=tv&amp;game=city": "/oyun/mahalleler/",
     "/?play=ayna": "/oyun/ayna/",
-    "/arcade3d/?game=orbit": "/oyun/yorunge-pilotu/",
-    "/arcade3d/?game=maze": "/oyun/kristal-labirent/",
   };
   const applyHead = (html, title, description, path, image) => html
     .replace(/<title>[^<]+<\/title>/, `<title>${escape(title)}</title>`)
@@ -60,12 +61,20 @@ export async function writePublicPages(input, output) {
   );
   for (const [oldLink, newLink] of Object.entries(familyLinks)) home = home.replace(`href="${oldLink}"`, `href="${newLink}"`);
   home = home.replace("<!-- classic-cards -->", classicCards());
+  home = home.replace("<!-- arcade-cards -->", arcadeCards());
   await writeFile(new URL("index.html", output), home);
 
   const paths = ["/", "/privacy-policy.html", "/terms.html"];
   for (const [id, [name, description, mode, action, image]] of Object.entries(allGames)) {
     const path = "/oyun/" + id + "/";
-    const main = `<main id="main" class="shell room-page"${action ? "" : ` data-play="${id}"`}>
+    const arcade = arcadeGames[id];
+    const main = arcade
+      ? `<main id="main" class="shell room-page arcade-page" data-arcade="${escape(arcade.mode)}" data-title="${escape(name)}">
+      <div class="room-title"><div><h1>${escape(name)}</h1><p>${escape(mode)} · Android uygulamasındakiyle aynı oyun motoru</p></div><a class="button outline" href="/#oyunlar">Oyun salonu</a></div>
+      <section class="surface arcade-shell" aria-label="${escape(name)} oyun alanı"></section>
+      <div class="arcade-page-footer"><p>${escape(description)}</p><a href="https://play.google.com/store/apps/details?id=com.ferdidrgn.azgame">Android uygulamasını edin</a></div>
+      </main>`
+      : `<main id="main" class="shell room-page"${action ? "" : ` data-play="${id}"`}>
       <div class="room-title"><div><h1>${escape(name)}</h1><p>${escape(mode)}</p></div><a class="button outline" href="/#oyunlar">Oyun salonu</a></div>
       <section class="surface classic-stage stack"><p>${escape(description)}</p>
         ${action ? `<a class="button primary" href="${escape(action)}">${mode === "Aile Masası" ? "TV’de masa aç" : "Oyunu başlat"}</a>` :
@@ -75,7 +84,8 @@ export async function writePublicPages(input, output) {
       applyHead(template, name + " Oyna · " + brand, description, path, image)
         .replace(/<main\b[\s\S]*?<\/main>/, main),
       { "@type": "VideoGame", name, description, url: origin + path,
-        image: origin + (image || defaultImage), gamePlatform: "Web browser" },
+        image: origin + (image || defaultImage),
+        gamePlatform: arcade ? ["Web browser", "Android"] : "Web browser" },
     );
     const directory = new URL("oyun/" + id + "/", output);
     await mkdir(directory, { recursive: true });

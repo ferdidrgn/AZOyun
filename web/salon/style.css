@@ -901,3 +901,17 @@ h2 {
 .word-board { display: grid; grid-template-columns: repeat(11,minmax(0,1fr)); gap: 3px; max-width: 660px; margin-block: 16px; }
 .word-cell { aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--line,#9eac99); border-radius: 4px; background: #eee6d1; color: #203b32; font-weight: 800; font-size: clamp(12px,2.4vw,24px); cursor: pointer; }
 .word-cell:focus-visible { outline: 3px solid #d38a31; outline-offset: 1px; }
+.arcade-page { width: min(1180px, calc(100% - 32px)); }
+.arcade-page .room-title { margin-bottom: 14px; }
+.arcade-shell { padding: 0; overflow: hidden; min-height: min(72vh, 760px); border-radius: 18px; }
+.arcade-frame { display: block; width: 100%; height: min(72vh, 760px); min-height: 520px; border: 0; background: #101923; }
+.arcade-page-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 12px 4px 28px; color: var(--muted); }
+.arcade-page-footer p { margin: 0; }
+.arcade-page-footer a { color: var(--gold); font-weight: 700; }
+.arcade-card .classic-mark { background: linear-gradient(145deg, #34254a, #19585b); color: #8af5ee; }
+@media (max-width: 700px) {
+  .arcade-page { width: min(100% - 16px, 1180px); }
+  .arcade-shell { min-height: 66vh; border-radius: 14px; }
+  .arcade-frame { height: 66vh; min-height: 460px; }
+  .arcade-page-footer { align-items: flex-start; flex-direction: column; }
+}

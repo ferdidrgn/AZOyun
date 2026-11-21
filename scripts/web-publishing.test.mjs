@@ -18,7 +18,7 @@ test("built web salon serves canonical games, ad verification and app associatio
   }
   const { body: sitemap } = await read("/sitemap.xml");
   const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((entry) => new URL(entry[1]));
-  assert.equal(urls.filter((url) => url.pathname.startsWith("/oyun/")).length, 38);
+  assert.equal(urls.filter((url) => url.pathname.startsWith("/oyun/")).length, 43);
   assert.equal(new Set(urls.map(String)).size, urls.length);
   const { body: home } = await read("/");
   assert.match(home, /href="\/salon\/style\.css"/);
@@ -33,6 +33,28 @@ test("built web salon serves canonical games, ad verification and app associatio
       assert.match(page, /"@type":"VideoGame"/);
     }
   }
+  for (const [slug, mode] of Object.entries({
+    "neon-pist": "runway",
+    "sinyal-avi": "drones",
+    "yorunge-pilotu": "orbit",
+    "kristal-labirent": "maze",
+    "mini-bovling": "bowling",
+    "frikik-ustasi": "freeKick",
+    "penalti-antrenmani": "penalty",
+  })) {
+    const { body: page } = await read("/oyun/" + slug + "/");
+    assert.ok(page.includes('data-arcade="' + mode + '"'), slug);
+    assert.match(page, /class="surface arcade-shell"/);
+  }
+  const flutterArcade = await readFile(new URL(
+    "../lib/features/arcade3d/three_arcade_screen.dart", import.meta.url,
+  ), "utf8");
+  for (const mode of ["runway", "drones", "orbit", "maze", "bowling", "freeKick", "penalty"]) {
+    assert.match(flutterArcade, new RegExp("\\w+\\('[^']+', '" + mode + "'\\)"), mode);
+  }
+  const { body: arcadeShell } = await read("/salon/arcade-shell.mjs");
+  assert.match(arcadeShell, /\/arcade3d\/index\.html\?game=/);
+  await read("/arcade3d/arcade.js");
   assert.match(home, /name="google-site-verification"/);
   const publisher = home.match(/name="google-adsense-account" content="ca-(pub-\d+)"/)[1];
   for (const path of ["/ads.txt", "/app-ads.txt"]) {

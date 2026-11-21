@@ -4,16 +4,19 @@ import 'three_view_native.dart'
     if (dart.library.js_interop) 'three_view_web.dart';
 
 enum ThreeArcadeGame {
-  runway('Neon Pist'),
-  drones('Sinyal Avı'),
-  orbit('Yörünge Pilotu'),
-  maze('Kristal Labirent'),
-  bowling('3D Mini Bowling'),
-  freeKick('Frikik Ustası'),
-  penalty('Penaltı Antrenmanı');
+  runway('Neon Pist', 'runway'),
+  drones('Sinyal Avı', 'drones'),
+  orbit('Yörünge Pilotu', 'orbit'),
+  maze('Kristal Labirent', 'maze'),
+  bowling('3D Mini Bowling', 'bowling'),
+  freeKick('Frikik Ustası', 'freeKick'),
+  penalty('Penaltı Antrenmanı', 'penalty');
 
-  const ThreeArcadeGame(this.title);
+  const ThreeArcadeGame(this.title, this.engineMode);
   final String title;
+
+  /// Stable mode key shared with the web arcade catalog and Three.js runtime.
+  final String engineMode;
 }
 
 class ThreeArcadeScreen extends StatelessWidget {
@@ -25,6 +28,8 @@ class ThreeArcadeScreen extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: const Color(0xFF101923),
         appBar: AppBar(title: Text(game.title)),
-        body: SafeArea(child: ThreeView(game: game.name, title: game.title)),
+        body: SafeArea(
+          child: ThreeView(game: game.engineMode, title: game.title),
+        ),
       );
 }

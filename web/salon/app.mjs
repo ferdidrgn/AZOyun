@@ -31,6 +31,10 @@ if (roomRoute !== null) {
   import("./classic-games.mjs").then(({ openClassic }) =>
     openClassic(main, play),
   );
+} else if (main.dataset.arcade) {
+  import("./arcade-shell.mjs").then(({ openArcade }) =>
+    openArcade(main, main.dataset.arcade, main.dataset.title),
+  );
 } else if (document.querySelector(".catalog-grid")) {
   const search = document.querySelector("#game-search");
   const results = document.querySelector("#game-results");
