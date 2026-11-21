@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'reversi_rules.dart';
 
 class ReversiLobbyScreen extends StatelessWidget {
   const ReversiLobbyScreen({super.key});
@@ -22,12 +23,6 @@ class ReversiLobbyScreen extends StatelessWidget {
             'Tahtada en çok taşı olan kazanır!',
       );
 }
-
-const _kDirs = [
-  [-1, -1], [-1, 0], [-1, 1],
-  [0, -1], [0, 1],
-  [1, -1], [1, 0], [1, 1],
-];
 
 const _kWeights = [
   [100, -20, 10, 5, 5, 10, -20, 100],
@@ -50,15 +45,15 @@ class ReversiGameScreen extends StatefulWidget {
 }
 
 class _ReversiGameScreenState extends State<ReversiGameScreen> {
-  static const _n = 8;
-  late List<List<String?>> _board;
+  static const _n = reversiBoardSize;
+  late List<int> _board;
   int _turn = 0;
   bool _busy = false;
   bool _gameOver = false;
   final _rng = Random();
 
   QPPlayer get _current => widget.players[_turn];
-  String _mark(int idx) => idx == 0 ? 'B' : 'W';
+  int _mark(int idx) => idx == 0 ? reversiBlack : reversiWhite;
 
   @override
   void initState() {
@@ -67,11 +62,7 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
   }
 
   void _reset() {
-    _board = List.generate(_n, (_) => List<String?>.filled(_n, null));
-    _board[3][3] = 'W';
-    _board[3][4] = 'B';
-    _board[4][3] = 'B';
-    _board[4][4] = 'W';
+    _board = reversiInitialBoard();
     _turn = 0;
     _busy = false;
     _gameOver = false;
@@ -79,68 +70,28 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
     _maybeLetAIPlay();
   }
 
-  List<List<int>> _flipsFor(List<List<String?>> b, int r, int c, String me, String opp) {
-    if (b[r][c] != null) return const [];
-    final flips = <List<int>>[];
-    for (final d in _kDirs) {
-      final dr = d[0], dc = d[1];
-      var rr = r + dr, cc = c + dc;
-      final line = <List<int>>[];
-      while (rr >= 0 && rr < _n && cc >= 0 && cc < _n && b[rr][cc] == opp) {
-        line.add([rr, cc]);
-        rr += dr;
-        cc += dc;
-      }
-      if (line.isNotEmpty && rr >= 0 && rr < _n && cc >= 0 && cc < _n && b[rr][cc] == me) {
-        flips.addAll(line);
-      }
-    }
-    return flips;
-  }
-
-  List<List<int>> _validMoves(List<List<String?>> b, String me) {
-    final opp = me == 'B' ? 'W' : 'B';
-    final moves = <List<int>>[];
-    for (var r = 0; r < _n; r++) {
-      for (var c = 0; c < _n; c++) {
-        if (b[r][c] != null) continue;
-        if (_flipsFor(b, r, c, me, opp).isNotEmpty) moves.add([r, c]);
-      }
-    }
-    return moves;
-  }
-
-  void _applyMove(List<List<String?>> b, int r, int c, String me, String opp) {
-    final flips = _flipsFor(b, r, c, me, opp);
-    b[r][c] = me;
-    for (final f in flips) {
-      b[f[0]][f[1]] = me;
-    }
-  }
-
   Future<void> _tap(int r, int c) async {
     if (_busy || _gameOver || _current.isAI) return;
     final me = _mark(_turn);
-    final opp = _mark(1 - _turn);
-    if (_flipsFor(_board, r, c, me, opp).isEmpty) return;
-    setState(() => _applyMove(_board, r, c, me, opp));
+    final next = reversiApplyMove(_board, r * _n + c, me);
+    if (next == null) return;
+    setState(() => _board = next);
     await _afterMove();
   }
 
   Future<void> _afterMove() async {
     final nextIdx = 1 - _turn;
-    final nextMark = _mark(nextIdx);
-    final myMark = _mark(_turn);
-
-    if (_validMoves(_board, nextMark).isNotEmpty) {
+    final next = reversiNextSide(_board, _mark(_turn));
+    if (next == _mark(nextIdx)) {
       setState(() => _turn = nextIdx);
       _maybeLetAIPlay();
       return;
     }
-    if (_validMoves(_board, myMark).isNotEmpty) {
+    if (next == _mark(_turn)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${widget.players[nextIdx].name} hamle yapamıyor, sıra atlandı'),
+          content: Text(
+              '${widget.players[nextIdx].name} hamle yapamıyor, sıra atlandı'),
           duration: const Duration(seconds: 2),
         ));
       }
@@ -156,8 +107,8 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
     Future.delayed(const Duration(milliseconds: 600), () async {
       if (!mounted) return;
       final me = _mark(_turn);
-      final opp = _mark(1 - _turn);
-      final moves = _validMoves(_board, me);
+      final moves =
+          reversiLegalMoves(_board, me).map((i) => [i ~/ _n, i % _n]).toList();
       if (moves.isEmpty) {
         setState(() => _busy = false);
         await _afterMove();
@@ -166,7 +117,7 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
       var bestScore = -100000;
       var candidates = <List<int>>[];
       for (final m in moves) {
-        final flips = _flipsFor(_board, m[0], m[1], me, opp);
+        final flips = reversiFlips(_board, m[0] * _n + m[1], me);
         final score = _kWeights[m[0]][m[1]] + flips.length * 2;
         if (score > bestScore) {
           bestScore = score;
@@ -177,7 +128,7 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
       }
       final chosen = candidates[_rng.nextInt(candidates.length)];
       setState(() {
-        _applyMove(_board, chosen[0], chosen[1], me, opp);
+        _board = reversiApplyMove(_board, chosen[0] * _n + chosen[1], me)!;
         _busy = false;
       });
       await _afterMove();
@@ -189,15 +140,11 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
       _gameOver = true;
       _busy = true;
     });
-    var blackCount = 0, whiteCount = 0;
-    for (final row in _board) {
-      for (final cell in row) {
-        if (cell == 'B') blackCount++;
-        if (cell == 'W') whiteCount++;
-      }
-    }
-    final draw = blackCount == whiteCount;
-    final winnerIdx = draw ? null : (blackCount > whiteCount ? 0 : 1);
+    final outcome = reversiOutcome(_board)!;
+    final blackCount = outcome['black']!;
+    final whiteCount = outcome['white']!;
+    final draw = outcome['winner'] == reversiEmpty;
+    final winnerIdx = draw ? null : (outcome['winner'] == reversiBlack ? 0 : 1);
     final winner = draw ? null : widget.players[winnerIdx!];
     await Future.delayed(const Duration(milliseconds: 400));
     if (!mounted) return;
@@ -213,14 +160,10 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final validForCurrent = _current.isAI ? const [] : _validMoves(_board, _mark(_turn));
-    var blackCount = 0, whiteCount = 0;
-    for (final row in _board) {
-      for (final cell in row) {
-        if (cell == 'B') blackCount++;
-        if (cell == 'W') whiteCount++;
-      }
-    }
+    final validForCurrent =
+        _current.isAI ? const <int>[] : reversiLegalMoves(_board, _mark(_turn));
+    final blackCount = _board.where((cell) => cell == reversiBlack).length;
+    final whiteCount = _board.where((cell) => cell == reversiWhite).length;
 
     return AZGradientScaffold(
       gradient: AZColors.gradGreen,
@@ -234,7 +177,10 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
               Text(
                 _gameOver ? 'Oyun bitti' : '${_current.name} sırası',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
               ),
               const SizedBox(height: 6),
               Text('⚫ $blackCount   ⚪ $whiteCount',
@@ -259,7 +205,8 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
                       ],
                     ),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFFD9AD75), width: 1.2),
+                    border:
+                        Border.all(color: const Color(0xFFD9AD75), width: 1.2),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x99000000),
@@ -277,14 +224,16 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFF242019),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0x88351F11), width: 2),
+                      border:
+                          Border.all(color: const Color(0x88351F11), width: 2),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
                       child: GridView.builder(
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: _n * _n,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: _n,
                           crossAxisSpacing: 2,
                           mainAxisSpacing: 2,
@@ -292,8 +241,8 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
                         itemBuilder: (_, i) {
                           final r = i ~/ _n;
                           final c = i % _n;
-                          final v = _board[r][c];
-                          final isHint = validForCurrent.any((m) => m[0] == r && m[1] == c);
+                          final v = _board[i];
+                          final isHint = validForCurrent.contains(i);
                           return GestureDetector(
                             onTap: () => _tap(r, c),
                             child: Container(
@@ -301,20 +250,26 @@ class _ReversiGameScreenState extends State<ReversiGameScreen> {
                                 gradient: const LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: [Color(0xFF36765B), Color(0xFF1D4F3C)],
+                                  colors: [
+                                    Color(0xFF36765B),
+                                    Color(0xFF1D4F3C)
+                                  ],
                                 ),
-                                border: Border.all(color: Colors.black.withAlpha(38), width: .6),
+                                border: Border.all(
+                                    color: Colors.black.withAlpha(38),
+                                    width: .6),
                               ),
                               child: Center(
-                                child: v != null
-                                    ? _ReversiDisk(black: v == 'B')
+                                child: v != reversiEmpty
+                                    ? _ReversiDisk(black: v == reversiBlack)
                                     : (isHint
                                         ? Container(
                                             width: 8,
                                             height: 8,
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              color: const Color(0xFFD5F5E0).withAlpha(180),
+                                              color: const Color(0xFFD5F5E0)
+                                                  .withAlpha(180),
                                               boxShadow: const [
                                                 BoxShadow(
                                                   color: Color(0x77000000),
@@ -379,7 +334,8 @@ class _ReversiDisk extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: (black ? Colors.white : const Color(0xFF596460)).withAlpha(60),
+            color:
+                (black ? Colors.white : const Color(0xFF596460)).withAlpha(60),
             width: .8,
           ),
           gradient: LinearGradient(

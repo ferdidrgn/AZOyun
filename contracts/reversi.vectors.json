@@ -1,0 +1,39 @@
+{
+  "initial": [
+    "........", "........", "........", "...WB...",
+    "...BW...", "........", "........", "........"
+  ],
+  "initialMoves": {
+    "black": [19, 26, 37, 44],
+    "white": [20, 29, 34, 43]
+  },
+  "moves": [
+    {
+      "name": "black places at 19 and flips 27",
+      "side": 1,
+      "index": 19,
+      "flips": [27],
+      "next": [
+        "........", "........", "...B....", "...BB...",
+        "...BW...", "........", "........", "........"
+      ],
+      "nextSide": 2
+    },
+    {
+      "name": "illegal occupied or unbracketed placement",
+      "side": 1,
+      "index": 0,
+      "flips": [],
+      "next": null
+    }
+  ],
+  "pass": {
+    "board": [".WB.....", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB"],
+    "currentSide": 2,
+    "nextSide": 1
+  },
+  "finished": {
+    "board": ["BBBBBBBB", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB", "BBBBBBBB"],
+    "outcome": {"black": 64, "white": 0, "winner": 1}
+  }
+}
