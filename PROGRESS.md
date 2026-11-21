@@ -24,6 +24,7 @@
 - [x] Reversi'nin açılış hamleleri, taş çevirme, yasal hamle, zorunlu pas ve bitiş skoru Flutter ve web'de ortak kural modülü ile JSON senaryolarına taşındı.
 - [x] Balon, Maymun Dokunuşu, Scuba ve Jump Dash zamanlı oyunlarının süre/puan vektörleri Flutter ve web ortak senaryolarına bağlandı; web CI ve Android Flutter testleri geçti.
 - [ ] Aile Masası API'sinin ortak Android/web istemcilerinde manuel/QR katılım, eşzamanlı hamle, bağlantı geri dönüşü, sonuç ve rövanş senaryolarını uçtan uca doğrula.
+- [x] Aile Masası ortak API'sine altı oyunculu oda sözleşme testi eklendi: katılım, özel rol bilgisinin korunması, bağlantı sonrası aynı koltuğa dönüş, revizyonlu gece/oylama hamleleri, sonuç ve yeni maç kimliğiyle rövanş CI'da denetleniyor. Mobil QR arayüzü ayrıca Flutter widget testinde doğrulanıyor.
 - [x] İlk HTML/CSS oyun kabuğu içinde ortak Three.js motoru gömüldü. Gerçek reklam gösterimi `WEB_ADS_ENABLED` kapalıyken devre dışı kalır; açılınca reklam betiği web sayfasında çalışır.
 - [x] CI ayrımı doğrulandı: Flutter Android test/AAB akışı `.github/workflows/play-store-deploy.yml`, statik HTML/CSS/JS CI/yayın akışı `.github/workflows/firebase-hosting-deploy.yml` içinde. Web derleyicisi yalnızca `web/` ile ortak arcade varlıklarını `build/salon` içine alır; Flutter Web üretimi yoktur.
 - [ ] Android, web ve oda sunucusunu temsili oyunlarda aynı oda/hamle/sonuç senaryolarıyla doğrula; ardından diğer oyunlara dalgalar halinde yay.
