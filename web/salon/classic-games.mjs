@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 18135)
-Total output lines: 1551
-
 import { classics } from "./classic-catalog.mjs";
 import { connectFourDropRow, connectFourOutcome } from "./connect-four-rules.mjs";
 import { apply2048Move, is2048GameOver } from "./2048-rules.mjs";
@@ -33,6 +30,21 @@ import {
   jumpDashShouldSpawn,
 } from "./jump-dash-rules.mjs";
 import { nimApplyMove } from "./nim-rules.mjs";
+import {
+  SCUBA_BOOST_PACE,
+  SCUBA_DIVER_HOME_Y,
+  SCUBA_ENEMY_SPAWN_SECONDS,
+  SCUBA_PEARL_SPAWN_SECONDS,
+  SCUBA_STEP_SECONDS,
+  SCUBA_TRASH_SPAWN_SECONDS,
+  scubaCollisionReach,
+  scubaMoveDriftX,
+  scubaMoveDriftY,
+  scubaOverlap,
+  scubaPace,
+  scubaResolveContact,
+  scubaSpawnTick,
+} from "./scuba-rules.mjs";
 import { ticTacToeOutcome } from "./tic-tac-toe-rules.mjs";
 
 const shuffle = (items) => {
@@ -423,7 +435,196 @@ function dice({ paint, surface }) {
       lastEvent = `${turn + 1}. oyuncu ${banked} puanı kasaya aldı.`;
       if (score[turn] >= 40) return render(turn + 1 + ". oyuncu kazandı.");
       turn ^= 1;
-      return r…3135 tokens truncated…tring("tr-TR")}</strong></div><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:linear-gradient(145deg,#785c38,#40312d);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff3d5"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.85">EN BÜYÜK TAŞ</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${highest}</strong></div></div>`;
+      return render();
+    }
+    const roll = 1 + random(6);
+    lastRoll = roll;
+    if (roll === 1) {
+      lastEvent = `Bir geldi. Eldeki puan sıfırlandı; sıra ${turn + 2 > 2 ? 1 : turn + 2}. oyuncuda.`;
+      pot = 0;
+      turn ^= 1;
+      return render("Bir geldi. Sıra " + (turn + 1), true);
+    }
+    pot += roll;
+    lastEvent = `Zar ${roll} geldi · eldeki puan ${pot}.`;
+    render("Zar " + roll + " · Elde " + pot, true);
+  });
+}
+function memory({ paint, surface }, triple = false) {
+  const symbols = ["◆", "✿", "●", "▲", "✚", "☀", "◈", "♣"];
+  const copies = triple ? 3 : 2;
+  const deck = shuffle(symbols.flatMap((symbol) => Array(copies).fill(symbol)));
+  const removed = new Set();
+  let active = [];
+  let timer;
+  let busy = false;
+  let moves = 0;
+  const previousFaceUp = new Set();
+  const render = (message = "Hamle " + moves) => {
+    const cards = deck.map((symbol, index) => {
+      const faceUp = triple || active.includes(index);
+      const matched = removed.has(index);
+      const disabled = matched || active.includes(index);
+      const label = matched ? "" : faceUp ? " " + symbol : "";
+      const turnStyle = faceUp !== previousFaceUp.has(index)
+        ? `animation:classic-memory-${faceUp ? "flip" : "unflip"} 460ms cubic-bezier(.2,.75,.25,1) ${Math.min(index, 5) * 16}ms both;`
+        : `transform:rotateY(${faceUp ? 180 : 0}deg);`;
+      const card = `<span style="position:absolute;inset:0;display:grid;place-items:center;border:1px solid rgba(255,255,255,.58);border-radius:clamp(7px,1.6vw,14px);backface-visibility:hidden;background:linear-gradient(145deg,#fff8df 0%,#f3dfb8 52%,#cfac7d 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.9),inset 0 -4px 7px rgba(95,62,34,.18),0 3px 0 #8f6945,0 8px 13px rgba(0,0,0,.3);color:#3b2b45;font-size:clamp(1.4rem,5.2vw,2.65rem);font-weight:800;text-shadow:0 2px 0 rgba(255,255,255,.65)">${matched ? "" : symbol}</span>`;
+      const cover = `<span style="position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(221,238,255,.6);border-radius:clamp(7px,1.6vw,14px);backface-visibility:hidden;background:radial-gradient(circle at 28% 18%,#586f9c 0%,#354b76 35%,#243555 76%,#18243d 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -5px 8px rgba(8,15,31,.5),0 3px 0 #111b30,0 8px 13px rgba(0,0,0,.34);color:#f4d895"><span style="display:grid;place-items:center;width:62%;aspect-ratio:1;border:1px solid rgba(255,228,170,.65);border-radius:50%;box-shadow:0 0 0 4px rgba(255,228,170,.1),inset 0 0 10px rgba(255,228,170,.22);font-size:clamp(1rem,3.5vw,1.55rem)">✦</span><small style="position:absolute;bottom:8%;font-size:.55rem;font-weight:800;letter-spacing:.18em;opacity:.78">AZOYUN</small></span>`;
+      const content = `<span aria-hidden="true" style="position:absolute;inset:0;transform-style:preserve-3d;${turnStyle}${matched ? "opacity:.12;" : ""}">${cover}<span style="position:absolute;inset:0;display:grid;place-items:center;transform:rotateY(180deg);backface-visibility:hidden">${card}</span></span>`;
+      return btn(
+        content,
+        index,
+        `aria-label="${index + 1}. kart${label}" ${disabled ? "disabled" : ""} style="min-height:0;padding:0;position:relative;aspect-ratio:.84;border:0;border-radius:clamp(7px,1.6vw,14px);background:transparent;perspective:900px;transform-style:preserve-3d;overflow:visible;box-shadow:none;cursor:${disabled ? "default" : "pointer"}"`,
+      );
+    }).join("");
+    previousFaceUp.clear();
+    deck.forEach((_, index) => {
+      if (triple || active.includes(index)) previousFaceUp.add(index);
+    });
+    const motion = '<style>@keyframes classic-memory-flip{0%{transform:rotateY(0deg) translateY(5px) scale(.96)}65%{transform:rotateY(195deg) translateY(-2px) scale(1.035)}100%{transform:rotateY(180deg) translateY(0) scale(1)}}@keyframes classic-memory-unflip{0%{transform:rotateY(180deg) translateY(0) scale(1)}55%{transform:rotateY(-15deg) translateY(-2px) scale(1.02)}100%{transform:rotateY(0deg) translateY(4px) scale(.96)}}@media(prefers-reduced-motion:reduce){.classic-memory-cards *{animation-duration:.01ms!important;animation-delay:0ms!important}}</style>';
+    paint(
+      motion + grid(
+        triple ? 6 : 4,
+        cards,
+        "classic-memory-cards",
+      ) +
+        (triple
+          ? `<p style="text-align:center;margin:4px auto 10px;color:#e9d5ac">Tepsi (${active.length}/7) ${active.map((index) => deck[index]).join(" ")}</p>`
+          : ""),
+      message,
+    );
+  };
+  render();
+  const clear = click(surface, (value) => {
+    if (busy) return;
+    const index = Number(value);
+    if (active.includes(index) || removed.has(index)) return;
+    active.push(index);
+    moves++;
+    if (triple) {
+      const matches = active.filter((cell) => deck[cell] === deck[index]);
+      if (matches.length === 3) {
+        for (const cell of matches) removed.add(cell);
+        active = active.filter((cell) => !removed.has(cell));
+      }
+      if (active.length === 7) {
+        busy = true;
+        return render("Tepsi doldu.");
+      }
+      return render(
+        removed.size === deck.length ? "Hepsini eşledin!" : undefined,
+      );
+    }
+    if (active.length === 2) {
+      busy = true;
+      render();
+      timer = setTimeout(() => {
+        if (deck[active[0]] === deck[active[1]])
+          for (const cell of active) removed.add(cell);
+        active = [];
+        busy = false;
+        render(removed.size === deck.length ? "Hepsini eşledin!" : undefined);
+      }, 650);
+    } else render();
+  });
+  return () => {
+    clear();
+    clearTimeout(timer);
+  };
+}
+function puzzle({ paint, surface }, numbers = false) {
+  const board = numbers
+    ? shuffle(range(25).map((n) => n + 1))
+    : [...range(15).map((n) => n + 1), 0];
+  const width = numbers ? 5 : 4;
+  let next = 1,
+    moves = 0;
+  const adjacent = (i, j) =>
+    Math.abs(Math.floor(i / width) - Math.floor(j / width)) +
+      Math.abs((i % width) - (j % width)) ===
+    1;
+  if (!numbers)
+    for (let n = 0; n < 90; n++) {
+      const empty = board.indexOf(0),
+        candidates = range(16).filter((i) => adjacent(i, empty));
+      const target = candidates[random(candidates.length)];
+      [board[empty], board[target]] = [board[target], board[empty]];
+    }
+  const render = (
+    message = numbers ? "Sıradaki sayı " + next : "Hamle " + moves,
+  ) => {
+    const cells = board.map((n, index) => {
+      if (!n)
+        return '<span class="classic-cell" aria-hidden="true" style="min-height:0;padding:0;border:1px solid rgba(204,222,223,.1);border-radius:clamp(5px,1.3vw,11px);background:linear-gradient(145deg,#101d26,#172b35 65%,#20343a);box-shadow:inset 0 4px 8px rgba(0,0,0,.44),inset 0 -1px 0 rgba(255,255,255,.04)"></span>';
+      const complete = numbers && n < next;
+      const active = numbers && n === next;
+      const palettes = complete
+        ? ["#9ec5aa", "#416e57", "#244637", "#f1f8e9"]
+        : active
+          ? ["#fff0b4", "#e3ad4e", "#8f5425", "#fffce6"]
+          : ["#fff3d1", ["#d5a36a", "#bd8d5a", "#dfa967", "#c39160"][n % 4], "#765139", "#fff7e8"];
+      const [light, face, shadow, ink] = palettes;
+      const fontSize = String(n).length > 1 ? "clamp(1rem,4.1vw,1.8rem)" : "clamp(1.2rem,5vw,2.25rem)";
+      return btn(
+        `<span aria-hidden="true">${n}</span>`,
+        index,
+        `aria-label="${numbers ? 'Sayı ' : 'Taş '}${n}" ${numbers && n < next ? "disabled" : ""} style="min-height:0;padding:0;aspect-ratio:1;border:1px solid rgba(255,255,255,.52);border-radius:clamp(5px,1.3vw,11px);background:linear-gradient(145deg,${light} 0%,${face} 52%,${shadow} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.72),inset 0 -3px 0 rgba(45,27,16,.25),0 3px 0 ${shadow},0 7px 11px rgba(0,0,0,.34);color:${ink};font-size:${fontSize};font-weight:900;text-shadow:0 1px 0 rgba(55,35,22,.2);transform:translateY(-2px);cursor:${complete ? "default" : "pointer"};${active ? "outline:2px solid #fff0b4;outline-offset:1px;" : ""}`,
+      );
+    }).join("");
+    const boardView = `<div style="width:min(100%,510px);margin:0 auto;padding:clamp(8px,2vw,15px);border:1px solid rgba(255,224,174,.5);border-radius:clamp(12px,2vw,20px);background:linear-gradient(135deg,#a87543 0%,#684324 25%,#bd8955 52%,#56361f 78%,#8a5932 100%);box-shadow:inset 0 2px 0 rgba(255,241,214,.6),inset 0 -5px 8px rgba(36,20,12,.55),0 10px 20px rgba(0,0,0,.38)"><div class="classic-grid" role="grid" aria-label="${numbers ? 'Sayı bulmaca tahtası' : 'Kaydırmalı sayı tahtası'}" style="--columns:${width};width:100%;aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(3px,.9vw,7px);padding:clamp(5px,1.2vw,9px);border:1px solid rgba(10,38,30,.8);border-radius:clamp(6px,1.3vw,11px);background:radial-gradient(ellipse at 38% 20%,#354747,#1b2c31 70%,#132329);box-shadow:inset 0 3px 8px rgba(0,0,0,.46),inset 0 0 0 1px rgba(164,214,162,.1)">${cells}</div></div>`;
+    paint(boardView, message);
+  };
+  render();
+  return click(surface, (value) => {
+    const i = Number(value),
+      empty = board.indexOf(0);
+    if (numbers) {
+      if (board[i] !== next) return render("Şimdi " + next + " sayısını bul.");
+      next++;
+      return render(next === 26 ? "25 sayının hepsini buldun!" : undefined);
+    }
+    if (!adjacent(i, empty)) return;
+    [board[i], board[empty]] = [board[empty], board[i]];
+    moves++;
+    render(
+      board.slice(0, 15).every((n, j) => n === j + 1)
+        ? moves + " hamlede çözdün!"
+        : undefined,
+    );
+  });
+}
+function merge2048({ paint, surface }) {
+  const board = Array(16).fill(0);
+  let score = 0;
+  const tileColors = {
+    2: ["#fff2cb", "#d7ab70", "#9b643d", "#fffaf0"],
+    4: ["#ffe5b3", "#e5a45f", "#a95c35", "#fff5df"],
+    8: ["#ffd5a0", "#f28b52", "#a9442d", "#fff8ed"],
+    16: ["#ffd2a3", "#ef704b", "#982e31", "#fff2e7"],
+    32: ["#ffc3a0", "#df554f", "#852c40", "#fff0ec"],
+    64: ["#ffc0a5", "#c83c50", "#6f263d", "#fff1ee"],
+    128: ["#fff1aa", "#e4bd42", "#876328", "#fffbe2"],
+    256: ["#fff0a3", "#d9a92f", "#805025", "#fff9d7"],
+    512: ["#fff0a7", "#c98832", "#6d4021", "#fff8df"],
+    1024: ["#fff1ad", "#b97835", "#633725", "#fff9e6"],
+    2048: ["#fff6c6", "#e8bd50", "#8c4d24", "#fffdf2"],
+  };
+  function spawn() {
+    const spaces = range(16).filter((i) => !board[i]);
+    if (spaces.length)
+      board[spaces[random(spaces.length)]] = random(10) ? 2 : 4;
+  }
+  function render(message = "Puan " + score) {
+    const highest = Math.max(...board);
+    const tiles = board.map((n, index) => {
+      if (!n)
+        return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, boş" data-number="0" style="min-height:0;padding:0;border:1px solid rgba(186,220,232,.12);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,#213847,#172a37 62%,#12232f);box-shadow:inset 0 3px 7px rgba(0,0,0,.36),inset 0 -1px 0 rgba(177,218,231,.06)"></span>`;
+      const [light, face, dark, ink] = tileColors[n] || tileColors[2048];
+      const size = n >= 1024 ? "clamp(.86rem,4vw,1.85rem)" : n >= 128 ? "clamp(1rem,4.8vw,2.15rem)" : "clamp(1.2rem,5.4vw,2.45rem)";
+      return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, ${n}" data-number="${n}" style="min-height:0;padding:0;border:1px solid rgba(255,255,255,.55);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,${light} 0%,${face} 48%,${dark} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.68),inset 0 -3px 0 rgba(26,19,28,.28),0 3px 0 ${dark},0 7px 12px rgba(0,0,0,.34);color:${ink};font-size:${size};font-weight:900;text-shadow:0 1px 0 rgba(45,29,26,.28),0 3px 7px rgba(34,19,25,.2);transform:translateY(-2px)">${n}</span>`;
+    }).join("");
+    const counters = `<div class="classic-2048-counters" style="width:min(100%,510px);display:flex;justify-content:flex-end;gap:8px;margin:0 auto 10px"><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:linear-gradient(145deg,#435367,#283646);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.8">PUAN</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${score.toLocaleString("tr-TR")}</strong></div><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:linear-gradient(145deg,#785c38,#40312d);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff3d5"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.85">EN BÜYÜK TAŞ</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${highest}</strong></div></div>`;
     paint(
       counters +
         `<div class="classic-grid classic-2048-board" role="grid" aria-label="2048 oyun tahtası" style="--columns:4;width:min(100%,510px);aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(5px,1.5vw,10px);padding:clamp(7px,2vw,12px);border:1px solid rgba(186,220,232,.2);border-radius:clamp(10px,2vw,18px);background:linear-gradient(145deg,#263e4d,#182b39 58%,#12222f);box-shadow:inset 0 2px 0 rgba(255,255,255,.08),inset 0 -8px 18px rgba(0,0,0,.24),0 12px 26px rgba(0,0,0,.34)">${tiles}</div>` +
@@ -810,6 +1011,134 @@ function monkeyTargets({ paint, surface }) {
     clearInterval(movement);
   };
 }
+function scubaDiverGame({ paint, surface, say }) {
+  const width = 540, height = 400;
+  paint(
+    `<canvas class="classic-canvas drawing-game" width="${width}" height="${height}" aria-label="Scuba Sweep dalış alanı"></canvas>` +
+      '<div class="actions scuba-controls">' +
+      btn("Dalışa başla", "start") + btn("Duraklat", "pause", 'hidden') +
+      btn("◀", "left", 'aria-label="Sola yüz"') + btn("▶", "right", 'aria-label="Sağa yüz"') +
+      "</div>",
+    "Dalgıcı sürükle. Atıkları topla, deniz canlılarından kaç.",
+  );
+  const canvas = surface.querySelector("canvas");
+  const ctx = canvas.getContext("2d");
+  const items = [];
+  const symbols = { bottle: "🧴", glass: "🍾", bag: "🛍️", straw: "🥤", shark: "🦈", puffer: "🐡", jelly: "🪼", pearl: "🦪" };
+  const plasticKinds = ["bottle", "glass", "bag", "straw"];
+  let x = .5, diverY = .92, time = 0, trashIn = 0, enemyIn = .8, pearlIn = 4;
+  let shield = 0, score = 0, level = 1, collectFlash = 0, running = false, paused = false, timer;
+  const lane = () => .12 + Math.random() * .76;
+  const spawnPlastic = () => items.push({ kind: plasticKinds[random(plasticKinds.length)], x: lane(), y: -.08, vx: 0, scale: 1 });
+  const spawnEnemy = () => {
+    const pool = Math.min(level, 3);
+    const kind = ["shark", "puffer", "jelly"][random(pool)];
+    const at = lane();
+    items.push({ kind, x: at, y: -.1, vx: kind === "shark" ? (at < .5 ? .18 : -.18) : 0, scale: 1 });
+  };
+  const draw = () => {
+    const bg = ctx.createLinearGradient(0, 0, 0, height);
+    bg.addColorStop(0, "#45b2c9"); bg.addColorStop(.55, "#17627c"); bg.addColorStop(1, "#0a3448");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, width, height);
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = "rgba(255,255,255,.055)";
+      ctx.beginPath(); ctx.moveTo(width * (.12 + i * .24), 0); ctx.lineTo(width * (.17 + i * .24), 0);
+      ctx.lineTo(width * (.37 + i * .15), height * .7); ctx.lineTo(width * (.23 + i * .15), height * .7); ctx.fill();
+    }
+    ctx.fillStyle = "#0e4657";
+    ctx.beginPath(); ctx.moveTo(0,height*.72); ctx.quadraticCurveTo(width*.5,height*.62,width,height*.72); ctx.lineTo(width,height); ctx.lineTo(0,height); ctx.fill();
+    ctx.fillStyle = "#0c5465"; ctx.fillRect(0,height*.81,width,height*.19);
+    for (let i = 0; i < 16; i++) {
+      const bx = ((i * 47 + time * 11) % width), by = height - ((i * 29 + time * 17) % height);
+      ctx.strokeStyle = "rgba(190,248,245,.38)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(bx,by,2+(i%3),0,Math.PI*2); ctx.stroke();
+    }
+    for (const item of items) {
+      const px = item.x * width, py = item.y * height;
+      const size = item.kind === "puffer" ? 26 * item.scale : 27;
+      ctx.font = `${size}px system-ui, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(symbols[item.kind], px, py);
+    }
+    const diverX = x * width, diverPixelY = diverY * height;
+    if (shield > 0) {
+      ctx.strokeStyle = "rgba(123,250,255,.7)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(diverX,diverPixelY,34,0,Math.PI*2); ctx.stroke();
+    }
+    if (collectFlash > 0) {
+      ctx.fillStyle = `rgba(255,230,119,${collectFlash*.18})`; ctx.fillRect(0,0,width,height);
+    }
+    ctx.font = "38px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🤿", diverX, diverPixelY);
+    ctx.fillStyle = "rgba(4,27,42,.65)"; ctx.fillRect(10,10,220,38);
+    ctx.fillStyle = "#efffff"; ctx.textAlign = "left"; ctx.font = "bold 16px system-ui, sans-serif";
+    ctx.fillText(`SEVİYE ${level}   PLASTİK ${score}${shield > 0 ? "   KALKAN" : ""}`,20,34);
+    if (paused) {
+      ctx.fillStyle = "rgba(2,18,31,.55)"; ctx.fillRect(0,0,width,height);
+      ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.font = "bold 28px system-ui"; ctx.fillText("DURAKLATILDI",width/2,height/2);
+    }
+  };
+  const end = () => {
+    clearInterval(timer); timer = undefined; running = false; paused = false;
+    draw(); say(`Çarptın. ${score} plastik topladın.`);
+  };
+  const tick = () => {
+    if (!running || paused) return;
+    const dt = SCUBA_STEP_SECONDS;
+    time += dt; collectFlash = Math.max(0, collectFlash - dt * 2.6);
+    if (diverY > SCUBA_DIVER_HOME_Y) diverY = Math.max(SCUBA_DIVER_HOME_Y, diverY - .01);
+    const pace = scubaPace(level, shield > 0);
+    if (shield > 0) shield -= dt;
+    let timerState = scubaSpawnTick(trashIn, dt, SCUBA_TRASH_SPAWN_SECONDS); trashIn = timerState.elapsed;
+    if (timerState.spawn) spawnPlastic();
+    timerState = scubaSpawnTick(enemyIn, dt, SCUBA_ENEMY_SPAWN_SECONDS); enemyIn = timerState.elapsed;
+    if (timerState.spawn) spawnEnemy();
+    timerState = scubaSpawnTick(pearlIn, dt, SCUBA_PEARL_SPAWN_SECONDS); pearlIn = timerState.elapsed;
+    if (timerState.spawn) { pearlIn = 0; items.push({kind:"pearl",x:lane(),y:-.08,vx:0,scale:1}); }
+    for (const item of items) {
+      item.y = scubaMoveDriftY(item.y, pace, dt);
+      item.x = scubaMoveDriftX(item.x, item.vx, dt);
+      if (item.kind === "puffer" && item.scale < 2.4) item.scale += dt * .35;
+    }
+    for (let i = items.length - 1; i >= 0; i--) if (items[i].y > 1.25) items.splice(i, 1);
+    for (let i = items.length - 1; i >= 0; i--) {
+      const item = items[i], reach = scubaCollisionReach(item.kind, item.scale);
+      if (!scubaOverlap(x, diverY, item.x, item.y, reach)) continue;
+      items.splice(i, 1);
+      const contact = scubaResolveContact({kind:item.kind,score,level,shieldSeconds:shield});
+      if (contact.gameOver) return end();
+      score = contact.score; level = contact.level; shield = contact.shieldSeconds;
+      if (item.kind !== "pearl") collectFlash = 1;
+    }
+    draw();
+  };
+  const start = () => {
+    if (running) return;
+    running = true; paused = false;
+    surface.querySelector('[data-move="start"]').hidden = true;
+    surface.querySelector('[data-move="pause"]').hidden = false;
+    say("Sürükleyerek yönlendir.");
+    timer = setInterval(tick, 30); draw();
+  };
+  const clear = click(surface, (value) => {
+    if (value === "start") return start();
+    if (value === "pause" && running) { paused = !paused; surface.querySelector('[data-move="pause"]').textContent = paused ? "Devam et" : "Duraklat"; return draw(); }
+    if (value === "left") x = Math.max(.08,x-.08);
+    if (value === "right") x = Math.min(.92,x+.08);
+    draw();
+  });
+  let dragging = false, previousX = 0;
+  const pointerDown = (event) => { dragging=true; previousX=event.clientX; canvas.setPointerCapture?.(event.pointerId); };
+  const pointerMove = (event) => {
+    if (!dragging || !running || paused) return;
+    const rect=canvas.getBoundingClientRect(); x=Math.max(.08,Math.min(.92,x+(event.clientX-previousX)/rect.width)); previousX=event.clientX; draw();
+  };
+  const pointerUp = () => { dragging=false; };
+  const key = (event) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); x=Math.max(.08,Math.min(.92,x+(event.key==="ArrowLeft"?-.06:.06))); draw(); }
+    if (event.code === "Space" && !running) { event.preventDefault(); start(); }
+  };
+  canvas.addEventListener("pointerdown",pointerDown); canvas.addEventListener("pointermove",pointerMove);
+  canvas.addEventListener("pointerup",pointerUp); canvas.addEventListener("pointercancel",pointerUp);
+  document.addEventListener("keydown",key); draw();
+  return () => { clear(); clearInterval(timer); canvas.removeEventListener("pointerdown",pointerDown); canvas.removeEventListener("pointermove",pointerMove); canvas.removeEventListener("pointerup",pointerUp); canvas.removeEventListener("pointercancel",pointerUp); document.removeEventListener("keydown",key); };
+}
 function balloonTargets({ paint, surface }) {
   let target = random(16),
     score = 0,
@@ -1074,7 +1403,7 @@ const implementations = {
   refleks: reflex,
   balon: targets,
   maymun: (game) => targets(game, "maymun"),
-  scuba: (game) => targets(game, "scuba"),
+  scuba: scubaDiverGame,
   yilan: snake,
   oje: nails,
   ciz: drawGame,
@@ -1362,4 +1691,3 @@ Object.assign(implementations, {
   penalti: (game) => aim(game, "penalti"),
   frikik: (game) => aim(game, "frikik"),
 });
-
