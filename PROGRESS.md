@@ -4,9 +4,10 @@
 
 - [x] Mevcut dağıtım doğrulandı: Android uygulaması Flutter akışını, web yayını `web/` içindeki özel HTML/CSS/JS salonunu kullanıyor. GitHub Actions `main` push'unda `node scripts/build-web.mjs` çalıştırıp `build/salon` çıktısını Firebase Hosting'e dağıtıyor; Flutter Web derlemesi yapmıyor.
 - [x] Tasarım kararı: Android oyunları Flutter içinde kalacak; web sitesi statik HTML/CSS/JS olarak kalacak. Flutter web uygulamasını siteye gömmek yerine ortak backend, oyun kimlikleri, katalog verisi ve kural/sonuç sözleşmeleri kullanılacak.
-- [x] Sürüm `1.0.0+21` → `1.0.1+22` yükseltildi. `main` push'u ve Actions sonucu bekliyor.
+- [x] Sürüm `1.0.0+21` → `1.0.1+22` yükseltildi ve `b7ad599` commit'i `main`'e gönderildi.
 - [x] Web yayını testi, kök sayfanın HTML/CSS/JS girişlerini kullanmasını ve Flutter bootstrap dosyalarını referans etmemesini kontrol edecek şekilde güçlendirildi.
-- [ ] `main`'e push et; statik HTML/CSS/JS Firebase Hosting deploy'unu ve Android dahili AAB iş akışını Actions'ta doğrula. Google Play test kanalı servis hesabı izni daha önce eksik olduğundan upload adımı başarısız olabilir.
+- [x] `b7ad599` için HTML/CSS/JS web CI testi ve Firebase Hosting yayını başarılı oldu: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44858985585).
+- [ ] Aynı commit'in Android dahili AAB/test/yükleme iş akışının tamamlanmasını ve Google Play sonucu vermesini bekle: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44858985553). Önceki denemelerde test kanalı servis hesabı izinleri yüklemeyi engellemişti.
 - [ ] Oyun envanterini Android Flutter motorları, mevcut ortak Three.js/JavaScript motorları ve yalnızca tarayıcıda bulunan motorlar olarak ayır. Her oyun için desteklenen istemcileri ve ortak kural/sonuç sözleşmesini yaz.
 - [ ] Mevcut Three.js motorunu Android ve web'de ortak çalıştırma sınırlarını doğrula; köprü, dokunma/kumanda girdisi, yaşam döngüsü ve hata kurtarmayı tanımla. Dart-only oyunlarda Flutter Android motorunu koru ve HTML/JS web karşılığını aynı kural fixture'larıyla doğrula.
 - [ ] Web'de HTML/CSS oyun kabuğu içinde Canvas/Three.js motorunu barındır; telefon ve masaüstü reklam yerleşimlerini yalnızca web tarafında, mevcut `WEB_ADS_ENABLED` izin anahtarı ve reklam/consent kurallarıyla yönet.
