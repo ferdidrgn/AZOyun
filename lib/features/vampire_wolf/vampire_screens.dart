@@ -151,6 +151,8 @@ class _VLS extends State<VampireLobbyScreen> {
         onJoin: _join,
         footer: const AdaptiveBannerAdWidget(),
       );
+}
+
 class VampireRoomScreen extends StatefulWidget {
   const VampireRoomScreen({super.key, required this.roomId, required this.myKey, required this.myName});
   final String roomId, myKey, myName;
