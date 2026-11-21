@@ -1152,7 +1152,7 @@ class _VGS extends State<VampireGameScreen> {
                                     isSelf ? '$name · Sen' : name,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: _isNight ? Colors.white : const Color(0xFF2A252A),
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
