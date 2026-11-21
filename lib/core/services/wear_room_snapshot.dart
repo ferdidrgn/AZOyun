@@ -14,6 +14,7 @@ class WearRoomSnapshot {
     required this.maxPlayers,
     required this.revision,
     required this.eventType,
+    required this.turnRevision,
   });
 
   final String roomKey;
@@ -24,6 +25,7 @@ class WearRoomSnapshot {
   final int maxPlayers;
   final int revision;
   final String eventType;
+  final int turnRevision;
 
   String get eventId => '$roomKey:$revision:$eventType';
 
@@ -37,6 +39,7 @@ class WearRoomSnapshot {
         'revision': revision,
         'eventType': eventType,
         'eventId': eventId,
+        'publishedAt': DateTime.now().millisecondsSinceEpoch,
       };
 
   static const _gameNames = <String, String>{
@@ -67,6 +70,8 @@ class WearRoomSnapshot {
     final previousPlayers = previous?['players'];
     final playerCount = players is Map ? players.length : 0;
     final previousCount = previousPlayers is Map ? previousPlayers.length : 0;
+    final turnRevision = _safeCount(room['turnIndex']);
+    final previousTurnRevision = _safeCount(previous?['turnIndex']);
     final status = _safeStatus(room['status']);
     final previousStatus = _safeStatus(previous?['status']);
     final eventType = previous == null
@@ -77,7 +82,9 @@ class WearRoomSnapshot {
                 ? 'roomFinished'
                 : playerCount > previousCount
                     ? 'playerJoined'
-                    : 'roomUpdated';
+                    : turnRevision != previousTurnRevision
+                        ? 'turnChanged'
+                        : 'roomUpdated';
     final rawCode = room['code'] ?? room['roomCode'];
     final normalizedCode = rawCode is String ? rawCode.trim().toUpperCase() : '';
 
@@ -90,6 +97,7 @@ class WearRoomSnapshot {
       maxPlayers: _safeCount(room['maxPlayers'] ?? room['playerLimit']),
       revision: revision,
       eventType: eventType,
+      turnRevision: turnRevision,
     );
   }
 
@@ -116,7 +124,7 @@ class WearRoomSnapshot {
   }
 
   String get dedupeKey =>
-      '$roomKey|$gameName|$roomCode|$status|$playerCount|$maxPlayers';
+      '$roomKey|$gameName|$roomCode|$status|$playerCount|$maxPlayers|${turnRevision}';
 }
 
 class WearRoomBridge {
@@ -128,12 +136,12 @@ class WearRoomBridge {
   static Future<void> publish(WearRoomSnapshot snapshot) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     if (_lastPublished[snapshot.roomKey] == snapshot.dedupeKey) return;
-    _lastPublished[snapshot.roomKey] = snapshot.dedupeKey;
     try {
-      await _channel.invokeMethod<bool>(
+      final accepted = await _channel.invokeMethod<bool>(
         'publishRoomSummary',
         snapshot.toMap(),
       );
+      if (accepted == true) _lastPublished[snapshot.roomKey] = snapshot.dedupeKey;
     } on PlatformException {
       // Room sync must continue if Play services or a reachable watch is absent.
     } on MissingPluginException {

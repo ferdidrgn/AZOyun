@@ -193,7 +193,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ? t('settings_play_games_connected')
                   : t('settings_play_games_connect'),
               trailing: PlayGamesService.instance.isSignedIn
-                  ? const Icon(Icons.check_circle_rounded, color: Colors.green)
+                  ? const Icon(Icons.check_circle_rounded, color: AZColors.success)
                   : null,
               onTap: () => Navigator.push(
                 context,
@@ -226,7 +226,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : (_premiumActive
                       ? const Icon(Icons.check_circle_rounded,
-                          color: Colors.green)
+                          color: AZColors.success)
                       : null),
               onTap: (_buyingPremium || _premiumActive) ? null : _buyPremium,
             ),
@@ -364,25 +364,38 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget _themeOptionTile(BuildContext context, AppThemePreference pref,
       String label, IconData icon) {
     final selected = ThemeService.instance.preference == pref;
-    return InkWell(
-      onTap: () => ThemeService.instance.setPreference(pref),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Column(
-          children: [
-            Icon(icon,
-                color: selected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).hintColor),
-            const SizedBox(height: 6),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                    color: selected
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).hintColor)),
-          ],
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        autofocus: selected,
+        onTap: () => ThemeService.instance.setPreference(pref),
+        borderRadius: BorderRadius.circular(12),
+        focusColor: Theme.of(context).colorScheme.primary.withAlpha(32),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            children: [
+              Icon(icon,
+                  color: selected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).hintColor),
+              const SizedBox(height: 6),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                      color: selected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).hintColor)),
+              if (selected) ...[
+                const SizedBox(height: 3),
+                Icon(Icons.check_circle_rounded,
+                    size: 14, color: Theme.of(context).colorScheme.primary),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -398,18 +411,34 @@ class _SettingsScreenState extends State<SettingsScreen>
           runSpacing: 14,
           children: [
             for (final c in AZTheme.customColorSwatches)
-              GestureDetector(
-                onTap: () => Navigator.pop(context, c),
-                child: CircleAvatar(
-                  radius: 22,
-                  backgroundColor: c,
-                  child: ThemeService.instance.preference ==
-                              AppThemePreference.custom &&
-                          ThemeService.instance.customColor.value == c.value
-                      ? const Icon(Icons.check_rounded, color: Colors.white)
-                      : null,
-                ),
-              ),
+              Builder(builder: (context) {
+                final selected = ThemeService.instance.preference ==
+                        AppThemePreference.custom &&
+                    ThemeService.instance.customColor.value == c.value;
+                final colorLabel =
+                    '#${c.value.toRadixString(16).padLeft(8, '0').toUpperCase()}';
+                return Semantics(
+                  button: true,
+                  selected: selected,
+                  label: 'Özel tema rengi $colorLabel',
+                  child: InkWell(
+                    onTap: () => Navigator.pop(context, c),
+                    customBorder: const CircleBorder(),
+                    focusColor: Theme.of(context).colorScheme.primary.withAlpha(40),
+                    child: SizedBox(
+                      width: 52,
+                      height: 52,
+                      child: CircleAvatar(
+                        radius: 22,
+                        backgroundColor: c,
+                        child: selected
+                            ? const Icon(Icons.check_rounded, color: Colors.white)
+                            : null,
+                      ),
+                    ),
+                  ),
+                );
+              }),
           ],
         ),
         actions: [

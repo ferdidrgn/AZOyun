@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/services/app_strings.dart';
 import '../../core/services/language_service.dart';
+import '../../core/theme/az_theme.dart';
 
 class LanguageScreen extends StatelessWidget {
   const LanguageScreen({super.key});
@@ -43,13 +44,24 @@ class LanguageScreen extends StatelessWidget {
     required bool selected,
     required VoidCallback onTap,
   }) =>
-      Card(
-        margin: const EdgeInsets.only(bottom: 10),
-        child: ListTile(
-          leading: Text(flag, style: const TextStyle(fontSize: 24)),
-          title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-          trailing: selected ? const Icon(Icons.check_circle_rounded, color: Colors.green) : null,
-          onTap: onTap,
+      Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          child: ListTile(
+            selected: selected,
+            autofocus: selected,
+            focusColor: Theme.of(context).colorScheme.primary.withAlpha(32),
+            minVerticalPadding: 16,
+            leading: Text(flag, style: const TextStyle(fontSize: 24)),
+            title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+            trailing: selected
+                ? const Icon(Icons.check_circle_rounded, color: AZColors.success)
+                : null,
+            onTap: onTap,
+          ),
         ),
       );
 }
