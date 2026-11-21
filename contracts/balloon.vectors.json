@@ -1,0 +1,16 @@
+{
+  "sessionSeconds": 20,
+  "balloonLifetimeMs": 1100,
+  "scorePerPop": 1,
+  "popCases": [
+    {"name":"visible balloon scores one","score":0,"visible":true,"running":true,"nextScore":1,"popped":true},
+    {"name":"expired balloon cannot score","score":3,"visible":false,"running":true,"nextScore":3,"popped":false},
+    {"name":"finished round cannot score","score":5,"visible":true,"running":false,"nextScore":5,"popped":false}
+  ],
+  "tickCases": [
+    {"secondsLeft":20,"nextSeconds":19,"running":true},
+    {"secondsLeft":1,"nextSeconds":0,"running":false},
+    {"secondsLeft":0,"nextSeconds":0,"running":false}
+  ]
+}
+

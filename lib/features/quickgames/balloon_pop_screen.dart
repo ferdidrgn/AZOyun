@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'balloon_rules.dart';
 
 class BalloonPopLobbyScreen extends StatelessWidget {
   const BalloonPopLobbyScreen({super.key});
@@ -52,8 +53,8 @@ class _BalloonSession extends StatefulWidget {
 }
 
 class _BalloonSessionState extends State<_BalloonSession> {
-  static const _sessionSeconds = 20;
-  static const _balloonLifeMs = 1100;
+  static const _sessionSeconds = balloonSessionSeconds;
+  static const _balloonLifeMs = balloonLifetimeMs;
 
   final _rng = Random();
   Timer? _countdown;
@@ -72,8 +73,9 @@ class _BalloonSessionState extends State<_BalloonSession> {
     super.initState();
     _countdown = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      setState(() => _secondsLeft--);
-      if (_secondsLeft <= 0) _end();
+      final tick = tickBalloonSession(_secondsLeft);
+      setState(() => _secondsLeft = tick.secondsLeft);
+      if (!tick.running) _end();
     });
     _spawnBalloon();
   }
@@ -103,10 +105,15 @@ class _BalloonSessionState extends State<_BalloonSession> {
   }
 
   void _pop() {
-    if (!_visible || !_running) return;
+    final result = popBalloon(
+      score: _score,
+      visible: _visible,
+      running: _running,
+    );
+    if (!result.popped) return;
     _balloonTimer?.cancel();
     setState(() {
-      _score++;
+      _score = result.score;
       _visible = false;
       _burstPos = _pos;
       _burstVisible = true;
@@ -282,3 +289,4 @@ class _BurstPainter extends CustomPainter {
   bool shouldRepaint(covariant _BurstPainter oldDelegate) =>
       oldDelegate.progress != progress;
 }
+
