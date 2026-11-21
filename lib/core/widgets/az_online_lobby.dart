@@ -15,6 +15,7 @@ class AZOnlineLobby extends StatelessWidget {
     required this.onRename,
     required this.onCreate,
     required this.onJoin,
+    this.setupOptions,
   });
 
   final String title, summary, instructions;
@@ -23,6 +24,7 @@ class AZOnlineLobby extends StatelessWidget {
   final TextEditingController codeController;
   final bool loading;
   final VoidCallback onRename, onCreate, onJoin;
+  final Widget? setupOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +44,20 @@ class AZOnlineLobby extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(icon, size: 36, color: theme.colorScheme.primary),
-                        const SizedBox(height: 12),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: SizedBox(
+                            width: 56,
+                            height: 56,
+                            child: Icon(icon,
+                                size: 30,
+                                color: theme.colorScheme.onPrimaryContainer),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         Text(summary, style: theme.textTheme.titleLarge),
                         const SizedBox(height: 6),
                         Text(instructions),
@@ -52,6 +66,10 @@ class AZOnlineLobby extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
+                if (setupOptions != null) ...[
+                  setupOptions!,
+                  const SizedBox(height: 16),
+                ],
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.person_outline_rounded),
@@ -62,6 +80,12 @@ class AZOnlineLobby extends StatelessWidget {
                 const SizedBox(height: 8),
                 FilledButton.icon(
                   onPressed: loading ? null : onCreate,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Oda oluştur'),
                 ),
@@ -72,11 +96,19 @@ class AZOnlineLobby extends StatelessWidget {
                   maxLength: 6,
                   enabled: !loading,
                   decoration: const InputDecoration(labelText: 'Oda kodu'),
-                  onSubmitted: (_) => onJoin(),
+                  onSubmitted: (_) {
+                    if (!loading) onJoin();
+                  },
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: loading ? null : onJoin,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
                   icon: const Icon(Icons.login_rounded),
                   label: const Text('Odaya katıl'),
                 ),
