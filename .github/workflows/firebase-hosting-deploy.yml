@@ -32,7 +32,7 @@ jobs:
         run: node --test family-server/server.test.mjs family-server/progression.test.mjs family-server/party-games.test.mjs
 
       - name: Flutter ve web hızlı oyun kurallarını ortak senaryolarla karşılaştır
-        run: node --test scripts/tic-tac-toe-contract.test.mjs scripts/nim-contract.test.mjs scripts/connect-four-contract.test.mjs scripts/2048-contract.test.mjs
+        run: node --test scripts/tic-tac-toe-contract.test.mjs scripts/nim-contract.test.mjs scripts/connect-four-contract.test.mjs scripts/2048-contract.test.mjs scripts/snake-contract.test.mjs
 
       - name: Firebase oda temizliği kurallarını test et
         run: npm --prefix functions test

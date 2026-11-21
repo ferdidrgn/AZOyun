@@ -16,7 +16,8 @@
 - [x] Nim başlangıç yığınları Android ve web'de `[3, 5, 7, 9]` olarak eşitlendi; taş alma sınırları ve son taşla bitiş için ortak geçerli/geçersiz hamle senaryoları eklendi.
 - [x] Dörtlü Diz yatay/dikey/çapraz galibiyet ve sütundaki en alt boş yeri Flutter ve web'de ortak test vektörlerine bağlandı.
 - [x] 2048 kaydırma/birleşme, puan, hamlesiz durum ve 2048 hedefine ulaşma kurallarını Android ve web'de ortak JSON vektörlerine bağla. Web ve Android CI'ya ayrı testler eklendi; Node senaryoları yerelde geçti, Flutter testinin yerel komutu Windows ortamında takıldı ve CI sonucu bekleniyor.
-- [ ] Sonraki dalgalarda Yılan ve zamanlı oyunların kural/sonuç vektörlerini ekle.
+- [x] Yılan Android/web tahtasını 14×14, başlangıç konumunu ve elma başına 10 puanı eşitle; dönüş, duvar/kuyruk çarpışması ve kuyruğun boşalan hücresine girme kuralları için Dart/JavaScript ortak senaryoları ekle.
+- [ ] Balon, Maymun Dokunuşu, Scuba ve Jump Dash gibi zamanlı oyunların süre/puan vektörlerini sırayla ekle.
 - [ ] Aile Masası ve çevrimiçi oyunlarda Android/web istemcileri ile oda sunucusunu temsilî oda, hamle, kopma/yeniden bağlanma ve sonuç senaryolarıyla eşle.
 - [x] İlk HTML/CSS oyun kabuğu içinde ortak Three.js motoru gömüldü. Gerçek reklam gösterimi `WEB_ADS_ENABLED` kapalıyken devre dışı kalır; açılınca reklam betiği web sayfasında çalışır.
 - [x] CI ayrımı doğrulandı: Flutter Android test/AAB akışı `.github/workflows/play-store-deploy.yml`, statik HTML/CSS/JS CI/yayın akışı `.github/workflows/firebase-hosting-deploy.yml` içinde. Web derleyicisi yalnızca `web/` ile ortak arcade varlıklarını `build/salon` içine alır; Flutter Web üretimi yoktur.

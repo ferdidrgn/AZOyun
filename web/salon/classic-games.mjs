@@ -1,9 +1,10 @@
-Warning: truncated output (original token count: 16163)
-Total output lines: 1319
+Warning: truncated output (original token count: 16175)
+Total output lines: 1310
 
 import { classics } from "./classic-catalog.mjs";
 import { connectFourDropRow, connectFourOutcome } from "./connect-four-rules.mjs";
 import { apply2048Move, is2048GameOver } from "./2048-rules.mjs";
+import { canTurnSnake, stepSnake } from "./snake-rules.mjs";
 import { nimApplyMove } from "./nim-rules.mjs";
 import { ticTacToeOutcome } from "./tic-tac-toe-rules.mjs";
 
@@ -356,9 +357,8 @@ function rps({ paint, surface }) {
     const result = (player - bot + 3) % 3;
     if (result) score[result - 1]++;
     const done = score.includes(3);
-    lastRound = { player, bot, result };
-    render(
-      `Rakip ${choices[bot]} seçti. $…4163 tokens truncated…     return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, ${n}" data-number="${n}" style="min-height:0;padding:0;border:1px solid rgba(255,255,255,.55);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,${light} 0%,${face} 48%,${dark} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.68),inset 0 -3px 0 rgba(26,19,28,.28),0 3px 0 ${dark},0 7px 12px rgba(0,0,0,.34);color:${ink};font-size:${size};font-weight:900;text-shadow:0 1px 0 rgba(45,29,26,.28),0 3px 7px rgba(34,19,25,.2);transform:translateY(-2px)">${n}</span>`;
+    lastRound = { player, bot, …4175 tokens truncated….45rem)";
+      return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, ${n}" data-number="${n}" style="min-height:0;padding:0;border:1px solid rgba(255,255,255,.55);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,${light} 0%,${face} 48%,${dark} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.68),inset 0 -3px 0 rgba(26,19,28,.28),0 3px 0 ${dark},0 7px 12px rgba(0,0,0,.34);color:${ink};font-size:${size};font-weight:900;text-shadow:0 1px 0 rgba(45,29,26,.28),0 3px 7px rgba(34,19,25,.2);transform:translateY(-2px)">${n}</span>`;
     }).join("");
     const counters = `<div class="classic-2048-counters" style="width:min(100%,510px);display:flex;justify-content:flex-end;gap:8px;margin:0 auto 10px"><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:linear-gradient(145deg,#435367,#283646);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.8">PUAN</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${score.toLocaleString("tr-TR")}</strong></div><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:linear-gradient(145deg,#785c38,#40312d);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff3d5"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.85">EN BÜYÜK TAŞ</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${highest}</strong></div></div>`;
     paint(
@@ -696,17 +696,13 @@ function targets({ paint, surface }, mode = "balon") {
   };
 }
 function snake({ paint, surface, say }) {
-  const size = 15,
-    deltas = [
-      [-1, 0],
-      [1, 0],
-      [0, -1],
-      [0, 1],
-    ];
+  const size = 14,
+    cellSize = 300 / size,
+    directions = ["left", "right", "up", "down"];
   const snake = [
-    [7, 7],
     [6, 7],
     [5, 7],
+    [4, 7],
   ];
   const equals = ([x, y], [xx, yy]) => x === xx && y === yy;
   let direction = 1,
@@ -732,34 +728,28 @@ function snake({ paint, surface, say }) {
     ctx.fillRect(0, 0, 300, 300);
     for (const [i, [x, y]] of snake.entries()) {
       ctx.fillStyle = i ? "#68a993" : "#a2efd0";
-      ctx.fillRect(x * 20 + 1, y * 20 + 1, 18, 18);
+      ctx.fillRect(x * cellSize + 1, y * cellSize + 1, cellSize - 2, cellSize - 2);
     }
     if (apple) {
       ctx.fillStyle = "#ffbe74";
-      ctx.fillRect(apple[0] * 20 + 3, apple[1] * 20 + 3, 14, 14);
+      ctx.fillRect(apple[0] * cellSize + 3, apple[1] * cellSize + 3, cellSize - 6, cellSize - 6);
     }
   };
   const steer = (next) => {
-    if ((next ^ 1) !== direction) pending = next;
+    const nextDirection = directions[next];
+    if (nextDirection && canTurnSnake(directions[direction], nextDirection)) pending = next;
   };
   function tick() {
     direction = pending;
-    const [dx, dy] = deltas[direction],
-      [x, y] = snake[0];
-    const head = [x + dx, y + dy],
-      eats = equals(head, apple);
-    if (
-      head.some((n) => n < 0 || n >= size) ||
-      (eats ? snake : snake.slice(0, -1)).some((cell) => equals(cell, head))
-    ) {
+    const result = stepSnake(snake, directions[direction], apple, size);
+    if (result.collided) {
       clearInterval(timer);
       return say("Oyun bitti. Puan " + score);
     }
-    snake.unshift(head);
-    if (!eats) snake.pop();
-    else {
+    snake.splice(0, snake.length, ...result.snake);
+    if (result.ate) {
       apple = food();
-      score++;
+      score += result.score;
       say("Puan " + score);
       if (!apple) {
         clearInterval(timer);

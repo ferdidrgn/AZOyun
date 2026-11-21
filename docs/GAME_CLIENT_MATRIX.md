@@ -30,7 +30,7 @@ Bu dosya oyun başlıklarının benzerliğini, kural kodunun ortak olduğu anlam
 | `matematik` | `mathpuzzle` / `math_puzzle_screen.dart` | Aynı oyun ailesi; soru ve puan kaynağı karşılaştırılacak |
 | `sayi-tahmin` | `bullscows` / `bulls_cows_screen.dart` | Aynı oyun ailesi; tahmin ipucu sözleşmesi karşılaştırılacak |
 | `balon` | `balloonpop` / `balloon_pop_screen.dart` | Aynı tür; süre/skor vektörleri henüz ortak değil |
-| `yilan` | `snake` / `snake_screen.dart` | Aynı tür; hareket/çarpışma vektörleri henüz ortak değil |
+| `yilan` | `snake` / `snake_screen.dart` | 14×14 tahta, başlangıç ve elma puanı eşit; dönüş, duvar/kuyruk çarpışması ve boşalan kuyruk hücresi ortak vektörlere bağlı |
 | `oje` | `nailsalon` / `nail_salon_screen.dart` | Benzer tek kişilik deneyim; ortak kural sözleşmesi gerekmiyor |
 | `ciz` | `drawsmash` / `draw_smash_screen.dart` | Benzer yerel parti deneyimi; çizim aktarımı ve süre eşlenecek |
 | `maymun` | `monkeytap` / `monkey_touch_screen.dart` | Aynı tür; hedef/süre puanı karşılaştırılacak |

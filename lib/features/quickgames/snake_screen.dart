@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'snake_rules.dart';
 
 class SnakeLobbyScreen extends StatelessWidget {
   const SnakeLobbyScreen({super.key});
@@ -43,7 +44,7 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
   bool _waitingHandoff = true;
 
   List<Point<int>> _snake = const [];
-  Point<int> _food = const Point(0, 0);
+  Point<int>? _food;
   _Dir _dir = _Dir.right;
   _Dir _pendingDir = _Dir.right;
   Timer? _timer;
@@ -75,54 +76,52 @@ class _SnakeGameScreenState extends State<SnakeGameScreen> {
   }
 
   void _spawnFood() {
-    Point<int> p;
-    do {
-      p = Point(_rng.nextInt(_gridSize), _rng.nextInt(_gridSize));
-    } while (_snake.contains(p));
-    _food = p;
+    final empty = [
+      for (var x = 0; x < _gridSize; x++)
+        for (var y = 0; y < _gridSize; y++)
+          if (!_snake.contains(Point<int>(x, y))) Point<int>(x, y),
+    ];
+    _food = empty.isEmpty ? null : empty[_rng.nextInt(empty.length)];
   }
 
   void _setDir(_Dir d) {
-    final opposite = switch (_dir) {
-      _Dir.up => _Dir.down,
-      _Dir.down => _Dir.up,
-      _Dir.left => _Dir.right,
-      _Dir.right => _Dir.left,
-    };
-    if (d == opposite) return;
+    if (!canTurnSnake(_asSnakeDirection(_dir), _asSnakeDirection(d))) return;
     _pendingDir = d;
   }
 
   void _tick() {
     if (_over) return;
     _dir = _pendingDir;
-    final head = _snake.first;
-    final newHead = switch (_dir) {
-      _Dir.up => Point(head.x, head.y - 1),
-      _Dir.down => Point(head.x, head.y + 1),
-      _Dir.left => Point(head.x - 1, head.y),
-      _Dir.right => Point(head.x + 1, head.y),
-    };
-    final hitWall = newHead.x < 0 || newHead.x >= _gridSize || newHead.y < 0 || newHead.y >= _gridSize;
-    // Yem yenmeyecekse kuyruğun son hücresi bu hamlede boşalacak — kafa oraya
-    // girebilir. Kontrolü tam _snake listesine göre yapmak, geçerli bir
-    // hareketi yanlışlıkla "kendine çarpma" sayardı.
-    final willEat = newHead == _food;
-    final body = willEat ? _snake : _snake.sublist(0, _snake.length - 1);
-    if (hitWall || body.contains(newHead)) {
+    final result = stepSnake(
+      snake: _snake.map((point) => (x: point.x, y: point.y)).toList(),
+      direction: _asSnakeDirection(_dir),
+      food: _food == null ? null : (x: _food!.x, y: _food!.y),
+      size: _gridSize,
+    );
+    if (result.collided) {
       _endSession();
       return;
     }
     setState(() {
-      _snake = [newHead, ..._snake];
-      if (newHead == _food) {
-        _score += 10;
+      _snake = result.snake.map((point) => Point(point.x, point.y)).toList();
+      _score += result.score;
+      if (result.ate) {
         _spawnFood();
-      } else {
-        _snake.removeLast();
+        if (_food == null) {
+          _timer?.cancel();
+          _scores[_playerIndex] = _score;
+          _over = true;
+        }
       }
     });
   }
+
+  SnakeDirection _asSnakeDirection(_Dir direction) => switch (direction) {
+        _Dir.up => SnakeDirection.up,
+        _Dir.down => SnakeDirection.down,
+        _Dir.left => SnakeDirection.left,
+        _Dir.right => SnakeDirection.right,
+      };
 
   void _endSession() {
     _timer?.cancel();
@@ -282,7 +281,7 @@ class _SnakeBoardPainter extends CustomPainter {
 
   final int gridSize;
   final List<Point<int>> snake;
-  final Point<int> food;
+  final Point<int>? food;
   final _Dir direction;
 
   Offset _project(Size size, double x, double y) {
@@ -448,3 +447,4 @@ class _SnakeBoardPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _SnakeBoardPainter oldDelegate) => true;
 }
+

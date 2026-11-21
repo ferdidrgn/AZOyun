@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {"name":"move without eating","snake":[[6,7],[5,7],[4,7]],"direction":"right","food":[10,10],"nextSnake":[[7,7],[6,7],[5,7]],"ate":false,"collided":false,"score":0},
+    {"name":"eat apple scores ten","snake":[[6,7],[5,7],[4,7]],"direction":"right","food":[7,7],"nextSnake":[[7,7],[6,7],[5,7],[4,7]],"ate":true,"collided":false,"score":10},
+    {"name":"wall collision","snake":[[13,7],[12,7],[11,7]],"direction":"right","food":[1,1],"nextSnake":[[13,7],[12,7],[11,7]],"ate":false,"collided":true,"score":0},
+    {"name":"body collision","snake":[[5,5],[5,6],[4,6],[4,5],[3,5]],"direction":"down","food":[0,0],"nextSnake":[[5,5],[5,6],[4,6],[4,5],[3,5]],"ate":false,"collided":true,"score":0},
+    {"name":"moving into vacating tail is valid","snake":[[5,5],[5,6],[4,6],[4,5]],"direction":"left","food":[0,0],"nextSnake":[[4,5],[5,5],[5,6],[4,6]],"ate":false,"collided":false,"score":0}
+  ],
+  "turnCases": [
+    {"current":"right","next":"left","allowed":false},
+    {"current":"right","next":"up","allowed":true},
+    {"current":"up","next":"down","allowed":false},
+    {"current":"left","next":"right","allowed":false}
+  ]
+}
+
