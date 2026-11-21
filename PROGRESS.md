@@ -21,8 +21,9 @@
 - [x] Maymun Dokunuşu'nda 3×3 hedef, 700 ms hedef hareketi, 20 saniyelik tur ve doğru dokunuşa 1 puanı Android/web için ortak senaryolara bağla.
 - [x] Zıpla Geç web oynanışını mobildeki borulu uçuşa taşı; yerçekimi, zıplama, boru akışı, puan ve çarpışma sınırlarını ortak Dart/JavaScript senaryolarına bağla.
 - [x] Scuba Sweep web hedef tıklaması mobildeki dalış sahnesiyle değiştirildi. Sola/sağa sürükleme, atık toplama, köpek balığı/balon balığı/denizanası çarpışması, inci kalkanı ve seviye hızları ortak Dart/JavaScript kural vektörlerine bağlandı.
-- [ ] Balon, Maymun Dokunuşu, Scuba ve Jump Dash gibi zamanlı oyunların süre/puan vektörlerini sırayla ekle.
-- [ ] Aile Masası ve çevrimiçi oyunlarda Android/web istemcileri ile oda sunucusunu temsilî oda, hamle, kopma/yeniden bağlanma ve sonuç senaryolarıyla eşle.
+- [x] Reversi'nin açılış hamleleri, taş çevirme, yasal hamle, zorunlu pas ve bitiş skoru Flutter ve web'de ortak kural modülü ile JSON senaryolarına taşındı.
+- [x] Balon, Maymun Dokunuşu, Scuba ve Jump Dash zamanlı oyunlarının süre/puan vektörleri Flutter ve web ortak senaryolarına bağlandı; web CI ve Android Flutter testleri geçti.
+- [ ] Aile Masası API'sinin ortak Android/web istemcilerinde manuel/QR katılım, eşzamanlı hamle, bağlantı geri dönüşü, sonuç ve rövanş senaryolarını uçtan uca doğrula.
 - [x] İlk HTML/CSS oyun kabuğu içinde ortak Three.js motoru gömüldü. Gerçek reklam gösterimi `WEB_ADS_ENABLED` kapalıyken devre dışı kalır; açılınca reklam betiği web sayfasında çalışır.
 - [x] CI ayrımı doğrulandı: Flutter Android test/AAB akışı `.github/workflows/play-store-deploy.yml`, statik HTML/CSS/JS CI/yayın akışı `.github/workflows/firebase-hosting-deploy.yml` içinde. Web derleyicisi yalnızca `web/` ile ortak arcade varlıklarını `build/salon` içine alır; Flutter Web üretimi yoktur.
 - [ ] Android, web ve oda sunucusunu temsili oyunlarda aynı oda/hamle/sonuç senaryolarıyla doğrula; ardından diğer oyunlara dalgalar halinde yay.
