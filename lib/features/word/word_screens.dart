@@ -9,6 +9,7 @@ import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
+import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
@@ -102,60 +103,20 @@ class _WordLobbyScreenState extends State<WordLobbyScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AZGradientScaffold(
-      gradient: AZColors.gradCyan,
-      child: Column(children: [
-        Expanded(child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(children: [
-            Align(alignment: Alignment.centerLeft,
-                child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context))),
-            const SizedBox(height: 8),
-            const Text('🔤', style: TextStyle(fontSize: 72)),
-            const SizedBox(height: 8),
-            const Text('KELİME BULMACA',
-                style: TextStyle(color: Colors.white, fontSize: 26,
-                    fontWeight: FontWeight.bold, letterSpacing: 2)),
-            const SizedBox(height: 4),
-            const Text('2-4 Oyuncu · 60 Saniye · Harf karıştır kelime yap',
-                style: TextStyle(color: Colors.white70, fontSize: 13)),
-            const SizedBox(height: 28),
-            AZNameChip(name: _playerName, onTap: _askName),
-            const SizedBox(height: 36),
-            AZButton(label: 'YENİ ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-                onPressed: _createRoom, color: _kCyan, loading: _loading, width: 300),
-            const SizedBox(height: 28),
-            const Text('— veya —', style: TextStyle(color: Colors.white54)),
-            const SizedBox(height: 28),
-            AZFrostCard(child: Column(children: [
-              AZCodeField(controller: _codeCtrl),
-              const SizedBox(height: 14),
-              AZJoinButton(onPressed: _joinRoom, loading: _loading),
-            ])),
-            const SizedBox(height: 32),
-            AZFrostCard(opacity: 0.08, child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('🔤  Nasıl oynanır?',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                  SizedBox(height: 10),
-                  Text('• Verilen harflerden kelimeler oluştur\n'
-                      '• 60 saniye süren yarışma\n'
-                      '• Uzun kelimeler daha çok puan\n'
-                      '• En çok puan toplayan kazanır',
-                      style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.65)),
-                ])),
-            const SizedBox(height: 24),
-          ]),
-        )),
-        const AdaptiveBannerAdWidget(),
-      ]),
-    );
-  }
-}
-
+  Widget build(BuildContext context) => AZOnlineLobby(
+        title: 'Kelime Bulmaca',
+        icon: Icons.abc_rounded,
+        summary: '2–4 oyuncu · 60 saniyelik kelime yarışı',
+        instructions:
+            'Karışık harflerden kelimeler üret. Uzun kelimeler daha çok puan kazandırır; süre bitince en yüksek puanlı oyuncu kazanır.',
+        playerName: _playerName,
+        codeController: _codeCtrl,
+        loading: _loading,
+        onRename: _askName,
+        onCreate: _createRoom,
+        onJoin: _joinRoom,
+        footer: const AdaptiveBannerAdWidget(),
+      );
 class WordRoomScreen extends StatefulWidget {
   const WordRoomScreen({super.key, required this.roomId,
       required this.myKey, required this.myName});

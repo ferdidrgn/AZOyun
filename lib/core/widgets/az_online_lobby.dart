@@ -70,7 +70,12 @@ class AZOnlineLobby extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 if (setupOptions != null) ...[
-                  setupOptions!,
+                  Semantics(
+                    container: true,
+                    explicitChildNodes: true,
+                    label: 'Oyun seçenekleri',
+                    child: setupOptions!,
+                  ),
                   const SizedBox(height: 16),
                 ],
                 ListTile(
@@ -99,7 +104,11 @@ class AZOnlineLobby extends StatelessWidget {
                   textCapitalization: TextCapitalization.characters,
                   maxLength: 6,
                   enabled: !loading,
-                  decoration: const InputDecoration(labelText: 'Oda kodu'),
+                  decoration: const InputDecoration(
+                    labelText: 'Oda kodu',
+                    helperText: '6 haneli davet kodunu girin',
+                  ),
+                  textInputAction: TextInputAction.go,
                   onSubmitted: (_) {
                     if (!loading) onJoin();
                   },
