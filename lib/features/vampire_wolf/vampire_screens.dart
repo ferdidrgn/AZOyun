@@ -753,90 +753,190 @@ class _VGS extends State<VampireGameScreen> {
       );
     }
     final isTransition = _phase == 'dawn' || _phase == 'dusk';
+    final aliveCount = _players.values.where((p) => (p['alive'] as bool?) == true).length;
+    final playerCount = _players.length;
     return AZLeaveGuard(
       onLeave: _confirmLeave,
       child: Scaffold(
-      backgroundColor: _isNight ? AZColors.bgDark : const Color(0xFFF2E9C9),
-      body: SafeArea(
-        child: Column(children: [
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-                gradient: LinearGradient(colors: _isNight || isTransition
-                    ? [const Color(0xFF3A3350), const Color(0xFF2E2F4A)]
-                    : [AZColors.orange, AZColors.accentGoldSoft]),
-                boxShadow: [BoxShadow(color: Colors.black.withAlpha(130), blurRadius: 16, offset: const Offset(0, 6))]),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Stack(alignment: Alignment.center, children: [
-              Positioned(left: 4, top: -8,
-                  child: IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
-                      onPressed: _confirmLeave)),
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text(_isNight ? '🌙' : (isTransition ? '🌅' : '☀️'), style: const TextStyle(fontSize: 22)),
-              const SizedBox(width: 10),
-              Text('${_isNight ? "GECE" : (isTransition ? "GEÇİŞ" : "GÜNDÜZ")}${_day > 1 ? " — Gün $_day" : ""}',
-                  style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-              ]),
-            ]),
-          ),
-          Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-                gradient: LinearGradient(colors: _isVampire
-                    ? [const Color(0xFF5C2A26), const Color(0xFF4A3550)]
-                    : (_isDoctor
-                        ? [const Color(0xFF2C4A46), const Color(0xFF33452F)]
-                        : (_isDetective
-                            ? [const Color(0xFF31485A), const Color(0xFF3A3350)]
-                            : [const Color(0xFF33452F), const Color(0xFF2C4A46)]))),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [BoxShadow(color: Colors.black.withAlpha(100), blurRadius: 12, offset: const Offset(0, 6))]),
-            child: Row(children: [
-              Text(_roleEmoji(_myRole), style: const TextStyle(fontSize: 28)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(_roleBannerText(_myRole),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+        backgroundColor: _isNight ? AZColors.bgDark : const Color(0xFFF2E9C9),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _VampireVillagePainter(isNight: _isNight, transition: isTransition),
               ),
-            ]),
-          ),
-          if (_lastElim != null && !_isNight)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                  color: AZColors.redDk.withAlpha(180),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AZColors.red)),
-              child: Row(children: [
-                const Text('☠️', style: TextStyle(fontSize: 18)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${_players[_lastElim]?['name'] ?? _lastElim} elendi! '
-                    '(${_roleEmoji(_players[_lastElim]?['role'] as String?)} '
-                    '${_roleName(_players[_lastElim]?['role'] as String?)})',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: _isNight || isTransition
+                            ? [const Color(0xFF3A3350), const Color(0xFF2E2F4A)]
+                            : [AZColors.orange, AZColors.accentGoldSoft],
+                      ),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withAlpha(130), blurRadius: 16, offset: const Offset(0, 6)),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned(
+                          left: 4,
+                          child: IconButton(
+                            tooltip: 'Oyundan çık',
+                            icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                            onPressed: _confirmLeave,
+                          ),
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(_isNight ? '🌙' : (isTransition ? '🌅' : '☀️'),
+                                    style: const TextStyle(fontSize: 22)),
+                                const SizedBox(width: 10),
+                                Text(
+                                  '\${_isNight ? "GECE" : (isTransition ? "GEÇİŞ" : "GÜNDÜZ")}'
+                                  '\${_day > 1 ? " — Gün $_day" : ""}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 56),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.groups_rounded, color: Colors.white70, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text('$aliveCount / $playerCount hayatta',
+                                      style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(99),
+                                      child: LinearProgressIndicator(
+                                        value: playerCount == 0 ? 0 : aliveCount / playerCount,
+                                        minHeight: 7,
+                                        backgroundColor: Colors.black26,
+                                        color: _isNight ? const Color(0xFFE4B9FF) : const Color(0xFFFFF0B4),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ]),
+                  Container(
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: _isVampire
+                            ? [const Color(0xFF5C2A26), const Color(0xFF4A3550)]
+                            : (_isDoctor
+                                ? [const Color(0xFF2C4A46), const Color(0xFF33452F)]
+                                : (_isDetective
+                                    ? [const Color(0xFF31485A), const Color(0xFF3A3350)]
+                                    : [const Color(0xFF33452F), const Color(0xFF2C4A46)])),
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withAlpha(48)),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withAlpha(100), blurRadius: 12, offset: const Offset(0, 6)),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Text(_roleEmoji(_myRole), style: const TextStyle(fontSize: 30)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_roleBannerText(_myRole),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text(widget.myName,
+                                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Icon(_isAlive ? Icons.favorite_rounded : Icons.heart_broken_rounded,
+                            color: _isAlive ? const Color(0xFFFF8E9B) : Colors.white54),
+                      ],
+                    ),
+                  ),
+                  if (_lastElim != null && !_isNight)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AZColors.redDk.withAlpha(210),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AZColors.red),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text('☠️', style: TextStyle(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '\${_players[_lastElim]?['name'] ?? _lastElim} elendi! '
+                              '(\${_roleEmoji(_players[_lastElim]?['role'] as String?)} '
+                              '\${_roleName(_players[_lastElim]?['role'] as String?)})',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (_processing)
+                    Container(
+                      color: Colors.black54,
+                      padding: const EdgeInsets.all(8),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(width: 14, height: 14,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                          SizedBox(width: 8),
+                          Text('Sonuç hesaplanıyor...', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 420),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      child: KeyedSubtree(
+                        key: ValueKey('\$_phase-\$_day-\$_myVote-\$_myProtect-\$_myInvestigate-\$_isAlive'),
+                        child: _buildBody(isTransition),
+                      ),
+                    ),
+                  ),
+                  const BannerAdWidget(),
+                ],
+              ),
             ),
-          if (_processing)
-            Container(
-              color: Colors.black54,
-              padding: const EdgeInsets.all(8),
-              child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                SizedBox(width: 8),
-                Text('Sonuç hesaplanıyor...', style: TextStyle(color: Colors.white, fontSize: 12)),
-              ]),
-            ),
-          Expanded(child: _buildBody(isTransition)),
-          const BannerAdWidget(),
-        ]),
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -939,32 +1039,255 @@ class _VGS extends State<VampireGameScreen> {
     required List<MapEntry<String, dynamic>> targets,
     required void Function(String key) onTap,
   }) {
+    final selectedKey = !_isNight
+        ? _myVote
+        : (_isVampire ? _myVote : (_isDoctor ? _myProtect : _myInvestigate));
+    final actionLabel = !_isNight
+        ? 'OYUNU VER'
+        : (_isVampire ? 'GİZLİ HEDEF SEÇ' : (_isDoctor ? 'KORUMA SEÇ' : 'ARAŞTIR'));
     return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(children: [
-        Text(title, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Expanded(
-          child: ListView(
-            children: targets.map((e) {
-              final isSelf = e.key == widget.myKey;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: ElevatedButton(
-                  onPressed: () => onTap(e.key),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: color, foregroundColor: Colors.white, padding: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                  child: Text(
-                    isSelf ? '${widget.myName} (kendin)' : (e.value['name'] as String? ?? e.key),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: TextStyle(color: color, fontSize: 19, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 3),
+                    Text(
+                      _isNight
+                          ? 'Gizli gece eylemi · seçimin yalnızca sana görünür'
+                          : 'Köy meydanında oy ver · seçimler sonuçlanınca açıklanır',
+                      style: TextStyle(color: Colors.white.withAlpha(190), fontSize: 12),
+                    ),
+                  ],
                 ),
-              );
-            }).toList(),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: color.withAlpha(40),
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(color: color.withAlpha(150)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_isNight ? Icons.visibility_off_rounded : Icons.how_to_vote_rounded,
+                        size: 15, color: color),
+                    const SizedBox(width: 5),
+                    Text(_isNight ? 'GİZLİ' : 'OY',
+                        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ),
-      ]),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.separated(
+              itemCount: targets.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 9),
+              itemBuilder: (context, index) {
+                final entry = targets[index];
+                final isSelf = entry.key == widget.myKey;
+                final isSelected = entry.key == selectedKey;
+                final name = entry.value['name'] as String? ?? entry.key;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color.withAlpha(45) : Colors.white.withAlpha(18),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isSelected ? color : Colors.white.withAlpha(38),
+                      width: isSelected ? 2 : 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [BoxShadow(color: color.withAlpha(45), blurRadius: 16, spreadRadius: 1)]
+                        : null,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => onTap(entry.key),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [color.withAlpha(210), color.withAlpha(90)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                border: Border.all(color: Colors.white.withAlpha(105)),
+                              ),
+                              child: Center(
+                                child: Text(isSelf ? '🙂' : '👤', style: const TextStyle(fontSize: 24)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isSelf ? '$name · Sen' : name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    isSelf ? 'Kendini seç' : actionLabel,
+                                    style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              isSelected ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
+                              color: isSelected ? color : Colors.white70,
+                              size: 25,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          if (_isNight && _isVampire)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 2),
+              child: Center(
+                child: Text('Vampirler aynı hedefte buluşmalı · \$_votedCount/$_voterCount seçim',
+                    style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 12)),
+              ),
+            ),
+        ],
+      ),
     );
   }
+
+}
+
+
+class _VampireVillagePainter extends CustomPainter {
+  const _VampireVillagePainter({required this.isNight, required this.transition});
+
+  final bool isNight;
+  final bool transition;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final dark = isNight || transition;
+    final sky = Rect.fromLTWH(0, 0, size.width, size.height);
+    final top = dark ? const Color(0xFF171426) : const Color(0xFF9C5C44);
+    final bottom = dark ? const Color(0xFF38304A) : const Color(0xFFF0BD70);
+    canvas.drawRect(
+      sky,
+      Paint()..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [top, bottom, dark ? const Color(0xFF18212A) : const Color(0xFF566747)],
+        stops: const [0, .62, 1],
+      ).createShader(sky),
+    );
+
+    final orb = Offset(size.width * .78, size.height * .22);
+    final radius = math.min(size.width, size.height) * .075;
+    if (dark) {
+      canvas.drawCircle(orb, radius * 1.55, Paint()..color = const Color(0xFFB9A8F8).withAlpha(16));
+      canvas.drawCircle(orb, radius, Paint()..color = const Color(0xFFE6DDFB));
+      canvas.drawCircle(orb.translate(radius * .4, -radius * .18), radius * .86,
+          Paint()..color = const Color(0xFF302A41));
+      for (var i = 0; i < 24; i++) {
+        final x = ((i * 73 + 31) % 997) / 997 * size.width;
+        final y = ((i * 47 + 11) % 503) / 503 * size.height * .55;
+        final r = 1.0 + (i % 3) * .45;
+        canvas.drawCircle(Offset(x, y), r, Paint()..color = Colors.white.withAlpha(90 + (i % 4) * 30));
+      }
+    } else {
+      canvas.drawCircle(orb, radius * 1.5, Paint()..color = const Color(0xFFFFD990).withAlpha(24));
+      canvas.drawCircle(orb, radius, Paint()..color = const Color(0xFFFFE5A1));
+    }
+
+    final farHill = Path()
+      ..moveTo(0, size.height * .70)
+      ..quadraticBezierTo(size.width * .28, size.height * .55, size.width * .52, size.height * .72)
+      ..quadraticBezierTo(size.width * .75, size.height * .82, size.width, size.height * .64)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(farHill, Paint()..color = dark ? const Color(0xFF24243B) : const Color(0xFF526548));
+
+    final nearHill = Path()
+      ..moveTo(0, size.height * .82)
+      ..quadraticBezierTo(size.width * .34, size.height * .70, size.width * .56, size.height * .84)
+      ..quadraticBezierTo(size.width * .81, size.height * .93, size.width, size.height * .78)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(nearHill, Paint()..color = dark ? const Color(0xFF171B2C) : const Color(0xFF354D3F));
+
+    final houseY = size.height * .73;
+    final houseColor = dark ? const Color(0xFF171725) : const Color(0xFF463A35);
+    for (var i = 0; i < 4; i++) {
+      final x = size.width * (.08 + i * .245);
+      final w = size.width * .17;
+      final h = size.height * (.13 + (i % 2) * .035);
+      final house = Rect.fromLTWH(x, houseY - h, w, h);
+      canvas.drawRect(house, Paint()..color = houseColor);
+      final roof = Path()
+        ..moveTo(x - w * .08, houseY - h)
+        ..lineTo(x + w / 2, houseY - h - h * .46)
+        ..lineTo(x + w * 1.08, houseY - h)
+        ..close();
+      canvas.drawPath(roof, Paint()..color = dark ? const Color(0xFF11121D) : const Color(0xFF633F36));
+      final windowPaint = Paint()..color = dark ? const Color(0xFFFFD27B).withAlpha(175) : const Color(0xFFFFD98C).withAlpha(190);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x + w * .18, houseY - h * .67, w * .19, h * .22),
+          const Radius.circular(2),
+        ),
+        windowPaint,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x + w * .62, houseY - h * .67, w * .19, h * .22),
+          const Radius.circular(2),
+        ),
+        windowPaint,
+      );
+    }
+
+    if (dark) {
+      final mistPaint = Paint()..color = const Color(0xFFD6CBFF).withAlpha(14);
+      canvas.drawOval(Rect.fromLTWH(-size.width * .15, size.height * .77, size.width * .75, size.height * .05), mistPaint);
+      canvas.drawOval(Rect.fromLTWH(size.width * .48, size.height * .84, size.width * .78, size.height * .06), mistPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _VampireVillagePainter oldDelegate) =>
+      oldDelegate.isNight != isNight || oldDelegate.transition != transition;
 }
