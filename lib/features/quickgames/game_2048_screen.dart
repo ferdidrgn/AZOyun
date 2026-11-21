@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'game_2048_rules.dart';
 
 class Game2048LobbyScreen extends StatelessWidget {
   const Game2048LobbyScreen({super.key});
@@ -72,70 +73,23 @@ class _Game2048GameScreenState extends State<Game2048GameScreen> {
     _grid[cell[0]][cell[1]] = _rng.nextDouble() < 0.9 ? 2 : 4;
   }
 
-  List<int> _mergeLine(List<int> line) {
-    final nonZero = line.where((v) => v != 0).toList();
-    final merged = <int>[];
-    var i = 0;
-    while (i < nonZero.length) {
-      if (i + 1 < nonZero.length && nonZero[i] == nonZero[i + 1]) {
-        final val = nonZero[i] * 2;
-        merged.add(val);
-        _moveScore += val;
-        i += 2;
-      } else {
-        merged.add(nonZero[i]);
-        i += 1;
-      }
-    }
-    while (merged.length < line.length) {
-      merged.add(0);
-    }
-    return merged;
-  }
-
-  bool _listEquals(List<int> a, List<int> b) {
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
   bool _applyMove(_Dir d) {
-    _moveScore = 0;
-    var changed = false;
-    if (d == _Dir.left || d == _Dir.right) {
-      for (var r = 0; r < 4; r++) {
-        var row = _grid[r];
-        if (d == _Dir.right) row = row.reversed.toList();
-        final merged = _mergeLine(row);
-        final newRow = d == _Dir.right ? merged.reversed.toList() : merged;
-        if (!_listEquals(newRow, _grid[r])) changed = true;
-        _grid[r] = newRow;
-      }
-    } else {
-      for (var c = 0; c < 4; c++) {
-        var col = [for (var r = 0; r < 4; r++) _grid[r][c]];
-        if (d == _Dir.down) col = col.reversed.toList();
-        final merged = _mergeLine(col);
-        final newCol = d == _Dir.down ? merged.reversed.toList() : merged;
-        for (var r = 0; r < 4; r++) {
-          if (_grid[r][c] != newCol[r]) changed = true;
-          _grid[r][c] = newCol[r];
-        }
-      }
-    }
-    return changed;
+    final direction = switch (d) {
+      _Dir.left => 'left',
+      _Dir.right => 'right',
+      _Dir.up => 'up',
+      _Dir.down => 'down',
+    };
+    final result = apply2048Move(_grid.expand((row) => row).toList(), direction);
+    _grid = [
+      for (var row = 0; row < 4; row++) result.board.sublist(row * 4, row * 4 + 4),
+    ];
+    _moveScore = result.score;
+    return result.changed;
   }
 
   bool _isGameOver() {
-    for (var r = 0; r < 4; r++) {
-      for (var c = 0; c < 4; c++) {
-        if (_grid[r][c] == 0) return false;
-        if (c + 1 < 4 && _grid[r][c] == _grid[r][c + 1]) return false;
-        if (r + 1 < 4 && _grid[r][c] == _grid[r + 1][c]) return false;
-      }
-    }
-    return true;
+    return is2048GameOver(_grid.expand((row) => row).toList());
   }
 
   void _move(_Dir d) {
@@ -322,3 +276,4 @@ class _Game2048GameScreenState extends State<Game2048GameScreen> {
     ]);
   }
 }
+

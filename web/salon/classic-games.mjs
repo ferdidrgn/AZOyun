@@ -1,5 +1,9 @@
+Warning: truncated output (original token count: 16163)
+Total output lines: 1319
+
 import { classics } from "./classic-catalog.mjs";
 import { connectFourDropRow, connectFourOutcome } from "./connect-four-rules.mjs";
+import { apply2048Move, is2048GameOver } from "./2048-rules.mjs";
 import { nimApplyMove } from "./nim-rules.mjs";
 import { ticTacToeOutcome } from "./tic-tac-toe-rules.mjs";
 
@@ -354,231 +358,7 @@ function rps({ paint, surface }) {
     const done = score.includes(3);
     lastRound = { player, bot, result };
     render(
-      `Rakip ${choices[bot]} seçti. ${score[0]}-${score[1]}${done ? (score[0] === 3 ? " · Kazandın." : " · Rakip kazandı.") : ""}`,
-      done,
-    );
-  });
-}
-function dice({ paint, surface }) {
-  let turn = 0,
-    pot = 0;
-  const score = [0, 0];
-  let lastRoll = null;
-  let lastEvent = "Zarını at ve puan biriktir.";
-  const faces = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
-  const render = (message = "", rolling = false) => {
-    const finished = score.some((n) => n >= 40);
-    const face = lastRoll ?? 5;
-    const pips = range(9)
-      .map((position) => `<span class="classic-die-pip${faces[face].includes(position) ? " is-on" : ""}"></span>`)
-      .join("");
-    const scoreCards = score
-      .map((points, player) => `<div class="classic-dice-player${turn === player && !finished ? " is-active" : ""}"><small>OYUNCU ${player + 1}</small><strong>${points}</strong><span>PUAN</span></div>`)
-      .join("");
-    const die = `<div class="classic-dice-stage"><div class="classic-die${rolling ? " is-rolling" : ""}" role="img" aria-label="Zar sonucu ${lastRoll ?? "henüz atılmadı"}">${pips}</div></div>`;
-    const panel = `<style>@keyframes classic-die-roll{0%{transform:rotateX(-18deg) rotateY(22deg) translateY(0) scale(1)}22%{transform:rotateX(115deg) rotateY(176deg) translateY(-16px) scale(1.08)}48%{transform:rotateX(235deg) rotateY(316deg) translateY(2px) scale(.96)}72%{transform:rotateX(335deg) rotateY(428deg) translateY(-7px) scale(1.03)}100%{transform:rotateX(342deg) rotateY(382deg) translateY(0) scale(1)}}.classic-dice-panel{width:min(100%,520px);margin:0 auto 14px;padding:14px;border:1px solid rgba(238,215,166,.25);border-radius:18px;background:radial-gradient(ellipse at 50% 0%,rgba(76,103,121,.58),transparent 70%),linear-gradient(145deg,#253646,#17232f);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 12px 24px rgba(0,0,0,.25);color:#fff}.classic-dice-score{display:grid;grid-template-columns:1fr 1fr;gap:10px}.classic-dice-player{display:grid;justify-items:center;gap:3px;padding:8px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:linear-gradient(145deg,#334655,#22313e);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 5px 9px rgba(0,0,0,.2);transition:transform .18s,border-color .18s,box-shadow .18s}.classic-dice-player.is-active{transform:translateY(-2px);border-color:#f0d48f;box-shadow:0 0 15px rgba(240,212,143,.2),inset 0 1px 0 rgba(255,255,255,.15),0 7px 12px rgba(0,0,0,.25)}.classic-dice-player small,.classic-dice-player span{font-size:.63rem;letter-spacing:.12em;opacity:.78}.classic-dice-player strong{font-size:1.6rem;font-variant-numeric:tabular-nums;color:#ffe7ad;text-shadow:0 2px 8px rgba(255,214,122,.22)}.classic-dice-round{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;padding:9px 11px;border-radius:10px;background:rgba(7,14,21,.35);font-size:.82rem}.classic-dice-round strong{color:#baf4dd;font-size:1rem;font-variant-numeric:tabular-nums}.classic-dice-stage{display:grid;place-items:center;min-height:126px;padding:8px 0 18px;perspective:600px}.classic-die{position:relative;display:grid;width:clamp(70px,18vw,94px);aspect-ratio:1;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:5px;padding:12px;border:1px solid #fff4db;border-radius:19px;background:linear-gradient(145deg,#fffef9 0%,#f5e9d1 54%,#dac8a7 100%);box-shadow:inset 2px 2px 5px #fff, inset -5px -6px 10px rgba(113,78,35,.2),0 8px 0 #927c5e,0 13px 18px rgba(0,0,0,.42);transform:rotateX(-18deg) rotateY(22deg);transform-style:preserve-3d}.classic-die:before{position:absolute;content:"";inset:0;border-radius:18px;transform:translateZ(-8px) translateY(8px);background:#8a7252;z-index:-1}.classic-die-pip{display:grid;place-items:center}.classic-die-pip.is-on:after{content:"";width:clamp(9px,2.4vw,13px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 28%,#687887,#1b2631 65%);box-shadow:inset 1px 1px 2px rgba(255,255,255,.32),0 1px 2px rgba(0,0,0,.35)}.classic-die.is-rolling{animation:classic-die-roll .56s cubic-bezier(.18,.75,.24,1)}.classic-dice-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:9px}.classic-dice-actions button{min-width:138px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 0 rgba(0,0,0,.22),0 7px 12px rgba(0,0,0,.2)}.classic-dice-actions button:disabled{opacity:.48;filter:saturate(.5);box-shadow:none}@media(prefers-reduced-motion:reduce){.classic-die.is-rolling{animation:none}}</style><section class="classic-dice-panel"><div class="classic-dice-score">${scoreCards}</div>${die}<div class="classic-dice-round"><span>${lastEvent}</span><strong>ELDE <b>${pot}</b></strong></div></section>`;
-    const actions = finished
-      ? ""
-      : `<div class="classic-dice-actions">${btn("Zar at", "roll")} ${btn("Puanı kasaya al", "hold", pot ? "" : "disabled")}</div>`;
-    paint(panel + actions, message || `1. oyuncu ${score[0]} · 2. oyuncu ${score[1]} · Sıra ${turn + 1}, eldeki puan ${pot}`);
-  };
-  render();
-  return click(surface, (move) => {
-    if (move === "hold") {
-      const banked = pot;
-      score[turn] += banked;
-      pot = 0;
-      lastEvent = `${turn + 1}. oyuncu ${banked} puanı kasaya aldı.`;
-      if (score[turn] >= 40) return render(turn + 1 + ". oyuncu kazandı.");
-      turn ^= 1;
-      return render();
-    }
-    const roll = 1 + random(6);
-    lastRoll = roll;
-    if (roll === 1) {
-      lastEvent = `Bir geldi. Eldeki puan sıfırlandı; sıra ${turn + 2 > 2 ? 1 : turn + 2}. oyuncuda.`;
-      pot = 0;
-      turn ^= 1;
-      return render("Bir geldi. Sıra " + (turn + 1), true);
-    }
-    pot += roll;
-    lastEvent = `Zar ${roll} geldi · eldeki puan ${pot}.`;
-    render("Zar " + roll + " · Elde " + pot, true);
-  });
-}
-function memory({ paint, surface }, triple = false) {
-  const symbols = ["◆", "✿", "●", "▲", "✚", "☀", "◈", "♣"];
-  const copies = triple ? 3 : 2;
-  const deck = shuffle(symbols.flatMap((symbol) => Array(copies).fill(symbol)));
-  const removed = new Set();
-  let active = [];
-  let timer;
-  let busy = false;
-  let moves = 0;
-  const previousFaceUp = new Set();
-  const render = (message = "Hamle " + moves) => {
-    const cards = deck.map((symbol, index) => {
-      const faceUp = triple || active.includes(index);
-      const matched = removed.has(index);
-      const disabled = matched || active.includes(index);
-      const label = matched ? "" : faceUp ? " " + symbol : "";
-      const turnStyle = faceUp !== previousFaceUp.has(index)
-        ? `animation:classic-memory-${faceUp ? "flip" : "unflip"} 460ms cubic-bezier(.2,.75,.25,1) ${Math.min(index, 5) * 16}ms both;`
-        : `transform:rotateY(${faceUp ? 180 : 0}deg);`;
-      const card = `<span style="position:absolute;inset:0;display:grid;place-items:center;border:1px solid rgba(255,255,255,.58);border-radius:clamp(7px,1.6vw,14px);backface-visibility:hidden;background:linear-gradient(145deg,#fff8df 0%,#f3dfb8 52%,#cfac7d 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.9),inset 0 -4px 7px rgba(95,62,34,.18),0 3px 0 #8f6945,0 8px 13px rgba(0,0,0,.3);color:#3b2b45;font-size:clamp(1.4rem,5.2vw,2.65rem);font-weight:800;text-shadow:0 2px 0 rgba(255,255,255,.65)">${matched ? "" : symbol}</span>`;
-      const cover = `<span style="position:absolute;inset:0;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(221,238,255,.6);border-radius:clamp(7px,1.6vw,14px);backface-visibility:hidden;background:radial-gradient(circle at 28% 18%,#586f9c 0%,#354b76 35%,#243555 76%,#18243d 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -5px 8px rgba(8,15,31,.5),0 3px 0 #111b30,0 8px 13px rgba(0,0,0,.34);color:#f4d895"><span style="display:grid;place-items:center;width:62%;aspect-ratio:1;border:1px solid rgba(255,228,170,.65);border-radius:50%;box-shadow:0 0 0 4px rgba(255,228,170,.1),inset 0 0 10px rgba(255,228,170,.22);font-size:clamp(1rem,3.5vw,1.55rem)">✦</span><small style="position:absolute;bottom:8%;font-size:.55rem;font-weight:800;letter-spacing:.18em;opacity:.78">AZOYUN</small></span>`;
-      const content = `<span aria-hidden="true" style="position:absolute;inset:0;transform-style:preserve-3d;${turnStyle}${matched ? "opacity:.12;" : ""}">${cover}<span style="position:absolute;inset:0;display:grid;place-items:center;transform:rotateY(180deg);backface-visibility:hidden">${card}</span></span>`;
-      return btn(
-        content,
-        index,
-        `aria-label="${index + 1}. kart${label}" ${disabled ? "disabled" : ""} style="min-height:0;padding:0;position:relative;aspect-ratio:.84;border:0;border-radius:clamp(7px,1.6vw,14px);background:transparent;perspective:900px;transform-style:preserve-3d;overflow:visible;box-shadow:none;cursor:${disabled ? "default" : "pointer"}"`,
-      );
-    }).join("");
-    previousFaceUp.clear();
-    deck.forEach((_, index) => {
-      if (triple || active.includes(index)) previousFaceUp.add(index);
-    });
-    const motion = '<style>@keyframes classic-memory-flip{0%{transform:rotateY(0deg) translateY(5px) scale(.96)}65%{transform:rotateY(195deg) translateY(-2px) scale(1.035)}100%{transform:rotateY(180deg) translateY(0) scale(1)}}@keyframes classic-memory-unflip{0%{transform:rotateY(180deg) translateY(0) scale(1)}55%{transform:rotateY(-15deg) translateY(-2px) scale(1.02)}100%{transform:rotateY(0deg) translateY(4px) scale(.96)}}@media(prefers-reduced-motion:reduce){.classic-memory-cards *{animation-duration:.01ms!important;animation-delay:0ms!important}}</style>';
-    paint(
-      motion + grid(
-        triple ? 6 : 4,
-        cards,
-        "classic-memory-cards",
-      ) +
-        (triple
-          ? `<p style="text-align:center;margin:4px auto 10px;color:#e9d5ac">Tepsi (${active.length}/7) ${active.map((index) => deck[index]).join(" ")}</p>`
-          : ""),
-      message,
-    );
-  };
-  render();
-  const clear = click(surface, (value) => {
-    if (busy) return;
-    const index = Number(value);
-    if (active.includes(index) || removed.has(index)) return;
-    active.push(index);
-    moves++;
-    if (triple) {
-      const matches = active.filter((cell) => deck[cell] === deck[index]);
-      if (matches.length === 3) {
-        for (const cell of matches) removed.add(cell);
-        active = active.filter((cell) => !removed.has(cell));
-      }
-      if (active.length === 7) {
-        busy = true;
-        return render("Tepsi doldu.");
-      }
-      return render(
-        removed.size === deck.length ? "Hepsini eşledin!" : undefined,
-      );
-    }
-    if (active.length === 2) {
-      busy = true;
-      render();
-      timer = setTimeout(() => {
-        if (deck[active[0]] === deck[active[1]])
-          for (const cell of active) removed.add(cell);
-        active = [];
-        busy = false;
-        render(removed.size === deck.length ? "Hepsini eşledin!" : undefined);
-      }, 650);
-    } else render();
-  });
-  return () => {
-    clear();
-    clearTimeout(timer);
-  };
-}
-function puzzle({ paint, surface }, numbers = false) {
-  const board = numbers
-    ? shuffle(range(25).map((n) => n + 1))
-    : [...range(15).map((n) => n + 1), 0];
-  const width = numbers ? 5 : 4;
-  let next = 1,
-    moves = 0;
-  const adjacent = (i, j) =>
-    Math.abs(Math.floor(i / width) - Math.floor(j / width)) +
-      Math.abs((i % width) - (j % width)) ===
-    1;
-  if (!numbers)
-    for (let n = 0; n < 90; n++) {
-      const empty = board.indexOf(0),
-        candidates = range(16).filter((i) => adjacent(i, empty));
-      const target = candidates[random(candidates.length)];
-      [board[empty], board[target]] = [board[target], board[empty]];
-    }
-  const render = (
-    message = numbers ? "Sıradaki sayı " + next : "Hamle " + moves,
-  ) => {
-    const cells = board.map((n, index) => {
-      if (!n)
-        return '<span class="classic-cell" aria-hidden="true" style="min-height:0;padding:0;border:1px solid rgba(204,222,223,.1);border-radius:clamp(5px,1.3vw,11px);background:linear-gradient(145deg,#101d26,#172b35 65%,#20343a);box-shadow:inset 0 4px 8px rgba(0,0,0,.44),inset 0 -1px 0 rgba(255,255,255,.04)"></span>';
-      const complete = numbers && n < next;
-      const active = numbers && n === next;
-      const palettes = complete
-        ? ["#9ec5aa", "#416e57", "#244637", "#f1f8e9"]
-        : active
-          ? ["#fff0b4", "#e3ad4e", "#8f5425", "#fffce6"]
-          : ["#fff3d1", ["#d5a36a", "#bd8d5a", "#dfa967", "#c39160"][n % 4], "#765139", "#fff7e8"];
-      const [light, face, shadow, ink] = palettes;
-      const fontSize = String(n).length > 1 ? "clamp(1rem,4.1vw,1.8rem)" : "clamp(1.2rem,5vw,2.25rem)";
-      return btn(
-        `<span aria-hidden="true">${n}</span>`,
-        index,
-        `aria-label="${numbers ? 'Sayı ' : 'Taş '}${n}" ${numbers && n < next ? "disabled" : ""} style="min-height:0;padding:0;aspect-ratio:1;border:1px solid rgba(255,255,255,.52);border-radius:clamp(5px,1.3vw,11px);background:linear-gradient(145deg,${light} 0%,${face} 52%,${shadow} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.72),inset 0 -3px 0 rgba(45,27,16,.25),0 3px 0 ${shadow},0 7px 11px rgba(0,0,0,.34);color:${ink};font-size:${fontSize};font-weight:900;text-shadow:0 1px 0 rgba(55,35,22,.2);transform:translateY(-2px);cursor:${complete ? "default" : "pointer"};${active ? "outline:2px solid #fff0b4;outline-offset:1px;" : ""}`,
-      );
-    }).join("");
-    const boardView = `<div style="width:min(100%,510px);margin:0 auto;padding:clamp(8px,2vw,15px);border:1px solid rgba(255,224,174,.5);border-radius:clamp(12px,2vw,20px);background:linear-gradient(135deg,#a87543 0%,#684324 25%,#bd8955 52%,#56361f 78%,#8a5932 100%);box-shadow:inset 0 2px 0 rgba(255,241,214,.6),inset 0 -5px 8px rgba(36,20,12,.55),0 10px 20px rgba(0,0,0,.38)"><div class="classic-grid" role="grid" aria-label="${numbers ? 'Sayı bulmaca tahtası' : 'Kaydırmalı sayı tahtası'}" style="--columns:${width};width:100%;aspect-ratio:1;grid-auto-rows:minmax(0,1fr);gap:clamp(3px,.9vw,7px);padding:clamp(5px,1.2vw,9px);border:1px solid rgba(10,38,30,.8);border-radius:clamp(6px,1.3vw,11px);background:radial-gradient(ellipse at 38% 20%,#354747,#1b2c31 70%,#132329);box-shadow:inset 0 3px 8px rgba(0,0,0,.46),inset 0 0 0 1px rgba(164,214,162,.1)">${cells}</div></div>`;
-    paint(boardView, message);
-  };
-  render();
-  return click(surface, (value) => {
-    const i = Number(value),
-      empty = board.indexOf(0);
-    if (numbers) {
-      if (board[i] !== next) return render("Şimdi " + next + " sayısını bul.");
-      next++;
-      return render(next === 26 ? "25 sayının hepsini buldun!" : undefined);
-    }
-    if (!adjacent(i, empty)) return;
-    [board[i], board[empty]] = [board[empty], board[i]];
-    moves++;
-    render(
-      board.slice(0, 15).every((n, j) => n === j + 1)
-        ? moves + " hamlede çözdün!"
-        : undefined,
-    );
-  });
-}
-function merge2048({ paint, surface }) {
-  const board = Array(16).fill(0);
-  let score = 0;
-  const tileColors = {
-    2: ["#fff2cb", "#d7ab70", "#9b643d", "#fffaf0"],
-    4: ["#ffe5b3", "#e5a45f", "#a95c35", "#fff5df"],
-    8: ["#ffd5a0", "#f28b52", "#a9442d", "#fff8ed"],
-    16: ["#ffd2a3", "#ef704b", "#982e31", "#fff2e7"],
-    32: ["#ffc3a0", "#df554f", "#852c40", "#fff0ec"],
-    64: ["#ffc0a5", "#c83c50", "#6f263d", "#fff1ee"],
-    128: ["#fff1aa", "#e4bd42", "#876328", "#fffbe2"],
-    256: ["#fff0a3", "#d9a92f", "#805025", "#fff9d7"],
-    512: ["#fff0a7", "#c98832", "#6d4021", "#fff8df"],
-    1024: ["#fff1ad", "#b97835", "#633725", "#fff9e6"],
-    2048: ["#fff6c6", "#e8bd50", "#8c4d24", "#fffdf2"],
-  };
-  function spawn() {
-    const spaces = range(16).filter((i) => !board[i]);
-    if (spaces.length)
-      board[spaces[random(spaces.length)]] = random(10) ? 2 : 4;
-  }
-  function render(message = "Puan " + score) {
-    const highest = Math.max(...board);
-    const tiles = board.map((n, index) => {
-      if (!n)
-        return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, boş" data-number="0" style="min-height:0;padding:0;border:1px solid rgba(186,220,232,.12);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,#213847,#172a37 62%,#12232f);box-shadow:inset 0 3px 7px rgba(0,0,0,.36),inset 0 -1px 0 rgba(177,218,231,.06)"></span>`;
-      const [light, face, dark, ink] = tileColors[n] || tileColors[2048];
-      const size = n >= 1024 ? "clamp(.86rem,4vw,1.85rem)" : n >= 128 ? "clamp(1rem,4.8vw,2.15rem)" : "clamp(1.2rem,5.4vw,2.45rem)";
-      return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, ${n}" data-number="${n}" style="min-height:0;padding:0;border:1px solid rgba(255,255,255,.55);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,${light} 0%,${face} 48%,${dark} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.68),inset 0 -3px 0 rgba(26,19,28,.28),0 3px 0 ${dark},0 7px 12px rgba(0,0,0,.34);color:${ink};font-size:${size};font-weight:900;text-shadow:0 1px 0 rgba(45,29,26,.28),0 3px 7px rgba(34,19,25,.2);transform:translateY(-2px)">${n}</span>`;
+      `Rakip ${choices[bot]} seçti. $…4163 tokens truncated…     return `<span class="classic-cell" role="gridcell" aria-label="${Math.floor(index / 4) + 1}. satır, ${index % 4 + 1}. sütun, ${n}" data-number="${n}" style="min-height:0;padding:0;border:1px solid rgba(255,255,255,.55);border-radius:clamp(5px,1.4vw,12px);background:linear-gradient(145deg,${light} 0%,${face} 48%,${dark} 100%);box-shadow:inset 0 2px 0 rgba(255,255,255,.68),inset 0 -3px 0 rgba(26,19,28,.28),0 3px 0 ${dark},0 7px 12px rgba(0,0,0,.34);color:${ink};font-size:${size};font-weight:900;text-shadow:0 1px 0 rgba(45,29,26,.28),0 3px 7px rgba(34,19,25,.2);transform:translateY(-2px)">${n}</span>`;
     }).join("");
     const counters = `<div class="classic-2048-counters" style="width:min(100%,510px);display:flex;justify-content:flex-end;gap:8px;margin:0 auto 10px"><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:linear-gradient(145deg,#435367,#283646);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.8">PUAN</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${score.toLocaleString("tr-TR")}</strong></div><div style="min-width:94px;padding:7px 12px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:linear-gradient(145deg,#785c38,#40312d);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 8px rgba(0,0,0,.24);text-align:center;color:#fff3d5"><small style="display:block;font-size:.65rem;letter-spacing:.12em;opacity:.85">EN BÜYÜK TAŞ</small><strong style="font-size:1.1rem;font-variant-numeric:tabular-nums">${highest}</strong></div></div>`;
     paint(
@@ -590,39 +370,17 @@ function merge2048({ paint, surface }) {
     );
   }
   function move(direction) {
-    let changed = false;
-    for (let line = 0; line < 4; line++) {
-      const indices = range(4).map((n) =>
-        direction < 2 ? line * 4 + n : n * 4 + line,
-      );
-      if (direction % 2) indices.reverse();
-      const values = indices.map((i) => board[i]).filter(Boolean);
-      const merged = [];
-      for (let n = 0; n < values.length; n++) {
-        if (values[n] === values[n + 1]) {
-          const value = values[n++] * 2;
-          score += value;
-          merged.push(value);
-        } else merged.push(values[n]);
-      }
-      for (const [n, index] of indices.entries()) {
-        const value = merged[n] || 0;
-        if (board[index] !== value) changed = true;
-        board[index] = value;
-      }
+    const result = apply2048Move(board, ["left", "right", "up", "down"][direction]);
+    if (result.changed) {
+      board.splice(0, board.length, ...result.board);
+      score += result.score;
+      spawn();
     }
-    if (changed) spawn();
-    const stuck =
-      board.every(Boolean) &&
-      !board.some(
-        (value, i) =>
-          (i % 4 < 3 && board[i + 1] === value) ||
-          (i < 12 && board[i + 4] === value),
-      );
+    const stuck = is2048GameOver(board);
     render(
       stuck
         ? "Hamle kalmadı. Puan " + score
-        : board.includes(2048)
+        : result.won
           ? "2048’e ulaştın! Puan " + score
           : undefined,
     );
@@ -1337,3 +1095,4 @@ Object.assign(implementations, {
   penalti: (game) => aim(game, "penalti"),
   frikik: (game) => aim(game, "frikik"),
 });
+

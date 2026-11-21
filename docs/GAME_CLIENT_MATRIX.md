@@ -24,7 +24,7 @@ Bu dosya oyun başlıklarının benzerliğini, kural kodunun ortak olduğu anlam
 | `zar` | `diceparty` / `dice_party_screen.dart` | Aynı oyun ailesi; zar ve puan kuralları karşılaştırılacak |
 | `hafiza` | `memory` / `memory_match_screen.dart` | Aynı oyun ailesi; deste üretimi ve eşleşme kuralı karşılaştırılacak |
 | `uclu` | `triplematch` / `triple_match_screen.dart` | Aynı oyun ailesi; eşleşme kuralı karşılaştırılacak |
-| `2048` | `2048` / `game_2048_screen.dart` | Aynı oyun ailesi; kaydırma ve birleşme vektörleri karşılaştırılacak |
+| `2048` | `2048` / `game_2048_screen.dart` | Ortak JSON vektörleri kaydırma/birleşme, puan, no-op, bitiş ve 2048 hedefine ulaşmayı kapsıyor; Flutter ve web CI testleri eklendi |
 | `yapboz` | `slidingpuzzle` / `sliding_puzzle_screen.dart` | Aynı oyun ailesi; karıştırma/çözüm durumu karşılaştırılacak |
 | `sayi` | `count123` / `count_numbers_screen.dart` | Aynı oyun ailesi; sıra/puan karşılaştırılacak |
 | `matematik` | `mathpuzzle` / `math_puzzle_screen.dart` | Aynı oyun ailesi; soru ve puan kaynağı karşılaştırılacak |
@@ -58,3 +58,4 @@ Flutter çevrimiçi kimlikleri `racing`, `impostor`, `golf`, `word`, `dama`, `ok
 2. Dörtlü Diz ve Nim için sıra/hamle/bitiş vektörlerini ekle.
 3. 2048, yılan ve mini oyunlarda üretim kuralı ile skor/result sözleşmesini karşılaştır.
 4. Ortak Firebase oyunlarında oda revizyonu, tekrar bağlanma ve sonuç durumlarını Android/web arasında temsilî senaryolarla doğrula.
+

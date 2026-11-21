@@ -1,0 +1,55 @@
+{
+  "cases": [
+    {
+      "name": "left merges pairs once",
+      "direction": "left",
+      "board": [2,2,2,2, 4,0,4,4, 0,0,0,0, 8,4,2,0],
+      "nextBoard": [4,4,0,0, 8,4,0,0, 0,0,0,0, 8,4,2,0],
+      "score": 16,
+      "changed": true,
+      "gameOver": false,
+      "won": false
+    },
+    {
+      "name": "right merge",
+      "direction": "right",
+      "board": [2,2,0,0, 0,4,4,0, 0,0,0,0, 2,4,8,16],
+      "nextBoard": [0,0,0,4, 0,0,0,8, 0,0,0,0, 2,4,8,16],
+      "score": 12,
+      "changed": true,
+      "gameOver": false,
+      "won": false
+    },
+    {
+      "name": "up merges columns",
+      "direction": "up",
+      "board": [2,0,0,0, 2,0,0,0, 4,0,0,0, 4,0,0,0],
+      "nextBoard": [4,0,0,0, 8,0,0,0, 0,0,0,0, 0,0,0,0],
+      "score": 12,
+      "changed": true,
+      "gameOver": false,
+      "won": false
+    },
+    {
+      "name": "down reaches 2048",
+      "direction": "down",
+      "board": [1024,0,0,0, 1024,0,0,0, 4,0,0,0, 8,0,0,0],
+      "nextBoard": [0,0,0,0, 2048,0,0,0, 4,0,0,0, 8,0,0,0],
+      "score": 2048,
+      "changed": true,
+      "gameOver": false,
+      "won": true
+    },
+    {
+      "name": "no-op keeps board",
+      "direction": "left",
+      "board": [2,4,8,16, 4,8,16,32, 8,16,32,64, 16,32,64,128],
+      "nextBoard": [2,4,8,16, 4,8,16,32, 8,16,32,64, 16,32,64,128],
+      "score": 0,
+      "changed": false,
+      "gameOver": true,
+      "won": false
+    }
+  ]
+}
+
