@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class ThreeView extends StatefulWidget {
-  const ThreeView({super.key, required this.game, required this.title});
+  const ThreeView({super.key, required this.game, required this.title, required this.file});
 
   final String game;
   final String title;
+  final String file;
 
   @override
   State<ThreeView> createState() => _ThreeViewState();
@@ -47,12 +48,12 @@ class _ThreeViewState extends State<ThreeView> with WidgetsBindingObserver {
         onNavigationRequest: (request) {
           final uri = Uri.tryParse(request.url);
           return uri?.scheme == 'file' &&
-                  uri!.path.endsWith('/arcade3d/index.html')
+                  uri!.path.endsWith('/arcade3d/${widget.file}')
               ? NavigationDecision.navigate
               : NavigationDecision.prevent;
         },
         onPageFinished: (_) async {
-          if (!mounted) return;
+          if (!mounted || widget.file != 'index.html') return;
           try {
             await controller.runJavaScript('initialize("${widget.game}")');
           } catch (error) {
@@ -63,7 +64,7 @@ class _ThreeViewState extends State<ThreeView> with WidgetsBindingObserver {
           if (error.isForMainFrame != false) _showFailure(error.description);
         },
       ));
-      await controller.loadFlutterAsset('assets/arcade3d/index.html');
+      await controller.loadFlutterAsset('assets/arcade3d/${widget.file}');
       if (mounted) setState(() => _controller = controller);
     } catch (error) {
       _showFailure(error);

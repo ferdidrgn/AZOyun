@@ -10,9 +10,11 @@ enum ThreeArcadeGame {
   maze('Kristal Labirent', 'maze'),
   bowling('3D Mini Bowling', 'bowling'),
   freeKick('Frikik Ustası', 'freeKick'),
-  penalty('Penaltı Antrenmanı', 'penalty');
+  penalty('Penaltı Antrenmanı', 'penalty'),
+  ferry('Vapur 84', 'ferry', file: 'vapur-84.html');
 
-  const ThreeArcadeGame(this.title, this.engineMode);
+  const ThreeArcadeGame(this.title, this.engineMode, {this.file = 'index.html'});
+  final String file;
   final String title;
 
   /// Stable mode key shared with the web arcade catalog and Three.js runtime.
@@ -29,7 +31,7 @@ class ThreeArcadeScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF101923),
         appBar: AppBar(title: Text(game.title)),
         body: SafeArea(
-          child: ThreeView(game: game.engineMode, title: game.title),
+          child: ThreeView(game: game.engineMode, title: game.title, file: game.file),
         ),
       );
 }

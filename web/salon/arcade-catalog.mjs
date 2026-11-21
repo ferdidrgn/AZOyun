@@ -1,5 +1,13 @@
-// Public web catalog for the same Three.js modes loaded by Flutter's WebView.
+// Public web catalog for the arcade games bundled with the Flutter app.
 export const arcadeGames = {
+  "vapur-84": {
+    mode: "ferry",
+    title: "Vapur 84",
+    description: "Boğaz’da vapuru üç şerit arasında yönlendir, 60 saniyede bilet topla ve şamandıralardan kaç.",
+    mark: "⛴",
+    category: "Arcade",
+    image: "/salon/vapur-84.jpg",
+  },
   "neon-pist": {
     mode: "runway",
     title: "Neon Pist",
@@ -49,7 +57,9 @@ export const arcadeGames = {
 export function arcadeCards() {
   return Object.entries(arcadeGames).map(([slug, game]) =>
     `<a class="game-card classic-card arcade-card" data-kind="arcade" href="/oyun/${slug}/">
-      <div class="card-art classic-mark" aria-hidden="true">${game.mark}</div>
-      <div class="card-info"><span>3D Arcade</span><h3>${game.title}</h3><p>${game.description}</p></div>
+      ${slug === "vapur-84"
+        ? `<img class="card-art ferry-cover" src="${game.image}" alt="" loading="lazy">`
+        : `<div class="card-art classic-mark" aria-hidden="true">${game.mark}</div>`}
+      <div class="card-info"><span>${game.category ?? "3D Arcade"}</span><h3>${game.title}</h3><p>${game.description}</p></div>
       <span class="play" aria-hidden="true">↗</span></a>`).join("\n");
 }

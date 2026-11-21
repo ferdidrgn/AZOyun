@@ -19,7 +19,7 @@ test("built web salon serves canonical games, ad verification and app associatio
   }
   const { body: sitemap } = await read("/sitemap.xml");
   const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((entry) => new URL(entry[1]));
-  assert.equal(urls.filter((url) => url.pathname.startsWith("/oyun/")).length, 43);
+  assert.equal(urls.filter((url) => url.pathname.startsWith("/oyun/")).length, 44);
   assert.equal(new Set(urls.map(String)).size, urls.length);
   const { body: home } = await read("/");
   assert.match(home, /href="\/salon\/style\.css"/);
@@ -39,6 +39,7 @@ test("built web salon serves canonical games, ad verification and app associatio
   }
   for (const [slug, mode] of Object.entries({
     "neon-pist": "runway",
+    "vapur-84": "ferry",
     "sinyal-avi": "drones",
     "yorunge-pilotu": "orbit",
     "kristal-labirent": "maze",
@@ -59,6 +60,11 @@ test("built web salon serves canonical games, ad verification and app associatio
   const { body: arcadeShell } = await read("/salon/arcade-shell.mjs");
   assert.match(arcadeShell, /\/arcade3d\/index\.html\?game=/);
   await read("/arcade3d/arcade.js");
+  assert.match(arcadeShell, /vapur-84\.html/);
+  assert.match(flutterArcade, /ferry\('Vapur 84', 'ferry', file: 'vapur-84\.html'\)/);
+  const { body: ferry } = await read("/arcade3d/vapur-84.html");
+  assert.match(ferry, /<title>Vapur 84/);
+  await read("/salon/vapur-84.jpg");
   for (const [legacy, canonical] of Object.entries({
     penalti: "penalti-antrenmani",
     frikik: "frikik-ustasi",

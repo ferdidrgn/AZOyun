@@ -915,3 +915,5 @@ h2 {
   .arcade-frame { height: 66vh; min-height: 460px; }
   .arcade-page-footer { align-items: flex-start; flex-direction: column; }
 }
+
+.ferry-cover { display: block; width: 100%; height: clamp(112px, 13vw, 205px); object-fit: cover; object-position: 78% center; }

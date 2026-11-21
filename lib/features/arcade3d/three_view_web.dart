@@ -2,10 +2,11 @@ import 'package:flutter/widgets.dart';
 import 'package:web/web.dart' as web;
 
 class ThreeView extends StatelessWidget {
-  const ThreeView({super.key, required this.game, required this.title});
+  const ThreeView({super.key, required this.game, required this.title, required this.file});
 
   final String game;
   final String title;
+  final String file;
 
   @override
   Widget build(BuildContext context) => HtmlElementView.fromTagName(
@@ -16,7 +17,7 @@ class ThreeView extends StatelessWidget {
           frame.style.border = '0';
           frame.style.width = '100%';
           frame.style.height = '100%';
-          frame.src = 'assets/assets/arcade3d/index.html?game=$game';
+          frame.src = 'assets/assets/arcade3d/$file?game=$game';
         },
       );
 }

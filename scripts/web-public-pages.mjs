@@ -38,7 +38,7 @@ export async function writePublicPages(input, output) {
   const template = await readFile(new URL("index.html", input), "utf8");
   const allGames = {
     ...Object.fromEntries(Object.entries(classics).map(([id, game]) => [id, game.slice(0, 3)])),
-    ...Object.fromEntries(Object.entries(arcadeGames).map(([id, game]) => [id, [game.title, game.description, "3D Arcade", game.mode, game.image]])),
+    ...Object.fromEntries(Object.entries(arcadeGames).map(([id, game]) => [id, [game.title, game.description, game.category ?? "3D Arcade", game.mode, game.image]])),
     ...extras,
   };
   const total = Object.keys(allGames).length;

@@ -319,8 +319,13 @@ class _QuickGamesTab extends StatelessWidget {
       ),
       const SizedBox(height: 26),
 
-      _sectionHeader('3D OYUNLAR'),
+      _sectionHeader('ARCADE OYUNLAR'),
       _grid(context, [
+        _QuickTile(
+          emoji: '⛴️', title: ThreeArcadeGame.ferry.title,
+          subtitle: 'Boğaz’da bilet topla · 60 saniye', gradient: _arcadeGrad,
+          onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.ferry)),
+        ),
         _QuickTile(
           emoji: '🏎️', title: ThreeArcadeGame.runway.title,
           subtitle: 'Engellerden kaç · Enerji topla', gradient: _arcadeGrad,

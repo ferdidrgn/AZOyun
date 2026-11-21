@@ -1,5 +1,5 @@
 const supportedModes = new Set([
-  "runway", "drones", "orbit", "maze", "bowling", "freeKick", "penalty",
+  "runway", "drones", "orbit", "maze", "bowling", "freeKick", "penalty", "ferry",
 ]);
 
 export function openArcade(main, mode, title) {
@@ -14,6 +14,8 @@ export function openArcade(main, mode, title) {
   frame.title = title || "3D Arcade oyunu";
   frame.loading = "eager";
   frame.allow = "fullscreen";
-  frame.src = "/arcade3d/index.html?game=" + encodeURIComponent(mode);
+  frame.src = mode === "ferry"
+    ? "/arcade3d/vapur-84.html"
+    : "/arcade3d/index.html?game=" + encodeURIComponent(mode);
   main.querySelector(".arcade-shell").replaceChildren(frame);
 }
