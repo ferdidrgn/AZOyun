@@ -16,7 +16,7 @@ Bu dosya oyun başlıklarının benzerliğini, kural kodunun ortak olduğu anlam
 | Web anahtarı | Flutter kimliği / ekranı | Durum |
 | --- | --- | --- |
 | `xox` | `tictactoe` / `tic_tac_toe_screen.dart` | Aynı kural vektörleriyle denetleniyor |
-| `dortlu` | `connect4` / `connect_four_screen.dart` | Paralel kural kodu; sonraki ortak vektör adayı |
+| `dortlu` | `connect4` / `connect_four_screen.dart` | Yatay/dikey/çapraz kazanma çizgileri ve en alt boş hücre ortak senaryolara bağlandı |
 | `nim` | `nim` / `nim_screen.dart` | Dört yığın, hamle sınırları ve son taş kazanımı ortak senaryolara bağlandı |
 | `reversi` | `reversi` / `reversi_screen.dart` | Paralel kural kodu; hamle/geçiş durumları ayrıca eşlenecek |
 | `noktalar` | `dotsboxes` / `dots_boxes_screen.dart` | Paralel kural kodu |

@@ -1,4 +1,5 @@
 import { classics } from "./classic-catalog.mjs";
+import { connectFourDropRow, connectFourOutcome } from "./connect-four-rules.mjs";
 import { nimApplyMove } from "./nim-rules.mjs";
 import { ticTacToeOutcome } from "./tic-tac-toe-rules.mjs";
 
@@ -81,25 +82,8 @@ function lineGame({ paint, surface }, connect) {
         const outcome = ticTacToeOutcome(board);
         for (const cell of outcome.winningLine ?? []) winCells.add(cell);
       } else {
-        for (let index = 0; index < board.length; index++) {
-          const mark = board[index];
-          if (!mark) continue;
-          const row = Math.floor(index / width);
-          const column = index % width;
-          for (const [dr, dc] of [[1, 0], [0, 1], [1, 1], [1, -1]]) {
-            const line = [index];
-            for (const sign of [-1, 1]) {
-              let r = row + dr * sign;
-              let c = column + dc * sign;
-              while (r >= 0 && r < height && c >= 0 && c < width && board[r * width + c] === mark) {
-                line.push(r * width + c);
-                r += dr * sign;
-                c += dc * sign;
-              }
-            }
-            if (line.length >= 4) for (const cell of line) winCells.add(cell);
-          }
-        }
+        const outcome = connectFourOutcome(board);
+        for (const cell of outcome.winningLine ?? []) winCells.add(cell);
       }
     }
     const piece = (mark, index) => {
@@ -139,12 +123,9 @@ function lineGame({ paint, surface }, connect) {
     if (done) return;
     let index = Number(move);
     if (connect) {
-      for (let row = height - 1; row >= 0; row--) {
-        if (!board[row * width + index]) {
-          index += row * width;
-          break;
-        }
-      }
+      const row = connectFourDropRow(board, index);
+      if (row === null) return;
+      index += row * width;
     }
     if (board[index]) return;
     const mark = (board[index] = marks[turn]);
@@ -161,34 +142,12 @@ function lineGame({ paint, surface }, connect) {
       turn ^= 1;
       return render();
     }
-    const row = Math.floor(index / width);
-    const column = index % width;
-    const run = (dr, dc) => {
-      let length = 0;
-      for (
-        let r = row + dr, c = column + dc;
-        r >= 0 &&
-        r < height &&
-        c >= 0 &&
-        c < width &&
-        board[r * width + c] === mark;
-        r += dr, c += dc
-      )
-        length++;
-      return length;
-    };
-    if (
-      [
-        [1, 0],
-        [0, 1],
-        [1, 1],
-        [1, -1],
-      ].some(([dr, dc]) => 1 + run(dr, dc) + run(-dr, -dc) >= (connect ? 4 : 3))
-    ) {
+    const outcome = connectFourOutcome(board);
+    if (outcome.winner) {
       done = true;
       return render(mark + " kazandı.");
     }
-    if (board.every(Boolean)) {
+    if (outcome.draw) {
       done = true;
       return render("Berabere.");
     }

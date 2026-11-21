@@ -1,0 +1,48 @@
+{
+  "contractVersion": 1,
+  "gameId": "connect4",
+  "rows": 6,
+  "columns": 7,
+  "cases": [
+    {
+      "name": "yatay R galibiyeti",
+      "board": [".......", ".......", ".......", ".......", ".......", "RRRR..."],
+      "winner": "R",
+      "winningLine": [35, 36, 37, 38],
+      "draw": false
+    },
+    {
+      "name": "dikey Y galibiyeti",
+      "board": ["......Y", "......Y", "......Y", "......Y", ".......", "......."],
+      "winner": "Y",
+      "winningLine": [6, 13, 20, 27],
+      "draw": false
+    },
+    {
+      "name": "sağ aşağı çapraz R galibiyeti",
+      "board": [".......", ".......", ".R.....", "..R....", "...R...", "....R.."],
+      "winner": "R",
+      "winningLine": [15, 23, 31, 39],
+      "draw": false
+    },
+    {
+      "name": "sol aşağı çapraz Y galibiyeti",
+      "board": [".......", ".......", ".....Y.", "....Y..", "...Y...", "..Y...."],
+      "winner": "Y",
+      "winningLine": [19, 25, 31, 37],
+      "draw": false
+    },
+    {
+      "name": "açık ve kazanan olmayan tahta",
+      "board": ["RYRYRYR", "YRYRYRY", ".......", ".......", ".......", "......."],
+      "winner": null,
+      "winningLine": null,
+      "draw": false
+    }
+  ],
+  "dropCases": [
+    { "name": "boş sütunda alta bırak", "board": [".......", ".......", ".......", ".......", ".......", "......."], "column": 3, "row": 5 },
+    { "name": "dolu kısmi sütunda sıradaki boşluğu bul", "board": [".......", ".......", ".......", "R......", "Y......", "R......"], "column": 0, "row": 2 },
+    { "name": "dolu sütuna hamleyi reddet", "board": ["R......", "Y......", "R......", "Y......", "R......", "Y......"], "column": 0, "row": null }
+  ]
+}

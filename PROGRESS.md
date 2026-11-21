@@ -14,7 +14,8 @@
 - [x] Web'deki eski Penaltı/Frikik quiz kartlarını kaldır; önceki URL'leri aynı 3D arcade oyun sayfalarına bağla, katalogda aynı adlı çift oyun gösterme.
 - [x] XOX için ortak JSON kural vektörleri oluştur; Dart ve JavaScript motorları kazanan çizgisi, galibiyet ve beraberlik sonuçlarını bu sözleşmeye göre hesaplıyor.
 - [x] Nim başlangıç yığınları Android ve web'de `[3, 5, 7, 9]` olarak eşitlendi; taş alma sınırları ve son taşla bitiş için ortak geçerli/geçersiz hamle senaryoları eklendi.
-- [ ] Dörtlü Diz ile devam et; sonraki dalgalarda 2048, Yılan ve zamanlı oyunların kural/sonuç vektörlerini ekle.
+- [x] Dörtlü Diz yatay/dikey/çapraz galibiyet ve sütundaki en alt boş yeri Flutter ve web'de ortak test vektörlerine bağlandı.
+- [ ] 2048 ile devam et; sonraki dalgalarda Yılan ve zamanlı oyunların kural/sonuç vektörlerini ekle.
 - [ ] Aile Masası ve çevrimiçi oyunlarda Android/web istemcileri ile oda sunucusunu temsilî oda, hamle, kopma/yeniden bağlanma ve sonuç senaryolarıyla eşle.
 - [x] İlk HTML/CSS oyun kabuğu içinde ortak Three.js motoru gömüldü. Gerçek reklam gösterimi `WEB_ADS_ENABLED` kapalıyken devre dışı kalır; açılınca reklam betiği web sayfasında çalışır.
 - [x] CI ayrımı doğrulandı: Flutter Android test/AAB akışı `.github/workflows/play-store-deploy.yml`, statik HTML/CSS/JS CI/yayın akışı `.github/workflows/firebase-hosting-deploy.yml` içinde. Web derleyicisi yalnızca `web/` ile ortak arcade varlıklarını `build/salon` içine alır; Flutter Web üretimi yoktur.

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/quickplay/quickplay.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import 'connect_four_rules.dart';
 
 class ConnectFourLobbyScreen extends StatelessWidget {
   const ConnectFourLobbyScreen({super.key});
@@ -33,8 +34,8 @@ class ConnectFourGameScreen extends StatefulWidget {
 }
 
 class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
-  static const _rows = 6;
-  static const _cols = 7;
+  static const _rows = connectFourRows;
+  static const _cols = connectFourColumns;
   static const _colWeights = [3, 4, 5, 7, 5, 4, 3];
 
   late List<List<String?>> _board;
@@ -45,7 +46,8 @@ class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
 
   QPPlayer get _current => widget.players[_turn];
   String _mark(int idx) => idx == 0 ? 'R' : 'Y';
-  Color _color(String mark) => mark == 'R' ? AZColors.redDk : AZColors.accentGoldSoft;
+  Color _color(String mark) =>
+      mark == 'R' ? AZColors.redDk : AZColors.accentGoldSoft;
 
   @override
   void initState() {
@@ -62,28 +64,14 @@ class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
     _maybeLetAIPlay();
   }
 
-  int? _dropRow(List<List<String?>> b, int col) {
-    for (var r = _rows - 1; r >= 0; r--) {
-      if (b[r][col] == null) return r;
-    }
-    return null;
-  }
+  int? _dropRow(List<List<String?>> b, int col) =>
+      connectFourDropRow(flattenConnectFourBoard(b), col);
 
-  String? _checkWinner(List<List<String?>> b) {
-    for (var r = 0; r < _rows; r++) {
-      for (var c = 0; c < _cols; c++) {
-        final v = b[r][c];
-        if (v == null) continue;
-        if (c + 3 < _cols && v == b[r][c + 1] && v == b[r][c + 2] && v == b[r][c + 3]) return v;
-        if (r + 3 < _rows && v == b[r + 1][c] && v == b[r + 2][c] && v == b[r + 3][c]) return v;
-        if (r + 3 < _rows && c + 3 < _cols && v == b[r + 1][c + 1] && v == b[r + 2][c + 2] && v == b[r + 3][c + 3]) return v;
-        if (r + 3 < _rows && c - 3 >= 0 && v == b[r + 1][c - 1] && v == b[r + 2][c - 2] && v == b[r + 3][c - 3]) return v;
-      }
-    }
-    return null;
-  }
+  String? _checkWinner(List<List<String?>> b) =>
+      connectFourOutcome(flattenConnectFourBoard(b)).winner;
 
-  bool _isFull(List<List<String?>> b) => b[0].every((c) => c != null);
+  bool _isFull(List<List<String?>> b) =>
+      connectFourOutcome(flattenConnectFourBoard(b)).draw;
 
   Future<void> _drop(int col) async {
     if (_busy || _winnerMark != null) return;
@@ -123,8 +111,10 @@ class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
     });
   }
 
-  List<int> _validColumns(List<List<String?>> b) =>
-      [for (var c = 0; c < _cols; c++) if (b[0][c] == null) c];
+  List<int> _validColumns(List<List<String?>> b) => [
+        for (var c = 0; c < _cols; c++)
+          if (b[0][c] == null) c
+      ];
 
   int _pickAiColumn() {
     final me = _mark(_turn);
@@ -185,7 +175,8 @@ class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
       context,
       gameId: 'connect4',
       resultTitle: draw ? 'Berabere! 🤝' : '${winner!.name} kazandı! 🎉',
-      resultMessage: draw ? 'Tahta doldu, kazanan yok.' : '${winner!.name} 4\'lü yaptı!',
+      resultMessage:
+          draw ? 'Tahta doldu, kazanan yok.' : '${winner!.name} 4\'lü yaptı!',
       humanWon: !draw && !winner!.isAI,
       onRematch: _reset,
     );
@@ -206,7 +197,10 @@ class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
                   ? 'Oyun bitti'
                   : '${_current.name} sırası',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16),
             ),
           ),
           const SizedBox(height: 16),
@@ -215,9 +209,10 @@ class _ConnectFourGameScreenState extends State<ConnectFourGameScreen> {
               for (var c = 0; c < _cols; c++)
                 Expanded(
                   child: IconButton(
-                    onPressed: (_busy || _winnerMark != null || _board[0][c] != null)
-                        ? null
-                        : () => _drop(c),
+                    onPressed:
+                        (_busy || _winnerMark != null || _board[0][c] != null)
+                            ? null
+                            : () => _drop(c),
                     icon: const Icon(Icons.arrow_downward_rounded),
                     color: Colors.white,
                   ),
@@ -274,8 +269,8 @@ class _ConnectFourBoardPainter extends CustomPainter {
     // changing the underlying row/column mapping or any game rule.
     Offset project(double u, double v) {
       final taper = .035 * (1 - v);
-      return Offset(w * (.045 + taper + u * (.91 - taper * 2)),
-          h * (.035 + v * .91));
+      return Offset(
+          w * (.045 + taper + u * (.91 - taper * 2)), h * (.035 + v * .91));
     }
 
     Path boardPath(double inset, {double drop = 0}) {
