@@ -10,6 +10,7 @@ import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/theme/az_theme.dart';
 import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/banner_ad_widget.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -117,126 +118,55 @@ class _RacingLobbyState extends State<RacingLobbyScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => AZGradientScaffold(
-    gradient: const LinearGradient(
-      colors: [Color(0xFF3A4356), Color(0xFF232B3A)],
-      begin: Alignment.topLeft, end: Alignment.bottomRight,
-    ),
-    child: Column(children: [
-      Expanded(child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(children: [
-          Align(alignment: Alignment.centerLeft,
-              child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context))),
-          const Text('🏁', style: TextStyle(fontSize: 64)),
-          const SizedBox(height: 8),
-          const Text('ARABA YARIŞI', style: TextStyle(color: Colors.white, fontSize: 26,
-              fontWeight: FontWeight.bold, letterSpacing: 2)),
-          const Text('2-4 Oyuncu · 3 Tur · Üstten görünüş',
-              style: TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 20),
-          // Araba seçimi
-          const Text('ARABANIZI SEÇİN', style: TextStyle(color: Colors.white70,
-              fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
-          Row(mainAxisAlignment: MainAxisAlignment.center,
-            children: _cars.map((c) {
-              final sel = c.id == _car.id;
-              return GestureDetector(
-                onTap: () => setState(() => _car = c),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.symmetric(horizontal: 6),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: sel ? c.color.withAlpha(180) : Colors.white12,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: sel ? Colors.white : Colors.white24, width: sel ? 2 : 1),
-                  ),
-                  child: Column(children: [
-                    Text(c.emoji, style: const TextStyle(fontSize: 28)),
-                    Text(c.name, style: const TextStyle(color: Colors.white, fontSize: 11,
-                        fontWeight: FontWeight.bold)),
-                  ]),
+  Widget build(BuildContext context) => AZOnlineLobby(
+        title: 'Araba Yarışı',
+        icon: Icons.sports_score_rounded,
+        summary: '2–4 oyuncu · 3 tur · Üstten görünüş',
+        instructions:
+            'Gazı basılı tutup aracı hızlandır, sol ve sağ kontrollerle dön. Kontrol noktalarını sırayla geç; turuncu ışıklarda drift bonusu kazan.',
+        playerName: _name,
+        codeController: _codeCtrl,
+        loading: _loading,
+        onRename: _ask,
+        onCreate: _create,
+        onJoin: _join,
+        footer: const AdaptiveBannerAdWidget(),
+        setupOptions: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Arabanı seç',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _cars
+                      .map(
+                        (car) => ChoiceChip(
+                          label: Text('${car.emoji} ${car.name}'),
+                          selected: car.id == _car.id,
+                          onSelected: _loading
+                              ? null
+                              : (_) => setState(() => _car = car),
+                        ),
+                      )
+                      .toList(),
                 ),
-              );
-            }).toList(),
+                const SizedBox(height: 16),
+                Text('${_car.emoji} ${_car.name}',
+                    style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                _StatBarW('🏎️ Hız', _car.maxSpeed, AZColors.red),
+                _StatBarW('⚡ İvme', _car.acceleration, AZColors.orange),
+                _StatBarW('🎮 Kontrol', _car.handling, AZColors.green),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          // Seçili araba stats
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: _car.color.withAlpha(60),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _car.color.withAlpha(120))),
-            child: Column(children: [
-              Text('${_car.emoji} ${_car.name}',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 8),
-              _StatBarW('🏎️ Hız', _car.maxSpeed, Colors.red),
-              _StatBarW('⚡ İvme', _car.acceleration, Colors.orange),
-              _StatBarW('🎮 Kontrol', _car.handling, Colors.green),
-            ]),
-          ),
-          const SizedBox(height: 20),
-          GestureDetector(onTap: _ask, child: AZFrostCard(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.person_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Text(_name ?? 'Ad seç', style: const TextStyle(color: Colors.white,
-                  fontSize: 15, fontWeight: FontWeight.bold)),
-            ]),
-          )),
-          const SizedBox(height: 20),
-          AZButton(label: 'ODA OLUŞTUR', icon: Icons.add_circle_outline_rounded,
-              onPressed: _create, color: AZColors.redDk, loading: _loading, width: 280),
-          const SizedBox(height: 20),
-          const Text('— veya —', style: TextStyle(color: Colors.white54)),
-          const SizedBox(height: 20),
-          AZFrostCard(child: Column(children: [
-            AZCodeField(controller: _codeCtrl),
-            const SizedBox(height: 14),
-            AZJoinButton(onPressed: _join, loading: _loading),
-          ])),
-          const SizedBox(height: 20),
-          AZFrostCard(opacity: 0.1, child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('🏁 Nasıl Oynanır?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              Text('• Ekrana basılı tut = gaz\n'
-                  '• Sol/Sağ butonlarla dön\n'
-                  '• Checkpoint\'leri sırayla geç\n'
-                  '• 3 turu bitiren kazanır!\n'
-                  '• Turuncu ışık = drift bonusu ✨',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6)),
-            ],
-          )),
-          const SizedBox(height: 16),
-        ]),
-      )),
-      const AdaptiveBannerAdWidget(),
-    ]),
-  );
-}
-
-class _StatBarW extends StatelessWidget {
-  const _StatBarW(this.label, this.val, this.color);
-  final String label; final double val; final Color color;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: Row(children: [
-      SizedBox(width: 70, child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12))),
-      Expanded(child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: LinearProgressIndicator(value: val, backgroundColor: Colors.white12,
-            valueColor: AlwaysStoppedAnimation(color), minHeight: 10),
-      )),
-    ]),
-  );
+        ),
+      );
 }
 
 // ═══════════════════════════════════════════════════════════════════
