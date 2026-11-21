@@ -31,6 +31,15 @@ import {
 } from "./jump-dash-rules.mjs";
 import { nimApplyMove } from "./nim-rules.mjs";
 import {
+  REVERSI_BLACK,
+  REVERSI_EMPTY,
+  reversiApplyMove,
+  reversiInitialBoard,
+  reversiLegalMoves,
+  reversiNextSide,
+  reversiOutcome,
+} from "./reversi-rules.mjs";
+import {
   SCUBA_BOOST_PACE,
   SCUBA_DIVER_HOME_Y,
   SCUBA_ENEMY_SPAWN_SECONDS,
@@ -62,9 +71,6 @@ const btn = (text, action, extra = "") =>
 const grid = (count, content, type = "") =>
   `<div class="classic-grid ${type}" style="--columns:${count}">${content}</div>`;
 const formatWord = (text) => text.trim().toLocaleUpperCase("tr");
-const directions = [-1, 0, 1].flatMap((row) =>
-  [-1, 0, 1].filter((column) => row || column).map((column) => [row, column]),
-);
 
 export function openClassic(main, id) {
   const [name, description, mode] = classics[id];
@@ -227,37 +233,12 @@ function nim({ paint, surface }) {
   });
 }
 function reversi({ paint, surface }) {
-  const board = Array(64).fill(0);
-  board[27] = board[36] = 2;
-  board[28] = board[35] = 1;
+  let board = reversiInitialBoard();
   let turn = 1;
-  const flips = (index, side) => {
-    if (board[index]) return [];
-    const row = index >> 3,
-      column = index % 8;
-    return directions.flatMap(([dr, dc]) => {
-      let r = row + dr,
-        c = column + dc;
-      const line = [];
-      while (
-        r >= 0 &&
-        r < 8 &&
-        c >= 0 &&
-        c < 8 &&
-        board[r * 8 + c] === 3 - side
-      ) {
-        line.push(r * 8 + c);
-        r += dr;
-        c += dc;
-      }
-      return r >= 0 && r < 8 && c >= 0 && c < 8 && board[r * 8 + c] === side
-        ? line
-        : [];
-    });
-  };
   const render = (message = "Sıra " + (turn === 1 ? "siyah" : "beyaz")) => {
+    const legalMoves = turn === REVERSI_EMPTY ? [] : reversiLegalMoves(board, turn);
     const cells = board.map((side, index) => {
-      const legal = !side && turn && flips(index, turn).length > 0;
+      const legal = side === REVERSI_EMPTY && legalMoves.includes(index);
       const disk = side
         ? `<span aria-hidden="true" style="display:block;width:73%;aspect-ratio:1;border-radius:50%;position:relative;background:${side === 1 ? "radial-gradient(circle at 30% 22%,#59616a 0%,#272d33 34%,#0b0f13 78%,#030507 100%)" : "radial-gradient(circle at 30% 22%,#ffffff 0%,#f4eedc 34%,#c9c0a9 78%,#908875 100%)"};border:1px solid ${side === 1 ? "rgba(255,255,255,.24)" : "rgba(68,57,36,.5)"};box-shadow:inset 0 2px 2px rgba(255,255,255,.36),inset 0 -4px 5px rgba(0,0,0,.28),0 3px 0 ${side === 1 ? "#05080a" : "#827b6b"},0 6px 8px rgba(0,0,0,.42);transform:translateY(-2px)"><span style="position:absolute;left:21%;top:15%;width:22%;height:12%;border-radius:50%;background:rgba(255,255,255,.62);filter:blur(1px)"></span></span>`
         : legal
@@ -275,17 +256,19 @@ function reversi({ paint, surface }) {
   render();
   return click(surface, (value) => {
     const index = Number(value);
-    const captured = flips(index, turn);
-    if (!captured.length) return;
-    for (const cell of [index, ...captured]) board[cell] = turn;
-    if (board.some((_, n) => flips(n, 3 - turn).length)) turn = 3 - turn;
-    else if (!board.some((_, n) => flips(n, turn).length)) {
-      const dark = board.filter((cell) => cell === 1).length;
-      const light = board.filter((cell) => cell === 2).length;
-      turn = 0;
+    const side = turn;
+    const result = reversiApplyMove(board, index, side);
+    if (!result) return;
+    board = result.board;
+    turn = reversiNextSide(board, side);
+    if (turn === REVERSI_EMPTY) {
+      const outcome = reversiOutcome(board);
       return render(
-        `Siyah ${dark}, beyaz ${light}. ${dark === light ? "Berabere." : dark > light ? "Siyah kazandı." : "Beyaz kazandı."}`,
+        `Siyah ${outcome.black}, beyaz ${outcome.white}. ${outcome.winner === REVERSI_EMPTY ? "Berabere." : outcome.winner === REVERSI_BLACK ? "Siyah kazandı." : "Beyaz kazandı."}`,
       );
+    }
+    if (turn === side) {
+      return render(`${side === REVERSI_BLACK ? "Beyaz" : "Siyah"} hamle yapamıyor; ${side === REVERSI_BLACK ? "siyah" : "beyaz"} devam ediyor.`);
     }
     render();
   });
