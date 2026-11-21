@@ -40,6 +40,8 @@
 - [x] Ayarlarda seçili dil adı bütün mevcut diller için doğru gösteriliyor; bildirim izni durumu görünür, izin sonrası sistem ayarlarına yönlendirme ve uygulamaya dönünce durumu yenileme var. Play Games bağlantı durumu ekrana anlık yansıyor.
 - [x] Gizlilik politikası ve kullanım şartları ekranlarının projede mevcut olduğu doğrulandı; tema metin görünümüne uygulanıyor.
 - [x] Ana oyun kataloğundaki sabit eski yarış/zeka/dama/dövüş/sosyal kart gradyanları ortak oyun paletine bağlandı. Adam Asmaca lobi ve oda ekranları da aynı canlı kırmızı tema tokenlarını kullanıyor.
+- [x] Adam Asmaca lobisi ortak AZOnlineLobby düzenine taşındı; ortak tema yüzeyi, oyuncu adı, oda oluşturma/katılma düğmeleri ve yükleme kilidi kullanılıyor. Ortak lobi düğmeleri erişilebilir dokunma yüksekliğine çıkarıldı.
+- [x] Pişti lobisi de aynı ortak düzene taşındı; Oyuncu/Ortak Masa seçimi tema uyumlu, kumandayla seçilebilir Material 3 segmented control olarak kaldı.
 - [ ] Oyun dışı sayfaların kalan sabit renk ve yazı stillerini tek tek gözden geçir; ortak lobby/HUD/sonuç/tekli oyun yüzeylerini aynı tasarım sistemine taşı.
 - [ ] Telefon ve TV’de açık/koyu tema, büyük yazı, erişilebilir dokunma hedefleri ve kumandayla gezinmeyi gerçek cihaz/emülatörde doğrula.
 - [ ] Play Games’i Play Console’daki `com.ferdidrgn.azgame` kaydı ve Play App Signing SHA-1 ile eşleştir; mağaza test kanalında giriş ve Saved Games geri yüklemeyi doğrula. Hesap/sertifika ayarına henüz erişilmedi.
