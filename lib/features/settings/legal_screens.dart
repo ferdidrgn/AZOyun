@@ -18,33 +18,42 @@ class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => _LegalScreen(title: t('privacy_title'), body: t('privacy_body'));
+  Widget build(BuildContext context) =>
+      _LegalScreen(title: t('privacy_title'), body: t('privacy_body'));
 }
 
 class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => _LegalScreen(title: t('terms_title'), body: t('terms_body'));
+  Widget build(BuildContext context) =>
+      _LegalScreen(title: t('terms_title'), body: t('terms_body'));
 }
 
 class _LegalScreen extends StatelessWidget {
   const _LegalScreen({required this.title, required this.body});
 
-  final String title, body;
+  final String title;
+  final String body;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(title)),
-    body: SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(body, style: const TextStyle(fontSize: 14, height: 1.7)),
-          const SizedBox(height: 24),
-        ],
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              body,
+              style: theme.textTheme.bodyLarge?.copyWith(height: 1.7),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

@@ -32,6 +32,15 @@
 - [x] Eski Penaltı/Frikik katalog beklentisi düzeltilince `cb26726` web CI ve Firebase Hosting yayını başarıyla tamamlandı: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44868220304).
 - [x] `9ac9fda` Android testleri/AAB iş akışı tamamlandı; Play'e yükleme adımı `The caller does not have permission` hatası verdi. Yeni ortak oyun değişiklikleri için sonraki Android CI bu akışı tekrar doğrulayacak: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44860486302).
 
+## 22 Kasım 2026 · Ayarlar ve erişilebilirlik ayrıntıları
+
+- [x] Ayarlardaki Play Games ve Premium başarı durumlarını ortak `AZColors.success` semantik rengine bağla.
+- [x] Dil seçimi durum göstergesini ortak başarı rengiyle eşle.
+- [x] Dil satırlarında seçili durum bilgisini ekran okuyucuya sun; kumanda/klavye odağını ve en az 48 dp dokunma alanını ekle.
+- [x] Tema tercihlerini erişilebilir seçili seçenekler olarak duyur; seçili tercihe kumanda/klavye başlangıç odağı ver.
+- [x] Özel tema renklerini etiketli, seçili durumu duyurulan ve 48 dp üzeri odaklanabilir seçeneklere dönüştür.
+- [x] Gizlilik ve kullanım şartlarında sabit yazı boyutu yerine Material 3 gövde tipografisini kullanarak sistem yazı ölçeklemesini koru.
+
 ## 21 Kasım 2026 · Tema, profil ve ayarlar
 
 - [x] Uygulama genelindeki Material 3 renk paleti daha oyun odaklı, futuristik elektrik moru ve parlak semantik aksanlara geçirildi. Açık/koyu yüzeyler ile özel renk paleti merkezileştirildi.
