@@ -18,7 +18,7 @@ Bu dosya oyun başlıklarının benzerliğini, kural kodunun ortak olduğu anlam
 | `xox` | `tictactoe` / `tic_tac_toe_screen.dart` | Aynı kural vektörleriyle denetleniyor |
 | `dortlu` | `connect4` / `connect_four_screen.dart` | Yatay/dikey/çapraz kazanma çizgileri ve en alt boş hücre ortak senaryolara bağlandı |
 | `nim` | `nim` / `nim_screen.dart` | Dört yığın, hamle sınırları ve son taş kazanımı ortak senaryolara bağlandı |
-| `reversi` | `reversi` / `reversi_screen.dart` | Paralel kural kodu; hamle/geçiş durumları ayrıca eşlenecek |
+| `reversi` | `reversi` / `reversi_screen.dart` | Açılış, yasal hamle, taş çevirme, zorunlu pas ve oyun sonu skoru aynı JSON vektörleriyle Flutter/web testlerine bağlı |
 | `noktalar` | `dotsboxes` / `dots_boxes_screen.dart` | Paralel kural kodu |
 | `tkm` | `rps` / `rps_screen.dart` | Aynı oyun ailesi; tur/galibiyet sonucu eşlenecek |
 | `zar` | `diceparty` / `dice_party_screen.dart` | Aynı oyun ailesi; zar ve puan kuralları karşılaştırılacak |
@@ -54,7 +54,6 @@ Flutter çevrimiçi kimlikleri `racing`, `impostor`, `golf`, `word`, `dama`, `ok
 
 ## Sonraki eşitleme sırası
 
-1. XOX ortak kural vektörlerini Flutter ve web'de çalıştır.
-2. Dörtlü Diz ve Nim için sıra/hamle/bitiş vektörlerini ekle.
-3. 2048, yılan ve mini oyunlarda üretim kuralı ile skor/result sözleşmesini karşılaştır.
-4. Ortak Firebase oyunlarında oda revizyonu, tekrar bağlanma ve sonuç durumlarını Android/web arasında temsilî senaryolarla doğrula.
+1. Oda API'sinde revizyon, kopma/yeniden bağlanma, sonuç ve rövanş akışını temsili Android/web senaryolarıyla doğrula.
+2. Dörtlü Diz, Nim, hızlı oyunlar ve zamanlı mini oyunlarda üretim kuralını ortak vektörlerle karşılaştır.
+3. Katalogda kalan aynı adlı web/Flutter oyunlarını ancak gerçek kural eşitliğini doğruladıktan sonra işaretle.
