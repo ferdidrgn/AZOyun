@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
+import 'wear_room_snapshot.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GAME PATHS — tüm oyunlar
@@ -232,11 +233,24 @@ class RoomService {
   Stream<Map<String, dynamic>?> watchRoom({
     required String gamePath,
     required String roomId,
-  }) =>
-      _ref(gamePath, roomId).onValue.map((e) {
-        if (e.snapshot.value == null) return null;
-        return Map<String, dynamic>.from(e.snapshot.value as Map);
-      });
+  }) {
+    Map<String, dynamic>? previous;
+    var revision = 0;
+    return _ref(gamePath, roomId).onValue.map((event) {
+      if (event.snapshot.value == null) return null;
+      final current = Map<String, dynamic>.from(event.snapshot.value as Map);
+      final snapshot = WearRoomSnapshot.project(
+        gamePath: gamePath,
+        roomId: roomId,
+        room: current,
+        previous: previous,
+        revision: ++revision,
+      );
+      previous = current;
+      unawaited(WearRoomBridge.publish(snapshot));
+      return current;
+    });
+  }
 }
 
 class _RoomPresence {
