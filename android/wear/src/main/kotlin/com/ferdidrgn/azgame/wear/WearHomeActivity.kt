@@ -81,7 +81,7 @@ class WearHomeActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 
     override fun onDataChanged(events: DataEventBuffer) {
         events.forEach { event ->
-            if (event.type != DataClient.EVENT_TYPE_CHANGED ||
+            if (event.type != DataEvent.TYPE_CHANGED ||
                 event.dataItem.uri.path != "/azoyun/room/summary"
             ) return@forEach
             room = readWearRoom(DataMapItem.fromDataItem(event.dataItem).dataMap)
@@ -125,7 +125,7 @@ class WearHomeActivity : ComponentActivity(), DataClient.OnDataChangedListener {
 class WearRoomListenerService : com.google.android.gms.wearable.WearableListenerService() {
     override fun onDataChanged(events: DataEventBuffer) {
         events.forEach { event ->
-            if (event.type != DataClient.EVENT_TYPE_CHANGED ||
+            if (event.type != DataEvent.TYPE_CHANGED ||
                 event.dataItem.uri.path != "/azoyun/room/summary"
             ) return@forEach
             val map = DataMapItem.fromDataItem(event.dataItem).dataMap
