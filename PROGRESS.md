@@ -15,7 +15,8 @@
 - [x] İlk HTML/CSS oyun kabuğu içinde ortak Three.js motoru gömüldü. Gerçek reklam gösterimi `WEB_ADS_ENABLED` kapalıyken devre dışı kalır; açılınca reklam betiği web sayfasında çalışır.
 - [ ] `main` push CI'sında Flutter Android test/build ile statik HTML/CSS/JS derleme/test/deploy işlerini ayrı ve görünür tut. Flutter Web çıktısının Firebase Hosting'e yanlışlıkla yüklenmediğini otomatik doğrula.
 - [ ] Android, web ve oda sunucusunu temsili oyunlarda aynı oda/hamle/sonuç senaryolarıyla doğrula; ardından diğer oyunlara dalgalar halinde yay.
-- [ ] Bu değişikliklerin `main` push CI/web yayını ve Android derlemesini tamamlamasını doğrula. Yerel Windows ortamı entegrasyon testinin localhost sunucusuna bağlanmasını engelledi (`EACCES 127.0.0.1`); GitHub Actions doğrulaması bekliyor.
+- [x] `46fc3af` için web CI, yayın dosyası doğrulaması ve Firebase Hosting deploy'u başarılı: [GitHub Actions](https://github.com/ferdidrgn/AZOyun/actions/runs/44860597839). Windows'ta yerel entegrasyon testi localhost sunucusuna bağlanamadı (`EACCES 127.0.0.1`); aynı test GitHub Actions'ta geçti.
+- [ ] `9ac9fda` Android AAB derleme/yayın iş akışını tamamla; dahili Play yüklemesini kontrol et. Önceki AAB Play'e `The caller does not have permission` yanıtıyla yüklenemedi.
 
 ## 21 Kasım 2026 · Tema, profil ve ayarlar
 
