@@ -89,8 +89,9 @@ jobs:
             curl -fsS --max-time 20 "${FAMILY_API_URL%/}/api/family/health" | jq -e '.ok == true'
           fi
 
-      # Publish the API before applying its Hosting rewrite; a failed API deploy stops this job.
+      # Keep static Hosting deploy independent from Functions permissions.
       - name: Firebase Aile Masası işlevini yayınla
+        id: family_api_deploy
         env:
           FIREBASE_SERVICE_ACCOUNT_AZOYUN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AZOYUN }}
         run: |
@@ -103,6 +104,8 @@ jobs:
           npx --yes firebase-tools@latest deploy --only functions:family-api --project azoyun-569b2 --non-interactive
 
       - name: Firebase Hosting'e yayınla
+        id: hosting_deploy
+        if: ${{ always() && !cancelled() }}
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -111,4 +114,5 @@ jobs:
           channelId: live
 
       - name: Firebase Aile Masası API sağlık kontrolü
+        if: ${{ steps.family_api_deploy.outcome == 'success' && steps.hosting_deploy.outcome == 'success' }}
         run: curl -fsS --max-time 20 https://azoyun.web.app/api/family/health | jq -e '.ok == true'
