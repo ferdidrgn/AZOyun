@@ -26,7 +26,7 @@ const escape = (value) =>
 const button = (type, label, value = "", primary = false) =>
   `<button type="button" class="button ${primary ? "primary" : "outline"}" data-action="${type}" data-value="${escape(value)}">${escape(label)}</button>`;
 const playerName = (room, index) => escape(room.players[index]?.name);
-const delay = 950;
+const delay = 1500;
 
 function endpoint(value) {
   let url;
@@ -139,8 +139,6 @@ export function openTable(main, params) {
     });
   }
   const showSetup = () => {
-    const serverField = `<details><summary>Sunucu ayarı</summary><label class="control">Masa sunucusu
-      <input name="server" type="url" inputmode="url" value="${escape(server)}" autocapitalize="off"></label></details>`;
     view.innerHTML = `<div class="room-layout solo-layout"><form class="surface stack" data-form="setup">
       <h2>${host ? "Oyunu seç" : "Koltuğunu al"}</h2>
       ${
@@ -161,7 +159,7 @@ export function openTable(main, params) {
         <label class="control">Masa kodu<input name="code" class="join-code" value="${escape(code)}" maxlength="6" spellcheck="false" autocapitalize="characters" required></label>
         <p class="quiet"><a href="/?profil" target="_blank" rel="noopener">Profil oluştur veya aç</a> · Tamamlanan masalardan XP kazan.</p>`
       }
-      <button class="button primary" type="submit">${host ? "Masa aç" : "Katıl"}</button>${serverField}
+      <button class="button primary" type="submit">${host ? "Masa aç" : "Katıl"}</button>
     </form></div>`;
   };
   const request = async (suffix, data, auth = token) => {
@@ -176,12 +174,12 @@ export function openTable(main, params) {
       signal: globalThis.AbortSignal?.timeout?.(7000),
     }).catch(() => {
       throw new Error(
-        "Sunucuya bağlanılamadı. Ağ bağlantısını ve sunucu adresini kontrol et.",
+        "Firebase oda hizmetine ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene.",
       );
     });
     if (!response.headers.get("content-type")?.includes("application/json")) {
       throw new Error(
-        "Aile Masası sunucusuna ulaşılamadı. Sunucu ayarını kontrol et.",
+        "Firebase Aile Masası henüz yayınlanmadı. Biraz sonra tekrar dene.",
       );
     }
     const result = await response.json();
@@ -246,7 +244,8 @@ export function openTable(main, params) {
     view.querySelector("button").focus();
   };
   async function connect(form) {
-    server = endpoint(form.get("server"));
+    const customServer = form.get("server");
+    if (customServer) server = endpoint(customServer);
     if (host) {
       currentGame = form.get("game");
       const created = await request("", { game: currentGame }, null);

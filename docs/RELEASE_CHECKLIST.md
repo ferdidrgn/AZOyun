@@ -11,17 +11,11 @@ Bu dosya 20 Kasım 2026 tarihinde kontrol edilen hesap durumunu ve cihazda tamam
 - Dokuz başarım yayınlandı. `hundred_games` için 100 Matches kimliği `CgkIxOrNg4kPEAIQEQ`, `ten_game_types` için Game Explorer kimliği `CgkIxOrNg4kPEAIQEg`. Kod varsayılanları gerçek kimlikleri kullanıyor; boş CI değişkenleri bu değerleri ezmiyor.
 - Oyun kodları main'e `77809cc`, QR telefon düzeltmesi `d8a3272` ile gönderildi. Web yayını başarılı; 19 API/web testi gerçek HTTP soketleriyle, beş temizlik testi ve 61 Flutter testi GitHub Linux CI'da geçti. Dahili AAB işi ayrıca izlenmeli.
 
-## HTTPS Aile Masası
+## Firebase Aile Masası
 
-Klasik Okey, 101, Pişti, Batak ve mobil Mahalleler Firebase Realtime Database odalarını kullanır. Kelime Tahtası, Gizli Rol ve tarayıcı masası, telefonlara özel veri gönderen `family-server` API'sini kullanır.
+Kelime Tahtası, Gizli Rol ve tarayıcı masaları Firebase Realtime Database'de saklanır; Firebase Cloud Functions oda hamlelerini ve gizli oyuncu görünümünü yönetir. Ayrı VPS kullanılmaz. Yayın adımları ve Spark/Blaze gereksinimi için [Firebase Aile Masası API yönergesine](FAMILY_TABLE.md#firebasede-aile-masasi-apisini-yayinlama) bak.
 
-1. `docs/FAMILY_TABLE.md` içindeki Docker Compose adımlarıyla kalıcı diski ve HTTPS'i olan tek sunucu örneğini yayınla. Örnek alan adını gerçek alan adıyla değiştir.
-2. PowerShell'de `Invoke-RestMethod https://GERCEK-ALAN-ADI/api/family/health` çalıştır. Sonuçta `ok` alanı `true` olmalı. HTML dönüyorsa o adreste API çalışmıyordur.
-3. GitHub deposunda **Settings → Secrets and variables → Actions → Variables → New repository variable** yolundan `FAMILY_API_URL` değişkenini yalnızca HTTPS kök adresiyle kaydet. Örneğin `https://masa.alanadiniz.com`. Sonuna `/api/family` ekleme.
-4. **Actions → CI ve web yayını → Run workflow → main** çalıştır. `deploy` işi başarılı olmalı.
-5. `https://azoyun.web.app/salon/family-api.json` dosyasında `origin` alanı gerçek API adresini göstermeli. Dosyayı tarayıcıda açarak kontrol et.
-6. Mağazadaki eski sürümde **Sunucu ayarı** alanına aynı HTTPS adresini yaz. Oda kur, başka bir ağdaki telefonla QR veya kod üzerinden katıl. Yeni sürümde Kelime Tahtası ve Gizli Rol menüleri bulunur.
-7. Sunucuyu yeniden başlat. Odanın, oyuncu koltuğunun ve profilin kalıcı dosyalardan geri geldiğini kontrol et.
+Yayın sonrası `https://azoyun.web.app/api/family/health` adresi `{"ok":true}` dönmeli. `FAMILY_API_URL` boş bırakılır; web ve uygulama API'ye kendi `azoyun.web.app` adreslerinden gider.
 
 ## Firebase temizliği
 

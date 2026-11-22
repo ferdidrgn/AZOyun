@@ -89,6 +89,18 @@ jobs:
             curl -fsS --max-time 20 "${FAMILY_API_URL%/}/api/family/health" | jq -e '.ok == true'
           fi
 
+      # Publish the API before applying its Hosting rewrite; a failed API deploy stops this job.
+      - name: Firebase Aile Masası işlevini yayınla
+        env:
+          FIREBASE_SERVICE_ACCOUNT_AZOYUN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AZOYUN }}
+        run: |
+          umask 077
+          credential_file="$RUNNER_TEMP/firebase-service-account.json"
+          trap 'rm -f "$credential_file"' EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_AZOYUN" > "$credential_file"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$credential_file" >> "$GITHUB_ENV"
+          npx --yes firebase-tools@latest deploy --only functions:family-api --project azoyun-569b2 --non-interactive
+
       - name: Firebase Hosting'e yayınla
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -96,3 +108,6 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AZOYUN }}
           projectId: azoyun-569b2
           channelId: live
+
+      - name: Firebase Aile Masası API sağlık kontrolü
+        run: curl -fsS --max-time 20 https://azoyun.web.app/api/family/health | jq -e '.ok == true'

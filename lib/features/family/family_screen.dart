@@ -74,7 +74,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
   final _server = TextEditingController(
     text: _configuredApi.isNotEmpty
         ? _configuredApi
-        : kIsWeb
+        : kIsWeb && Uri.base.origin.isNotEmpty
             ? Uri.base.origin
             : _publicSalon,
   );
@@ -89,7 +89,6 @@ class _FamilyScreenState extends State<FamilyScreen> {
   String? _error;
   bool _busy = false;
   bool _restoring = true;
-  bool _serverEdited = false;
   bool _polling = false;
   bool _pairs = false;
   int? _saleSquare;
@@ -113,12 +112,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (!mounted || _busy || _code != null) return;
-      if (!kIsWeb && _configuredApi.isEmpty) {
-        final stored = prefs.getString('az_family_server')?.trim();
-        final origin =
-            stored?.isNotEmpty == true ? stored! : await _publishedApi();
+      if (_configuredApi.isEmpty) {
+        final origin = await _publishedApi();
         if (!mounted) return;
-        if (!_serverEdited) _server.text = origin;
+        _server.text = origin;
       }
       final code = widget.initialCode ??
           (_host && widget.initialGame == null
@@ -201,7 +198,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
         .timeout(const Duration(seconds: 7));
     if (!(result.headers['content-type'] ?? '').contains('application/json')) {
       throw const FormatException(
-          'Aile Masası API’si bu adreste yanıt vermiyor. Sunucu ayarından çalışan HTTPS adresini kontrol et.');
+          'Firebase Aile Masası henüz yayına alınmadı. Biraz sonra tekrar dene.');
     }
     final data = jsonDecode(utf8.decode(result.bodyBytes));
     if (data is! Map<String, dynamic>)
@@ -288,7 +285,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
 
   void _beginPolling() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(milliseconds: 900), (_) {
+    _timer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
       if (!_busy) unawaited(_refresh());
     });
   }
@@ -335,9 +332,6 @@ class _FamilyScreenState extends State<FamilyScreen> {
       _code = data['code'] as String;
       _token = data['token'] as String;
       await prefs.setString(_sessionKey, _token!);
-      if (_serverEdited) {
-        await prefs.setString('az_family_server', _server.text.trim());
-      }
       if (_host)
         await prefs.setString(
             'az_family_last_host_${_server.text.trim()}', _code!);
@@ -521,20 +515,6 @@ class _FamilyScreenState extends State<FamilyScreen> {
             ),
           ],
           if (_busy) const LinearProgressIndicator(),
-          if (!kIsWeb && _configuredApi.isEmpty)
-            ExpansionTile(
-              title: const Text('Sunucu ayarı'),
-              children: [
-                TextField(
-                  controller: _server,
-                  enabled: !_busy,
-                  keyboardType: TextInputType.url,
-                  onChanged: (_) => _serverEdited = true,
-                  decoration: const InputDecoration(
-                      labelText: 'Masa sunucusu', hintText: 'https://…'),
-                ),
-              ],
-            ),
         ];
 
   Future<void> _openPlayerProfile() async {

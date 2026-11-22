@@ -25,6 +25,11 @@
       "source": "functions",
       "codebase": "legacy-rooms",
       "ignore": ["node_modules", ".git", "*.test.mjs"]
+    },
+    {
+      "source": "family-server",
+      "codebase": "family-api",
+      "ignore": ["node_modules", ".git", "*.test.mjs", "Dockerfile", "Dockerfile.dockerignore", "compose.yaml"]
     }
   ],
   "hosting": {
@@ -35,6 +40,10 @@
       "**/node_modules/**"
     ],
     "rewrites": [
+      {
+        "source": "/api/**",
+        "function": { "functionId": "familyApi", "region": "us-central1" }
+      },
       {
         "source": "/join/**",
         "destination": "/join/index.html"

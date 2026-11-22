@@ -1,6 +1,6 @@
 # Aile Masası kurulumu
 
-Güncel hesap durumu ve üretim kontrolleri [yayın kontrol dosyasında](RELEASE_CHECKLIST.md) tutulur. Kelime Tahtası ve Gizli Rol, oyuncuya özel API görünümüyle çalışır. **Masa → Aile Masası aç** menüsünden seçilir. Oyuncular QR veya **Masa → Kelime Tahtası / Gizli Rol → Odaya katıl** üzerinden bağlanır. Bu iki oyun için HTTPS Aile Masası API'si çalışıyor olmalı.
+Güncel hesap durumu ve üretim kontrolleri [yayın kontrol dosyasında](RELEASE_CHECKLIST.md) tutulur. Kelime Tahtası ve Gizli Rol, oyuncuya özel API görünümüyle çalışır. **Masa → Aile Masası aç** menüsünden seçilir. Oyuncular QR veya **Masa → Kelime Tahtası / Gizli Rol → Odaya katıl** üzerinden bağlanır. Üretimde bu API Firebase Cloud Functions üzerinden sunulur.
 
 ## Firebase üzerinden ortak ekran
 
@@ -45,17 +45,20 @@ Geliştirici Android emülatöründe `flutter build apk --debug --dart-define=FA
 - İnternetten erişim için HTTPS altında tek sunucu örneği kullan. `FAMILY_STATE_FILE` ve `PROGRESSION_STATE_FILE` için kalıcı, yazılabilir bir dizinde iki ayrı dosya seç. Ayar verilmezse ilgili veriler bellekte tutulur ve yeniden başlatmada kaybolur.
 - Son oyuncunun bağlantısı koptuğunda masa iki dakika boyunca yeniden bağlanmaya açık kalır. Sonuç ekranı bir dakika sonra silinir. TV ve izleyiciler oyuncusu kalmayan masanın ömrünü uzatmaz. Açık odalar için sekiz saatlik üst sınır vardır.
 - Salonun **Oyuncu profili ve sıralama** bölümünden profil oluştur. Bir maçı bitirince 1 XP, kazanınca 3 XP kazanılır. Günde ilk 10 tamamlanmış maç XP verir. Her 20 XP bir seviye kazandırır. Profil anahtarı, aynı sunucuda başka bir tarayıcıdan profili açmak veya mobil Aile Masası’na bağlamak için kullanılır. Anahtarı güvenli sakla.
-- Firebase Hosting ayrı kalacaksa GitHub depo değişkeni `FAMILY_API_URL` ile HTTPS sunucu adresini ve `FAMILY_WEB_URL` ile QR adresini tanımla. Sunucuda `FAMILY_ORIGINS` değişkenine izin verilen web adreslerini virgülle ayırarak gir. Eski Firebase oda yapısı Aile Masası'nın gizli verileri için kullanılmaz.
+- Yerel Docker geliştirmesinde Firebase Hosting ayrı kalabilir; `FAMILY_API_URL` ve `FAMILY_WEB_URL` değişkenleri yalnızca bu özel geliştirme sunucusu için kullanılır. Üretimde Aile Masası Cloud Functions ve Realtime Database'i kullanır.
 - Okey dört oyuncuyla, Mahalleler iki ila dört oyuncuyla başlar. Klasik Okey tek el ve yedi çift bitişi içerir. 101 tek el oynanır. İlk açılış 101 puan veya beş çifttir ve daha sonra masaya taş işlenebilir. Mahalleler on turda veya bir oyuncu ayakta kalınca sona erer.
 
 Samsung Tizen ve LG webOS için giriş, JavaScript modülleri ve Fetch API destekleyen cihaz tarayıcısından veya TV’ye bağlı bir bilgisayardan yapılır. Android TV için yerel başlatıcı girişi de bulunur. Google Play TV dağıtımı için Play Console’da Android TV form faktörüne katılım ve TV kalite incelemesi gerekir.
 
-### Canlı API’yi ayağa kaldırma
+### Firebase'de Aile Masası API'sini yayınlama
 
-1. Docker Compose bulunan bir sunucuya masa alan adının DNS kaydını yönlendir. HTTPS için TCP 80 ve 443’ü aç.
-2. Proje kökünden `node scripts/build-web.mjs` çalıştır. Ardından `FAMILY_HOST=masa.ornek.com docker compose -f family-server/compose.yaml up -d --build` çalıştır. Aile Masası bir servis örneğinde çalışır. Oda ve profil dosyaları Docker volume’da, HTTPS sertifikaları ayrı bir volume’da tutulur.
-3. `curl -fsS https://masa.ornek.com/api/family/health` çıktısında `{"ok":true}` gör. Üretim salonu için GitHub’daki `FAMILY_API_URL` değişkenine `https://masa.ornek.com` yaz ve Firebase Hosting iş akışını çalıştır.
-4. Web yapılandırması yayınlandıktan sonra `/salon/family-api.json` dosyasının doğru adresi verdiğini kontrol et. Google TV’de Klasik Okey veya 101 Okey aç, dört ayrı telefonla QR okut, eldeki taşların yalnızca kendi telefonda göründüğünü ve sıranın TV’ye yansıdığını doğrula.
+Ayrı VPS gerekmez. Oda ve profil verileri Firebase Realtime Database'de tutulur; `family-server` içindeki Firebase Function hamleleri ve oyuncuya özel görünümü yönetir. Firebase Hosting, `/api/**` isteklerini aynı Firebase projesindeki işleve yönlendirir. Web ve uygulama `azoyun.web.app` adresini kullanır; `FAMILY_API_URL` tanımlamak gerekmez.
+
+1. Cloud Functions yayını için Firebase projesi Blaze planında olmalı ve bir faturalandırma hesabı bağlı olmalı. Spark planında Functions dağıtılamaz. Ücretsiz kullanım sınırları vardır; sınırlar aşılırsa ücret doğabilir. Firebase Console'da bütçe uyarısı kur.
+2. Yayına izin verildikten sonra GitHub deposunun **Settings → Secrets and variables → Actions → Variables** bölümünde `FAMILY_FUNCTIONS_DEPLOY_ENABLED=true` değişkenini oluştur.
+3. `main` dalındaki Firebase web yayını iş akışı `familyApi` ve `cleanupFamilyRooms` işlevlerini, ardından Hosting dosyalarını yayınlar. `https://azoyun.web.app/api/family/health` adresi `{"ok":true}` döndürmeli.
+4. Realtime Database güvenlik kurallarında `family_api` verilerinin istemci SDK'sından doğrudan okunup yazılmadığını doğrula. Bu alan özel rol, el ve oyuncu anahtarı verileri içerir; istemci doğrudan erişmemeli. Mevcut kuralları görmeden tüm veritabanı kurallarını değiştirme.
+5. Google TV'de Kelime Tahtası veya Gizli Rol aç; farklı telefonlarla QR/kod üzerinden katıl. Gizli rol ve harflerin diğer oyunculara görünmediğini, kopup yeniden bağlanınca oyuncu koltuğunun korunduğunu, sonuç ve rövanşın doğru çalıştığını doğrula.
 
 ### Chromecast with Google TV HD
 
