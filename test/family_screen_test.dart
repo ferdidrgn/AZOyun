@@ -37,7 +37,7 @@ void main() {
     });
 
     await http.runWithClient(() async {
-      await tester.pumpWidget(const FamilyApp(host: true, initialGame: 'okey'));
+      await tester.pumpWidget(const FamilyApp(host: true));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Klasik Okey'));
       await tester.pumpAndSettle();
