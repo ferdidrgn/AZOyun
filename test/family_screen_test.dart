@@ -15,7 +15,6 @@ void main() {
       (tester) async {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({
-      'az_family_server': 'https://masa.example.test',
     });
     final client = MockClient((request) async {
       final data = switch ((request.method, request.url.path)) {
@@ -60,7 +59,7 @@ void main() {
       await tester.tap(find.text('Katılım bağlantısını kopyala'));
       await tester.pumpAndSettle();
       final url = Uri.parse(invite!);
-      expect(url.origin, 'https://masa.example.test');
+      expect(url.origin, 'https://azoyun.web.app');
       expect(url.queryParameters, {'family': 'ABC234'});
 
       await tester.pumpWidget(FamilyApp(
