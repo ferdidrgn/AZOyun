@@ -1,15 +1,9 @@
 name: Google Play'e yayınla (AAB)
 
-# main push'ları imzalı AAB üretip artifact olarak saklar.
-# Google Play'e gönderim yalnızca Android workflow_dispatch çalıştırmasında yapılır.
+# Her main push'ında Android testleri çalışır, imzalı AAB üretilir ve dahili teste yüklenir.
 on:
   push:
     branches: [main]
-    paths:
-      - 'lib/**'
-      - 'android/**'
-      - 'assets/**'
-      - 'pubspec.yaml'
   workflow_dispatch:
     inputs:
       track:
@@ -21,7 +15,7 @@ on:
       publish_to_play:
         description: "AAB'yi Google Play'e de gönder"
         required: true
-        default: true
+        default: false
         type: boolean
 
 concurrency:
@@ -57,6 +51,7 @@ jobs:
             echo "Kurulum: docs/DEPLOY.md"
             exit 1
           fi
+          node -e 'const { client_email } = JSON.parse(process.env.PLAY_JSON); console.log(`Play service account: ${client_email}`)'
 
       - name: Flutter kur
         uses: subosito/flutter-action@v2
@@ -112,7 +107,9 @@ jobs:
               defines+=("--dart-define=$key=${!key}")
             fi
           done
-          flutter build appbundle --release --target-platform android-arm,android-arm64 "${defines[@]}"
+          base_build_number=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
+          build_number=$((base_build_number + GITHUB_RUN_NUMBER))
+          flutter build appbundle --release --build-number="$build_number" --target-platform android-arm,android-arm64 "${defines[@]}"
 
       - name: AAB imzasını doğrula
         run: |
@@ -138,7 +135,7 @@ jobs:
         run: rm -f android/app/release.jks android/key.properties
 
       - name: Google Play'e yükle
-        if: github.event_name == 'workflow_dispatch' && inputs.publish_to_play
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_to_play)
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
