@@ -28,7 +28,8 @@ android {
             }
             keyAlias = props["keyAlias"] as String
             keyPassword = props["keyPassword"] as String
-            storeFile = rootProject.file(props["storeFile"] as String)
+            val storeFileName = props["storeFile"] as String
+            storeFile = rootProject.file("app/$storeFileName")
             storePassword = props["storePassword"] as String
         }
     }
