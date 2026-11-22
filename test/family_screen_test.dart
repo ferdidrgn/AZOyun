@@ -11,6 +11,40 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('falls back to Firebase Hosting when saved API is unavailable',
+      (tester) async {
+    FlutterSecureStorage.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'az_family_server': 'https://old-family-api.example.test',
+    });
+    final client = MockClient((request) async {
+      if (request.url.host == 'old-family-api.example.test') {
+        throw http.ClientException('old endpoint unavailable');
+      }
+      final data = switch ((request.method, request.url.path)) {
+        ('POST', '/api/family/rooms') => {'code': 'HOST22', 'token': 'host'},
+        ('GET', '/api/family/rooms/HOST22') => {
+            'code': 'HOST22',
+            'revision': 1,
+            'game': 'okey',
+            'status': 'lobby',
+            'players': [],
+          },
+        _ => throw StateError('Unexpected request ${request.url}'),
+      };
+      return http.Response(jsonEncode(data), 200,
+          headers: {'content-type': 'application/json'});
+    });
+
+    await http.runWithClient(() async {
+      await tester.pumpWidget(const FamilyApp(host: true, initialGame: 'okey'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Klasik Okey'));
+      await tester.pumpAndSettle();
+      expect(find.text('HOST22'), findsOneWidget);
+    }, () => client);
+  });
+
   testWidgets('TV invite opens a phone lobby with the room code',
       (tester) async {
     FlutterSecureStorage.setMockInitialValues({});

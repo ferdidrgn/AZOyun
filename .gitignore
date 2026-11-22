@@ -120,6 +120,18 @@ unlinked_spec.ds
 
 # Firebase CLI local cache (makineye özel, kaynak değil)
 .firebase/
+firebase-debug.log
+
+# Codex/Ruflo çalışma durumu ve yerel geliştirme ayarları (kaynak değil)
+.claude-flow/
+.swarm/
+.agents/
+.codex/
+.aws/
+AGENTS.md
+.env
+.env.*
+!.env.example
 
 # Coverage
 coverage/
