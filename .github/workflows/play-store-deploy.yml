@@ -1,8 +1,7 @@
 name: Google Play'e yayınla (AAB)
 
-# main push'ları imzalı AAB üretir ve dahili test kanalına gönderir.
-# Test kanalı için servis hesabının Play Console izni gerekir.
-# Üretim yayını, cihaz testlerinden sonra workflow_dispatch ile seçilebilir.
+# main push'ları imzalı AAB üretip artifact olarak saklar.
+# Google Play'e gönderim yalnızca açıkça workflow_dispatch girdisiyle seçilir.
 on:
   push:
     branches: [main]
@@ -19,6 +18,11 @@ on:
         default: internal
         type: choice
         options: [internal, alpha, beta, production]
+      publish_to_play:
+        description: "AAB'yi Google Play'e de gönder"
+        required: true
+        default: false
+        type: boolean
 
 concurrency:
   group: play-deploy-${{ github.ref }}
@@ -110,6 +114,17 @@ jobs:
           done
           flutter build appbundle --release --target-platform android-arm,android-arm64 "${defines[@]}"
 
+      - name: AAB imzasını doğrula
+        run: |
+          aab=build/app/outputs/bundle/release/app-release.aab
+          jarsigner -verify -verbose -certs "$aab" > "$RUNNER_TEMP/aab-signature-check.txt" 2>&1
+          if ! grep -qi 'jar verified\.' "$RUNNER_TEMP/aab-signature-check.txt"; then
+            cat "$RUNNER_TEMP/aab-signature-check.txt"
+            echo "AAB geçerli bir JAR imzası taşımıyor."
+            exit 1
+          fi
+          keytool -printcert -jarfile "$aab"
+
       - name: İmzalı AAB'yi sakla
         uses: actions/upload-artifact@v4
         with:
@@ -123,7 +138,7 @@ jobs:
         run: rm -f android/app/release.jks android/key.properties
 
       - name: Google Play'e yükle
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_to_play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
