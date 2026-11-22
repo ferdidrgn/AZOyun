@@ -8,6 +8,16 @@ const districts = [
   ['Dinlenme'], ['Sanat Sokağı', 160, 27, 3], ['Atölye Meydanı', 180, 30, 3], ['Belediye'],
   ['Pazar Kartı'], ['Yel Değirmeni', 200, 35, 4], ['Kıyı Meydanı', 220, 38, 4], ['Dinlenme'],
 ];
+const eventCards = [
+  { text: 'Belediye ihalesini kazandın · +900', amount: 900 },
+  { text: 'Fırtına hasarı · -650', amount: -650 },
+  { text: 'Sokak festivali · +500', amount: 500 },
+  { text: 'Altyapı katkı payı · -400', amount: -400 },
+  { text: 'Eski yatırımın getirisi · +750', amount: 750 },
+  { text: 'Trafik cezası · -300', amount: -300 },
+  { text: 'Kentsel dönüşüm sahasında iki tur bekle', move: 'detain' },
+  { text: 'Sahil yolunda üç kare ilerle', move: 3 },
+];
 const check = (ok, message) => { if (!ok) throw new Error(message); };
 const next = (room, from) => {
   for (let step = 1; step <= room.players.length; step++) {
@@ -33,7 +43,7 @@ function start(room, random) {
   if (room.game === 'city') {
     room.phase = 'roll';
     room.deeds = {};
-    room.players.forEach((player) => Object.assign(player, { money: 500, position: 0 }));
+    room.players.forEach((player) => Object.assign(player, { money: 5000, position: 0, detained: 0 }));
     room.message = 'İlk oyuncu zar atıyor.';
     return;
   }
@@ -270,9 +280,9 @@ function cityEnd(room) {
   const turn = next(room, room.turn);
   if (turn < room.turn) room.round++;
   if (room.round > 10) {
-    room.wealth = room.players.map((player, seat) => player.out ? 0 : player.money +
+      room.wealth = room.players.map((player, seat) => player.out ? 0 : player.money +
       Object.entries(room.deeds).reduce((sum, [index, deed]) =>
-        sum + (deed.owner === seat ? districts[index][1] + deed.level * 60 : 0), 0));
+        sum + (deed.owner === seat ? districts[index][1] * 10 + deed.level * 600 : 0), 0));
     const best = Math.max(...survivors.map((seat) => room.wealth[seat]));
     const leaders = survivors.filter((seat) => room.wealth[seat] === best);
     return finish(room, leaders.length === 1 ? leaders[0] : null, 'On tur tamamlandı.');
@@ -325,7 +335,7 @@ function cityAction(room, seat, action, random) {
     check(seat === auction.bidder, 'Teklif sırası başka oyuncuda.');
     check(action.type === 'bid' || action.type === 'passBid', 'Teklif ver veya pas geç.');
     if (action.type === 'bid') {
-      const amount = auction.bid + 10;
+      const amount = auction.bid + 100;
       check(player.money >= amount, 'Bu teklif için bakiyen yetersiz.');
       auction.bid = amount;
       auction.leader = seat;
@@ -338,9 +348,15 @@ function cityAction(room, seat, action, random) {
   if (action.type === 'roll') {
     check(room.phase === 'roll', 'Zar zaten atıldı.');
     delete room.trade;
+    if (player.detained > 0) {
+      player.detained--;
+      room.phase = 'end';
+      room.message = player.name + ' dönüşüm alanında bekliyor (' + player.detained + ' tur).';
+      return;
+    }
     const dice = [random(6) + 1, random(6) + 1];
     const distance = player.position + dice[0] + dice[1];
-    if (distance >= districts.length) player.money += 100;
+    if (distance >= districts.length) player.money += 1000;
     player.position = distance % districts.length;
     room.dice = dice;
     room.phase = 'end';
@@ -349,16 +365,34 @@ function cityAction(room, seat, action, random) {
     room.message = player.name + ' · ' + label;
     if (price && !deed) room.phase = 'property';
     if (deed && deed.owner !== seat) {
-      const amount = rent * (deed.level + 1);
+      const groupCount = Object.entries(room.deeds).filter(([index, owned]) =>
+        owned.owner === deed.owner && districts[Number(index)][3] === districts[player.position][3]).length;
+      const amount = rent * 10 * (deed.level + 1) * (groupCount >= 2 ? 2 : 1);
       room.message += ' · Kira ' + amount;
       charge(room, seat, amount, deed.owner);
     }
-    if (label === 'Belediye') charge(room, seat, 35);
+    if (label === 'Belediye') charge(room, seat, 350);
     if (label === 'Pazar Kartı') {
-      const amount = [60, -35, 25, -20][random(4)];
-      room.eventCard = { seat, text: amount > 0 ? 'Pazar geliri +' + amount : 'Bakım masrafı ' + amount };
-      if (amount > 0) player.money += amount;
-      else charge(room, seat, -amount);
+      const card = eventCards[random(eventCards.length)];
+      room.eventCard = { seat, text: card.text };
+      if (card.amount > 0) player.money += card.amount;
+      if (card.amount < 0) charge(room, seat, -card.amount);
+      if (card.move === 'detain') {
+        player.detained = 2;
+        room.phase = 'detained';
+      }
+      if (typeof card.move === 'number') {
+        const old = player.position;
+        player.position = (old + card.move) % districts.length;
+        if (player.position < old) player.money += 1000;
+        const [target] = districts[player.position];
+        const targetDeed = room.deeds[player.position];
+        room.message += ' · ' + card.move + ' kare ilerle: ' + target;
+        if (targetDeed && targetDeed.owner !== seat) {
+          const rent = districts[player.position][2] * 10 * (targetDeed.level + 1);
+          charge(room, seat, rent, targetDeed.owner);
+        }
+      }
     }
     if (player.out) cityEnd(room);
     return;
@@ -366,7 +400,7 @@ function cityAction(room, seat, action, random) {
   if (action.type === 'buy' || action.type === 'auction') {
     check(room.phase === 'property', 'Satışta mülk yok.');
     if (action.type === 'buy') {
-      const price = districts[player.position][1];
+      const price = districts[player.position][1] * 10;
       check(player.money >= price, 'Bakiyen yetersiz. Açık artırma başlatabilirsin.');
       player.money -= price;
       room.deeds[player.position] = { owner: seat, level: 0 };
@@ -395,9 +429,9 @@ function cityAction(room, seat, action, random) {
     const group = districts[square][3];
     check(districts.every((district, index) => district[3] !== group || room.deeds[index]?.owner === seat),
       'Geliştirmek için mahallenin iki mülkü de sende olmalı.');
-    check(player.money >= 60 && deed.level < 3, 'Geliştirme için 60 para gerekir. En çok üç seviye.');
+    check(player.money >= 600 && deed.level < 3, 'Geliştirme için 600 para gerekir. En çok üç seviye.');
     check(room.trade?.square !== square, 'Önce bu mülkün teklifini kapat.');
-    player.money -= 60;
+    player.money -= 600;
     deed.level++;
     room.message = player.name + ' mahallesini geliştirdi.';
     return;

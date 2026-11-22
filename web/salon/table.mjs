@@ -2,6 +2,7 @@ import { qrcode } from "./qrcode.mjs";
 import { familyApi } from "./config.mjs";
 import { profileKey } from "./profile.mjs";
 import { partyBoard, partyControls } from "./party-tables.mjs";
+import { apiCandidates, discoverApiOrigin, normalizeApiOrigin, requestRoomApi } from "./room-api.mjs";
 
 const games = { okey: "Klasik Okey", okey101: "101 Okey", city: "Mahalleler", words: "Kelime Tahtası", roles: "Gizli Rol" };
 const gameDetails = {
@@ -26,24 +27,11 @@ const escape = (value) =>
 const button = (type, label, value = "", primary = false) =>
   `<button type="button" class="button ${primary ? "primary" : "outline"}" data-action="${type}" data-value="${escape(value)}">${escape(label)}</button>`;
 const playerName = (room, index) => escape(room.players[index]?.name);
-const delay = 1500;
+const delay = 1200;
 
 function endpoint(value) {
-  let url;
-  try {
-    url = new URL(value);
-  } catch {
-    throw new Error("Masa sunucusunun adresini kontrol et.");
-  }
-  if (
-    !["http:", "https:"].includes(url.protocol) ||
-    url.username ||
-    url.password ||
-    (location.protocol === "https:" && url.protocol !== "https:")
-  ) {
-    throw new Error("Geçerli bir HTTPS sunucu adresi gir.");
-  }
-  return url.origin;
+  try { return normalizeApiOrigin(value, location.protocol); }
+  catch { throw new Error("Masa sunucusunun adresini kontrol et."); }
 }
 
 function tileMarkup(tile, interactive = false, selected = false) {
@@ -60,6 +48,8 @@ export function openTable(main, params) {
   const host = route === "tv";
   const firstCode = route?.toUpperCase() ?? "";
   let server = location.origin;
+  let discoveredServer = "";
+  let discovery;
   try {
     server = endpoint(params.get("server") || familyApi || location.origin);
   } catch {}
@@ -159,35 +149,31 @@ export function openTable(main, params) {
         <label class="control">Masa kodu<input name="code" class="join-code" value="${escape(code)}" maxlength="6" spellcheck="false" autocapitalize="characters" required></label>
         <p class="quiet"><a href="/?profil" target="_blank" rel="noopener">Profil oluştur veya aç</a> · Tamamlanan masalardan XP kazan.</p>`
       }
-      <button class="button primary" type="submit">${host ? "Masa aç" : "Katıl"}</button>
+      <button class="button primary" type="button" data-action="connect">${host ? "Masa aç" : "Katıl"}</button>
     </form></div>`;
   };
   const request = async (suffix, data, auth = token) => {
-    const response = await fetch(server + "/api/family/rooms" + suffix, {
-      method: data ? "POST" : "GET",
-      headers: {
-        ...(auth && { Authorization: "Bearer " + auth }),
-        ...(data && { "Content-Type": "application/json" }),
-      },
-      body: data ? JSON.stringify(data) : undefined,
-      cache: "no-store",
-      signal: globalThis.AbortSignal?.timeout?.(7000),
-    }).catch(() => {
-      throw new Error(
-        "Firebase oda hizmetine ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene.",
-      );
-    });
-    if (!response.headers.get("content-type")?.includes("application/json")) {
-      throw new Error(
-        "Firebase Aile Masası henüz yayınlanmadı. Biraz sonra tekrar dene.",
-      );
-    }
-    const result = await response.json();
-    if (!response.ok)
-      throw Object.assign(new Error(result.error || "Masa açılamadı."), {
-        status: response.status,
+    if (!familyApi && !params.has("server") && !discovery) {
+      discovery = discoverApiOrigin(fetch, location.origin).then((origin) => {
+        discoveredServer = origin;
+        return origin;
       });
-    return result;
+    }
+    if (discovery) await discovery;
+    const result = await requestRoomApi({
+      fetchImpl: fetch,
+      origins: apiCandidates({
+        pageOrigin: location.origin,
+        configuredOrigin: familyApi,
+        discoveredOrigin: discoveredServer,
+        explicitOrigin: params.get("server") || (server !== location.origin ? server : ""),
+      }),
+      path: suffix,
+      data,
+      auth,
+    });
+    server = result.origin;
+    return result.result;
   };
   const accept = (next) => {
     if (room && next.revision <= room.revision) return;
@@ -515,7 +501,10 @@ export function openTable(main, params) {
   }
 
   function cityBoard(state) {
-    return `${state.dice ? `<p class="turn dice" role="status"><span aria-hidden="true">⚄</span> Zarlar ${escape(state.dice.join(" + "))} · Tur ${escape(state.round)}/10</p>` : ""}
+    return `<section class="city-table">
+      <header class="city-table-header"><div><span class="city-kicker">MAHALLELER · EMLAK VE STRATEJİ</span><h3>Şehir Senin</h3></div>
+      <div class="bank-pile"><span class="banknote">₺</span><span class="banknote">₺</span><span>Banka · başlangıç ₺5.000</span></div></header>
+      ${state.dice ? `<p class="turn dice" role="status"><span aria-hidden="true">⚄</span> Zarlar ${escape(state.dice.join(" + "))} · Tur ${escape(state.round)}/10</p>` : ""}
       ${
         state.wealth
           ? `<ol class="wealth" aria-label="Oyun sonu sıralaması">${state.wealth
@@ -536,26 +525,30 @@ export function openTable(main, params) {
       <div class="city-board" aria-label="Mahalleler tahtası">${path
         .map((index) => {
           const square = state.board[index];
-          const pawns = state.players.flatMap((player, seat) =>
+      const pawns = state.players.flatMap((player, seat) =>
             player.position === index && !player.out
               ? [
-                  `<span class="pawn" style="--pawn:${seats[seat]}" title="${escape(player.name)}">${seat + 1}</span>`,
+                  `<span class="pawn pawn-${seat}" style="--pawn:${seats[seat]}" title="${escape(player.name)}"><i></i><b>${seat + 1}</b></span>`,
                 ]
               : [],
           );
-          return `<div class="square" data-group="${Number(square.group) || 0}"><strong>${escape(square.name)}</strong>
+          return `<div class="square" data-group="${Number(square.group) || 0}" data-corner="${[0,4,8,12].includes(index)}" data-owner="${square.owner ?? ''}">
+          ${square.group ? `<span class="property-band" data-group="${Number(square.group)}"></span>` : '<span class="square-icon">' + (index === 0 ? '🏁' : /Kartı/.test(square.name) ? '✦' : /Belediye/.test(square.name) ? '⌂' : /Dinlenme/.test(square.name) ? '☕' : '✧') + '</span>'}
+          <strong>${escape(square.name)}</strong>
           ${
             square.price
               ? `<small>${
                   square.owner == null
-                    ? escape(square.price) + " para"
+                    ? escape(square.price * 10) + " ₺"
                     : playerName(state, square.owner) +
                       (square.level ? " · Seviye " + escape(square.level) : "")
                 }</small>`
-              : ""
-          }<div class="pawns">${pawns.join("")}</div></div>`;
+                  : ""
+          }${square.level ? `<span class="building-level">${'🏠'.repeat(Math.min(3, Number(square.level)))}</span>` : ''}<div class="pawns">${pawns.join("")}</div></div>`;
         })
-        .join("")}</div>`;
+        .join("")}</div>
+      <footer class="city-table-footer">${state.players.map((player, seat) => `<div class="player-bank ${state.turn === seat ? 'is-turn' : ''}" style="--pawn:${seats[seat]}"><span class="player-token">${seat + 1}</span><span><b>${escape(player.name)}</b><small>${player.position != null ? 'Konum ' + (Number(player.position) + 1) + '/16' : 'Masa oyuncusu'}</small></span></div>`).join('')}</footer>
+      </section>`;
   }
 
   function tileBoard(state) {
@@ -604,15 +597,15 @@ export function openTable(main, params) {
   }
   view.addEventListener("submit", (event) => {
     event.preventDefault();
-    const form = new FormData(event.target);
-    if (event.target.dataset.form === "setup")
-      run(() => connect(form), event.submitter);
-    else if (event.target.dataset.form === "word")
+    const submittedForm = event.target;
+    const form = new FormData(submittedForm);
+    const submitter = event.submitter ?? submittedForm.querySelector('button[type="submit"]');
+    if (submittedForm.dataset.form === "word")
       run(() => submitAction("placeWord", {word: form.get("word"), row: Number(form.get("row"))-1,
-        col: Number(form.get("col"))-1, vertical: form.get("direction")==="vertical"}), event.submitter);
-    else if (event.target.dataset.form === "role")
+        col: Number(form.get("col"))-1, vertical: form.get("direction")==="vertical"}), submitter);
+    else if (submittedForm.dataset.form === "role")
       run(() => submitAction(room.phase==="night"?"nightChoice":"roleVote", {
-        target: form.get("target")===""?null:Number(form.get("target"))}), event.submitter);
+        target: form.get("target")===""?null:Number(form.get("target"))}), submitter);
     else
       run(
         () =>
@@ -621,7 +614,7 @@ export function openTable(main, params) {
             to: Number(form.get("to")),
             price: Number(form.get("price")),
           }),
-        event.submitter,
+        submitter,
       );
   });
   view.addEventListener("change", (event) => {
@@ -632,10 +625,14 @@ export function openTable(main, params) {
     preview.querySelector("p").textContent = gameDetails[currentGame];
   });
   view.addEventListener("click", (event) => {
-    const control = event.target.closest("[data-action]");
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    const control = target?.closest("[data-action]");
     if (!control || busy) return;
     const { action, value } = control.dataset;
     const number = Number(value);
+    if (action === "connect") {
+      return run(() => connect({ get: (name) => view.querySelector(`[name="${name}"]`)?.value ?? null }), control);
+    }
     if (action === "wordCell") {
       const form = view.querySelector('form[data-form="word"]');
       if (form) { form.elements.row.value = Math.floor(number/11)+1; form.elements.col.value = number%11+1; }

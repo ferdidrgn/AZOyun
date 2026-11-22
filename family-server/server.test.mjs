@@ -256,7 +256,7 @@ test('Mahalleler validates auctions, private sales, building, rent and bankruptc
   assert.equal(view(room, 1).private.trade.price, 25);
   assert.throws(() => move(2, 'tradeReply', { accept: true }), /ait değil/);
   move(1, 'tradeReply', { accept: true });
-  assert.deepEqual(room.players.map((player) => player.money), [515, 475, 500]);
+  assert.deepEqual(room.players.map((player) => player.money), [4925, 4975, 5000]);
   move(0, 'end');
   assert.throws(() => move(1, 'build', { square: 3 }), /iki mülkü/);
   room.deeds[1] = { owner: 1, level: 0 };
@@ -267,5 +267,5 @@ test('Mahalleler validates auctions, private sales, building, rent and bankruptc
   const rentDice = [0, 1];
   applyAction(room, 2, { type: 'roll' }, () => rentDice.shift());
   assert.equal(room.players[2].out, true);
-  assert.equal(room.players[1].money, 420);
+  assert.equal(room.players[1].money, 4380);
 });
