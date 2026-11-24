@@ -101,7 +101,13 @@ class OkeyRack extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
           child: LayoutBuilder(builder: (context, bounds) {
-            final columns = bounds.maxWidth < 270 ? 8 : 11;
+            // A phone in landscape has room for the full 101 hand in one row.
+            // Portrait fallback stays at two rows so stone faces remain usable.
+            final columns = bounds.maxWidth < 270
+                ? 8
+                : bounds.maxWidth >= 680
+                    ? 22
+                    : 11;
             final width = ((bounds.maxWidth - (columns - 1) * 2) / columns)
                 .clamp(12.0, 45.0);
             final rows = ids.length > columns * 2 ? 3 : 2;

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/widgets/az_online_lobby.dart';
+import '../../core/widgets/landscape_table_page.dart';
 import '../../core/widgets/az_widgets.dart';
 import 'batak_match.dart';
 import 'batak_table.dart';
@@ -114,7 +115,8 @@ class _BatakLobbyState extends State<BatakLobbyScreen> {
       if (!mounted || seat == null) return;
       final localSeat = seat!;
       await Navigator.of(context).push<void>(MaterialPageRoute(
-          builder: (_) => _BatakRoomScreen(id: id, seat: localSeat)));
+          builder: (_) => LandscapeTablePage(
+              child: _BatakRoomScreen(id: id, seat: localSeat))));
     } catch (error) {
       debugPrint('Batak oda bağlantısı: $error');
       if (mounted)

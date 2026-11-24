@@ -1,9 +1,16 @@
 import 'dart:async';
 import 'dart:math';
 
+<<<<<<< Updated upstream
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
+=======
+import 'package:flutter/material.dart';
+
+import 'football_catalog_repository.dart';
+
+>>>>>>> Stashed changes
 enum _LetterMark { correct, misplaced, absent }
 
 class _GuessRow {
@@ -63,6 +70,7 @@ class _FootballWordleScreenState extends State<FootballWordleScreen> {
     return const [];
   }
 
+<<<<<<< Updated upstream
   String _word(String name) =>
       name.trim().split(RegExp(r'\s+')).last.toUpperCase();
 
@@ -73,6 +81,72 @@ class _FootballWordleScreenState extends State<FootballWordleScreen> {
           .get()
           .timeout(const Duration(seconds: 12));
       final players = _maps(snapshot.value)
+=======
+  String _normalizeName(String value) {
+    var normalized = value.toLowerCase();
+    const replacements = {
+      'ı': 'i',
+      'ş': 's',
+      'ğ': 'g',
+      'ü': 'u',
+      'ö': 'o',
+      'ç': 'c',
+      'á': 'a',
+      'à': 'a',
+      'ä': 'a',
+      'â': 'a',
+      'ã': 'a',
+      'å': 'a',
+      'é': 'e',
+      'è': 'e',
+      'ë': 'e',
+      'ê': 'e',
+      'í': 'i',
+      'ì': 'i',
+      'ï': 'i',
+      'î': 'i',
+      'ó': 'o',
+      'ò': 'o',
+      'ô': 'o',
+      'õ': 'o',
+      'ú': 'u',
+      'ù': 'u',
+      'û': 'u',
+      'ñ': 'n',
+      'ý': 'y',
+      'ÿ': 'y',
+      'æ': 'ae',
+      'œ': 'oe',
+      'ø': 'o',
+      'ß': 'ss',
+    };
+    replacements
+        .forEach((from, to) => normalized = normalized.replaceAll(from, to));
+    return normalized
+        .replaceAll(RegExp(r'[\u0300-\u036f]'), '')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  String _word(String name) => _normalizeName(
+        name.trim().split(RegExp(r'\s+')).last,
+      ).replaceAll(' ', '').toUpperCase();
+
+  Future<void> _load() async {
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+        _answer = null;
+        _players = const [];
+        _guesses.clear();
+      });
+    }
+    try {
+      final catalog = await FootballCatalogRepository.load();
+      final players = _maps(catalog.data['players'])
+>>>>>>> Stashed changes
           .map((raw) {
             final careers = _maps(raw['careers'])
               ..sort((a, b) => (a['startYear'] is num
@@ -135,8 +209,12 @@ class _FootballWordleScreenState extends State<FootballWordleScreen> {
     if (_done || answer == null) return;
     final word = _word(_input.text);
     if (!RegExp(r'^[A-Z]{5,8}$').hasMatch(word)) {
+<<<<<<< Updated upstream
       setState(() =>
           _error = '5–8 harfli İngilizce harflerden oluşan bir soyad yaz.');
+=======
+      setState(() => _error = '5–8 harfli bir futbolcu soyadı yaz.');
+>>>>>>> Stashed changes
       return;
     }
     if (word.length != _word(answer.name).length) {
@@ -179,11 +257,20 @@ class _FootballWordleScreenState extends State<FootballWordleScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _answer == null
+<<<<<<< Updated upstream
               ? Center(
                   child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(_error ?? 'Dinamik oyuncu paketi bulunamadı.',
                           textAlign: TextAlign.center)))
+=======
+              ? FootballCatalogUnavailableView(
+                  title: 'Futbol Wordle açılamadı',
+                  details: _error ?? 'Oyuncu paketi henüz kullanılamıyor.',
+                  retrying: _loading,
+                  onRetry: () => unawaited(_load()),
+                )
+>>>>>>> Stashed changes
               : Center(
                   child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 520),
@@ -214,7 +301,11 @@ class _FootballWordleScreenState extends State<FootballWordleScreen> {
                                   : row == _guesses.length &&
                                           !_done &&
                                           column < _input.text.length
+<<<<<<< Updated upstream
                                       ? _input.text.toUpperCase()[column]
+=======
+                                      ? _word(_input.text)[column]
+>>>>>>> Stashed changes
                                       : '';
                               final color = guess == null
                                   ? theme.colorScheme.surfaceContainerLow
@@ -272,7 +363,11 @@ class _FootballWordleScreenState extends State<FootballWordleScreen> {
                     ],
                     const SizedBox(height: 10),
                     const Text(
+<<<<<<< Updated upstream
                         'Yeşil doğru harfi doğru yerde, sarı doğru harfi farklı yerde gösterir.',
+=======
+                        'Türkçe ve aksanlı harfler karşılaştırmada temel Latin harflerine çevrilir. Yeşil doğru harfi doğru yerde, sarı doğru harfi farklı yerde gösterir.',
+>>>>>>> Stashed changes
                         textAlign: TextAlign.center),
                   ]),
                 )),

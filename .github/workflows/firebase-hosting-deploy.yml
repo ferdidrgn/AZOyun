@@ -7,6 +7,10 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # Keep the shared football catalogue current without depending on deploying
+  # a scheduled Cloud Function. Wikidata and its structured data are public.
+  schedule:
+    - cron: '20 4 * * 0'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -80,6 +84,21 @@ jobs:
             exit 1
           fi
 
+      - name: Wikidata futbol kataloğunu Android ve web'e yayınla
+        id: football_catalog_publish
+        env:
+          FIREBASE_SERVICE_ACCOUNT_AZOYUN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_AZOYUN }}
+          GCLOUD_PROJECT: azoyun-569b2
+          FOOTBALL_CATALOG_OUTPUT_PATH: build/salon/football/catalog.json
+        run: |
+          umask 077
+          credential_file="$RUNNER_TEMP/firebase-service-account.json"
+          trap 'rm -f "$credential_file"' EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_AZOYUN" > "$credential_file"
+          export GOOGLE_APPLICATION_CREDENTIALS="$credential_file"
+          npm ci --prefix functions
+          node functions/seed-football-catalog.mjs
+
       - name: Yapılandırılan Aile Masası API’sini doğrula
         env:
           FAMILY_API_URL: ${{ vars.FAMILY_API_URL }}
@@ -105,7 +124,10 @@ jobs:
 
       - name: Firebase Hosting'e yayınla
         id: hosting_deploy
-        if: ${{ always() && !cancelled() }}
+        # Never deploy a newly built static catalogue if RTDB rejected its
+        # matching release. Other deploy steps (such as Functions) may fail
+        # without blocking Hosting once the catalogue itself was committed.
+        if: ${{ always() && !cancelled() && steps.football_catalog_publish.outcome == 'success' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}

@@ -1,8 +1,14 @@
 import 'dart:async';
 
+<<<<<<< Updated upstream
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
+=======
+import 'package:flutter/material.dart';
+
+import 'football_catalog_repository.dart';
+>>>>>>> Stashed changes
 import 'football_chemistry_rules.dart';
 
 class FootballChemistryScreen extends StatefulWidget {
@@ -35,6 +41,10 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
   bool _loading = true;
   String? _error;
   String _datasetVersion = '—';
+<<<<<<< Updated upstream
+=======
+  String _datasetSource = '';
+>>>>>>> Stashed changes
 
   @override
   void initState() {
@@ -64,13 +74,177 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
     return const [];
   }
 
+<<<<<<< Updated upstream
   List<String> _strings(Object? raw) {
+=======
+  List<String> _positionValues(Object? raw) {
+>>>>>>> Stashed changes
     final values = raw is Iterable
         ? raw
         : raw is Map
             ? raw.values
             : const [];
+<<<<<<< Updated upstream
     return values.whereType<String>().toList(growable: false);
+=======
+    return values
+        .map((value) {
+          if (value is String) return value;
+          if (value is Map) {
+            final id = value['id']?.toString();
+            final label = value['label']?.toString();
+            return [if (id != null) id, if (label != null) label].join(' ');
+          }
+          return '';
+        })
+        .where((value) => value.trim().isNotEmpty)
+        .toList(growable: false);
+  }
+
+  String _normalizePlayerName(String value) {
+    var normalized = value.toLowerCase();
+    const replacements = {
+      'ı': 'i',
+      'İ': 'i',
+      'ş': 's',
+      'ğ': 'g',
+      'ü': 'u',
+      'ö': 'o',
+      'ç': 'c',
+      'á': 'a',
+      'à': 'a',
+      'ä': 'a',
+      'â': 'a',
+      'é': 'e',
+      'è': 'e',
+      'ë': 'e',
+      'ê': 'e',
+      'í': 'i',
+      'ì': 'i',
+      'ï': 'i',
+      'î': 'i',
+      'ó': 'o',
+      'ò': 'o',
+      'ô': 'o',
+      'ú': 'u',
+      'ù': 'u',
+      'û': 'u',
+      'ñ': 'n',
+      'ý': 'y',
+      'æ': 'ae',
+      'œ': 'oe',
+      'ø': 'o',
+      'ß': 'ss',
+    };
+    replacements
+        .forEach((from, to) => normalized = normalized.replaceAll(from, to));
+    return normalized
+        .replaceAll(RegExp(r'[\u0300-\u036f]'), '')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  String _normalizePosition(String value) => _normalizePlayerName(value);
+
+  Set<String> _positionGroups(String rawPosition) {
+    final position = ' ${_normalizePosition(rawPosition)} ';
+    final groups = <String>{};
+    bool hasAny(Iterable<String> aliases) => aliases.any((alias) {
+          final normalized = _normalizePosition(alias);
+          return position.contains(' $normalized ');
+        });
+
+    if (hasAny(const [
+      'GK',
+      'GKP',
+      'goalkeeper',
+      'goal keeper',
+      'goalie',
+      'keeper',
+      'kaleci',
+      'portero',
+      'gardien de but',
+    ])) {
+      groups.add('GK');
+    }
+    if (hasAny(const [
+      'DF',
+      'DEF',
+      'D',
+      'CB',
+      'LCB',
+      'RCB',
+      'LB',
+      'RB',
+      'LWB',
+      'RWB',
+      'defender',
+      'defence',
+      'defense',
+      'centre back',
+      'center back',
+      'full back',
+      'fullback',
+      'wing back',
+      'wingback',
+      'bek',
+      'defans',
+      'defensa',
+      'defenseur',
+      'lateral',
+    ])) {
+      groups.add('DF');
+    }
+    if (hasAny(const [
+      'MF',
+      'MID',
+      'M',
+      'CM',
+      'CDM',
+      'DM',
+      'CAM',
+      'AM',
+      'LM',
+      'RM',
+      'midfielder',
+      'midfield',
+      'defensive midfielder',
+      'central midfielder',
+      'attacking midfielder',
+      'orta saha',
+      'mediocampista',
+      'milieu de terrain',
+    ])) {
+      groups.add('MF');
+    }
+    if (hasAny(const [
+      'FW',
+      'FWD',
+      'ST',
+      'CF',
+      'SS',
+      'LW',
+      'RW',
+      'LF',
+      'RF',
+      'forward',
+      'striker',
+      'winger',
+      'attacker',
+      'centre forward',
+      'center forward',
+      'santrafor',
+      'forvet',
+      'hucumcu',
+      'delantero',
+      'atacante',
+      'ailier',
+    ])) {
+      groups.add('FW');
+    }
+    return groups;
+>>>>>>> Stashed changes
   }
 
   List<FootballCareerSpell> _careers(Object? raw) => _maps(raw)
@@ -88,6 +262,7 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
       .toList();
 
   Future<void> _load() async {
+<<<<<<< Updated upstream
     try {
       final snapshot = await FirebaseDatabase.instance
           .ref('footballCatalog/current')
@@ -97,12 +272,27 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
       if (root is! Map)
         throw StateError('Dinamik futbol kataloğu yayınlanmadı.');
       final data = Map<String, dynamic>.from(root);
+=======
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+    try {
+      final loaded = await FootballCatalogRepository.load();
+      final data = loaded.data;
+>>>>>>> Stashed changes
       final catalog = _maps(data['players'])
           .map((raw) {
             return ChemistryPlayer(
               id: '${raw['id'] ?? ''}',
               name: '${raw['name'] ?? ''}',
+<<<<<<< Updated upstream
               position: _strings(raw['positions']).join(', '),
+=======
+              position: _positionValues(raw['positions']).join(', '),
+>>>>>>> Stashed changes
               careers: _careers(raw['careers']),
               sportNationalityId: raw['sportNationalityId']?.toString(),
             );
@@ -114,6 +304,10 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
       setState(() {
         _catalog = catalog;
         _datasetVersion = '${data['datasetVersion'] ?? 'unknown'}';
+<<<<<<< Updated upstream
+=======
+        _datasetSource = loaded.sourceLabel;
+>>>>>>> Stashed changes
         _loading = false;
       });
     } catch (error) {
@@ -127,6 +321,7 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
 
   bool _fits(ChemistryPlayer player, String role) {
     if (player.position.isEmpty) return true;
+<<<<<<< Updated upstream
     final position = player.position.toLowerCase();
     return switch (role) {
       'GK' => position.contains('goalkeeper'),
@@ -141,13 +336,28 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
 
   List<ChemistryPlayer> get _suggestions {
     final query = _search.text.trim().toLowerCase();
+=======
+    final groups = _positionGroups(player.position);
+    // Wikidata's P413 labels are multilingual and can be absent or unusual.
+    // Keep unclassified records available instead of silently treating a
+    // translated/unknown label as proof that the player cannot fill the slot.
+    return groups.isEmpty || groups.contains(role);
+  }
+
+  List<ChemistryPlayer> get _suggestions {
+    final query = _normalizePlayerName(_search.text);
+>>>>>>> Stashed changes
     if (query.length < 2) return const [];
     final used = _squad.values.map((player) => player.id).toSet();
     return _catalog
         .where((player) =>
             !used.contains(player.id) &&
             _fits(player, _formation[_activeSlot]) &&
+<<<<<<< Updated upstream
             player.name.toLowerCase().contains(query))
+=======
+            _normalizePlayerName(player.name).contains(query))
+>>>>>>> Stashed changes
         .take(8)
         .toList(growable: false);
   }
@@ -175,6 +385,7 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
     if (_catalog.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Kimya XI')),
+<<<<<<< Updated upstream
         body: Center(
             child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -200,6 +411,14 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
                         child: const Text('Yeniden dene')),
                   ],
                 ))),
+=======
+        body: FootballCatalogUnavailableView(
+          title: 'Futbol kataloğu açılamadı',
+          details: _error ?? 'Bağlantını kontrol edip yeniden dene.',
+          retrying: _loading,
+          onRetry: () => unawaited(_load()),
+        ),
+>>>>>>> Stashed changes
       );
     }
     final report = FootballChemistryRules.calculate(_squad.values);
@@ -212,7 +431,11 @@ class _FootballChemistryScreenState extends State<FootballChemistryScreen> {
           Row(children: [
             Expanded(
                 child: Text(
+<<<<<<< Updated upstream
                     'Veri $_datasetVersion · ${_squad.length}/11 oyuncu',
+=======
+                    'Veri $_datasetVersion · $_datasetSource · ${_squad.length}/11 oyuncu',
+>>>>>>> Stashed changes
                     style: theme.textTheme.titleSmall)),
             Text('${report.totalPoints} KİMYA',
                 style: theme.textTheme.titleMedium

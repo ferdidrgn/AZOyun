@@ -57,6 +57,7 @@ export function openTable(main, params) {
   let token;
   let room;
   let busy = false;
+  let apiReady = false;
   let timer;
   let error = "";
   let currentGame = Object.keys(games).includes(params.get("game"))
@@ -149,7 +150,8 @@ export function openTable(main, params) {
         <label class="control">Masa kodu<input name="code" class="join-code" value="${escape(code)}" maxlength="6" spellcheck="false" autocapitalize="characters" required></label>
         <p class="quiet"><a href="/?profil" target="_blank" rel="noopener">Profil oluştur veya aç</a> · Tamamlanan masalardan XP kazan.</p>`
       }
-      <button class="button primary" type="button" data-action="connect">${host ? "Masa aç" : "Katıl"}</button>
+      <button class="button primary" type="button" data-action="connect" ${apiReady ? "" : "disabled"}>${host ? "Masa aç" : "Katıl"}</button>
+      ${apiReady ? "" : button("retry-api", "Sunucuyu yeniden kontrol et")}
     </form></div>`;
   };
   const request = async (suffix, data, auth = token) => {
@@ -175,6 +177,42 @@ export function openTable(main, params) {
     server = result.origin;
     return result.result;
   };
+  async function checkService() {
+    apiReady = false;
+    setError("Masa sunucusu kontrol ediliyor…");
+    if (!familyApi && !params.has("server") && !discovery) {
+      discovery = discoverApiOrigin(fetch, location.origin).then((origin) => {
+        discoveredServer = origin;
+        return origin;
+      });
+    }
+    if (discovery) await discovery;
+    const origins = apiCandidates({
+      pageOrigin: location.origin,
+      configuredOrigin: familyApi,
+      discoveredOrigin: discoveredServer,
+      explicitOrigin: params.get("server") || (server !== location.origin ? server : ""),
+    });
+    for (const origin of origins) {
+      try {
+        const response = await fetch(origin + "/api/family/health", {
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+          signal: globalThis.AbortSignal?.timeout?.(5000),
+        });
+        if (!response.ok || !/application\/json/i.test(response.headers.get("content-type") || "")) continue;
+        const health = await response.json();
+        if (health?.ok !== true) continue;
+        server = origin;
+        apiReady = true;
+        setError("");
+        showSetup();
+        return;
+      } catch { /* Try the next configured origin. */ }
+    }
+    setError("Çok oyunculu masa sunucusu şu an yayında değil; Okey veya Mahalleler masası açılamıyor. Sunucu yeniden yayınlandığında bu ekrandan tekrar deneyebilirsin.");
+    showSetup();
+  }
   const accept = (next) => {
     if (room && next.revision <= room.revision) return;
     diceChanged = Boolean(
@@ -631,8 +669,10 @@ export function openTable(main, params) {
     const { action, value } = control.dataset;
     const number = Number(value);
     if (action === "connect") {
+      if (!apiReady) return checkService();
       return run(() => connect({ get: (name) => view.querySelector(`[name="${name}"]`)?.value ?? null }), control);
     }
+    if (action === "retry-api") return checkService();
     if (action === "wordCell") {
       const form = view.querySelector('form[data-form="word"]');
       if (form) { form.elements.row.value = Math.floor(number/11)+1; form.elements.col.value = number%11+1; }
@@ -700,6 +740,7 @@ export function openTable(main, params) {
       }
     });
   showSetup();
+  void checkService();
   if (host) view.querySelector("select").focus({ preventScroll: true });
   if (host) {
     try {

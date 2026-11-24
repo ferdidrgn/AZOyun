@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class ThreeView extends StatefulWidget {
-  const ThreeView({super.key, required this.game, required this.title, required this.file});
+  const ThreeView(
+      {super.key, required this.game, required this.title, required this.file});
 
   final String game;
   final String title;
@@ -47,8 +48,16 @@ class _ThreeViewState extends State<ThreeView> with WidgetsBindingObserver {
       await controller.setNavigationDelegate(NavigationDelegate(
         onNavigationRequest: (request) {
           final uri = Uri.tryParse(request.url);
-          return uri?.scheme == 'file' &&
-                  uri!.path.endsWith('/arcade3d/${widget.file}')
+          // loadFlutterAsset() serves the HTML and its sibling JS/CSS files
+          // from Flutter's bundled asset directory. Allow only that directory;
+          // blocking sibling resources leaves a blank game canvas on Android.
+          final segments = uri?.pathSegments;
+          final arcadeAsset = segments != null && _isArcadeAssetPath(segments);
+          final localOrigin = uri != null &&
+              (uri.scheme == 'file' ||
+                  (uri.scheme == 'https' &&
+                      uri.host == 'appassets.androidplatform.net'));
+          return localOrigin && arcadeAsset
               ? NavigationDecision.navigate
               : NavigationDecision.prevent;
         },
@@ -69,6 +78,16 @@ class _ThreeViewState extends State<ThreeView> with WidgetsBindingObserver {
     } catch (error) {
       _showFailure(error);
     }
+  }
+
+  bool _isArcadeAssetPath(List<String> segments) {
+    for (var index = 0; index + 1 < segments.length; index++) {
+      if (segments[index] == 'arcade3d' &&
+          !segments.skip(index + 1).contains('..')) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void _showFailure(Object error) {

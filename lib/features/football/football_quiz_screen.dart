@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+
+import 'football_catalog_repository.dart';
 
 enum FootballQuizMode {
   player('Futbolcuyu Bil'),
@@ -21,235 +21,13 @@ class FootballQuizScreen extends StatefulWidget {
   State<FootballQuizScreen> createState() => _FootballQuizScreenState();
 }
 
-typedef FootballEntry = ({String name, String article, List<String> clues});
-
-const _players = <FootballEntry>[
-  (
-    name: 'Lionel Messi',
-    article: 'Lionel Messi',
-    clues: [
-      '2022 Dünya Kupası’nda Altın Top ödülünü kazandı.',
-      'Barcelona’dan ayrıldıktan sonra Paris Saint-Germain’de oynadı.',
-      'Arjantin’in 2022 finalinde iki gol attı.'
-    ]
-  ),
-  (
-    name: 'Cristiano Ronaldo',
-    article: 'Cristiano Ronaldo',
-    clues: [
-      'Portekiz ile EURO 2016 şampiyonluğu yaşadı.',
-      'Sporting’den Manchester United’a transfer oldu.',
-      'Real Madrid’de dokuz sezon forma giydi.'
-    ]
-  ),
-  (
-    name: 'Luka Modrić',
-    article: 'Luka Modrić',
-    clues: [
-      '2018 Dünya Kupası’nın Altın Top ödülünü aldı.',
-      'Tottenham’dan Real Madrid’e geçti.',
-      '2018 Ballon d’Or ödülünü kazanan Hırvat orta saha.'
-    ]
-  ),
-  (
-    name: 'Kylian Mbappé',
-    article: 'Kylian Mbappé',
-    clues: [
-      '2022 Dünya Kupası finalinde hat-trick yaptı.',
-      'Monaco’da çıkış yaptı.',
-      'Fransa ile 2018 Dünya Kupası’nı kazandı.'
-    ]
-  ),
-  (
-    name: 'Mohamed Salah',
-    article: 'Mohamed Salah',
-    clues: [
-      '2017’de Roma’dan Liverpool’a transfer oldu.',
-      'Basel ve Chelsea’de de forma giydi.',
-      '2019 Şampiyonlar Ligi finalinde penaltıdan gol attı.'
-    ]
-  ),
-  (
-    name: 'Erling Haaland',
-    article: 'Erling Haaland',
-    clues: [
-      '2022-23 Premier League sezonunda 36 gol attı.',
-      'Salzburg ve Borussia Dortmund’da oynadı.',
-      'Norveçli bir santrfor.'
-    ]
-  ),
-  (
-    name: 'Zinedine Zidane',
-    article: 'Zinedine Zidane',
-    clues: [
-      '1998 Dünya Kupası finalinde iki kafa golü attı.',
-      'Bordeaux ve Juventus’ta forma giydi.',
-      '2002 Şampiyonlar Ligi finalindeki vole golünü attı.'
-    ]
-  ),
-  (
-    name: 'Didier Drogba',
-    article: 'Didier Drogba',
-    clues: [
-      '2012 Şampiyonlar Ligi finalinde eşitliği getiren golü attı.',
-      'Marsilya’dan Chelsea’ye transfer oldu.',
-      'Galatasaray’da oynayan Fildişi Sahilli santrfor.'
-    ]
-  ),
-  (
-    name: 'Marta',
-    article: 'Marta (footballer)',
-    clues: [
-      'Kadınlar Dünya Kupası’nda 17 gol attı.',
-      'İsveç’te Umeå IK ve Rosengård forması giydi.',
-      'Brezilyalı futbolcu altı kez FIFA’nın yılın en iyi kadın oyuncusu ödülünü aldı.'
-    ]
-  ),
-  (
-    name: 'Alexia Putellas',
-    article: 'Alexia Putellas',
-    clues: [
-      '2021 ve 2022 Ballon d’Or Féminin ödüllerini kazandı.',
-      'Barcelona’nın 2021 Şampiyonlar Ligi finalinde gol attı.',
-      '2023 Dünya Kupası’nı kazanan İspanya kadrosundaydı.'
-    ]
-  ),
-  (
-    name: 'Andrés Iniesta',
-    article: 'Andrés Iniesta',
-    clues: [
-      '2010 Dünya Kupası finalinin tek golünü attı.',
-      'Barcelona’dan sonra Vissel Kobe’de oynadı.',
-      'İspanyol orta saha La Masia’da yetişti.'
-    ]
-  ),
-  (
-    name: 'Samuel Eto’o',
-    article: 'Samuel Eto\'o',
-    clues: [
-      'Barcelona ve Inter ile art arda üç kupa kazandı.',
-      'Mallorca’da forma giydikten sonra Barcelona’ya geçti.',
-      'Kamerun ile 2000 Olimpiyatları’nda altın madalya kazandı.'
-    ]
-  ),
-];
-
-const _clubs = <FootballEntry>[
-  (
-    name: 'Galatasaray',
-    article: 'Galatasaray S.K. (football)',
-    clues: [
-      '2000 UEFA Kupası finalinde Arsenal’i penaltılarla geçti.',
-      'Kurucularından biri Ali Sami Yen’di.',
-      'İstanbul kulübünün renkleri sarı ve kırmızı.'
-    ]
-  ),
-  (
-    name: 'Fenerbahçe',
-    article: 'Fenerbahçe S.K. (football)',
-    clues: [
-      '2012-13 UEFA Avrupa Ligi’nde yarı finale çıktı.',
-      '1907’de kuruldu.',
-      'İstanbul’un Kadıköy ilçesiyle özdeşleşen sarı-lacivertli kulüp.'
-    ]
-  ),
-  (
-    name: 'Beşiktaş',
-    article: 'Beşiktaş J.K.',
-    clues: [
-      '2017-18 Şampiyonlar Ligi grubunu yenilgisiz lider bitirdi.',
-      '1903’te kuruldu.',
-      'Kara Kartal lakabıyla tanınır.'
-    ]
-  ),
-  (
-    name: 'Trabzonspor',
-    article: 'Trabzonspor',
-    clues: [
-      '1975-76’da Türkiye’nin en üst ligini kazandı.',
-      '1967’de kuruldu.',
-      'Bordo-mavili kulübün şehri Trabzon.'
-    ]
-  ),
-  (
-    name: 'Barcelona',
-    article: 'FC Barcelona',
-    clues: [
-      '2009’da takvim yılı içinde altı kupa kazandı.',
-      'Altyapısı La Masia adıyla bilinir.',
-      'Katalonya derbisinde Espanyol ile karşılaşır.'
-    ]
-  ),
-  (
-    name: 'Real Madrid',
-    article: 'Real Madrid CF',
-    clues: [
-      'Avrupa Şampiyon Kulüpler Kupası’nın ilk beş sezonunu kazandı.',
-      '2014 Şampiyonlar Ligi zaferi La Décima olarak anılır.',
-      'Santiago Bernabéu’da oynar.'
-    ]
-  ),
-  (
-    name: 'Liverpool',
-    article: 'Liverpool F.C.',
-    clues: [
-      '2005 Şampiyonlar Ligi finalinde 3-0 geriden geldi.',
-      'Şehir derbisinde Everton ile karşılaşır.',
-      'Anfield’da oynar.'
-    ]
-  ),
-  (
-    name: 'AC Milan',
-    article: 'AC Milan',
-    clues: [
-      '1989 ve 1990 Avrupa Şampiyon Kulüpler Kupası’nı kazandı.',
-      'Paolo Maldini kariyerini bu kulüpte geçirdi.',
-      'Rossoneri lakabıyla bilinir.'
-    ]
-  ),
-  (
-    name: 'Ajax',
-    article: 'AFC Ajax',
-    clues: [
-      '1995 Şampiyonlar Ligi finalinde Milan’ı 1-0 yendi.',
-      'Johan Cruyff bu kulüpte yetişti.',
-      'Amsterdam merkezli kulüp.'
-    ]
-  ),
-  (
-    name: 'Bayern Münih',
-    article: 'FC Bayern Munich',
-    clues: [
-      '2020 Şampiyonlar Ligi finalinde Paris Saint-Germain’i yendi.',
-      'Thomas Müller bu kulüpte yetişti.',
-      'Allianz Arena’da oynar.'
-    ]
-  ),
-  (
-    name: 'Manchester City',
-    article: 'Manchester City F.C.',
-    clues: [
-      '2023 Şampiyonlar Ligi finalini İstanbul’da kazandı.',
-      '2011-12 lig şampiyonluğunu Agüero’nun son dakika golüyle aldı.',
-      'Etihad Stadyumu’nda oynar.'
-    ]
-  ),
-  (
-    name: 'Borussia Dortmund',
-    article: 'Borussia Dortmund',
-    clues: [
-      '1997 Şampiyonlar Ligi finalinde Juventus’u yendi.',
-      'Taraftar tribünü Sarı Duvar adıyla bilinir.',
-      'Almanya’da Ruhr derbisinde Schalke ile karşılaşır.'
-    ]
-  ),
-];
+typedef FootballEntry = ({String id, String name, List<String> clues});
 
 class _FootballQuizScreenState extends State<FootballQuizScreen> {
   final _random = Random();
-  final _descriptions = <String, String>{};
-  late List<FootballEntry> _rounds;
-  late List<FootballEntry> _options;
+  List<FootballEntry> _bank = const [];
+  List<FootballEntry> _rounds = const [];
+  List<FootballEntry> _options = const [];
   int _index = 0;
   int _visible = 1;
   int _points = 0;
@@ -257,16 +35,150 @@ class _FootballQuizScreenState extends State<FootballQuizScreen> {
   final Set<FootballEntry> _eliminated = {};
   FootballEntry? _lastWrong;
   bool _clubFinished = false;
+  bool _loading = true;
+  String? _error;
 
-  List<FootballEntry> get _bank =>
-      widget.mode == FootballQuizMode.player ? _players : _clubs;
-  FootballEntry get _answer => _rounds[_index];
+  FootballEntry? get _answer =>
+      _rounds.isNotEmpty && _index < _rounds.length ? _rounds[_index] : null;
 
   @override
   void initState() {
     super.initState();
-    _restart();
-    unawaited(_loadDescriptions());
+    unawaited(_loadCatalog());
+  }
+
+  List<Map<String, dynamic>> _maps(Object? raw) {
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+    if (raw is Map) {
+      return raw.values
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+    return const [];
+  }
+
+  List<FootballEntry> _playerEntries(Map<String, dynamic> catalog) {
+    final players = _maps(catalog['players']);
+    final entries = <FootballEntry>[];
+    for (final player in players) {
+      final id = player['id']?.toString() ?? '';
+      final name = player['name']?.toString().trim() ?? '';
+      if (id.isEmpty || name.isEmpty) continue;
+
+      final clues = <String>{};
+      for (final career in _maps(player['careers'])) {
+        final club = career['label']?.toString().trim() ?? '';
+        if (club.isNotEmpty) {
+          clues.add('Kariyer kataloğunda $club kulübüyle ilişkili.');
+        }
+      }
+      for (final country in _maps(player['countries'])) {
+        final label = country['label']?.toString().trim() ?? '';
+        if (label.isNotEmpty) {
+          clues.add('Katalogdaki ülke kaydı: $label.');
+        }
+      }
+      if (clues.isEmpty) continue;
+      entries.add((id: id, name: name, clues: clues.take(3).toList()));
+    }
+
+    // Same display name with different entity IDs would make a multiple-choice
+    // answer ambiguous, so omit those names until the UI can disambiguate them.
+    final nameCounts = <String, int>{};
+    for (final entry in entries) {
+      final key = entry.name.toLowerCase();
+      nameCounts[key] = (nameCounts[key] ?? 0) + 1;
+    }
+    return entries
+        .where((entry) => nameCounts[entry.name.toLowerCase()] == 1)
+        .toList(growable: false);
+  }
+
+  List<FootballEntry> _clubEntries(Map<String, dynamic> catalog) {
+    final clubs = <String, ({String name, Set<String> playerNames, List<int> years})>{};
+    for (final player in _maps(catalog['players'])) {
+      final playerId = player['id']?.toString() ?? '';
+      final playerName = player['name']?.toString().trim() ?? '';
+      if (playerId.isEmpty || playerName.isEmpty) continue;
+      for (final career in _maps(player['careers'])) {
+        final clubId = career['id']?.toString() ?? '';
+        final clubName = career['label']?.toString().trim() ?? '';
+        if (clubId.isEmpty || clubName.isEmpty) continue;
+        final club = clubs.putIfAbsent(
+          clubId,
+          () => (name: clubName, playerNames: <String>{}, years: <int>[]),
+        );
+        club.playerNames.add(playerName);
+        if (career['startYear'] is num) {
+          club.years.add((career['startYear'] as num).toInt());
+        }
+      }
+    }
+
+    final entries = <FootballEntry>[];
+    for (final record in clubs.entries) {
+      final playerNames = record.value.playerNames.toList()..sort();
+      final years = record.value.years;
+      final clues = <String>[
+        'Katalogdaki ${playerNames.length} futbolcunun kariyer kaydında bu kulüp yer alıyor.',
+        if (years.isNotEmpty)
+          'Bu kulüple ilişkili kayıtlarda görülen en erken başlangıç yılı ${years.reduce(min)}.',
+        if (playerNames.isNotEmpty)
+          'Kayıtlı oyunculardan biri: ${playerNames.first}.',
+      ];
+      entries.add((id: record.key, name: record.value.name, clues: clues));
+    }
+
+    final nameCounts = <String, int>{};
+    for (final entry in entries) {
+      final key = entry.name.toLowerCase();
+      nameCounts[key] = (nameCounts[key] ?? 0) + 1;
+    }
+    return entries
+        .where((entry) => nameCounts[entry.name.toLowerCase()] == 1)
+        .toList(growable: false);
+  }
+
+  Future<void> _loadCatalog() async {
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+        _bank = const [];
+        _rounds = const [];
+      });
+    }
+    try {
+      final snapshot = await FootballCatalogRepository.load();
+      final bank = widget.mode == FootballQuizMode.player
+          ? _playerEntries(snapshot.data)
+          : _clubEntries(snapshot.data);
+      if (bank.length < 6) {
+        throw StateError(
+          widget.mode == FootballQuizMode.player
+              ? 'Futbolcu quiz’i için yeterli benzersiz oyuncu ve doğrulanabilir kariyer/ülke bilgisi yok.'
+              : 'Takım quiz’i için yeterli benzersiz kulüp kariyer kaydı yok.',
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        _bank = bank;
+        _loading = false;
+        _restart();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$error';
+      });
+    }
   }
 
   void _restart() {
@@ -286,46 +198,6 @@ class _FootballQuizScreenState extends State<FootballQuizScreen> {
     _eliminated.clear();
     _lastWrong = null;
     _clubFinished = false;
-  }
-
-  Future<void> _loadDescriptions() async {
-    final client = http.Client();
-    try {
-      final uri = Uri.https('www.wikidata.org', '/w/api.php', {
-        'action': 'wbgetentities',
-        'sites': 'enwiki',
-        'titles': _bank.map((entry) => entry.article).join('|'),
-        'props': 'descriptions|sitelinks',
-        'sitefilter': 'enwiki',
-        'languages': 'tr',
-        'format': 'json',
-        'origin': '*',
-      });
-      final response = await client.get(uri, headers: const {
-        'Api-User-Agent': 'AZOyun Football Quiz/1.0 (https://azoyun.web.app/)',
-      }).timeout(const Duration(seconds: 5));
-      if (!mounted || response.statusCode != 200) return;
-      final raw =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-      final entities = raw['entities'];
-      if (entities is! Map) return;
-      final descriptions = <String, String>{};
-      for (final entity in entities.values.whereType<Map>()) {
-        final title = (entity['sitelinks'] as Map?)?['enwiki'];
-        final summary = (entity['descriptions'] as Map?)?['tr'];
-        if (title is Map &&
-            title['title'] is String &&
-            summary is Map &&
-            summary['value'] is String) {
-          descriptions[title['title'] as String] = summary['value'] as String;
-        }
-      }
-      setState(() => _descriptions.addAll(descriptions));
-    } catch (_) {
-      // The bundled quiz runs without a network connection.
-    } finally {
-      client.close();
-    }
   }
 
   void _guess(FootballEntry entry) => setState(() {

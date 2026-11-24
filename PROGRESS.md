@@ -1,5 +1,24 @@
 # AZOyun oyun geliştirme ve ilerleme takibi
 
+## 24 Kasım 2026 · Oyunları gerçek oynanış standardına göre yeniden ele alma
+
+- [x] Kullanıcının paylaştığı [Game Development becerisini](https://www.aitmpl.com/component/skills/creative-design/game-development) inceledim; web ve Flutter için proje standardına uyarladım: [GAME_DEVELOPMENT_STANDARDS.md](docs/GAME_DEVELOPMENT_STANDARDS.md).
+- [x] Üç LobeHub becerisini de ekledim: sabit zaman adımlı döngü (yalnızca gerçek zamanlı oyunlarda), oyun tasarım özeti/30 saniye döngüsü/zorluk ve çok oyunculu kurallarda adalet-denge incelemesi. Son bağlantı doğrudan 403 verdi; eşleşen `game-theory` beceri açıklaması ikincil katalogdan incelendi, kripto/token teşvikleri bu uygulamanın kapsamına alınmadı.
+- [x] Kalan işleri Ruflo ana görevinde revize ettim: revision 2, sekiz Android-öncelikli iş paketi ve kabul ölçütleri. Hepsi beklemede; sağlayıcı olmadığı için ajanlar çalışmıyor.
+- [x] Android öncelikli yeniden yapım sırasını, cihaz yönü politikasını, oyun kabul kapılarını ve araştırma kaynaklarını yazdım: [GAME_REBUILD_ROADMAP.md](docs/GAME_REBUILD_ROADMAP.md).
+- [x] Ruflo hiyerarşik-mesh panosunda 30 rol ve 30 atanmış görev görünüyor. Bunlar çalışan 30 model ajan değildir: Ruflo yürütme çağrısı LLM sağlayıcı anahtarı bulunmadığını bildirdi; görevler bekliyor.
+- [x] CTO, proje planı, yön ve Aile Masası için yerel inceleme ajanlarının bulgularını yol haritasına aktardım. REA APK incelemesi paketin statik analizidir; canlı site tarayıcısı CDP hedefi erişilemediği için canlı tersine mühendislik olarak raporlanmıyor.
+- [x] Bu değişikliklerin ardından statik web salonu yeniden üretildi (`node scripts/build-web.mjs`) ve Android debug APK yeniden derlendi (`build/app/outputs/flutter-apk/app-debug.apk`). Bu derlemeler gerçek cihaz oynanış doğrulaması değildir.
+- [ ] P0 Android: katalogdaki her oyun kartının uygulama içi Flutter/native akışını denetle; kırık açılışları ve web sayfasına kaçışları düzelt. Hazır olmayan kartı katalogdan gizle.
+- [ ] P0 Okey/101: yatayda 22 taşlık kullanılabilir ıstaka, dokunma+sürükleme ile taşıma, joker/çift yüzlü taşları gören kurallı otomatik düzenleme, doğru puan ve bitiş akışını tamamla.
+- [ ] P0 Aile Masası: Android masa menüsündeki Okey, 101, Pişti, Batak, Mahalleler, Kelime ve Gizli Rol oyunlarını TV/web tahtasında başlatılabilir yap; her biri telefondan oyuncu katılımı, aynı tahtada sonuç ve rövanş sunmalı.
+- [ ] P0 Futbol: Android öncelikli kadro kimyası, futbol grid, kariyer/yol, bağlantı, kelime/quiz ve Box2Box modlarını kaynaklı-dinamik katalogla tamamla; önbellek ve çevrimdışı açılışı sağla.
+- [ ] P0 Arcade: 2D oyunları Flutter içinde tut; Vapur'u native aç; 3D oyunlarda yerel varlık, dokunma, yatay/dikey kamera, hata kurtarma ve cihaz açılışını oyun başına doğrula.
+- [ ] P1 Masa/tahta: Satranç, Pişti, Batak ve Mahalleler kurallarını, tur/puan/bitiş akışını ve yatay arayüzü bitir; ortak oda API'siyle TV ve telefon akışını bağla.
+- [ ] P2 Kalan katalog: her mevcut kelime, parti, yarış, strateji, çocuk, 2D ve 3D oyununu gerçek oynanış döngüsüyle aile aile tamamla; sahte/boş oyun kartı bırakma.
+- [ ] P3 Web: tamamlanan Android modlarını ortak kural/veri/oda sözleşmesi üzerinden webde oynanabilir hale getir; Android önce gelir, web parity iddiası gerçek oynanışla kanıtlanır.
+- [ ] Cihaz ve yayın kapısı: düşük/orta seviye Android'de oyun akışları, web konsolu/telefon tarayıcısı, aile API sağlık kontrolü ve üretim yayını hâlâ doğrulanmalı; derleme başarısı oynanış kanıtı değildir.
+
 ## EN YÜKSEK ÖNCELİK · Flutter Android + HTML/CSS/JS web dengesi
 
 - [x] Mevcut dağıtım doğrulandı: Android uygulaması Flutter akışını, web yayını `web/` içindeki özel HTML/CSS/JS salonunu kullanıyor. GitHub Actions `main` push'unda `node scripts/build-web.mjs` çalıştırıp `build/salon` çıktısını Firebase Hosting'e dağıtıyor; Flutter Web derlemesi yapmıyor.

@@ -95,3 +95,46 @@ export const publishDailyFootballPack = onSchedule(
     });
   },
 );
+
+export const publishDailyFootballPack = onSchedule(
+  { schedule: 'every day 04:20', timeZone: 'UTC', region: 'us-central1', timeoutSeconds: 180, maxInstances: 1 },
+  async () => {
+    const db = databaseUrl ? getDatabaseWithUrl(databaseUrl, app) : getDatabase(app);
+    const catalogRef = db.ref('footballCatalog/current');
+    let catalog;
+    if (new Date().getUTCDay() === 0) {
+      try {
+        catalog = await fetchFootballCatalog();
+        // A successful complete pull replaces the catalogue atomically. A
+        // failed pull keeps the previous release and still permits daily play.
+        await catalogRef.set(catalog);
+        logger.info('Football catalogue refreshed', {
+          datasetVersion: catalog.datasetVersion,
+          ...catalog.coverage,
+        });
+      } catch (error) {
+        logger.warn('Football source refresh failed; retaining the last release.', { error });
+      }
+    }
+    if (!catalog) {
+      const snapshot = await catalogRef.get();
+      catalog = snapshot.val();
+    }
+    if (!catalog || !catalog.players) {
+      throw new Error('Daily football pack cannot publish before an initial catalogue sync.');
+    }
+    const players = Array.isArray(catalog.players) ? catalog.players : Object.values(catalog.players);
+    const date = new Date().toISOString().slice(0, 10);
+    const grid = buildDailyBox2Box(players, date);
+    const connections = buildDailyConnections(players, date);
+    await catalogRef.update({
+      'grids/box2box/current': grid,
+      'grids/connections/current': connections,
+    });
+    logger.info('Daily football pack published', {
+      gameId: grid.gameId,
+      connectionsGameId: connections.gameId,
+      datasetVersion: catalog.datasetVersion,
+    });
+  },
+);

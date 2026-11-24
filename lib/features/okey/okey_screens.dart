@@ -9,6 +9,7 @@ import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/widgets/az_online_lobby.dart';
 import '../../core/widgets/az_widgets.dart';
+import '../../core/widgets/landscape_table_page.dart';
 import 'okey_match.dart';
 import 'okey_table_view.dart';
 
@@ -124,7 +125,8 @@ class _OkeyLobbyState extends State<OkeyLobbyScreen> {
       if (!mounted || seat == null) return;
       final joinedSeat = seat!;
       await Navigator.of(context).push<void>(MaterialPageRoute(
-        builder: (_) => _OkeyTable(roomId: id, seat: joinedSeat),
+        builder: (_) =>
+            LandscapeTablePage(child: _OkeyTable(roomId: id, seat: joinedSeat)),
       ));
     } catch (error) {
       debugPrint('Okey oda bağlantısı: $error');
@@ -188,6 +190,8 @@ class _OkeyTableState extends State<_OkeyTable> {
   bool _leaving = false;
   bool _pairs = false;
   bool _reported = false;
+  int? _arrangedPoints;
+  int _arrangedGroupCount = 0;
   String? _error;
   String? _lastDraw;
 
@@ -394,6 +398,20 @@ class _OkeyTableState extends State<_OkeyTable> {
       for (var index = 0; index < _rack.length; index++) {
         _rack[index] = index < sorted.length ? sorted[index].id : null;
       }
+      _arrangedPoints = null;
+      _arrangedGroupCount = 0;
+    });
+  }
+
+  void _arrangeRack(Map<String, OTile> hand) {
+    final arrangement = arrangeOkeyHand(hand.values.toList(), _room);
+    setState(() {
+      for (var index = 0; index < _rack.length; index++) {
+        _rack[index] =
+            index < arrangement.ids.length ? arrangement.ids[index] : null;
+      }
+      _arrangedPoints = arrangement.points;
+      _arrangedGroupCount = arrangement.groups.length;
     });
   }
 
@@ -568,14 +586,28 @@ class _OkeyTableState extends State<_OkeyTable> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 2, 12, 8),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Row(children: [
-                    Text('Istakan · ${hand.length} taş',
-                        style: Theme.of(context).textTheme.titleSmall),
-                    const Spacer(),
-                    TextButton(
-                        onPressed: () => _sortRack(hand),
-                        child: const Text('Renge göre diz')),
-                  ]),
+                  Wrap(
+                      spacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text('Istakan · ${hand.length} taş',
+                            style: Theme.of(context).textTheme.titleSmall),
+                        TextButton(
+                            onPressed: () => _sortRack(hand),
+                            child: const Text('Renge göre diz')),
+                        TextButton.icon(
+                            onPressed: () => _arrangeRack(hand),
+                            icon: const Icon(Icons.auto_awesome, size: 17),
+                            label: const Text('En iyi seri/per')),
+                      ]),
+                  if (_arrangedPoints != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '$_arrangedGroupCount geçerli grup · $_arrangedPoints puan. Taşları uzun basıp sürükleyerek elle de ayarlayabilirsin.',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ),
                   OkeyRack(
                     ids: [
                       for (final id in _rack)

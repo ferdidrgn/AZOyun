@@ -1,0 +1,47 @@
+.football-grid-page > .room-title { margin-bottom: 18px; }
+.football-grid-shell { width: min(100%, 1120px); margin-inline: auto; padding: clamp(14px, 2.7vw, 30px); }
+.football-grid-status { color: var(--muted); }
+.football-grid-status.is-error { color: #ff9a91; margin-bottom: 12px; }
+.football-grid-help { margin-top: 12px; color: var(--muted); }
+.football-grid-game { display: grid; gap: 18px; }
+.football-grid-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; }
+.football-grid-copy { max-width: 56ch; color: var(--muted); }
+.football-grid-stats { display: flex; gap: 8px; }
+.football-stat { display: grid; justify-items: center; gap: 1px; min-width: 66px; padding: 7px 10px; border: 1px solid var(--edge); border-radius: 9px; background: #191725; }
+.football-stat strong { color: var(--gold); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.football-stat span { color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .08em; }
+.football-board-wrap { overflow-x: auto; padding: 1px 1px 8px; }
+.football-board { display: grid; grid-template-columns: minmax(100px, 150px) repeat(3, minmax(112px, 1fr)); grid-template-rows: minmax(54px, auto) repeat(3, minmax(126px, auto)); min-width: 560px; border: 1px solid #554c62; border-radius: 12px; overflow: hidden; background: #176b43; }
+.football-corner, .football-column, .football-row { display: grid; place-items: center; padding: 9px; text-align: center; color: #fff6e9; font-family: var(--display); font-weight: 700; line-height: 1.05; }
+.football-corner { background: #30257d; font-size: 1.05rem; }
+.football-column { background: #175b37; font-size: clamp(1.1rem, 2.4vw, 1.7rem); }
+.football-row { background: #195b37; font-size: clamp(1.02rem, 2.1vw, 1.5rem); }
+.football-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-width: 0; margin: 1px; padding: 9px; border: 2px solid transparent; border-radius: 7px; background: #258e50; color: #fff; text-align: center; transition: background .15s ease, border-color .15s ease, transform .15s ease; }
+.football-cell:hover { background: #32a35d; transform: translateY(-1px); }
+.football-cell.is-selected { border-color: #ffd56c; box-shadow: inset 0 0 0 1px #ffd56c; }
+.football-cell.is-filled { background: #ffd36b; color: #271b20; }
+.football-cell-value { font-size: clamp(1rem, 1.9vw, 1.35rem); font-weight: 800; overflow-wrap: anywhere; }
+.football-cell-hint { font-size: .72rem; opacity: .84; }
+.football-entry { display: grid; gap: 8px; position: relative; }
+.football-selected { font-weight: 700; color: var(--gold); }
+.football-entry-row { display: flex; gap: 10px; }
+.football-entry-row input { flex: 1; min-width: 0; min-height: 48px; padding: 9px 13px; border: 1px solid var(--edge); border-radius: 9px; background: #171522; }
+.football-entry-row button { flex: 0 0 auto; }
+.football-suggestions { position: absolute; z-index: 5; inset: auto 0 auto 0; top: 100%; display: grid; gap: 3px; max-height: 250px; overflow-y: auto; background: #191725; border-radius: 0 0 10px 10px; }
+.football-suggestion { padding: 9px 12px; border: 1px solid var(--edge); background: #242033; text-align: left; }
+.football-suggestion:hover { background: #343047; }
+.football-grid-message { min-height: 1.5em; color: var(--muted); }
+.football-grid-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--edge); padding-top: 12px; }
+.football-version { color: var(--muted); font-size: .84rem; }
+.football-grid-game.is-finished .football-grid-message { color: var(--gold); font-weight: 700; }
+@media (max-width: 620px) {
+  .football-grid-top { align-items: stretch; }
+  .football-grid-stats { justify-content: space-between; }
+  .football-stat { flex: 1; }
+  .football-board { grid-template-columns: minmax(90px, 112px) repeat(3, minmax(108px, 1fr)); grid-template-rows: minmax(58px, auto) repeat(3, minmax(115px, auto)); }
+  .football-entry-row { flex-direction: column; }
+  .football-entry-row button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .football-cell { transition: none; }
+}

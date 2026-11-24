@@ -5,6 +5,7 @@ import '../batak/batak_screen.dart';
 import '../deck/deck_lobby_screen.dart';
 import '../mahalleler/mahalle_screen.dart';
 import '../okey/okey_screens.dart';
+import '../../core/widgets/landscape_table_page.dart';
 import 'family_screen.dart';
 
 class FirebaseTableMenu extends StatelessWidget {
@@ -68,8 +69,15 @@ class FirebaseTableMenu extends StatelessWidget {
                   FilledButton.icon(
                     autofocus: index == 0,
                     style: tvButtonStyle,
-                    onPressed: () => Navigator.of(context)
-                        .push<void>(MaterialPageRoute(builder: (_) => screen)),
+                    onPressed: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(builder: (_) {
+                      // Family party games render their shared table directly.
+                      // The other lobbies apply landscape only after entering a
+                      // live room, so nested routes cannot reset orientation.
+                      return screen is FamilyScreen
+                          ? LandscapeTablePage(child: screen)
+                          : screen;
+                    })),
                     icon: const Icon(Icons.play_arrow_rounded),
                     label: Text(title),
                   ),

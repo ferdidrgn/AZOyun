@@ -4,6 +4,7 @@ import '../../core/services/storage_service.dart';
 import '../../core/theme/felt.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/az_online_lobby.dart';
+import '../../core/widgets/landscape_table_page.dart';
 import 'deck_repository.dart';
 import 'deck_room_screen.dart';
 
@@ -103,10 +104,12 @@ class _DeckLobbyScreenState extends State<DeckLobbyScreen> {
       await Navigator.push(
         context,
         MaterialPageRoute<void>(
-          builder: (_) => DeckRoomScreen(
-            roomId: created.roomId,
-            myKey: created.myKey,
-            myName: _name!,
+          builder: (_) => LandscapeTablePage(
+            child: DeckRoomScreen(
+              roomId: created.roomId,
+              myKey: created.myKey,
+              myName: _name!,
+            ),
           ),
         ),
       );
@@ -145,10 +148,12 @@ class _DeckLobbyScreenState extends State<DeckLobbyScreen> {
       await Navigator.push(
         context,
         MaterialPageRoute<void>(
-          builder: (_) => DeckRoomScreen(
-            roomId: joined.roomId,
-            myKey: joined.myKey,
-            myName: _name!,
+          builder: (_) => LandscapeTablePage(
+            child: DeckRoomScreen(
+              roomId: joined.roomId,
+              myKey: joined.myKey,
+              myName: _name!,
+            ),
           ),
         ),
       );

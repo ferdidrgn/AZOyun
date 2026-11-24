@@ -8,6 +8,7 @@ import '../../core/services/profile_service.dart';
 import '../../core/services/room_service.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/widgets/az_online_lobby.dart';
+import '../../core/widgets/landscape_table_page.dart';
 import '../../core/widgets/az_widgets.dart';
 import 'mahalle_board.dart';
 import 'mahalle_match.dart';
@@ -115,7 +116,9 @@ class _MahalleLobbyState extends State<MahalleLobbyScreen> {
       if (!mounted || seat == null) return;
       final localSeat = seat!;
       await Navigator.of(context).push<void>(MaterialPageRoute(
-        builder: (_) => _MahalleRoomScreen(id: id, seat: localSeat),
+        builder: (_) => LandscapeTablePage(
+          child: _MahalleRoomScreen(id: id, seat: localSeat),
+        ),
       ));
     } catch (error) {
       debugPrint('Mahalleler oda bağlantısı: $error');

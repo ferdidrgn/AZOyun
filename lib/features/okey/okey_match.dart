@@ -260,6 +260,95 @@ int okeyMeldScore(List<OTile> tiles, OkeyRoom room, {bool pairs = false}) {
   return score;
 }
 
+class OkeyArrangement {
+  const OkeyArrangement({
+    required this.ids,
+    required this.groups,
+    required this.points,
+  });
+
+  final List<String> ids;
+  final List<List<String>> groups;
+  final int points;
+}
+
+/// Finds high-scoring, complete runs and sets, then puts unused stones last.
+/// This is a deterministic best-first arrangement, not a server-side move.
+OkeyArrangement arrangeOkeyHand(List<OTile> hand, OkeyRoom room) {
+  final normal = hand.where((tile) => !tile.joker && !isWildTile(tile, room));
+  final byFace = <(TColor, int), List<OTile>>{};
+  for (final tile in normal) {
+    byFace.putIfAbsent((tile.color, tile.num), () => []).add(tile);
+  }
+
+  final candidates = <({List<OTile> tiles, int points})>[];
+  void add(List<OTile> tiles) {
+    final points = okeyMeldScore(tiles, room);
+    if (points > 0) candidates.add((tiles: tiles, points: points));
+  }
+
+  for (var number = 1; number <= 13; number++) {
+    for (var mask = 0; mask < 16; mask++) {
+      final colors = [
+        for (var color = 0; color < 4; color++)
+          if ((mask & (1 << color)) != 0) TColor.values[color],
+      ];
+      if (colors.length < 3 || colors.length > 4) continue;
+      final tiles = <OTile>[];
+      for (final color in colors) {
+        final matching = byFace[(color, number)];
+        if (matching == null || matching.isEmpty) break;
+        tiles.add(matching.first);
+      }
+      if (tiles.length == colors.length) add(tiles);
+    }
+  }
+
+  for (final color in TColor.values) {
+    for (var start = 1; start <= 13; start++) {
+      for (var length = 3; length <= 13 && start + length <= 14; length++) {
+        final tiles = <OTile>[];
+        for (var number = start; number < start + length; number++) {
+          final matching = byFace[(color, number == 14 ? 1 : number)];
+          if (matching == null || matching.isEmpty) break;
+          tiles.add(matching.first);
+        }
+        if (tiles.length == length) add(tiles);
+      }
+    }
+    final wrap =
+        [12, 13, 1].map((number) => byFace[(color, number)]?.first).toList();
+    if (wrap.every((tile) => tile != null)) add(wrap.cast<OTile>());
+  }
+
+  candidates.sort((a, b) => b.points.compareTo(a.points));
+  final used = <String>{};
+  final groups = <List<String>>[];
+  var points = 0;
+  for (final candidate in candidates) {
+    final ids = candidate.tiles.map((tile) => tile.id).toList();
+    if (ids.any(used.contains)) continue;
+    used.addAll(ids);
+    groups.add(ids);
+    points += candidate.points;
+  }
+
+  final leftovers = hand.where((tile) => !used.contains(tile.id)).toList()
+    ..sort((left, right) {
+      final a = effectiveOkeyTile(left, room);
+      final b = effectiveOkeyTile(right, room);
+      return a.color.index * 14 + a.num - (b.color.index * 14 + b.num);
+    });
+  return OkeyArrangement(
+    ids: [
+      ...groups.expand((group) => group),
+      ...leftovers.map((tile) => tile.id)
+    ],
+    groups: groups,
+    points: points,
+  );
+}
+
 bool winningOkeyHand(List<OTile> hand, OkeyRoom room) {
   if (hand.length != 14) return false;
   final counts = <(TColor, int), int>{};

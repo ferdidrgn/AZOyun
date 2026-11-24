@@ -11,6 +11,7 @@ import '../../core/theme/az_theme.dart';
 import '../../core/theme/felt.dart';
 import '../../core/widgets/az_widgets.dart';
 import '../../core/widgets/banner_ad_widget.dart';
+import '../../core/widgets/landscape_table_page.dart';
 import '../checkers/dama_screens.dart';
 import '../city/city_screens.dart';
 import '../deck/deck_lobby_screen.dart';
@@ -30,6 +31,10 @@ import '../football/football_chemistry_screen.dart';
 import '../football/football_career_path_screen.dart';
 import '../football/football_wordle_screen.dart';
 import '../football/football_link_path_screen.dart';
+<<<<<<< Updated upstream
+=======
+import '../football/football_shot_screen.dart';
+>>>>>>> Stashed changes
 import '../sprint/sprint_rules.dart';
 import '../sprint/sprint_screen.dart';
 import '../arcade3d/three_arcade_screen.dart';
@@ -385,6 +390,15 @@ class _QuickGamesTab extends StatelessWidget {
         _QuickTile(emoji: '🥅', title: ThreeArcadeGame.penalty.title,
           subtitle: 'Kaleciyi geç · 6 vuruş', gradient: _strategyGrad,
           onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.penalty))),
+<<<<<<< Updated upstream
+=======
+        _QuickTile(emoji: '🎯', title: 'Penaltı · 2D',
+          subtitle: 'Nişan al, vuruş gücünü seç · 6 şut', gradient: _arcadeGrad,
+          onTap: () => _push(context, const FootballShotScreen(mode: ShotMode.penalty))),
+        _QuickTile(emoji: '🌀', title: 'Frikik · 2D',
+          subtitle: 'Falso ver, barajı aş · 6 vuruş', gradient: _arcadeGrad,
+          onTap: () => _push(context, const FootballShotScreen(mode: ShotMode.freeKick))),
+>>>>>>> Stashed changes
       ]),
       const SizedBox(height: 26),
 
@@ -400,13 +414,15 @@ class _QuickGamesTab extends StatelessWidget {
           emoji: '🔴🟡', title: "4'lü Bağlantı", subtitle: '2 Kişi · AI', gradient: _strategyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const ConnectFourLobbyScreen(),
-              game: (p) => ConnectFourGameScreen(players: p)),
+              game: (p) => ConnectFourGameScreen(players: p),
+              landscape: true),
         ),
         _QuickTile(
           emoji: '⚫⚪', title: 'Reversi', subtitle: '2 Kişi · AI', gradient: _strategyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const ReversiLobbyScreen(),
-              game: (p) => ReversiGameScreen(players: p)),
+              game: (p) => ReversiGameScreen(players: p),
+              landscape: true),
         ),
         _QuickTile(
           emoji: '🪨', title: 'Taş Alma', subtitle: '2 Kişi · AI', gradient: _strategyGrad,
@@ -418,7 +434,8 @@ class _QuickGamesTab extends StatelessWidget {
           emoji: '♟️', title: 'Satranç', subtitle: '2 Kişi', gradient: _strategyGrad,
           onTap: () => _openQuickGame(context,
               lobby: const ChessLobbyScreen(),
-              game: (p) => ChessGameScreen(players: p)),
+              game: (p) => ChessGameScreen(players: p),
+              landscape: true),
         ),
       ]),
       const SizedBox(height: 26),
@@ -584,7 +601,8 @@ class _QuickGamesTab extends StatelessWidget {
           emoji: '🟠', title: 'Karambol', subtitle: '1-6 kişi', gradient: _arcadeGrad,
           onTap: () => _openQuickGame(context,
               lobby: const CarromLobbyScreen(),
-              game: (p) => CarromGameScreen(players: p)),
+              game: (p) => CarromGameScreen(players: p),
+              landscape: true),
         ),
         _QuickTile(
           emoji: '😮', title: 'Pelet Labirenti', subtitle: '1-6 kişi', gradient: _arcadeGrad,
@@ -596,7 +614,8 @@ class _QuickGamesTab extends StatelessWidget {
           emoji: '🎳', title: 'Mini Bovling', subtitle: '1-6 Kişi · 3D · Skor', gradient: _arcadeGrad,
           onTap: () => _openQuickGame(context,
               lobby: const MiniBowlingLobbyScreen(),
-              game: (p) => MiniBowlingGameScreen(players: p)),
+              game: (p) => MiniBowlingGameScreen(players: p),
+              landscape: true),
         ),
       ]),
     ]),
@@ -857,13 +876,22 @@ Future<void> _openQuickGame(
   BuildContext context, {
   required Widget lobby,
   required Widget Function(List<QPPlayer> players) game,
+  bool landscape = false,
 }) async {
   final players = await Navigator.push<List<QPPlayer>>(
     context,
     MaterialPageRoute(builder: (_) => lobby),
   );
   if (players == null || !context.mounted) return;
-  await Navigator.push(context, MaterialPageRoute(builder: (_) => game(players)));
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) {
+        final screen = game(players);
+        return landscape ? LandscapeTablePage(child: screen) : screen;
+      },
+    ),
+  );
 }
 
 class _QuickTile extends StatelessWidget {

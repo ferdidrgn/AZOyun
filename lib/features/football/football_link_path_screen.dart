@@ -1,8 +1,15 @@
 import 'dart:async';
 
+<<<<<<< Updated upstream
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
+=======
+import 'package:flutter/material.dart';
+
+import 'football_catalog_repository.dart';
+
+>>>>>>> Stashed changes
 class _LinkPlayer {
   const _LinkPlayer(
       {required this.id, required this.name, required this.clubs});
@@ -62,12 +69,25 @@ class _FootballLinkPathScreenState extends State<FootballLinkPathScreen> {
   }
 
   Future<void> _load() async {
+<<<<<<< Updated upstream
     try {
       final snapshot = await FirebaseDatabase.instance
           .ref('footballCatalog/current/players')
           .get()
           .timeout(const Duration(seconds: 12));
       final players = _maps(snapshot.value)
+=======
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _message = null;
+        _players = const [];
+      });
+    }
+    try {
+      final catalog = await FootballCatalogRepository.load();
+      final players = _maps(catalog.data['players'])
+>>>>>>> Stashed changes
           .map((raw) {
             final clubs = <String, String>{};
             for (final spell in _maps(raw['careers'])) {
@@ -207,7 +227,18 @@ class _FootballLinkPathScreenState extends State<FootballLinkPathScreen> {
       appBar: AppBar(title: const Text('Oyuncu Bağlantı Yolu')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+<<<<<<< Updated upstream
           : Center(
+=======
+          : _players.isEmpty
+              ? FootballCatalogUnavailableView(
+                  title: 'Oyuncu kataloğu açılamadı',
+                  details: _message ?? 'Futbol verisi henüz kullanılamıyor.',
+                  retrying: _loading,
+                  onRetry: () => unawaited(_load()),
+                )
+              : Center(
+>>>>>>> Stashed changes
               child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 640),
                   child: ListView(padding: const EdgeInsets.all(20), children: [
@@ -264,8 +295,11 @@ class _FootballLinkPathScreenState extends State<FootballLinkPathScreen> {
                                 title: Text(step.player.name))),
                       ],
                     ],
+<<<<<<< Updated upstream
                     if (_message == null && _players.isEmpty)
                       const Text('Katalog henüz yayınlanmadı.'),
+=======
+>>>>>>> Stashed changes
                   ]))),
     );
   }

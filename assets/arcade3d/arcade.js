@@ -27,6 +27,9 @@ let pointer;
 let resizeObserver;
 let webglAvailable = true;
 let listeningForResize = false;
+let football2d = false;
+let footballCanvas;
+let footballContext;
 
 const mobileProfile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
   window.matchMedia?.('(max-width: 760px)').matches;
@@ -49,13 +52,13 @@ function panel(heading, message, button) {
 }
 
 function start() {
-  if (!webglAvailable) return;
+  if (!webglAvailable && !football2d) return;
   if (paused) {
     paused = false;
   } else {
-    clearScene();
+    if (!football2d) clearScene();
     score = 0;
-    game = isMaze ? makeMaze() : isBowling ? makeBowling() : isDrone ? makeDrones()
+    game = football2d ? makeFootball2d() : isMaze ? makeMaze() : isBowling ? makeBowling() : isDrone ? makeDrones()
       : isFootballShot ? makeFootballShot() : mode === 'runway' ? makeRunway() : makeOrbit();
   }
   held.clear();
@@ -745,6 +748,10 @@ function makeDrones() {
 }
 
 function resize() {
+  if (football2d) {
+    game?.draw();
+    return;
+  }
   if (!renderer || !scene || !camera || !webglAvailable) return;
   const width = sceneElement.clientWidth;
   const height = sceneElement.clientHeight;
@@ -757,7 +764,8 @@ function resize() {
   renderer.setSize(width, height, false);
   renderer.domElement.style.width = width + 'px';
   renderer.domElement.style.height = height + 'px';
-  renderer.render(scene, camera);
+  if (football2d) game.draw();
+  else renderer.render(scene, camera);
 }
 
 function frame(time) {
@@ -766,8 +774,24 @@ function frame(time) {
   lastFrame = time;
   game.step(dt);
   setText('score', score);
-  renderer.render(scene, camera);
+  if (football2d) game.draw();
+  else renderer.render(scene, camera);
   if (running) frameId = requestAnimationFrame(frame);
+}
+
+function enableFootball2d() {
+  football2d = true;
+  if (renderer?.domElement) renderer.domElement.hidden = true;
+  if (!footballCanvas) {
+    footballCanvas = document.createElement('canvas');
+    footballCanvas.id = 'football-2d';
+    footballCanvas.setAttribute('aria-label', 'Sürükleyerek oynanan 2D futbol sahası');
+    sceneElement.prepend(footballCanvas);
+  }
+  footballContext = footballCanvas.getContext('2d');
+  if (!footballContext) return false;
+  sceneElement.setAttribute('aria-label', '2D futbol sahası');
+  return true;
 }
 
 function initialize(mode) {
@@ -821,6 +845,11 @@ function initialize(mode) {
       cancelAnimationFrame(frameId);
       $('pause').hidden = true;
       $('controls').hidden = true;
+      if (isFootballShot && enableFootball2d()) {
+        game = makeFootball2d();
+        panel(title, '3D görüntü kesildi. Oyuna 2D saha modunda devam edebilirsin.', '2D devam et');
+        return;
+      }
       panel('3D görüntü durakladı', 'Grafik belleği yeniden hazırlanıyor. Görüntü geri gelmezse oyunu kapatıp aç.', null);
     });
     renderer.domElement.addEventListener('webglcontextrestored', () => {
@@ -829,22 +858,29 @@ function initialize(mode) {
     });
     scene.background = new THREE.Color(0x15252e);
     resize();
-    if ('ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(resize);
-      resizeObserver.observe(sceneElement);
-    } else {
-      window.addEventListener('resize', resize);
-      listeningForResize = true;
-    }
   } catch (_) {
-    panel('3D görüntü açılamadı', 'Bu oyun WebGL destekli bir tarayıcı veya güncel Android System WebView gerektiriyor.', null);
-    return;
+    if (!isFootballShot) {
+      panel('3D görüntü açılamadı', 'Bu oyun WebGL destekli bir tarayıcı veya güncel Android System WebView gerektiriyor.', null);
+      return;
+    }
+    if (!enableFootball2d()) {
+      panel('Oyun açılamadı', 'Tarayıcının 2D çizim alanı kullanılamıyor.', null);
+      return;
+    }
+  }
+
+  if ('ResizeObserver' in window) {
+    resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(sceneElement);
+  } else {
+    window.addEventListener('resize', resize);
+    listeningForResize = true;
   }
 
   try { best = Number(localStorage.getItem(bestKey)) || 0; } catch (_) { /* storage optional */ }
   setText('best', best);
   setText('hint', hint);
-  panel(title, instructions, 'Başla');
+  panel(title, football2d ? instructions + ' (2D saha modu)' : instructions, 'Başla');
   $('start').addEventListener('click', start);
   $('pause').addEventListener('click', pause);
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
@@ -900,6 +936,152 @@ function initialize(mode) {
   sceneElement.addEventListener('pointerup', clearPointer);
   sceneElement.addEventListener('pointercancel', clearPointer);
   sceneElement.addEventListener('lostpointercapture', clearPointer);
+}
+
+function makeFootball2d() {
+  const penalty = mode === 'penalty';
+  const state = {
+    attempt: 0, goals: 0, targetX: .5, targetY: .23, power: .45, curve: 0,
+    flight: 0, inFlight: false, keeperX: .5, keeperTarget: .5,
+    result: '', resultTime: 0, ballX: .5, ballY: .86, wallHit: false,
+  };
+  setText('clock', '0 / 6');
+  setText('hint', penalty
+    ? 'Topu sürükleyip kalenin istediğin köşesine bırak. Kaleciyi geç!'
+    : 'Barajı aşmak için yukarı; falsolu vuruş için yana sürükle.');
+
+  function dimensions() {
+    const rect = footballCanvas.getBoundingClientRect();
+    const scale = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.max(1, rect.width);
+    const height = Math.max(1, rect.height);
+    if (footballCanvas.width !== Math.round(width * scale) ||
+        footballCanvas.height !== Math.round(height * scale)) {
+      footballCanvas.width = Math.round(width * scale);
+      footballCanvas.height = Math.round(height * scale);
+    }
+    footballContext.setTransform(scale, 0, 0, scale, 0, 0);
+    return { width, height };
+  }
+
+  function draw() {
+    if (!footballContext) return;
+    const { width: w, height: h } = dimensions();
+    const c = footballContext;
+    c.clearRect(0, 0, w, h);
+    const field = c.createLinearGradient(0, 0, 0, h);
+    field.addColorStop(0, '#18283b'); field.addColorStop(.34, '#1e563e'); field.addColorStop(1, '#246447');
+    c.fillStyle = field; c.fillRect(0, 0, w, h);
+    // Stadium band and mowing stripes give the 2D fallback its own art direction.
+    c.fillStyle = '#101b2b'; c.fillRect(0, 0, w, h * .105);
+    c.fillStyle = 'rgba(12,25,22,.19)'; c.fillRect(w * .08, h * .13, w * .84, h * .84);
+    for (let i = 0; i < 8; i++) {
+      c.fillStyle = i % 2 ? 'rgba(114,221,149,.045)' : 'rgba(6,34,22,.06)';
+      c.fillRect(0, h * (.17 + i * .1), w, h * .1);
+    }
+    c.strokeStyle = 'rgba(244,255,246,.42)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(w * .08, h * .98); c.lineTo(w * .17, h * .15);
+    c.lineTo(w * .83, h * .15); c.lineTo(w * .92, h * .98); c.stroke();
+    const gx = w * .19, gw = w * .62, gy = h * .14, gh = h * .2;
+    c.fillStyle = 'rgba(5,12,20,.3)'; c.fillRect(gx, gy, gw, gh);
+    c.strokeStyle = '#f5f4e8'; c.lineWidth = Math.max(4, w * .009); c.strokeRect(gx, gy, gw, gh);
+    c.strokeStyle = 'rgba(230,244,236,.3)'; c.lineWidth = 1;
+    for (let i = 1; i < 10; i++) { c.beginPath(); c.moveTo(gx + gw * i / 10, gy); c.lineTo(gx + gw * i / 10, gy + gh); c.stroke(); }
+    for (let i = 1; i < 4; i++) { c.beginPath(); c.moveTo(gx, gy + gh * i / 4); c.lineTo(gx + gw, gy + gh * i / 4); c.stroke(); }
+    c.strokeStyle = 'rgba(236,249,239,.38)'; c.lineWidth = 2; c.strokeRect(w * .1, h * .23, w * .8, h * .29);
+    if (!penalty) {
+      const wallY = h * .535;
+      c.strokeStyle = 'rgba(244,249,247,.48)'; c.setLineDash([7, 7]); c.lineWidth = 2;
+      c.beginPath(); c.moveTo(w * .29, wallY + 13); c.lineTo(w * .71, wallY + 13); c.stroke(); c.setLineDash([]);
+      for (let i = 0; i < 3; i++) {
+        const x = w * (.4 + i * .1);
+        c.fillStyle = '#456fe0'; c.fillRect(x - 9, wallY - 1, 18, 29);
+        c.fillStyle = '#d7a17b'; c.beginPath(); c.arc(x, wallY - 8, 7, 0, Math.PI * 2); c.fill();
+      }
+    }
+    // Keeper waits at the middle, chooses a side, and dives as the ball arrives.
+    const keeper = state.inFlight
+      ? state.keeperX + (state.keeperTarget - state.keeperX) * Math.min(1, state.flight * 2.2)
+      : state.keeperX;
+    const kx = w * keeper, ky = h * .29 + (state.inFlight && state.flight > .72 ? h * .025 : 0);
+    c.fillStyle = '#f5a13d'; c.strokeStyle = '#fff0c9'; c.lineWidth = 3;
+    c.beginPath(); c.arc(kx, ky - 13, 9, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.lineWidth = 8; c.lineCap = 'round'; c.beginPath(); c.moveTo(kx, ky - 2); c.lineTo(kx, ky + 19);
+    c.moveTo(kx, ky + 3); c.lineTo(kx - 20, ky + 6); c.moveTo(kx, ky + 3); c.lineTo(kx + 20, ky + 6); c.stroke();
+    if (!state.inFlight && !state.result) {
+      c.strokeStyle = 'rgba(129,255,222,.84)'; c.setLineDash([5, 7]); c.lineWidth = 2;
+      c.beginPath(); c.moveTo(w * .5, h * .86); c.lineTo(w * state.targetX, h * state.targetY); c.stroke(); c.setLineDash([]);
+      c.strokeStyle = '#83ffe1'; c.lineWidth = 3; c.beginPath(); c.arc(w * state.targetX, h * state.targetY, 11, 0, Math.PI * 2); c.stroke();
+    }
+    const bx = w * state.ballX, by = h * state.ballY, radius = Math.max(8, Math.min(15, w * .025));
+    c.fillStyle = 'rgba(0,0,0,.26)'; c.beginPath(); c.ellipse(bx + 2, by + radius * .6, radius * 1.2, radius * .52, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fbf8e9'; c.strokeStyle = '#acb6af'; c.lineWidth = 1.5; c.beginPath(); c.arc(bx, by, radius, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = '#1b2930';
+    for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5; c.beginPath(); c.arc(bx + Math.cos(a) * radius * .5, by + Math.sin(a) * radius * .5, radius * .15, 0, Math.PI * 2); c.fill(); }
+    if (state.result) {
+      c.fillStyle = 'rgba(10,18,28,.68)'; c.fillRect(w * .16, h * .64, w * .68, 44);
+      c.fillStyle = state.result.startsWith('GOL') ? '#c4ff5c' : '#fff'; c.textAlign = 'center';
+      c.font = '700 17px system-ui'; c.fillText(state.result, w * .5, h * .64 + 28);
+    }
+  }
+
+  function aim(dx, dy) {
+    const power = Math.max(.08, Math.min(1.2, -dy * 2.2));
+    state.targetX = Math.max(.13, Math.min(.87, .5 + dx * 1.05));
+    state.power = power;
+    state.targetY = Math.max(.15, Math.min(.34, .34 - power * .16));
+    state.curve = penalty ? 0 : Math.max(-1, Math.min(1, dx * 2));
+    state.result = ''; state.resultTime = 0;
+    draw();
+    return { power };
+  }
+
+  function finishShot() {
+    const onFrame = state.targetX > .2 && state.targetX < .8 && state.targetY > .14 && state.targetY < .34;
+    const saved = onFrame && Math.abs(state.targetX - state.keeperTarget) < (state.power > .8 ? .08 : .14);
+    if (state.wallHit) state.result = 'Barajda kaldı';
+    else if (!onFrame) state.result = 'Aut';
+    else if (saved) state.result = 'Kaleci kurtardı';
+    else {
+      state.goals++;
+      score += (state.targetX < .28 || state.targetX > .72 || state.targetY < .19) ? 3 : 2;
+      state.result = 'GOL! ' + state.goals + ' gol';
+    }
+    state.inFlight = false; state.resultTime = 1.15;
+    setText('hint', state.result + ' · ' + state.attempt + ' / 6 vuruş');
+    if (state.attempt >= 6) window.setTimeout(() => finish(state.goals > 0,
+      state.goals + ' gol · ' + score + ' puan'), 1150);
+  }
+
+  return {
+    aim,
+    launch(dx, dy) {
+      if (state.inFlight || state.attempt >= 6) return;
+      const { power } = aim(dx, dy);
+      if (power < .16) { setText('hint', 'Daha yukarı sürükle, sonra bırakıp şut çek.'); return; }
+      state.attempt++; state.inFlight = true; state.flight = 0; state.wallHit = false;
+      state.ballX = .5; state.ballY = .86;
+      state.keeperTarget = .2 + Math.floor(Math.random() * 5) * .15;
+      setText('clock', state.attempt + ' / 6'); setText('hint', 'Şut! Kalecinin hamlesini geç.');
+    },
+    draw,
+    step(dt) {
+      if (!state.inFlight) {
+        state.keeperX = .5 + Math.sin(performance.now() / 850) * .12;
+        if (state.resultTime > 0 && (state.resultTime -= dt) <= 0) {
+          state.result = ''; state.ballX = .5; state.ballY = .86;
+        }
+        return;
+      }
+      state.flight = Math.min(1, state.flight + dt * 1.15);
+      const t = state.flight;
+      state.ballX = .5 + (state.targetX - .5) * t + state.curve * Math.sin(Math.PI * t) * .075;
+      state.ballY = .86 + (state.targetY - .86) * t - Math.sin(Math.PI * t) * state.power * .1;
+      if (!penalty && t > .48 && t < .64 && state.targetY > .26 && state.power < .56) state.wallHit = true;
+      state.keeperX += (state.keeperTarget - state.keeperX) * Math.min(1, dt * 2.5);
+      if (t >= 1) finishShot();
+    },
+  };
 }
 
 window.addEventListener('pagehide', (event) => {

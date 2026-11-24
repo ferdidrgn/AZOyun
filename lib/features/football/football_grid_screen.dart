@@ -1,8 +1,14 @@
 import 'dart:async';
 
+<<<<<<< Updated upstream
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
+=======
+import 'package:flutter/material.dart';
+
+import 'football_catalog_repository.dart';
+>>>>>>> Stashed changes
 import 'football_grid_rules.dart';
 
 /// Loads the current published grid and player catalogue from RTDB.
@@ -30,6 +36,10 @@ class _FootballGridScreenState extends State<FootballGridScreen> {
   bool _started = false;
   bool _finished = false;
   String _datasetVersion = '—';
+<<<<<<< Updated upstream
+=======
+  String _datasetSource = '';
+>>>>>>> Stashed changes
 
   List<FootballGridPlayer> get _suggestions {
     final query = _input.text.trim().toLowerCase();
@@ -71,6 +81,7 @@ class _FootballGridScreenState extends State<FootballGridScreen> {
   }
 
   Future<void> _load() async {
+<<<<<<< Updated upstream
     try {
       final snapshot = await FirebaseDatabase.instance
           .ref('footballCatalog/current')
@@ -79,6 +90,17 @@ class _FootballGridScreenState extends State<FootballGridScreen> {
       final root = snapshot.value;
       if (root is! Map) throw StateError('Katalog verisi bulunamadı.');
       final data = Map<String, dynamic>.from(root);
+=======
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+    try {
+      final loaded = await FootballCatalogRepository.load(requireBox2Box: true);
+      final data = loaded.data;
+>>>>>>> Stashed changes
       final gridRoot = data['grids'];
       final box2box = gridRoot is Map ? gridRoot['box2box'] : null;
       final grid = box2box is Map && box2box['current'] is Map
@@ -114,6 +136,10 @@ class _FootballGridScreenState extends State<FootballGridScreen> {
         _columns = columns;
         _players = players;
         _datasetVersion = '${data['datasetVersion'] ?? 'unknown'}';
+<<<<<<< Updated upstream
+=======
+        _datasetSource = loaded.sourceLabel;
+>>>>>>> Stashed changes
         _loading = false;
       });
     } catch (error) {
@@ -214,14 +240,22 @@ class _FootballGridScreenState extends State<FootballGridScreen> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _error != null && _rows.isEmpty
+<<<<<<< Updated upstream
                   ? _emptyState(theme)
+=======
+                  ? _emptyState()
+>>>>>>> Stashed changes
                   : ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
                         Row(children: [
                           Expanded(
                               child: Text(
+<<<<<<< Updated upstream
                                   '$_datasetVersion · 9 kutu · $filled dolu · $playerCount oyuncu · $completionPercent%',
+=======
+                                  '$_datasetVersion · $_datasetSource · 9 kutu · $filled dolu · $playerCount oyuncu · $completionPercent%',
+>>>>>>> Stashed changes
                                   maxLines: 2,
                                   style: theme.textTheme.titleSmall)),
                           Text(timeLabel,
@@ -385,6 +419,7 @@ class _FootballGridScreenState extends State<FootballGridScreen> {
     );
   }
 
+<<<<<<< Updated upstream
   Widget _emptyState(ThemeData theme) => Padding(
         padding: const EdgeInsets.all(28),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -406,6 +441,13 @@ class _FootballGridScreenState extends State<FootballGridScreen> {
               },
               child: const Text('Yeniden dene')),
         ]),
+=======
+  Widget _emptyState() => FootballCatalogUnavailableView(
+        title: 'Günlük Box2Box tahtası açılamadı',
+        details: _error ?? 'Katalogda geçerli 3×3 oyun paketi yok.',
+        retrying: _loading,
+        onRetry: () => unawaited(_load()),
+>>>>>>> Stashed changes
       );
 }
 

@@ -12,6 +12,7 @@ const extras = {
   mahalleler: ["Mahalleler", "İki ila dört oyuncuyla mülk al, kira topla ve özel takas yap.", "Aile Masası", "/?family=tv&game=city"],
   penalti: ["Penaltı Antrenmanı", "Kaleciyi geçmek için 3D vuruşunu yönlendir.", "3D Arcade", "/oyun/penalti-antrenmani/"],
   frikik: ["Frikik Ustası", "Falsolu 3D vuruşla barajı ve kaleciyi aş.", "3D Arcade", "/oyun/frikik-ustasi/"],
+  "futbol-grid": ["Futbol Box2Box", "Kulüp ve ülke kesişiminde doğru futbolcuyu bul.", "Futbol · Günlük 3×3"],
 };
 const escape = (value) => String(value).replace(/[&<>"']/g, (char) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
@@ -64,6 +65,10 @@ export async function writePublicPages(input, output) {
   for (const [oldLink, newLink] of Object.entries(familyLinks)) home = home.replace(`href="${oldLink}"`, `href="${newLink}"`);
   home = home.replace("<!-- classic-cards -->", classicCards());
   home = home.replace("<!-- arcade-cards -->", arcadeCards());
+  home = home.replace("<!-- football-cards -->", `<a class="game-card classic-card football-card" data-kind="solo" href="/oyun/futbol-grid/">
+      <div class="card-art classic-mark" aria-hidden="true">⚽</div>
+      <div class="card-info"><span>Futbol · Günlük 3×3</span><h3>Futbol Box2Box</h3><p>Kulüp ve ülke kesişiminde doğru futbolcuyu bul.</p></div>
+      <span class="play" aria-hidden="true">↗</span></a>`);
   await writeFile(new URL("index.html", output), home);
 
   const paths = ["/", "/privacy-policy.html", "/terms.html"];

@@ -27,6 +27,8 @@ if (roomRoute !== null) {
   import("./profile.mjs").then(({ openProfile }) => openProfile(main));
 } else if (play === "ayna") {
   openMirror();
+} else if (play === "futbol-grid") {
+  import("./football-grid.mjs").then(({ openFootballGrid }) => openFootballGrid(main));
 } else if (Object.keys(classics).includes(play)) {
   import("./classic-games.mjs").then(({ openClassic }) =>
     openClassic(main, play),
@@ -70,7 +72,7 @@ if (roomRoute !== null) {
 
 if (play && !main.dataset.play) {
   const canonical = document.querySelector('link[rel="canonical"]');
-  if (canonical && (play === "ayna" || Object.keys(classics).includes(play))) {
+  if (canonical && (play === "ayna" || play === "futbol-grid" || Object.keys(classics).includes(play))) {
     canonical.href = new URL("/oyun/" + play + "/", canonical.href);
   }
 }

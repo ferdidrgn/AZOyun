@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 name: Android phone and Wear OS build
 
 on:
@@ -70,3 +71,77 @@ jobs:
             android/wear/build/outputs/apk/debug/wear-debug.apk
           if-no-files-found: error
           retention-days: 14
+=======
+name: Android phone and Wear OS build
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/android-build-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/android-build-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve Flutter packages
+        run: flutter pub get
+
+      - name: Add placeholder signing properties for debug-only build
+        run: |
+          cat > android/key.properties <<'EOF'
+          storeFile=release.jks
+          storePassword=debug-only-placeholder
+          keyAlias=debug-only-placeholder
+          keyPassword=debug-only-placeholder
+          EOF
+
+      - name: Build phone debug APK
+        run: flutter build apk --debug
+
+      - name: Build Wear OS companion APK
+        working-directory: android
+        run: ./gradlew :wear:assembleDebug
+
+      - name: Upload Android APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: azoyun-debug-apks
+          path: |
+            build/app/outputs/flutter-apk/app-debug.apk
+            android/wear/build/outputs/apk/debug/wear-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+>>>>>>> Stashed changes

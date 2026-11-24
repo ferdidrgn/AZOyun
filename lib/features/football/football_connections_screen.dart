@@ -1,8 +1,15 @@
 import 'dart:async';
 
+<<<<<<< Updated upstream
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
+=======
+import 'package:flutter/material.dart';
+
+import 'football_catalog_repository.dart';
+
+>>>>>>> Stashed changes
 class _ConnectionPlayer {
   const _ConnectionPlayer(this.id, this.name);
   final String id;
@@ -33,6 +40,10 @@ class _FootballConnectionsScreenState extends State<FootballConnectionsScreen> {
   String? _error;
   int _mistakes = 5;
   String? _datasetVersion;
+<<<<<<< Updated upstream
+=======
+  String? _datasetSource;
+>>>>>>> Stashed changes
 
   int _dailyRank(String value, int seed) {
     var hash = seed;
@@ -65,6 +76,7 @@ class _FootballConnectionsScreenState extends State<FootballConnectionsScreen> {
   }
 
   Future<void> _load() async {
+<<<<<<< Updated upstream
     try {
       final snapshot = await FirebaseDatabase.instance
           .ref('footballCatalog/current')
@@ -74,6 +86,19 @@ class _FootballConnectionsScreenState extends State<FootballConnectionsScreen> {
         throw StateError('Dinamik futbol kataloğu henüz yayınlanmadı.');
       }
       final data = Map<String, dynamic>.from(snapshot.value as Map);
+=======
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+        _board = const [];
+        _groups = const [];
+      });
+    }
+    try {
+      final loaded = await FootballCatalogRepository.load(requireConnections: true);
+      final data = loaded.data;
+>>>>>>> Stashed changes
       final players = _maps(data['players']).map((raw) {
         return _ConnectionPlayer(
           '${raw['id'] ?? ''}',
@@ -122,6 +147,10 @@ class _FootballConnectionsScreenState extends State<FootballConnectionsScreen> {
         _groups = groups;
         _board = board;
         _datasetVersion = '${data['datasetVersion'] ?? 'unknown'}';
+<<<<<<< Updated upstream
+=======
+        _datasetSource = loaded.sourceLabel;
+>>>>>>> Stashed changes
         _loading = false;
       });
     } catch (error) {
@@ -176,6 +205,7 @@ class _FootballConnectionsScreenState extends State<FootballConnectionsScreen> {
     if (_board.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Futbol Connections · 4×4')),
+<<<<<<< Updated upstream
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -195,6 +225,13 @@ class _FootballConnectionsScreenState extends State<FootballConnectionsScreen> {
               ),
             ]),
           ),
+=======
+        body: FootballCatalogUnavailableView(
+          title: 'Connections oyunu açılamadı',
+          details: _error ?? 'Günlük oyuncu grupları henüz yayınlanmadı.',
+          retrying: _loading,
+          onRetry: () => unawaited(_load()),
+>>>>>>> Stashed changes
         ),
       );
     }
@@ -205,7 +242,11 @@ class _FootballConnectionsScreenState extends State<FootballConnectionsScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(padding: const EdgeInsets.all(16), children: [
+<<<<<<< Updated upstream
             Text('Veri $_datasetVersion · 4 ortak kategori bul',
+=======
+            Text('Veri $_datasetVersion · $_datasetSource · 4 ortak kategori bul',
+>>>>>>> Stashed changes
                 style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             Text(

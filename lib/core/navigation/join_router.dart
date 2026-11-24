@@ -19,6 +19,7 @@ import '../../features/sprint/sprint_screen.dart';
 import '../../features/vampire_wolf/vampire_screens.dart';
 import '../../features/word/word_screens.dart';
 import '../services/app_keys.dart';
+import '../widgets/landscape_table_page.dart';
 
 class PendingJoin extends ChangeNotifier {
   PendingJoin._();
@@ -58,10 +59,13 @@ void openGameInvite(BuildContext context, String game, String code) {
     'dama' => DamaLobbyScreen(initialCode: normalized),
     'impostor' => ImpostorLobbyScreen(initialCode: normalized),
     'deck' => DeckLobbyScreen(initialCode: normalized),
-    'family' => FamilyScreen(host: false, initialCode: normalized),
+    'family' => LandscapeTablePage(
+        child: FamilyScreen(host: false, initialCode: normalized)),
     'sonkart' => SprintScreen(mode: SprintMode.bluff, initialCode: normalized),
-    'istasyon90' => SprintScreen(mode: SprintMode.station, initialCode: normalized),
-    'penaltiduello' => SprintScreen(mode: SprintMode.penalty, initialCode: normalized),
+    'istasyon90' =>
+      SprintScreen(mode: SprintMode.station, initialCode: normalized),
+    'penaltiduello' =>
+      SprintScreen(mode: SprintMode.penalty, initialCode: normalized),
     _ => null,
   };
   if (screen == null) {
