@@ -24,7 +24,12 @@ import '../mahalleler/mahalle_screen.dart';
 import '../batak/batak_screen.dart';
 import '../family/firebase_table_menu.dart';
 import '../family/family_screen.dart';
-import '../football/football_quiz_screen.dart';
+import '../football/football_grid_screen.dart';
+import '../football/football_connections_screen.dart';
+import '../football/football_chemistry_screen.dart';
+import '../football/football_career_path_screen.dart';
+import '../football/football_wordle_screen.dart';
+import '../football/football_link_path_screen.dart';
 import '../sprint/sprint_rules.dart';
 import '../sprint/sprint_screen.dart';
 import '../arcade3d/three_arcade_screen.dart';
@@ -356,18 +361,30 @@ class _QuickGamesTab extends StatelessWidget {
 
       _sectionHeader('⚽  FUTBOL ATÖLYESİ'),
       _grid(context, [
+        _QuickTile(emoji: '🧪', title: 'Kimya XI · 4-3-3',
+          subtitle: 'Aynı kulüpte oynamış kadro kur · Dinamik kariyer', gradient: _strategyGrad,
+          onTap: () => _push(context, const FootballChemistryScreen())),
+        _QuickTile(emoji: '🧭', title: 'Kariyer Rotası',
+          subtitle: 'Kulüp geçmişinden futbolcuyu tahmin et', gradient: _arcadeGrad,
+          onTap: () => _push(context, const FootballCareerPathScreen())),
+        _QuickTile(emoji: '🔤', title: 'Futbol Wordle',
+          subtitle: 'Futbolcu soyadını altı denemede bul', gradient: _arcadeGrad,
+          onTap: () => _push(context, const FootballWordleScreen())),
+        _QuickTile(emoji: '🕸️', title: 'Oyuncu Bağlantı Yolu',
+          subtitle: 'İki futbolcuyu kulüp geçmişinden bağla', gradient: _strategyGrad,
+          onTap: () => _push(context, const FootballLinkPathScreen())),
+        _QuickTile(emoji: '🧩', title: 'Futbol Box2Box · 3×3',
+          subtitle: 'Kategori kesişimleri · Dinamik futbolcu verisi', gradient: _strategyGrad,
+          onTap: () => _push(context, const FootballGridScreen())),
+         _QuickTile(emoji: '🧠', title: 'Futbol Connections · 4×4',
+           subtitle: 'Ortak kulüp ve ülke gruplarını keşfet', gradient: _strategyGrad,
+           onTap: () => _push(context, const FootballConnectionsScreen())),
         _QuickTile(emoji: '⚽', title: ThreeArcadeGame.freeKick.title,
           subtitle: 'Baraj · Falso · 6 vuruş', gradient: _strategyGrad,
           onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.freeKick))),
         _QuickTile(emoji: '🥅', title: ThreeArcadeGame.penalty.title,
           subtitle: 'Kaleciyi geç · 6 vuruş', gradient: _strategyGrad,
           onTap: () => _push(context, const ThreeArcadeScreen(game: ThreeArcadeGame.penalty))),
-        _QuickTile(emoji: '👟', title: FootballQuizMode.player.title,
-          subtitle: 'Kariyer ipuçları · 6 soru', gradient: _arcadeGrad,
-          onTap: () => _push(context, const FootballQuizScreen(mode: FootballQuizMode.player))),
-        _QuickTile(emoji: '🏟️', title: FootballQuizMode.club.title,
-          subtitle: 'Kulüp tarihi · 6 soru', gradient: _arcadeGrad,
-          onTap: () => _push(context, const FootballQuizScreen(mode: FootballQuizMode.club))),
       ]),
       const SizedBox(height: 26),
 

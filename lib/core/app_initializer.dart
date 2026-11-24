@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,16 @@ class AppInitializer {
   static Future<void> runBlocking() async {
     WidgetsFlutterBinding.ensureInitialized();
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+    // Keep the versioned football catalogue on Android so daily games can
+    // still open when the player has no connection. The catalogue is refreshed
+    // weekly by Functions; RTDB persistence avoids a separate large local JSON
+    // copy in SharedPreferences.
+    if (!kIsWeb) {
+      final database = FirebaseDatabase.instance;
+      database.setPersistenceEnabled(true);
+      unawaited(database.ref('footballCatalog/current').keepSynced(true));
+    }
 
     // Web'de arka plan bildirimleri ayrı bir service worker mekanizması
     // gerektirir (bu Dart handler'ın bir karşılığı yoktur) — bu yüzden

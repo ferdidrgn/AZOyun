@@ -60,3 +60,13 @@ jobs:
       - name: Build Wear OS companion APK
         working-directory: android
         run: ./gradlew :wear:assembleDebug
+
+      - name: Upload Android APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: azoyun-debug-apks
+          path: |
+            build/app/outputs/flutter-apk/app-debug.apk
+            android/wear/build/outputs/apk/debug/wear-debug.apk
+          if-no-files-found: error
+          retention-days: 14

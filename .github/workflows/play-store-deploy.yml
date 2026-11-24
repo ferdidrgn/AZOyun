@@ -1,6 +1,7 @@
-name: Google Play'e yayınla (AAB)
+name: Android paketleri üret (AAB/APK)
 
-# Her main push'ında Android testleri çalışır, imzalı AAB üretilir ve üretim sürümüne gönderilir.
+# Her main push'ında Android testleri ile imzalı AAB/APK artefaktları üretilir.
+# Google Play yayını yalnızca workflow_dispatch + publish_to_play onayıyla yapılır.
 on:
   push:
     branches: [main]
@@ -39,19 +40,22 @@ jobs:
           KEY_PW: ${{ secrets.ANDROID_KEY_PASSWORD }}
           STORE_PW: ${{ secrets.ANDROID_STORE_PASSWORD }}
           PLAY_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          PUBLISH_TO_PLAY: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_play }}
         run: |
           missing=()
           [ -z "$KS" ] && missing+=(ANDROID_KEYSTORE_BASE64)
           [ -z "$ALIAS" ] && missing+=(ANDROID_KEY_ALIAS)
           [ -z "$KEY_PW" ] && missing+=(ANDROID_KEY_PASSWORD)
           [ -z "$STORE_PW" ] && missing+=(ANDROID_STORE_PASSWORD)
-          [ -z "$PLAY_JSON" ] && missing+=(PLAY_STORE_SERVICE_ACCOUNT_JSON)
+          [ "$PUBLISH_TO_PLAY" = "true" ] && [ -z "$PLAY_JSON" ] && missing+=(PLAY_STORE_SERVICE_ACCOUNT_JSON)
           if [ ${#missing[@]} -ne 0 ]; then
             echo "Eksik GitHub Actions secret(lar): ${missing[*]}"
             echo "Kurulum: docs/DEPLOY.md"
             exit 1
           fi
-          node -e 'const { client_email } = JSON.parse(process.env.PLAY_JSON); console.log(`Play service account: ${client_email}`)'
+          if [ -n "$PLAY_JSON" ]; then
+            node -e 'JSON.parse(process.env.PLAY_JSON); console.log("Play service account JSON is valid.")'
+          fi
 
       - name: Flutter kur
         uses: subosito/flutter-action@v2
@@ -110,6 +114,7 @@ jobs:
           base_build_number=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
           build_number=$((base_build_number + GITHUB_RUN_NUMBER))
           flutter build appbundle --release --build-number="$build_number" --target-platform android-arm,android-arm64 "${defines[@]}"
+          flutter build apk --release --split-per-abi --build-number="$build_number" --target-platform android-arm,android-arm64 "${defines[@]}"
 
       - name: AAB imzasını doğrula
         run: |
@@ -130,12 +135,20 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: İmzalı APK'ları sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: azoyun-signed-apks
+          path: build/app/outputs/flutter-apk/app-*-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Geçici imzalama dosyalarını sil
         if: always()
         run: rm -f android/app/release.jks android/key.properties
 
       - name: Google Play'e yükle
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_to_play)
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_to_play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
